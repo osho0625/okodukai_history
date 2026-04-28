@@ -85,7 +85,28 @@ canvas.width = CELL * COLS;
 canvas.height = H;
 
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
+const PUYO_IMGS = [
+  'img_friend_01_01.avif',
+  'img_friend_01_02.avif',
+  'img_friend_01_03.avif',
+  'img_friend_01_06.avif',
+  'c4bd886a71a8a6928b1d48f5d3d10c68.png'
+];
 const PUYO_R = CELL * 0.42;
+const loadedImgs = [];
+let imgsReady = false;
+
+// 画像プリロード
+(function preload() {
+  let count = 0;
+  PUYO_IMGS.forEach((src, i) => {
+    const img = new Image();
+    img.onload = () => { count++; if (count === PUYO_IMGS.length) imgsReady = true; };
+    img.onerror = () => { count++; if (count === PUYO_IMGS.length) imgsReady = true; };
+    img.src = src;
+    loadedImgs[i] = img;
+  });
+})();
 
 let grid, score, chainCount, state, pair, nextPair;
 let dropTimer, dropInterval, particles;
@@ -103,7 +124,12 @@ function c2Pos(p) {
 }
 
 function inBounds(c, r) { return c >= 0 && c < COLS && r >= 0 && r < ROWS; }
-function isEmpty(c, r) { return inBounds(c, r) && grid[r][c] === null; }
+function isEmpty(c, r) {
+  if (c < 0 || c >= COLS) return false;
+  if (r < 0) return true; // 上にはみ出すのはOK
+  if (r >= ROWS) return false;
+  return grid[r][c] === null;
+}
 
 function startGame() {
   grid = [];
@@ -124,10 +150,10 @@ function startGame() {
 
 function spawnPair() {
   pair = nextPair;
-  pair.col = 2; pair.row = 0; pair.dir = 0;
+  pair.col = 2; pair.row = 1; pair.dir = 0;
   nextPair = makePair();
-  const p2 = c2Pos(pair);
-  if (!isEmpty(pair.col, pair.row) || !isEmpty(p2.col, p2.row)) {
+  // row 1 にc1、row 0 にc2(上方向)で開始
+  if (grid[1][pair.col] !== null) {
     state = 'over';
     document.getElementById('finalScore').textContent = score;
     document.getElementById('gameOver').style.display = 'block';
@@ -276,28 +302,48 @@ function findAndClear() {
 <script>
 // --- 描画 ---
 function drawPuyo(x, y, colorIdx, ghost) {
+  const cx = x + CELL/2, cy = y + CELL/2;
   ctx.globalAlpha = ghost ? 0.3 : 1;
-  ctx.fillStyle = COLORS[colorIdx];
-  ctx.beginPath();
-  ctx.arc(x + CELL/2, y + CELL/2, PUYO_R, 0, Math.PI * 2);
-  ctx.fill();
-  // ハイライト
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.beginPath();
-  ctx.arc(x + CELL*0.38, y + CELL*0.35, PUYO_R*0.35, 0, Math.PI*2);
-  ctx.fill();
-  // 目
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(x + CELL*0.36, y + CELL*0.45, 3, 0, Math.PI*2);
-  ctx.arc(x + CELL*0.56, y + CELL*0.45, 3, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#111';
-  ctx.beginPath();
-  ctx.arc(x + CELL*0.38, y + CELL*0.46, 1.5, 0, Math.PI*2);
-  ctx.arc(x + CELL*0.58, y + CELL*0.46, 1.5, 0, Math.PI*2);
-  ctx.fill();
+
+  const t = Date.now() * 0.003;
+  const squish = ghost ? 1 : 1 + Math.sin(t + x * 0.5) * 0.03;
+  const stretch = ghost ? 1 : 1 - Math.sin(t + x * 0.5) * 0.03;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(squish, stretch);
+
+  const img = loadedImgs[colorIdx];
+  if (imgsReady && img && img.complete && img.naturalWidth > 0) {
+    // 画像を丸くクリップして描画
+    ctx.beginPath();
+    ctx.arc(0, 0, PUYO_R, 0, Math.PI * 2);
+    ctx.clip();
+    const s = PUYO_R * 2.2;
+    ctx.drawImage(img, -s/2, -s/2, s, s);
+  } else {
+    // フォールバック: 色付き丸
+    ctx.fillStyle = COLORS[colorIdx];
+    ctx.beginPath();
+    ctx.arc(0, 0, PUYO_R, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
   ctx.globalAlpha = 1;
+}
+
+// 色ヘルパー（パーティクル用に残す）
+function lighten(hex, pct) { return adjustColor(hex, pct); }
+function darken(hex, pct) { return adjustColor(hex, -pct); }
+function adjustColor(hex, pct) {
+  let r = parseInt(hex.slice(1,3),16);
+  let g = parseInt(hex.slice(3,5),16);
+  let b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, Math.max(0, r + Math.round(pct * 2.55)));
+  g = Math.min(255, Math.max(0, g + Math.round(pct * 2.55)));
+  b = Math.min(255, Math.max(0, b + Math.round(pct * 2.55)));
+  return `rgb(${r},${g},${b})`;
 }
 
 function draw() {
@@ -367,10 +413,20 @@ function draw() {
 }
 
 function drawSmallPuyo(x, y, colorIdx, size) {
-  ctx.fillStyle = COLORS[colorIdx];
-  ctx.beginPath();
-  ctx.arc(x + size/2, y + size/2, size * 0.4, 0, Math.PI*2);
-  ctx.fill();
+  const img = loadedImgs[colorIdx];
+  if (imgsReady && img && img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + size/2, y + size/2, size * 0.4, 0, Math.PI*2);
+    ctx.clip();
+    ctx.drawImage(img, x + size*0.1, y + size*0.1, size*0.8, size*0.8);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = COLORS[colorIdx];
+    ctx.beginPath();
+    ctx.arc(x + size/2, y + size/2, size * 0.4, 0, Math.PI*2);
+    ctx.fill();
+  }
 }
 
 // --- ゲームループ ---
