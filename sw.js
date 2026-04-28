@@ -1,13 +1,13 @@
-const CACHE_NAME = 'okozukai-v1';
+const CACHE_NAME = 'okozukai-v2';
 const ASSETS = [
   './',
   './index.html',
-  './child.html',
-  './settings.html',
-  './admin.html',
-  './game.html',
+  './pages/child.html',
+  './pages/settings.html',
+  './pages/admin.html',
+  './pages/game.html',
   './manifest.json',
-  './2728.png'
+  './images/2728.png'
 ];
 
 self.addEventListener('install', e => {
