@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理者ページ - お小遣い管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
+.back { display: inline-block; margin-bottom: 16px; color: #1976d2; text-decoration: none; }
+.back:hover { text-decoration: underline; }
+h1 { margin-bottom: 20px; color: #333; }
+h2 {
+  margin: 24px 0 0; color: #555; font-size: 1.1em;
+  cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+}
+h2 .toggle { transition: transform 0.2s; display: inline-block; }
+h2 .toggle.open { transform: rotate(90deg); }
+.section-body { display: none; margin-top: 12px; }
+.section-body.open { display: block; }
+
+.card {
+  background: #fff; border-radius: 12px; padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px;
+  max-width: 560px; width: 100%;
+}
+
+/* 子供一覧 */
+.child-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #eee;
+}
+.child-row:last-child { border-bottom: none; }
+.child-info { display: flex; flex-direction: column; gap: 2px; }
+.child-info .name { font-weight: 600; font-size: 1.05em; }
+.child-info .balance { color: #4caf50; font-weight: 700; }
+.child-info .balance.neg { color: #e53935; }
+.child-info .pw-status { font-size: 0.8em; color: #999; }
+.child-actions { display: flex; gap: 6px; }
+
+/* ボタン */
+.btn-sm {
+  padding: 6px 12px; border: none; border-radius: 6px;
+  font-size: 0.85em; cursor: pointer; font-weight: 600;
+}
+.btn-danger { background: #e53935; color: #fff; }
+.btn-warn { background: #ff9800; color: #fff; }
+.btn-primary { background: #1976d2; color: #fff; }
+.btn-sm:hover { opacity: 0.85; }
+
+/* 追加フォーム */
+.add-form { display: flex; gap: 8px; margin-top: 12px; }
+.add-form input {
+  flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em;
+}
+.btn-add {
+  padding: 10px 20px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-weight: 600; cursor: pointer; font-size: 1em;
+}
+.btn-add:hover { opacity: 0.9; }
+
+/* 履歴 */
+.history-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.history-btn {
+  padding: 10px 18px; border: 2px solid #ddd; border-radius: 8px;
+  background: #fff; font-size: 1em; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.history-btn:hover { border-color: #1976d2; color: #1976d2; }
+.history-btn.active { background: #1976d2; color: #fff; border-color: #1976d2; }
+.tx-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 8px;
+}
+.tx-row:last-child { border-bottom: none; }
+.tx-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tx-info .tx-memo { font-size: 0.95em; }
+.tx-info .tx-date { font-size: 0.8em; color: #aaa; }
+.tx-amount { font-weight: 700; white-space: nowrap; }
+.tx-amount.add { color: #4caf50; }
+.tx-amount.use { color: #e53935; }
+.tx-actions { display: flex; gap: 4px; }
+
+/* メッセージ */
+.msg { color: #4caf50; font-size: 0.9em; margin-top: 8px; display: none; }
+
+/* モーダル */
+.overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center;
+}
+.overlay.active { display: flex; }
+.modal {
+  background: #fff; border-radius: 16px; padding: 24px;
+  width: 90%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal h3 { margin-bottom: 16px; }
+.modal input, .modal select {
+  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 1em; margin-bottom: 10px;
+}
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  font-size: 1em; font-weight: 600; cursor: pointer;
+}
+.btn-ok { background: #1976d2; color: #fff; }
+.btn-cancel { background: #eee; color: #333; }
+
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  .card { padding: 16px; }
+  .add-form { flex-direction: column; }
+  .child-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .child-actions { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html">← トップに戻る</a>
+<h1>🔧 管理者ページ</h1>
+
+<!-- アカウント一覧 -->
+<h2 onclick="toggleSection('accountSection', this)"><span class="toggle">▶</span> 👤 アカウント一覧・残高</h2>
+<div class="section-body" id="accountSection">
+  <div class="card" id="childrenList"></div>
+  <div class="card">
+    <div class="add-form">
+      <input type="text" id="newChildName" placeholder="新しいアカウントの名前">
+      <button class="btn-add" onclick="addChild()">アカウントを追加</button>
+    </div>
+    <div class="msg" id="addMsg">✓ 追加しました</div>
+  </div>
+</div>
+
+<!-- 履歴管理 -->
+<h2 onclick="toggleSection('historySection', this)"><span class="toggle">▶</span> 📋 履歴管理</h2>
+<div class="section-body" id="historySection">
+  <div class="card">
+    <div class="history-btns" id="historyBtns"></div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h3>📝 履歴を編集</h3>
+    <select id="editType">
+      <option value="add">追加</option>
+      <option value="use">使用</option>
+    </select>
+    <input type="number" id="editAmount" placeholder="金額">
+    <input type="text" id="editMemo" placeholder="メモ">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="btn-ok" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allChildren = [];
+let editingTxId = null;
+let selectedChildId = null;
+
+function toggleSection(id, h2El) {
+  const body = document.getElementById(id);
+  const arrow = h2El.querySelector('.toggle');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+</script>
+
+<script>
+// --- 子供一覧 ---
+async function loadChildren() {
+  const { data } = await client.from('children').select('*');
+  allChildren = data || [];
+
+  const list = document.getElementById('childrenList');
+  const btns = document.getElementById('historyBtns');
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">アカウントが登録されていません</div>';
+    btns.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = '';
+  btns.innerHTML = '';
+
+  data.forEach(c => {
+    const negClass = c.balance < 0 ? ' neg' : '';
+    const pwText = c.require_password ? '🔒 パスワードあり' : 'パスワードなし';
+    list.innerHTML += `
+      <div class="child-row">
+        <div class="child-info">
+          <span class="name">${c.name}</span>
+          <span class="balance${negClass}">${c.balance.toLocaleString()}円</span>
+          <span class="pw-status">${pwText}</span>
+        </div>
+        <div class="child-actions">
+          ${c.require_password ? `<button class="btn-sm btn-warn" onclick="resetPassword('${c.id}')">PW解除</button>` : ''}
+          <button class="btn-sm btn-danger" onclick="deleteChild('${c.id}', '${c.name}')">削除</button>
+        </div>
+      </div>
+    `;
+
+    const activeClass = selectedChildId === c.id ? ' active' : '';
+    btns.innerHTML += `<button class="history-btn${activeClass}" data-id="${c.id}">${c.name}</button>`;
+  });
+
+  // ボタンにクリックイベント
+  btns.querySelectorAll('.history-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedChildId = btn.dataset.id;
+      btns.querySelectorAll('.history-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadHistory();
+    });
+  });
+}
+
+async function addChild() {
+  const name = document.getElementById('newChildName').value.trim();
+  if (!name) return alert('名前を入力してください');
+
+  await client.from('children').insert({ name, balance: 0 });
+  document.getElementById('newChildName').value = '';
+  const msg = document.getElementById('addMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  loadChildren();
+}
+
+async function deleteChild(id, name) {
+  if (!confirm(`「${name}」を削除しますか？\n関連する履歴もすべて削除されます。`)) return;
+
+  await client.from('transactions').delete().eq('child_id', id);
+  await client.from('children').delete().eq('id', id);
+  loadChildren();
+  document.getElementById('historyList').innerHTML = '';
+}
+
+async function resetPassword(id) {
+  if (!confirm('パスワードを解除しますか？')) return;
+  await client.from('children').update({ require_password: false, password: null }).eq('id', id);
+  loadChildren();
+}
+
+// --- 履歴管理 ---
+async function loadHistory() {
+  const childId = selectedChildId;
+  const list = document.getElementById('historyList');
+
+  if (!childId) { list.innerHTML = ''; return; }
+
+  const { data } = await client
+    .from('transactions')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false });
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">履歴がありません</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  data.forEach(t => {
+    const sign = t.type === 'add' ? '+' : '-';
+    const cls = t.type === 'add' ? 'add' : 'use';
+    const date = new Date(t.created_at).toLocaleDateString('ja-JP');
+    list.innerHTML += `
+      <div class="tx-row">
+        <div class="tx-info">
+          <span class="tx-memo">${t.memo || '(メモなし)'}</span>
+          <span class="tx-date">${date}</span>
+        </div>
+        <span class="tx-amount ${cls}">${sign}${t.amount.toLocaleString()}円</span>
+        <div class="tx-actions">
+          <button class="btn-sm btn-primary" onclick="openEdit('${t.id}', '${t.type}', ${t.amount}, '${(t.memo || '').replace(/'/g, "\\'")}')">編集</button>
+          <button class="btn-sm btn-danger" onclick="deleteTx('${t.id}', '${t.type}', ${t.amount})">削除</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function openEdit(id, type, amount, memo) {
+  editingTxId = id;
+  document.getElementById('editType').value = type;
+  document.getElementById('editAmount').value = amount;
+  document.getElementById('editMemo').value = memo;
+  document.getElementById('editOverlay').classList.add('active');
+}
+
+function closeEdit() {
+  document.getElementById('editOverlay').classList.remove('active');
+  editingTxId = null;
+}
+
+async function saveEdit() {
+  const type = document.getElementById('editType').value;
+  const amount = parseInt(document.getElementById('editAmount').value);
+  const memo = document.getElementById('editMemo').value;
+  if (!amount || amount <= 0) return alert('金額を入力してください');
+
+  await client.from('transactions').update({ type, amount, memo }).eq('id', editingTxId);
+  closeEdit();
+
+  // 残高を再計算
+  const childId = selectedChildId;
+  await recalcBalance(childId);
+  loadChildren();
+  loadHistory();
+}
+
+async function deleteTx(id, type, amount) {
+  if (!confirm('この履歴を削除しますか？残高も再計算されます。')) return;
+
+  const childId = selectedChildId;
+  await client.from('transactions').delete().eq('id', id);
+
+  await recalcBalance(childId);
+  loadChildren();
+  loadHistory();
+}
+
+async function recalcBalance(childId) {
+  const { data } = await client.from('transactions').select('*').eq('child_id', childId);
+  let balance = 0;
+  if (data) {
+    data.forEach(t => {
+      balance += t.type === 'add' ? t.amount : -t.amount;
+    });
+  }
+  await client.from('children').update({ balance }).eq('id', childId);
+}
+
+loadChildren();
+</script>
+
+</body>
+</html>

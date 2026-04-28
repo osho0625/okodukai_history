@@ -60,9 +60,25 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 <body>
 
 <h1>💰 お小遣い管理</h1>
+<div style="text-align:center; margin-bottom:20px;">
+  <span style="cursor:pointer; font-size:1.3em; opacity:0.4;" onclick="goAdmin()">🔧</span>
+</div>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
+</div>
+
+<!-- 管理者パスワードモーダル -->
+<div class="overlay" id="adminOverlay">
+  <div class="modal">
+    <h2>🔧 管理者パスワード</h2>
+    <div class="error-msg" id="adminError">パスワードが違います</div>
+    <input type="password" id="adminPwInput" placeholder="パスワード" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAdminModal()">キャンセル</button>
+      <button class="btn-ok" onclick="submitAdminPw()">OK</button>
+    </div>
+  </div>
 </div>
 
 <!-- パスワードモーダル -->
@@ -163,6 +179,33 @@ document.getElementById('pwInput').addEventListener('keydown', e => {
 // オーバーレイクリックで閉じる
 document.getElementById('pwOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
+});
+
+function goAdmin() {
+  document.getElementById('adminError').style.display = 'none';
+  document.getElementById('adminPwInput').value = '';
+  document.getElementById('adminOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('adminPwInput').focus(), 100);
+}
+
+function submitAdminPw() {
+  const input = document.getElementById('adminPwInput').value;
+  if (input === 'mgmlv') {
+    document.getElementById('adminOverlay').classList.remove('active');
+    window.location.href = 'admin.html';
+  } else {
+    document.getElementById('adminError').style.display = 'block';
+    document.getElementById('adminPwInput').value = '';
+    document.getElementById('adminPwInput').focus();
+  }
+}
+
+function closeAdminModal() {
+  document.getElementById('adminOverlay').classList.remove('active');
+}
+
+document.getElementById('adminPwInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAdminPw();
 });
 
 load();
