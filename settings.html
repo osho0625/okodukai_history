@@ -49,6 +49,10 @@ h1 { margin-bottom: 20px; color: #333; }
     <input type="checkbox" id="showBalanceOnTop">
     <span>トップページに残高を表示する</span>
   </label>
+  <div class="setting-item" style="cursor:default;">
+    <span>表示順</span>
+    <input type="number" id="sortOrder" min="0" style="width:80px; text-align:center;">
+  </div>
 </div>
 
 <div class="setting-card">
@@ -85,6 +89,7 @@ async function load() {
   document.getElementById('childName').textContent = child.name;
   document.getElementById('backLink').href = `child.html?id=${childId}`;
   document.getElementById('showBalanceOnTop').checked = child.show_balance_on_top !== false;
+  document.getElementById('sortOrder').value = child.sort_order || 0;
   document.getElementById('requirePassword').checked = !!child.require_password;
   if (child.require_password) {
     document.getElementById('pwSection').style.display = 'block';
@@ -100,11 +105,13 @@ function togglePassword() {
 
 async function saveAll() {
   const showBalance = document.getElementById('showBalanceOnTop').checked;
+  const sortOrder = parseInt(document.getElementById('sortOrder').value) || 0;
   const requirePw = document.getElementById('requirePassword').checked;
   const pw = document.getElementById('pwInput').value;
 
   const update = {
     show_balance_on_top: showBalance,
+    sort_order: sortOrder,
     require_password: requirePw,
   };
 

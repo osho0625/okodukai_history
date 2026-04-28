@@ -182,7 +182,7 @@ function toggleSection(id, h2El) {
 <script>
 // --- 子供一覧 ---
 async function loadChildren() {
-  const { data } = await client.from('children').select('*');
+  const { data } = await client.from('children').select('*').order('sort_order', { ascending: true });
   allChildren = data || [];
 
   const list = document.getElementById('childrenList');

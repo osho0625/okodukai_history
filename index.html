@@ -103,7 +103,7 @@ let allChildren = [];
 let pendingChildId = null;
 
 async function load() {
-  const { data, error } = await client.from('children').select('*');
+  const { data, error } = await client.from('children').select('*').order('sort_order', { ascending: true });
   const container = document.getElementById('children');
 
   if (error || !data) {
