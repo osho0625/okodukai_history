@@ -46,7 +46,7 @@ h1 { margin-bottom: 20px; color: #333; }
 
 <div class="setting-card">
   <label class="setting-item">
-    <input type="checkbox" id="showBalanceOnTop" onchange="saveSetting()">
+    <input type="checkbox" id="showBalanceOnTop">
     <span>トップページに残高を表示する</span>
   </label>
 </div>
@@ -58,9 +58,12 @@ h1 { margin-bottom: 20px; color: #333; }
   </label>
   <div class="pw-section" id="pwSection" style="display:none;">
     <input type="password" id="pwInput" placeholder="新しいパスワード">
-    <button class="btn-save" onclick="savePassword()">パスワードを保存</button>
-    <div class="msg" id="pwMsg">✓ 保存しました</div>
   </div>
+</div>
+
+<div style="max-width:480px; margin-top:8px;">
+  <button class="btn-save" onclick="saveAll()">設定を保存</button>
+  <div class="msg" id="saveMsg">✓ 保存しました</div>
 </div>
 
 <script>
@@ -88,30 +91,38 @@ async function load() {
   }
 }
 
-async function saveSetting() {
-  const show = document.getElementById('showBalanceOnTop').checked;
-  await client.from('children').update({ show_balance_on_top: show }).eq('id', childId);
-}
+async function saveSetting() {}
 
 function togglePassword() {
   const checked = document.getElementById('requirePassword').checked;
   document.getElementById('pwSection').style.display = checked ? 'block' : 'none';
-  if (!checked) {
-    client.from('children').update({ require_password: false, password: null }).eq('id', childId);
-  } else {
-    client.from('children').update({ require_password: true }).eq('id', childId);
-  }
 }
 
-async function savePassword() {
+async function saveAll() {
+  const showBalance = document.getElementById('showBalanceOnTop').checked;
+  const requirePw = document.getElementById('requirePassword').checked;
   const pw = document.getElementById('pwInput').value;
-  if (!pw) return alert('パスワードを入力してください');
-  await client.from('children').update({ password: pw, require_password: true }).eq('id', childId);
+
+  const update = {
+    show_balance_on_top: showBalance,
+    require_password: requirePw,
+  };
+
+  if (requirePw && pw) {
+    update.password = pw;
+  }
+  if (!requirePw) {
+    update.password = null;
+  }
+
+  await client.from('children').update(update).eq('id', childId);
   document.getElementById('pwInput').value = '';
-  const msg = document.getElementById('pwMsg');
+  const msg = document.getElementById('saveMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
 }
+
+async function savePassword() {}
 
 load();
 </script>
