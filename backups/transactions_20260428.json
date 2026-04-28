@@ -1,2 +1,6 @@
-[{"id":"bb9882ee-4cd8-4e1f-811c-f8be20165103","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"add","amount":200,"memo":"おやつ","created_at":"2026-04-28T04:19:34.621545"}, 
- {"id":"e94d0c63-320b-4913-98e1-d33dc55c6c3c","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"add","amount":500,"memo":"テスト","created_at":"2026-04-28T05:16:42.74147"}]
+[{"id":"ceed75d8-0a42-43cf-84e6-764800987fcd","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"add","amount":310,"memo":"初回入金","created_at":"2026-04-28T11:14:21.263875"}, 
+ {"id":"e901ed17-087c-4440-9fab-1940a6fe6357","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"add","amount":264,"memo":"","created_at":"2026-04-28T11:15:01.259546"}, 
+ {"id":"f026cfb0-c9c0-4b92-86f7-271b17c7084b","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"add","amount":15,"memo":"初回入金","created_at":"2026-04-28T11:16:19.497326"}, 
+ {"id":"0e8e8390-0a41-489e-8e81-02b3807be3f5","child_id":"dc1dc522-3bae-4428-86f3-24068b4473b4","type":"use","amount":5000,"memo":"借金","created_at":"2026-04-28T11:23:27.627433"}, 
+ {"id":"b6e288d1-5988-4d4f-b48d-15c6c868f7de","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"use","amount":10,"memo":"","created_at":"2026-04-28T12:15:49.158259"}, 
+ {"id":"d0eb548d-04c2-4675-8623-67b214a8d10d","child_id":"dc1dc522-3bae-4428-86f3-24068b4473b4","type":"add","amount":10,"memo":"","created_at":"2026-04-28T12:16:18.025539"}]
