@@ -134,6 +134,8 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <div class="loading">読み込み中...</div>
 </div>
 
+<div id="puyoStats" style="text-align:center; margin-bottom:16px; font-size:0.9em; color:#666;"></div>
+
 <!-- ぷよ畑 -->
 <div class="puyo-garden" id="puyoGarden" style="display:none;">
   <div class="garden-grass"></div>
@@ -385,6 +387,7 @@ function unleashRoaches() {
             r.style.pointerEvents = 'none';
             r.style.transition = 'transform 0.3s';
             r.style.transform += ' rotate(90deg)';
+            incrementRoachCount();
             setTimeout(() => {
               r.style.transform += ' rotate(180deg)';
               setTimeout(() => {
@@ -604,6 +607,7 @@ function spawnRoach(type) {
     r.style.opacity = '0.6';
     setTimeout(() => {
       r.remove();
+      incrementRoachCount();
       roachCleared();
       // 全滅したらスプレーボタンも消す
       if (roachCount <= 0) {
@@ -735,6 +739,7 @@ function pullSinglePuyo(sprout, imgSrc) {
   if (sprout.dataset.pulled) return;
   sprout.dataset.pulled = 'true';
   doPullAnimation(sprout, imgSrc);
+  incrementPuyoCount(imgSrc);
   puyoCount--;
   checkGardenClear();
 }
@@ -747,6 +752,7 @@ function pullAllPuyo() {
       sprout.dataset.pulled = 'true';
       const imgSrc = sprout.dataset.img || '';
       doPullAnimation(sprout, imgSrc);
+      incrementPuyoCount(imgSrc);
       puyoCount--;
       checkGardenClear();
     }, i * 120);
@@ -811,10 +817,14 @@ function checkGardenClear() {
     puyoSprouts = [];
     const blocker = document.getElementById('puyoBlocker');
     if (blocker) blocker.remove();
-    setTimeout(() => {
-      const garden = document.getElementById('puyoGarden');
-      garden.style.display = 'none';
-    }, 500);
+    // 歩いているぷよが全部消えるまで待つ
+    const waitForWalkers = setInterval(() => {
+      if (document.querySelectorAll('.puyo-fly').length === 0) {
+        clearInterval(waitForWalkers);
+        const garden = document.getElementById('puyoGarden');
+        garden.style.display = 'none';
+      }
+    }, 300);
   }
 }
 
@@ -826,7 +836,46 @@ const PUYO_IMAGES = [
   'images/puyo_5.avif'
 ];
 
+// ぷよカウント
+async function incrementPuyoCount(imgSrc) {
+  const match = imgSrc.match(/puyo_(\d)/);
+  if (!match) return;
+  const puyoId = parseInt(match[1]);
+  const puyoName = 'puyo_' + puyoId;
+  const { data } = await client.from('puyo_counts').select('count').eq('id', puyoId).single();
+  if (data) {
+    await client.from('puyo_counts').update({ count: data.count + 1 }).eq('id', puyoId);
+  }
+  await client.from('activity_log').insert({ type: 'puyo', name: puyoName });
+}
+
+async function incrementRoachCount() {
+  const { data } = await client.from('roach_counts').select('count').eq('id', 1).single();
+  if (data) {
+    await client.from('roach_counts').update({ count: data.count + 1 }).eq('id', 1);
+  }
+  await client.from('activity_log').insert({ type: 'roach', name: 'roach' });
+}
+
+async function loadPuyoCounts() {
+  const { data: puyoData } = await client.from('puyo_counts').select('*').order('id');
+  const { data: roachData } = await client.from('roach_counts').select('count').eq('id', 1).single();
+  const container = document.getElementById('puyoStats');
+  if (!container) return;
+  let html = '';
+  if (puyoData) {
+    html += puyoData.map(p =>
+      `<span style="margin:0 4px;"><img src="images/${p.name}.avif" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;object-fit:cover;"> ${p.count}</span>`
+    ).join('');
+  }
+  if (roachData) {
+    html += `<span style="margin:0 4px;">\u{1FAB3} ${roachData.count}</span>`;
+  }
+  container.innerHTML = html;
+}
+
 load();
+loadPuyoCounts();
 </script>
 
 </body>

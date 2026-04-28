@@ -165,6 +165,19 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- アクティビティログ -->
+<h2 onclick="toggleSection('logSection', this)"><span class="toggle">&#x25B6;</span> &#x1F4CA; アクティビティログ</h2>
+<div class="section-body" id="logSection">
+  <div class="card">
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn-sm btn-primary" onclick="loadActivityLog('all')" style="padding:8px 14px;">全て</button>
+      <button class="btn-sm" onclick="loadActivityLog('puyo')" style="padding:8px 14px; background:#43a047; color:#fff;">ぷよ</button>
+      <button class="btn-sm" onclick="loadActivityLog('roach')" style="padding:8px 14px; background:#795548; color:#fff;">ゴキブリ</button>
+    </div>
+    <div id="activityLogList" style="max-height:400px; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <!-- バックアップ復元 -->
 <h2 onclick="toggleSection('restoreSection', this)"><span class="toggle">▶</span> 💾 バックアップ</h2>
 <div class="section-body" id="restoreSection">
@@ -550,9 +563,40 @@ async function doRestore(children, transactions) {
   }
 }
 
+// --- アクティビティログ ---
+async function loadActivityLog(filter) {
+  const list = document.getElementById('activityLogList');
+  list.innerHTML = '<div style="color:#999; text-align:center;">読み込み中...</div>';
+
+  let query = client.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100);
+  if (filter && filter !== 'all') {
+    query = query.eq('type', filter);
+  }
+
+  const { data } = await query;
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">ログがありません</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  data.forEach(log => {
+    const d = new Date(log.created_at);
+    const dateStr = d.toLocaleDateString('ja-JP') + ' ' + d.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+    const icon = log.type === 'puyo'
+      ? `<img src="../images/${log.name}.avif" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;object-fit:cover;">`
+      : '\u{1FAB3}';
+    const label = log.type === 'puyo' ? 'ぷよ引き抜き' : 'ゴキブリ退治';
+    list.innerHTML += `<div style="padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:0.9em; display:flex; align-items:center; gap:8px;">
+      <span>${icon}</span>
+      <span style="flex:1;">${label}</span>
+      <span style="color:#aaa; font-size:0.85em;">${dateStr}</span>
+    </div>`;
+  });
+}
+
 loadChildren();
 loadBackupDates();
 </script>
-
 </body>
 </html>
