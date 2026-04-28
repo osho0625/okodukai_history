@@ -143,13 +143,30 @@ async function load() {
   });
 }
 
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
+
+async function notifyDiscord(name, type, amount, memo, newBalance) {
+  const emoji = type === 'add' ? '💰' : '💸';
+  const action = type === 'add' ? '追加' : '使用';
+  const content = `${emoji} **${name}** が ${amount.toLocaleString()}円 ${action}\n📝 ${memo || '(メモなし)'}\n💳 残高: ${newBalance.toLocaleString()}円`;
+  try {
+    await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+  } catch (e) { /* 通知失敗しても操作は続行 */ }
+}
+
 async function addMoney() {
   const amount = parseInt(document.getElementById('amount').value);
   const memo = document.getElementById('memo').value;
   if (!amount || amount <= 0) return alert('金額を入力してください');
 
-  await client.from('children').update({ balance: child.balance + amount }).eq('id', childId);
+  const newBalance = child.balance + amount;
+  await client.from('children').update({ balance: newBalance }).eq('id', childId);
   await client.from('transactions').insert({ child_id: childId, type: 'add', amount, memo });
+  await notifyDiscord(child.name, 'add', amount, memo, newBalance);
   document.getElementById('amount').value = '';
   document.getElementById('memo').value = '';
   load();
@@ -160,8 +177,10 @@ async function useMoney() {
   const memo = document.getElementById('memo').value;
   if (!amount || amount <= 0) return alert('金額を入力してください');
 
-  await client.from('children').update({ balance: child.balance - amount }).eq('id', childId);
+  const newBalance = child.balance - amount;
+  await client.from('children').update({ balance: newBalance }).eq('id', childId);
   await client.from('transactions').insert({ child_id: childId, type: 'use', amount, memo });
+  await notifyDiscord(child.name, 'use', amount, memo, newBalance);
   document.getElementById('amount').value = '';
   document.getElementById('memo').value = '';
   load();
