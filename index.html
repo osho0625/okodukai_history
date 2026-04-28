@@ -28,7 +28,6 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; }
 <body>
 
 <h1>💰 お小遣い管理</h1>
-<div class="total">合計: <span id="total">-</span>円</div>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
@@ -50,21 +49,19 @@ async function load() {
     return;
   }
 
-  let total = 0;
   container.innerHTML = '';
 
   data.forEach(c => {
-    total += c.balance;
     const isNeg = c.balance < 0 ? ' negative' : '';
+    const showBalance = c.show_balance_on_top !== false;
+    const balanceText = showBalance ? `${c.balance.toLocaleString()}円` : '****円';
     container.innerHTML += `
       <a class="child-card" href="child.html?id=${c.id}">
         <span class="child-name">${c.name}</span>
-        <span class="child-balance${isNeg}">${c.balance.toLocaleString()}円</span>
+        <span class="child-balance${isNeg}">${balanceText}</span>
       </a>
     `;
   });
-
-  document.getElementById('total').textContent = total.toLocaleString();
 }
 
 load();
