@@ -61,14 +61,75 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   .child-card { padding: 16px 18px; }
   .child-name, .child-balance { font-size: 1.1em; }
 }
+
+/* ぷよ畑 */
+.puyo-garden {
+  position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
+  z-index: 50; pointer-events: none;
+}
+.garden-ground {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 35px;
+  background: linear-gradient(to bottom, #8B6914, #6B4F12, #5a4210);
+  border-top: 3px solid #9acd32;
+}
+.garden-grass {
+  position: absolute; bottom: 33px; left: 0; width: 100%; height: 8px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 8px, #6a9f30 8px, #6a9f30 10px);
+  opacity: 0.6;
+}
+.puyo-sprout {
+  position: absolute; bottom: 20px; cursor: pointer; pointer-events: auto;
+  transition: transform 0.15s;
+  display: flex; flex-direction: column; align-items: center;
+}
+.puyo-sprout:hover { transform: translateY(-3px); }
+.puyo-sprout img {
+  width: 40px; height: 40px; border-radius: 50%;
+  object-fit: cover; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+.puyo-sprout .leaves {
+  font-size: 14px; line-height: 1; margin-bottom: -4px;
+}
+.puyo-sprout.pulled {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(-120px) scale(1.2);
+  opacity: 0;
+}
+.dirt-poof {
+  position: absolute; pointer-events: none; font-size: 20px;
+  animation: poofUp 0.6s ease-out forwards;
+}
+@keyframes poofUp {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
+}
+.puyo-fly {
+  position: fixed; pointer-events: none; z-index: 200;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+}
+.puyo-fly img {
+  width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+}
+@keyframes puyoBounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.2) rotate(-10deg); }
+  60% { transform: scale(0.9) rotate(5deg); }
+}
 </style>
 </head>
 <body>
 
-<h1><a href="pages/game.html" style="text-decoration:none;">💴</a> お小遣い手帳 <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">🔧</span></h1>
+<h1><a href="pages/game.html" style="text-decoration:none;">💴</a> お小遣い手帳 <span id="gardenBtn" style="cursor:pointer; font-size:0.6em; opacity:0.4;">🪴</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">🔧</span></h1>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
+</div>
+
+<!-- ぷよ畑 -->
+<div class="puyo-garden" id="puyoGarden" style="display:none;">
+  <div class="garden-grass"></div>
+  <div class="garden-ground"></div>
 </div>
 
 <!-- 管理者パスワードモーダル -->
@@ -559,6 +620,185 @@ document.getElementById('adminPwInput').addEventListener('keydown', e => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
+
+// --- ぷよ畑 ---
+let gardenInitialized = false;
+let puyoSprouts = [];
+let puyoCount = 0;
+
+// 植木鉢ボタン: クリック=5個追加、長押し=全部引き抜く
+(function setupGardenBtn() {
+  const btn = document.getElementById('gardenBtn');
+  let pressTimer = null;
+  let isLongPress = false;
+
+  btn.addEventListener('mousedown', startPress);
+  btn.addEventListener('touchstart', e => { e.preventDefault(); startPress(); });
+  btn.addEventListener('mouseup', endPress);
+  btn.addEventListener('touchend', endPress);
+  btn.addEventListener('mouseleave', cancelPress);
+
+  function startPress() {
+    isLongPress = false;
+    pressTimer = setTimeout(() => {
+      isLongPress = true;
+      pullAllPuyo();
+    }, 600);
+  }
+  function endPress() {
+    clearTimeout(pressTimer);
+    if (!isLongPress) addPuyoBatch();
+  }
+  function cancelPress() {
+    clearTimeout(pressTimer);
+  }
+})();
+
+function addPuyoBatch() {
+  const garden = document.getElementById('puyoGarden');
+  garden.style.display = 'block';
+
+  if (!gardenInitialized) {
+    gardenInitialized = true;
+  }
+
+  // ブロッカー追加（まだなければ）
+  if (!document.getElementById('puyoBlocker')) {
+    const blocker = document.createElement('div');
+    blocker.id = 'puyoBlocker';
+    blocker.style.cssText = `
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:transparent; z-index:49;
+    `;
+    document.body.appendChild(blocker);
+  }
+
+  // 5個追加
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => spawnSprout(), i * 150);
+  }
+}
+
+function spawnSprout() {
+  const garden = document.getElementById('puyoGarden');
+  const src = PUYO_IMAGES[Math.floor(Math.random() * PUYO_IMAGES.length)];
+  const x = Math.random() * (window.innerWidth - 50) + 5;
+
+  const sprout = document.createElement('div');
+  sprout.className = 'puyo-sprout';
+  sprout.style.left = x + 'px';
+
+  const leaves = document.createElement('div');
+  leaves.className = 'leaves';
+  leaves.textContent = '🌱';
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'puyo';
+
+  sprout.appendChild(leaves);
+  sprout.appendChild(img);
+  garden.appendChild(sprout);
+
+  puyoSprouts.push(sprout);
+  puyoCount++;
+
+  // にょきっと生える演出
+  sprout.style.opacity = '0';
+  sprout.style.transform = 'translateY(20px)';
+  setTimeout(() => {
+    sprout.style.transition = 'opacity 0.4s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    sprout.style.opacity = '1';
+    sprout.style.transform = 'translateY(0)';
+  }, 50);
+
+  sprout.addEventListener('click', () => pullSinglePuyo(sprout, img.src));
+}
+
+function pullSinglePuyo(sprout, imgSrc) {
+  if (sprout.dataset.pulled) return;
+  sprout.dataset.pulled = 'true';
+  doPullAnimation(sprout, imgSrc);
+  puyoCount--;
+  checkGardenClear();
+}
+
+function pullAllPuyo() {
+  const alive = puyoSprouts.filter(s => !s.dataset.pulled);
+  alive.forEach((sprout, i) => {
+    setTimeout(() => {
+      if (sprout.dataset.pulled) return;
+      sprout.dataset.pulled = 'true';
+      const img = sprout.querySelector('img');
+      doPullAnimation(sprout, img ? img.src : '');
+      puyoCount--;
+      checkGardenClear();
+    }, i * 120);
+  });
+}
+
+function doPullAnimation(sprout, imgSrc) {
+  const rect = sprout.getBoundingClientRect();
+
+  // 土煙
+  for (let i = 0; i < 3; i++) {
+    const poof = document.createElement('div');
+    poof.className = 'dirt-poof';
+    poof.textContent = '💨';
+    poof.style.left = (rect.left + Math.random() * 30 - 10) + 'px';
+    poof.style.top = (rect.bottom - 20) + 'px';
+    poof.style.position = 'fixed';
+    poof.style.zIndex = '201';
+    document.body.appendChild(poof);
+    setTimeout(() => poof.remove(), 600);
+  }
+
+  sprout.classList.add('pulled');
+
+  // 飛んでいくぷよ
+  setTimeout(() => {
+    const fly = document.createElement('div');
+    fly.className = 'puyo-fly';
+    const flyImg = document.createElement('img');
+    flyImg.src = imgSrc;
+    fly.appendChild(flyImg);
+    fly.style.left = rect.left + 'px';
+    fly.style.top = (rect.top - 60) + 'px';
+    document.body.appendChild(fly);
+    flyImg.style.animation = 'puyoBounce 0.5s ease';
+
+    setTimeout(() => {
+      fly.style.left = (Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2) + 'px';
+      fly.style.top = (Math.random() * window.innerHeight * 0.3 + 50) + 'px';
+      fly.style.opacity = '0';
+      fly.style.transform = 'scale(0.3) rotate(360deg)';
+    }, 50);
+    setTimeout(() => fly.remove(), 900);
+  }, 200);
+
+  setTimeout(() => sprout.remove(), 800);
+}
+
+function checkGardenClear() {
+  if (puyoCount <= 0) {
+    puyoCount = 0;
+    puyoSprouts = [];
+    const blocker = document.getElementById('puyoBlocker');
+    if (blocker) blocker.remove();
+    setTimeout(() => {
+      const garden = document.getElementById('puyoGarden');
+      garden.style.display = 'none';
+    }, 500);
+  }
+}
+
+const PUYO_IMAGES = [
+  'images/puyo_1.avif',
+  'images/puyo_2.avif',
+  'images/puyo_3.avif',
+  'images/puyo_4.avif',
+  'images/puyo_5.avif'
+];
 
 load();
 </script>
