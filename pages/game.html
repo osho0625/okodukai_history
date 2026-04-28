@@ -202,21 +202,23 @@ function canDrop() {
 
 function lockPair() {
   state = 'chain';
-  // c1を落とす
-  let r1 = pair.row;
-  while (r1 + 1 < ROWS && grid[r1 + 1][pair.col] === null) r1++;
-  grid[r1][pair.col] = { color: pair.c1, y: pair.row * CELL, targetY: r1 * CELL };
-
-  // c2を落とす
   const p2 = c2Pos(pair);
-  let r2 = p2.row;
-  if (r2 < 0) r2 = 0;
-  while (r2 + 1 < ROWS && grid[r2 + 1][p2.col] === null) r2++;
-  // c1が同じ列なら、c2はその上まで
-  if (p2.col === pair.col && r2 >= r1) r2 = r1 - 1;
-  if (r2 >= 0 && r2 < ROWS) {
-    grid[r2][p2.col] = { color: pair.c2, y: p2.row * CELL, targetY: r2 * CELL };
-  }
+
+  // 下にある方を先に配置する
+  const pieces = [
+    { col: pair.col, row: pair.row, color: pair.c1 },
+    { col: p2.col, row: Math.max(0, p2.row), color: pair.c2 }
+  ];
+  // rowが大きい（下にある）方を先に処理
+  pieces.sort((a, b) => b.row - a.row);
+
+  pieces.forEach(p => {
+    let r = p.row;
+    while (r + 1 < ROWS && grid[r + 1][p.col] === null) r++;
+    if (r >= 0 && r < ROWS) {
+      grid[r][p.col] = { color: p.color, y: p.row * CELL, targetY: r * CELL };
+    }
+  });
 
   chainCount = 0;
   setTimeout(() => resolveChain(), 250);
