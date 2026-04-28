@@ -96,6 +96,7 @@ async function load() {
   }
 
   allChildren = data;
+  console.log('children data:', JSON.stringify(data));
   container.innerHTML = '';
 
   data.forEach(c => {

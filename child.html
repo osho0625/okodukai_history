@@ -86,7 +86,8 @@ const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const params = new URLSearchParams(window.location.search);
-const childId = params.get('id');
+const rawId = params.get('id');
+const childId = isNaN(rawId) ? rawId : Number(rawId);
 let child = null;
 </script>
 
