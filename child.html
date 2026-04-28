@@ -11,8 +11,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; 
 .back { display: inline-block; margin-bottom: 16px; color: #1976d2; text-decoration: none; }
 .back:hover { text-decoration: underline; }
 h1 { margin-bottom: 4px; color: #333; }
-.balance { font-size: 1.4em; font-weight: 700; color: #4caf50; margin-bottom: 24px; }
+.header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.balance { font-size: 1.4em; font-weight: 700; color: #4caf50; }
 .balance.negative { color: #e53935; }
+.settings-icon { font-size: 1.4em; text-decoration: none; opacity: 0.5; transition: opacity 0.2s; }
+.settings-icon:hover { opacity: 1; }
 .form-section {
   background: #fff; border-radius: 12px; padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; max-width: 480px;
@@ -43,13 +46,25 @@ h2 { margin-bottom: 12px; color: #333; }
 .history-amount.add { color: #4caf50; }
 .history-amount.use { color: #e53935; }
 .loading { text-align: center; color: #999; margin-top: 20px; }
+.form-section, .history-list { width: 100%; max-width: 480px; }
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  h1 { font-size: 1.4em; }
+  .balance { font-size: 1.2em; }
+  .form-section { padding: 16px; }
+  .btn { padding: 14px; font-size: 1.05em; }
+  .history-item { padding: 12px; }
+}
 </style>
 </head>
 <body>
 
 <a class="back" href="index.html">← トップに戻る</a>
 <h1 id="childName">-</h1>
-<div class="balance" id="childBalance">-</div>
+<div class="header-row">
+  <div class="balance" id="childBalance">-</div>
+  <a class="settings-icon" id="settingsLink" href="#">⚙️</a>
+</div>
 
 <div class="form-section">
   <input type="number" id="amount" placeholder="金額" min="0">
@@ -57,22 +72,6 @@ h2 { margin-bottom: 12px; color: #333; }
   <div class="btn-row">
     <button class="btn btn-add" onclick="addMoney()">＋ 追加</button>
     <button class="btn btn-use" onclick="useMoney()">－ 使用</button>
-  </div>
-</div>
-
-<div class="form-section">
-  <h3 style="margin-bottom:12px; color:#333;">⚙️ 設定</h3>
-  <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
-    <input type="checkbox" id="showBalanceOnTop" onchange="saveSetting()">
-    トップページに残高を表示する
-  </label>
-  <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
-    <input type="checkbox" id="requirePassword" onchange="togglePasswordField()">
-    このページにパスワードを設定する
-  </label>
-  <div id="passwordSection" style="display:none;">
-    <input type="password" id="passwordInput" placeholder="パスワードを入力">
-    <button class="btn" style="background:#1976d2; width:100%;" onclick="savePassword()">パスワードを保存</button>
   </div>
 </div>
 
@@ -101,20 +100,6 @@ async function load() {
   }
   child = cData;
 
-  // パスワードチェック
-  if (child.require_password && child.password) {
-    const unlocked = sessionStorage.getItem('unlocked_' + childId);
-    if (!unlocked) {
-      const input = prompt(`${child.name}のページにアクセスするにはパスワードを入力してください`);
-      if (input !== child.password) {
-        alert('パスワードが違います');
-        window.location.href = 'index.html';
-        return;
-      }
-      sessionStorage.setItem('unlocked_' + childId, 'true');
-    }
-  }
-
   document.getElementById('childName').textContent = child.name;
   document.title = `${child.name} - お小遣い管理`;
 
@@ -122,12 +107,8 @@ async function load() {
   balEl.textContent = `${child.balance.toLocaleString()}円`;
   if (child.balance < 0) balEl.classList.add('negative');
 
-  // 設定チェックボックスを反映
-  document.getElementById('showBalanceOnTop').checked = child.show_balance_on_top !== false;
-  document.getElementById('requirePassword').checked = !!child.require_password;
-  if (child.require_password) {
-    document.getElementById('passwordSection').style.display = 'block';
-  }
+  // 設定リンクを設定
+  document.getElementById('settingsLink').href = `settings.html?id=${childId}`;
 
   // 履歴を取得
   const { data: tData } = await client
@@ -181,30 +162,6 @@ async function useMoney() {
   document.getElementById('amount').value = '';
   document.getElementById('memo').value = '';
   load();
-}
-
-async function saveSetting() {
-  const showBalance = document.getElementById('showBalanceOnTop').checked;
-  await client.from('children').update({ show_balance_on_top: showBalance }).eq('id', childId);
-}
-
-function togglePasswordField() {
-  const checked = document.getElementById('requirePassword').checked;
-  document.getElementById('passwordSection').style.display = checked ? 'block' : 'none';
-  if (!checked) {
-    // パスワード無効化
-    client.from('children').update({ require_password: false, password: null }).eq('id', childId);
-  } else {
-    client.from('children').update({ require_password: true }).eq('id', childId);
-  }
-}
-
-async function savePassword() {
-  const pw = document.getElementById('passwordInput').value;
-  if (!pw) return alert('パスワードを入力してください');
-  await client.from('children').update({ password: pw, require_password: true }).eq('id', childId);
-  alert('パスワードを保存しました');
-  document.getElementById('passwordInput').value = '';
 }
 
 load();

@@ -8,9 +8,8 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
-h1 { text-align: center; margin-bottom: 8px; color: #333; }
-.total { text-align: center; font-size: 1.2em; color: #666; margin-bottom: 24px; }
-.children-list { max-width: 480px; margin: 0 auto; }
+h1 { text-align: center; margin-bottom: 24px; color: #333; }
+.children-list { max-width: 480px; margin: 0 auto; width: 100%; }
 .child-card {
   display: flex; justify-content: space-between; align-items: center;
   background: #fff; border-radius: 12px; padding: 20px 24px;
@@ -23,6 +22,39 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; }
 .child-balance { font-size: 1.3em; font-weight: 700; color: #4caf50; }
 .child-balance.negative { color: #e53935; }
 .loading { text-align: center; color: #999; margin-top: 40px; }
+
+/* モーダル */
+.overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center;
+}
+.overlay.active { display: flex; }
+.modal {
+  background: #fff; border-radius: 16px; padding: 28px 24px;
+  width: 90%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  text-align: center;
+}
+.modal h2 { margin-bottom: 16px; font-size: 1.2em; color: #333; }
+.modal input {
+  width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 1em; margin-bottom: 12px; text-align: center;
+}
+.modal .error-msg { color: #e53935; font-size: 0.9em; margin-bottom: 10px; display: none; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button {
+  flex: 1; padding: 12px; border: none; border-radius: 8px;
+  font-size: 1em; font-weight: 600; cursor: pointer;
+}
+.btn-ok { background: #4caf50; color: #fff; }
+.btn-cancel { background: #eee; color: #333; }
+.btn-ok:hover, .btn-cancel:hover { opacity: 0.9; }
+
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  h1 { font-size: 1.4em; }
+  .child-card { padding: 16px 18px; }
+  .child-name, .child-balance { font-size: 1.1em; }
+}
 </style>
 </head>
 <body>
@@ -33,13 +65,27 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; }
   <div class="loading">読み込み中...</div>
 </div>
 
+<!-- パスワードモーダル -->
+<div class="overlay" id="pwOverlay">
+  <div class="modal">
+    <h2 id="pwTitle">🔒 パスワードを入力</h2>
+    <div class="error-msg" id="pwError">パスワードが違います</div>
+    <input type="password" id="pwInput" placeholder="パスワード" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-ok" onclick="submitPassword()">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-</script>
 
-<script>
+let allChildren = [];
+let pendingChildId = null;
+
 async function load() {
   const { data, error } = await client.from('children').select('*');
   const container = document.getElementById('children');
@@ -49,20 +95,68 @@ async function load() {
     return;
   }
 
+  allChildren = data;
   container.innerHTML = '';
 
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const showBalance = c.show_balance_on_top !== false;
     const balanceText = showBalance ? `${c.balance.toLocaleString()}円` : '****円';
+    const lock = (c.require_password && c.password) ? ' 🔒' : '';
     container.innerHTML += `
-      <a class="child-card" href="child.html?id=${c.id}">
-        <span class="child-name">${c.name}</span>
+      <div class="child-card" onclick="goToChild('${c.id}')">
+        <span class="child-name">${c.name}${lock}</span>
         <span class="child-balance${isNeg}">${balanceText}</span>
-      </a>
+      </div>
     `;
   });
 }
+
+function goToChild(id) {
+  const child = allChildren.find(c => c.id === id);
+  if (!child) return;
+
+  if (child.require_password && child.password) {
+    // パスワードが必要 → モーダル表示
+    pendingChildId = id;
+    document.getElementById('pwTitle').textContent = `🔒 ${child.name} のパスワード`;
+    document.getElementById('pwError').style.display = 'none';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwOverlay').classList.add('active');
+    setTimeout(() => document.getElementById('pwInput').focus(), 100);
+  } else {
+    window.location.href = `child.html?id=${id}`;
+  }
+}
+
+function submitPassword() {
+  const child = allChildren.find(c => c.id === pendingChildId);
+  const input = document.getElementById('pwInput').value;
+
+  if (input === child.password) {
+    closeModal();
+    window.location.href = `child.html?id=${pendingChildId}`;
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+function closeModal() {
+  document.getElementById('pwOverlay').classList.remove('active');
+  pendingChildId = null;
+}
+
+// Enterキーでも送信
+document.getElementById('pwInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitPassword();
+});
+
+// オーバーレイクリックで閉じる
+document.getElementById('pwOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
 
 load();
 </script>
