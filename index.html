@@ -214,7 +214,6 @@ function submitAdminPw() {
 }
 
 function unleashRoaches() {
-  // 透明なブロック用オーバーレイ（操作だけ防ぐ）
   const blocker = document.createElement('div');
   blocker.id = 'roachBlocker';
   blocker.style.cssText = `
@@ -223,64 +222,72 @@ function unleashRoaches() {
   `;
   document.body.appendChild(blocker);
 
-  roachCount = 20;
-  let allRoachAnimIds = [];
+  roachCount = 12;
 
-  // 1分後にスプレーボタン表示
+  // 1分後にスプレーアイコン表示
   setTimeout(() => {
     if (roachCount > 0) {
       const sprayBtn = document.createElement('div');
       sprayBtn.id = 'sprayBtn';
-      sprayBtn.innerHTML = '🧴 スプレー';
+      sprayBtn.textContent = '🧴';
       sprayBtn.style.cssText = `
-        position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-        background:#e53935; color:#fff; padding:14px 32px;
-        border-radius:30px; font-size:1.2em; font-weight:bold;
-        z-index:10001; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.3);
-        animation:sprayPulse 1s infinite;
+        position:fixed; bottom:30px; right:24px;
+        font-size:2.5em; z-index:10001; cursor:pointer;
+        animation:sprayPulse 1.5s infinite;
+        filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));
       `;
       document.body.appendChild(sprayBtn);
 
-      // パルスアニメーション
       const style = document.createElement('style');
       style.id = 'sprayStyle';
       style.textContent = `
         @keyframes sprayPulse {
-          0%, 100% { transform: translateX(-50%) scale(1); }
-          50% { transform: translateX(-50%) scale(1.08); }
+          0%, 100% { transform:scale(1); }
+          50% { transform:scale(1.15); }
         }
         @keyframes sprayMist {
-          0% { opacity:0.7; transform:scale(0.5); }
-          100% { opacity:0; transform:scale(3); }
+          0% { opacity:0; transform:scale(0.1); }
+          30% { opacity:0.5; }
+          100% { opacity:0; transform:scale(4); }
         }
       `;
       document.head.appendChild(style);
 
       sprayBtn.addEventListener('click', () => {
-        // スプレーエフェクト
+        sprayBtn.style.pointerEvents = 'none';
+        sprayBtn.style.animation = 'none';
+        sprayBtn.style.opacity = '0.5';
+
+        // ゆっくり広がるミスト
         const mist = document.createElement('div');
         mist.style.cssText = `
           position:fixed; top:0; left:0; width:100%; height:100%;
-          background:radial-gradient(circle, rgba(200,230,200,0.6) 0%, transparent 70%);
+          background:radial-gradient(circle, rgba(180,220,180,0.5) 0%, rgba(180,220,180,0.2) 40%, transparent 70%);
           z-index:10002; pointer-events:none;
-          animation:sprayMist 1.5s ease-out forwards;
+          animation:sprayMist 4s ease-out forwards;
         `;
         document.body.appendChild(mist);
-        setTimeout(() => mist.remove(), 1500);
+        setTimeout(() => mist.remove(), 4000);
 
-        // 全ゴキブリを倒す
-        document.querySelectorAll('[data-roach]').forEach(r => {
-          const aid = parseInt(r.dataset.animid);
-          if (aid) cancelAnimationFrame(aid);
-          r.style.pointerEvents = 'none';
-          r.textContent = '💀';
-          r.style.filter = 'none';
-          r.style.opacity = '0.5';
-          r.style.transform += ' scale(0.8)';
+        // サイズ順にソート（小さい順）して順番に倒す
+        const roaches = Array.from(document.querySelectorAll('[data-roach]'));
+        roaches.sort((a, b) => parseFloat(a.dataset.size) - parseFloat(b.dataset.size));
+
+        roaches.forEach((r, i) => {
+          setTimeout(() => {
+            const aid = parseInt(r.dataset.animid);
+            if (aid) cancelAnimationFrame(aid);
+            r.style.pointerEvents = 'none';
+            r.textContent = '💀';
+            r.style.filter = 'none';
+            r.style.opacity = '0.5';
+            r.style.transform += ' scale(0.7)';
+            setTimeout(() => r.remove(), 600);
+          }, i * 250);
         });
 
+        // 全部死んだ後にクリーンアップ
         setTimeout(() => {
-          document.querySelectorAll('[data-roach]').forEach(r => r.remove());
           roachCount = 0;
           const blocker = document.getElementById('roachBlocker');
           if (blocker) blocker.remove();
@@ -288,26 +295,26 @@ function unleashRoaches() {
           sprayBtn.remove();
           const s = document.getElementById('sprayStyle');
           if (s) s.remove();
-        }, 800);
+        }, roaches.length * 250 + 800);
       });
     }
   }, 60000);
 
-  // 通常個体 10匹
-  for (let i = 0; i < 10; i++) {
+  // 通常個体 5匹
+  for (let i = 0; i < 5; i++) {
     setTimeout(() => spawnRoach('normal'), i * 400);
   }
-  // マウスから逃げる個体 4匹
-  for (let i = 0; i < 4; i++) {
-    setTimeout(() => spawnRoach('shy'), 4000 + i * 500);
-  }
-  // 大きい個体 3匹
+  // マウスから逃げる個体 3匹
   for (let i = 0; i < 3; i++) {
-    setTimeout(() => spawnRoach('big'), 6000 + i * 600);
+    setTimeout(() => spawnRoach('shy'), 2000 + i * 500);
   }
-  // 高速個体 3匹
-  for (let i = 0; i < 3; i++) {
-    setTimeout(() => spawnRoach('fast'), 7500 + i * 400);
+  // 大きい個体 2匹
+  for (let i = 0; i < 2; i++) {
+    setTimeout(() => spawnRoach('big'), 3500 + i * 600);
+  }
+  // 高速個体 2匹
+  for (let i = 0; i < 2; i++) {
+    setTimeout(() => spawnRoach('fast'), 4700 + i * 400);
   }
 }
 
@@ -370,6 +377,7 @@ function spawnRoach(type) {
   let wobble = 0;
 
   r.setAttribute('data-roach', 'true');
+  r.setAttribute('data-size', size);
   r.style.cssText = `
     position:fixed; font-size:${size}px; z-index:10000;
     pointer-events:auto; cursor:pointer; user-select:none;
