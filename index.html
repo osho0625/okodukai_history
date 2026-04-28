@@ -100,9 +100,10 @@ async function load() {
 
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
-    const showBalance = c.show_balance_on_top !== false;
+    const hasPassword = c.require_password && c.password;
+    const showBalance = !hasPassword && c.show_balance_on_top !== false;
     const balanceText = showBalance ? `${c.balance.toLocaleString()}円` : '****円';
-    const lock = (c.require_password && c.password) ? ' 🔒' : '';
+    const lock = hasPassword ? ' 🔒' : '';
     container.innerHTML += `
       <div class="child-card" onclick="goToChild('${c.id}')">
         <span class="child-name">${c.name}${lock}</span>
@@ -113,7 +114,7 @@ async function load() {
 }
 
 function goToChild(id) {
-  const child = allChildren.find(c => c.id === id);
+  const child = allChildren.find(c => String(c.id) === String(id));
   if (!child) return;
 
   if (child.require_password && child.password) {
@@ -130,7 +131,7 @@ function goToChild(id) {
 }
 
 function submitPassword() {
-  const child = allChildren.find(c => c.id === pendingChildId);
+  const child = allChildren.find(c => String(c.id) === String(pendingChildId));
   const input = document.getElementById('pwInput').value;
 
   if (input === child.password) {
