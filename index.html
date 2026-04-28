@@ -1,353 +1,138 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>サービスメニュー</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Yu Gothic", "Meiryo", sans-serif;
-      background: #f2f2f2;
-      color: #1f2f8a;
-    }
-
-    .page {
-      width: 820px;
-      margin: 12px auto;
-      border: 2px solid #2c3187;
-      background: #efefef;
-      padding: 0 10px 12px;
-    }
-
-    .toolbar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 10px 0 6px;
-    }
-
-    .lang-button {
-      min-width: 92px;
-      padding: 6px 12px;
-      border: 1px solid #444f9f;
-      background: #f2f4ff;
-      color: #20318c;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .lang-button.active {
-      background: #24308f;
-      color: #fff;
-    }
-
-    .section-title {
-      margin: 0 -10px 10px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      background: linear-gradient(to bottom, #27308f 0%, #1d2678 100%);
-      color: #ffffff;
-      font-weight: bold;
-      font-size: 14px;
-      letter-spacing: 0.02em;
-      border-bottom: 2px solid #5963b6;
-      padding: 0 12px;
-      position: relative;
-    }
-
-    .section-title::before {
-      content: "";
-      width: 4px;
-      height: 18px;
-      background: #ffd400;
-      display: inline-block;
-      margin-right: 10px;
-    }
-
-    .menu-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px 18px;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      min-height: 52px;
-      padding: 10px 14px;
-      border: 2px solid #666666;
-      background: #ececec;
-      text-decoration: none;
-      color: #2337a6;
-      font-size: 15px;
-      font-weight: bold;
-      line-height: 1.4;
-    }
-
-    .menu-item:hover {
-      background: #e3e7f8;
-      border-color: #4f5cb5;
-    }
-
-    .arrow {
-      color: #f6a100;
-      font-size: 22px;
-      line-height: 1;
-      margin-right: 10px;
-      flex-shrink: 0;
-      transform: translateY(-1px);
-    }
-
-    .label {
-      text-decoration: underline;
-      word-break: break-word;
-    }
-
-    @media (max-width: 860px) {
-      .page {
-        width: calc(100% - 12px);
-      }
-    }
-
-    .bottom-info {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .description-box {
-      margin-top: 12px;
-      border: 2px solid #cfcfcf;
-      background: #e5e5e5;
-    }
-
-    .description-title {
-      font-size: 18px;
-      padding: 10px 16px;
-      border-bottom: 2px solid #dcdcdc;
-      background: #d3d3d3;
-      color: #000;
-    }
-
-    .description-body {
-      padding: 14px 16px;
-      font-size: 16px;
-      color: #333;
-      min-height: 60px;
-    }
-
-    .bottom-info {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .info-box {
-      background: #d9d9d9;
-      border: 2px solid #e7e7e7;
-      padding: 0;
-      min-height: 140px;
-    }
-
-    .info-title {
-      font-size: 18px;
-      color: #000000;
-      padding: 14px 16px 10px;
-      border-bottom: 2px solid #ededed;
-      background: #d3d3d3;
-    }
-
-    .info-body {
-      color: #2b2b2b;
-      font-size: 16px;
-      line-height: 1.45;
-      padding: 10px 16px 16px;
-      white-space: normal;
-    }
-
-    @media (max-width: 640px) {
-      .menu-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .bottom-info {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>お小遣い管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+.card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+</style>
 </head>
 <body>
-  <div class="page">
-    <div class="toolbar">
-      <button class="lang-button active" id="jaButton" type="button">日本語</button>
-      <button class="lang-button" id="enButton" type="button">English</button>
-    </div>
 
-    <div class="section-title" data-ja="サービスメニュー" data-en="Service Menu">サービスメニュー</div>
+<h1>お小遣い管理</h1>
 
-    <div class="menu-grid">
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="給与情報照会" data-ja="給与情報照会" data-en="Payroll Information">給与情報照会</span>
-      </a>
+<h2>合計: <span id="total">0</span>円</h2>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="有期雇用者契約管理" data-ja="有期雇用者契約管理" data-en="Fixed-Term Contract Management">有期雇用者契約管理</span>
-      </a>
+<div id="children"></div>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="代理申請" data-ja="代理申請" data-en="Proxy Application">代理申請</span>
-      </a>
+<hr>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="人材情報登録" data-ja="人材情報登録" data-en="Talent Information Registration">人材情報登録</span>
-      </a>
+<h2>操作</h2>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="就業管理Web" data-ja="就業管理Web" data-en="Attendance Management Web">就業管理Web</span>
-      </a>
+<select id="childSelect"></select><br><br>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="勤務実績　証明理由申請" data-ja="勤務実績　証明理由申請" data-en="Work Record / Proof Reason Application">勤務実績　証明理由申請</span>
-      </a>
+<input type="number" id="amount" placeholder="金額"><br><br>
+<input type="text" id="memo" placeholder="メモ"><br><br>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="人事情報Web" data-ja="人事情報Web" data-en="HR Information Web">人事情報Web</span>
-      </a>
+<button onclick="addMoney()">追加</button>
+<button onclick="useMoney()">使用</button>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="＜開発中 アクセス禁止＞ 人事労務関連申請" data-ja="＜開発中 アクセス禁止＞ 人事労務関連申請" data-en="&lt;In Development / Access Prohibited&gt; HR &amp; Labor Application">＜開発中 アクセス禁止＞ 人事労務関連申請</span>
-      </a>
+<hr>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="社内公募" data-ja="社内公募" data-en="Internal Job Posting">社内公募</span>
-      </a>
+<h2>履歴</h2>
+<ul id="history"></ul>
 
-      <a class="menu-item" href="#">
-        <span class="arrow">›</span>
-        <span class="label" data-key="個人情報照会" data-ja="個人情報照会" data-en="Personal Information Inquiry">個人情報照会</span>
-      </a>
-    </div>
-  </div>
-  <div class="bottom-info">
-    <div class="info-box">
-      <div class="info-title" data-ja="前回ログイン情報" data-en="Previous Login Information">前回ログイン情報</div>
-      <div class="info-body">
-        <div data-ja="前回ログイン日時:" data-en="Previous login date/time:">前回ログイン日時:</div>
-        <div>2026/03/23 13:49:28</div>
-        <div data-ja="パスワードの管理は適切に行いましょう。" data-en="Please manage your password appropriately.">パスワードの管理は適切に行いましょう。</div>
+<script>
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_KEY = "YOUR_ANON_KEY";
+
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let children = [];
+
+async function load() {
+  const { data } = await client.from('children').select('*');
+  children = data;
+
+  const container = document.getElementById('children');
+  const select = document.getElementById('childSelect');
+  container.innerHTML = '';
+  select.innerHTML = '';
+
+  let total = 0;
+
+  children.forEach(c => {
+    total += c.balance;
+
+    container.innerHTML += `
+      <div class="card">
+        ${c.name}: ${c.balance}円
       </div>
-    </div>
+    `;
 
-    <div class="info-box">
-      <div class="info-title" data-ja="タイムアウトについて" data-en="About Timeout">タイムアウトについて</div>
-      <div class="info-body">
-        <div data-ja="人事WebServiceは、15分間アクセスがないと自動的に切断されます。処理中の内容は、全て消去されますので、ご注意ください。処理中の内容を残しておきたい場合は「一時保存」ボタンをご利用ください。また、一時保存した内容は「保存データ復元」ボタンから復元できます。" data-en="HR Web Service will be automatically disconnected after 15 minutes of inactivity. Any data being processed will be cleared, so please be careful. If you would like to keep your work in progress, please use the &quot;Save Draft&quot; button. You can restore the saved data later using the &quot;Restore Saved Data&quot; button.">人事WebServiceは、15分間アクセスがないと自動的に切断されます。処理中の内容は、全て消去されますので、ご注意ください。処理中の内容を残しておきたい場合は「一時保存」ボタンをご利用ください。また、一時保存した内容は「保存データ復元」ボタンから復元できます。</div>
-      </div>
-    </div>
-  </div>
-  <div class="description-box">
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
 
-    <div class="description-body" id="descriptionText" data-default-ja="メニューにマウスを乗せると説明が表示されます。" data-default-en="Move the mouse over a menu item to see its description.">
-      メニューにマウスを乗せると説明が表示されます。
-    </div>
-  </div>
+  document.getElementById('total').innerText = total;
 
-  <script>
-    const descriptions = {
-      ja: {
-        "給与情報照会": "給与明細や支給情報を確認できます。",
-        "有期雇用者契約管理": "有期雇用者の契約内容の確認・管理を行います。",
-        "代理申請": "他の社員の代理で各種申請を行うことができます。",
-        "人材情報登録": "社員の人材情報を登録・更新します。",
-        "就業管理Web": "勤怠や勤務状況の確認・管理を行います。",
-        "勤務実績　証明理由申請": "勤務実績の証明や理由の申請を行います。",
-        "人事情報Web": "人事に関する情報の閲覧・更新ができます。",
-        "＜\"開発中\" アクセス禁止＞ 人事労務関連申請": "現在開発中のためアクセスできません。",
-        "社内公募": "社内の募集ポジションに応募できます。",
-        "個人情報照会": "自身の個人情報を確認できます。"
-      },
-      en: {
-        "給与情報照会": "You can check payroll statements and payment information.",
-        "有期雇用者契約管理": "Manage and review fixed-term employee contract information.",
-        "代理申請": "Submit various applications on behalf of another employee.",
-        "人材情報登録": "Register and update employee talent information.",
-        "就業管理Web": "Check and manage attendance and work status.",
-        "勤務実績　証明理由申請": "Apply for work record certificates and reasons.",
-        "人事情報Web": "View and update HR-related information.",
-        "＜\"開発中\" アクセス禁止＞ 人事労務関連申請": "This menu is under development and cannot be accessed.",
-        "社内公募": "Apply for internal job postings within the company.",
-        "個人情報照会": "Check your personal information."
-      }
-    };
+  loadHistory();
+}
 
-    const items = document.querySelectorAll('.menu-item');
-    const desc = document.getElementById('descriptionText');
-    const jaButton = document.getElementById('jaButton');
-    const enButton = document.getElementById('enButton');
-    let currentLang = 'ja';
+async function loadHistory() {
+  const { data } = await client
+    .from('transactions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
 
-    function getDefaultMessage() {
-      return desc.dataset[`default${currentLang === 'ja' ? 'Ja' : 'En'}`];
-    }
+  const list = document.getElementById('history');
+  list.innerHTML = '';
 
-    function setLanguage(lang) {
-      currentLang = lang;
+  data.forEach(t => {
+    list.innerHTML += `
+      <li>${t.type} ${t.amount}円 - ${t.memo}</li>
+    `;
+  });
+}
 
-      document.querySelectorAll('[data-ja][data-en]').forEach((element) => {
-        element.textContent = element.dataset[lang];
-      });
+async function addMoney() {
+  const childId = document.getElementById('childSelect').value;
+  const amount = parseInt(document.getElementById('amount').value);
+  const memo = document.getElementById('memo').value;
 
-      desc.textContent = getDefaultMessage();
+  const child = children.find(c => c.id === childId);
+  const newBalance = child.balance + amount;
 
-      jaButton.classList.toggle('active', lang === 'ja');
-      enButton.classList.toggle('active', lang === 'en');
-    }
+  await client.from('children')
+    .update({ balance: newBalance })
+    .eq('id', childId);
 
-    items.forEach((item) => {
-      item.addEventListener('mouseenter', () => {
-        const label = item.querySelector('.label');
-        const key = label ? label.dataset.key : '';
-        desc.textContent = descriptions[currentLang][key] || getDefaultMessage();
-      });
+  await client.from('transactions').insert({
+    child_id: childId,
+    type: 'add',
+    amount,
+    memo
+  });
 
-      item.addEventListener('mouseleave', () => {
-        desc.textContent = getDefaultMessage();
-      });
+  load();
+}
 
-      item.addEventListener('focus', () => {
-        const label = item.querySelector('.label');
-        const key = label ? label.dataset.key : '';
-        desc.textContent = descriptions[currentLang][key] || getDefaultMessage();
-      });
+async function useMoney() {
+  const childId = document.getElementById('childSelect').value;
+  const amount = parseInt(document.getElementById('amount').value);
+  const memo = document.getElementById('memo').value;
 
-      item.addEventListener('blur', () => {
-        desc.textContent = getDefaultMessage();
-      });
-    });
+  const child = children.find(c => c.id === childId);
+  const newBalance = child.balance - amount;
 
-    jaButton.addEventListener('click', () => setLanguage('ja'));
-    enButton.addEventListener('click', () => setLanguage('en'));
+  await client.from('children')
+    .update({ balance: newBalance })
+    .eq('id', childId);
 
-    setLanguage('ja');
-  </script>
+  await client.from('transactions').insert({
+    child_id: childId,
+    type: 'use',
+    amount,
+    memo
+  });
+
+  load();
+}
+
+load();
+</script>
+
 </body>
 </html>
-
