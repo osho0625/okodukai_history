@@ -2,133 +2,69 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>お小遣い管理</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お小遣い管理 - トップ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <style>
-body { font-family: sans-serif; padding: 20px; }
-.card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+h1 { text-align: center; margin-bottom: 8px; color: #333; }
+.total { text-align: center; font-size: 1.2em; color: #666; margin-bottom: 24px; }
+.children-list { max-width: 480px; margin: 0 auto; }
+.child-card {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #fff; border-radius: 12px; padding: 20px 24px;
+  margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  text-decoration: none; color: inherit;
+}
+.child-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.child-name { font-size: 1.3em; font-weight: 600; }
+.child-balance { font-size: 1.3em; font-weight: 700; color: #4caf50; }
+.child-balance.negative { color: #e53935; }
+.loading { text-align: center; color: #999; margin-top: 40px; }
 </style>
 </head>
 <body>
 
-<h1>お小遣い管理</h1>
+<h1>💰 お小遣い管理</h1>
+<div class="total">合計: <span id="total">-</span>円</div>
 
-<h2>合計: <span id="total">0</span>円</h2>
-
-<div id="children"></div>
-
-<hr>
-
-<h2>操作</h2>
-
-<select id="childSelect"></select><br><br>
-
-<input type="number" id="amount" placeholder="金額"><br><br>
-<input type="text" id="memo" placeholder="メモ"><br><br>
-
-<button onclick="addMoney()">追加</button>
-<button onclick="useMoney()">使用</button>
-
-<hr>
-
-<h2>履歴</h2>
-<ul id="history"></ul>
+<div class="children-list" id="children">
+  <div class="loading">読み込み中...</div>
+</div>
 
 <script>
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_KEY = "YOUR_ANON_KEY";
-
+const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
 
-let children = [];
-
+<script>
 async function load() {
-  const { data } = await client.from('children').select('*');
-  children = data;
-
+  const { data, error } = await client.from('children').select('*');
   const container = document.getElementById('children');
-  const select = document.getElementById('childSelect');
-  container.innerHTML = '';
-  select.innerHTML = '';
+
+  if (error || !data) {
+    container.innerHTML = '<div class="loading">データの取得に失敗しました</div>';
+    return;
+  }
 
   let total = 0;
+  container.innerHTML = '';
 
-  children.forEach(c => {
+  data.forEach(c => {
     total += c.balance;
-
+    const isNeg = c.balance < 0 ? ' negative' : '';
     container.innerHTML += `
-      <div class="card">
-        ${c.name}: ${c.balance}円
-      </div>
-    `;
-
-    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-  });
-
-  document.getElementById('total').innerText = total;
-
-  loadHistory();
-}
-
-async function loadHistory() {
-  const { data } = await client
-    .from('transactions')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10);
-
-  const list = document.getElementById('history');
-  list.innerHTML = '';
-
-  data.forEach(t => {
-    list.innerHTML += `
-      <li>${t.type} ${t.amount}円 - ${t.memo}</li>
+      <a class="child-card" href="child.html?id=${c.id}">
+        <span class="child-name">${c.name}</span>
+        <span class="child-balance${isNeg}">${c.balance.toLocaleString()}円</span>
+      </a>
     `;
   });
-}
 
-async function addMoney() {
-  const childId = document.getElementById('childSelect').value;
-  const amount = parseInt(document.getElementById('amount').value);
-  const memo = document.getElementById('memo').value;
-
-  const child = children.find(c => c.id === childId);
-  const newBalance = child.balance + amount;
-
-  await client.from('children')
-    .update({ balance: newBalance })
-    .eq('id', childId);
-
-  await client.from('transactions').insert({
-    child_id: childId,
-    type: 'add',
-    amount,
-    memo
-  });
-
-  load();
-}
-
-async function useMoney() {
-  const childId = document.getElementById('childSelect').value;
-  const amount = parseInt(document.getElementById('amount').value);
-  const memo = document.getElementById('memo').value;
-
-  const child = children.find(c => c.id === childId);
-  const newBalance = child.balance - amount;
-
-  await client.from('children')
-    .update({ balance: newBalance })
-    .eq('id', childId);
-
-  await client.from('transactions').insert({
-    child_id: childId,
-    type: 'use',
-    amount,
-    memo
-  });
-
-  load();
+  document.getElementById('total').textContent = total.toLocaleString();
 }
 
 load();
@@ -136,4 +72,3 @@ load();
 
 </body>
 </html>
-

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お小遣い管理 - 個別</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+.back { display: inline-block; margin-bottom: 16px; color: #1976d2; text-decoration: none; }
+.back:hover { text-decoration: underline; }
+h1 { margin-bottom: 4px; color: #333; }
+.balance { font-size: 1.4em; font-weight: 700; color: #4caf50; margin-bottom: 24px; }
+.balance.negative { color: #e53935; }
+.form-section {
+  background: #fff; border-radius: 12px; padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; max-width: 480px;
+}
+.form-section input, .form-section select {
+  width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 1em;
+}
+.btn-row { display: flex; gap: 8px; }
+.btn {
+  flex: 1; padding: 12px; border: none; border-radius: 8px;
+  font-size: 1em; font-weight: 600; cursor: pointer; color: #fff;
+}
+.btn-add { background: #4caf50; }
+.btn-use { background: #ff9800; }
+.btn:hover { opacity: 0.9; }
+h2 { margin-bottom: 12px; color: #333; }
+.history-list { max-width: 480px; }
+.history-item {
+  background: #fff; border-radius: 8px; padding: 14px 16px;
+  margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.history-info { display: flex; flex-direction: column; }
+.history-memo { font-size: 0.85em; color: #888; margin-top: 2px; }
+.history-date { font-size: 0.8em; color: #aaa; margin-top: 2px; }
+.history-amount { font-weight: 700; font-size: 1.1em; }
+.history-amount.add { color: #4caf50; }
+.history-amount.use { color: #e53935; }
+.loading { text-align: center; color: #999; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html">← トップに戻る</a>
+<h1 id="childName">-</h1>
+<div class="balance" id="childBalance">-</div>
+
+<div class="form-section">
+  <input type="number" id="amount" placeholder="金額" min="0">
+  <input type="text" id="memo" placeholder="メモ（例: おやつ代）">
+  <div class="btn-row">
+    <button class="btn btn-add" onclick="addMoney()">＋ 追加</button>
+    <button class="btn btn-use" onclick="useMoney()">－ 使用</button>
+  </div>
+</div>
+
+<h2>📋 履歴</h2>
+<div class="history-list" id="history">
+  <div class="loading">読み込み中...</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const params = new URLSearchParams(window.location.search);
+const childId = params.get('id');
+let child = null;
+</script>
+
+<script>
+async function load() {
+  // 子供情報を取得
+  const { data: cData } = await client.from('children').select('*').eq('id', childId).single();
+  if (!cData) {
+    document.getElementById('childName').textContent = '見つかりません';
+    return;
+  }
+  child = cData;
+  document.getElementById('childName').textContent = child.name;
+  document.title = `${child.name} - お小遣い管理`;
+
+  const balEl = document.getElementById('childBalance');
+  balEl.textContent = `${child.balance.toLocaleString()}円`;
+  if (child.balance < 0) balEl.classList.add('negative');
+
+  // 履歴を取得
+  const { data: tData } = await client
+    .from('transactions')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false });
+
+  const list = document.getElementById('history');
+  if (!tData || tData.length === 0) {
+    list.innerHTML = '<div class="loading">履歴がありません</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  tData.forEach(t => {
+    const sign = t.type === 'add' ? '+' : '-';
+    const cls = t.type === 'add' ? 'add' : 'use';
+    const date = new Date(t.created_at).toLocaleDateString('ja-JP');
+    list.innerHTML += `
+      <div class="history-item">
+        <div class="history-info">
+          <span>${t.memo || '(メモなし)'}</span>
+          <span class="history-date">${date}</span>
+        </div>
+        <span class="history-amount ${cls}">${sign}${t.amount.toLocaleString()}円</span>
+      </div>
+    `;
+  });
+}
+
+async function addMoney() {
+  const amount = parseInt(document.getElementById('amount').value);
+  const memo = document.getElementById('memo').value;
+  if (!amount || amount <= 0) return alert('金額を入力してください');
+
+  await client.from('children').update({ balance: child.balance + amount }).eq('id', childId);
+  await client.from('transactions').insert({ child_id: childId, type: 'add', amount, memo });
+  document.getElementById('amount').value = '';
+  document.getElementById('memo').value = '';
+  load();
+}
+
+async function useMoney() {
+  const amount = parseInt(document.getElementById('amount').value);
+  const memo = document.getElementById('memo').value;
+  if (!amount || amount <= 0) return alert('金額を入力してください');
+
+  await client.from('children').update({ balance: child.balance - amount }).eq('id', childId);
+  await client.from('transactions').insert({ child_id: childId, type: 'use', amount, memo });
+  document.getElementById('amount').value = '';
+  document.getElementById('memo').value = '';
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>
