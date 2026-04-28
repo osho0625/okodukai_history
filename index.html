@@ -96,7 +96,6 @@ async function load() {
   }
 
   allChildren = data;
-  console.log('children data:', JSON.stringify(data));
   container.innerHTML = '';
 
   data.forEach(c => {
@@ -106,11 +105,17 @@ async function load() {
     const balanceText = showBalance ? `${c.balance.toLocaleString()}円` : '****円';
     const lock = hasPassword ? ' 🔒' : '';
     container.innerHTML += `
-      <div class="child-card" onclick="goToChild('${c.id}')">
+      <div class="child-card" data-id="${c.id}">
         <span class="child-name">${c.name}${lock}</span>
         <span class="child-balance${isNeg}">${balanceText}</span>
       </div>
     `;
+  });
+
+  // カードにクリックイベントを設定
+  container.querySelectorAll('.child-card').forEach(card => {
+    card.addEventListener('click', () => goToChild(card.dataset.id));
+  });
   });
 }
 
