@@ -165,6 +165,46 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- バックアップ復元 -->
+<h2 onclick="toggleSection('restoreSection', this)"><span class="toggle">▶</span> 💾 バックアップ</h2>
+<div class="section-body" id="restoreSection">
+  <div class="card">
+    <div style="font-weight:600; margin-bottom:12px;">📥 手動バックアップ</div>
+    <div style="margin-bottom:12px; color:#666; font-size:0.9em;">
+      現在のデータをJSONファイルとしてダウンロードします。
+    </div>
+    <button class="btn-add" onclick="manualBackup()" style="width:100%; margin-bottom:8px;">バックアップをダウンロード</button>
+    <div class="msg" id="backupMsg">✓ ダウンロードしました</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:600; margin-bottom:12px;">📤 バックアップから復元</div>
+    <div style="margin-bottom:12px; color:#666; font-size:0.9em;">
+      ⚠️ 現在のデータは上書きされます。
+    </div>
+
+    <div style="font-size:0.9em; color:#555; margin-bottom:8px;">自動バックアップ（GitHub）から復元:</div>
+    <div style="margin-bottom:12px;">
+      <select id="backupDate" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+        <option value="">-- 読み込み中... --</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button class="btn-sm btn-primary" onclick="previewBackup()" style="flex:1; padding:10px;">プレビュー</button>
+      <button class="btn-sm btn-danger" onclick="restoreBackup()" style="flex:1; padding:10px;">復元する</button>
+    </div>
+
+    <div style="border-top:1px solid #eee; padding-top:12px;">
+      <div style="font-size:0.9em; color:#555; margin-bottom:8px;">手動バックアップファイルから復元:</div>
+      <input type="file" id="restoreFile" accept=".json" style="width:100%; margin-bottom:8px;">
+      <button class="btn-sm btn-danger" onclick="restoreFromFile()" style="width:100%; padding:10px;">ファイルから復元する</button>
+    </div>
+
+    <div id="restorePreview" style="margin-top:12px;"></div>
+    <div class="msg" id="restoreMsg">✓ 復元しました</div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
@@ -349,7 +389,161 @@ async function recalcBalance(childId) {
   await client.from('children').update({ balance }).eq('id', childId);
 }
 
+// --- バックアップ復元 ---
+const GITHUB_BASE = 'https://osho0625.github.io/okodukai_history/backups';
+
+async function manualBackup() {
+  const { data: children } = await client.from('children').select('*');
+  const { data: transactions } = await client.from('transactions').select('*');
+
+  const backup = { children: children || [], transactions: transactions || [], date: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `okozukai_backup_${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const msg = document.getElementById('backupMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function restoreFromFile() {
+  const fileInput = document.getElementById('restoreFile');
+  if (!fileInput.files.length) return alert('ファイルを選択してください');
+
+  const file = fileInput.files[0];
+  const text = await file.text();
+  let backup;
+  try {
+    backup = JSON.parse(text);
+  } catch (e) {
+    return alert('JSONファイルの形式が正しくありません');
+  }
+
+  if (!backup.children || !backup.transactions) {
+    return alert('バックアップファイルの形式が正しくありません（children, transactionsが必要）');
+  }
+
+  const label = backup.date ? new Date(backup.date).toLocaleDateString('ja-JP') : file.name;
+  if (!confirm(`${label} のバックアップで復元しますか？\n\nアカウント: ${backup.children.length}件\n履歴: ${backup.transactions.length}件\n\n⚠️ 現在のデータはすべて上書きされます。`)) return;
+
+  await doRestore(backup.children, backup.transactions);
+}
+
+async function loadBackupDates() {
+  const select = document.getElementById('backupDate');
+  // GitHub API でbackupsフォルダの内容を取得
+  try {
+    const res = await fetch('https://api.github.com/repos/osho0625/okodukai_history/contents/backups');
+    if (!res.ok) throw new Error('not found');
+    const files = await res.json();
+
+    // children_YYYYMMDD.json からユニークな日付を抽出
+    const dates = [...new Set(
+      files
+        .map(f => f.name.match(/children_(\d{8})\.json/))
+        .filter(m => m)
+        .map(m => m[1])
+    )].sort().reverse();
+
+    select.innerHTML = '<option value="">-- バックアップ日を選択 --</option>';
+    dates.forEach(d => {
+      const label = `${d.slice(0,4)}/${d.slice(4,6)}/${d.slice(6,8)}`;
+      select.innerHTML += `<option value="${d}">${label}</option>`;
+    });
+
+    if (dates.length === 0) {
+      select.innerHTML = '<option value="">バックアップがありません</option>';
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="">バックアップの取得に失敗しました</option>';
+  }
+}
+
+async function fetchBackup(date) {
+  const childrenRes = await fetch(`${GITHUB_BASE}/children_${date}.json`);
+  const transactionsRes = await fetch(`${GITHUB_BASE}/transactions_${date}.json`);
+  if (!childrenRes.ok || !transactionsRes.ok) throw new Error('ファイルが見つかりません');
+  const children = await childrenRes.json();
+  const transactions = await transactionsRes.json();
+  return { children, transactions };
+}
+
+async function previewBackup() {
+  const date = document.getElementById('backupDate').value;
+  if (!date) return alert('バックアップ日を選択してください');
+
+  const preview = document.getElementById('restorePreview');
+  preview.innerHTML = '<div style="color:#999;">読み込み中...</div>';
+
+  try {
+    const { children, transactions } = await fetchBackup(date);
+    let html = `<div style="font-size:0.9em; margin-top:8px;">`;
+    html += `<div style="font-weight:600; margin-bottom:8px;">📦 アカウント: ${children.length}件 / 履歴: ${transactions.length}件</div>`;
+    children.forEach(c => {
+      const txCount = transactions.filter(t => t.child_id === c.id).length;
+      html += `<div style="padding:4px 0; border-bottom:1px solid #eee;">${c.name}: ${c.balance.toLocaleString()}円（履歴${txCount}件）</div>`;
+    });
+    html += '</div>';
+    preview.innerHTML = html;
+  } catch (e) {
+    preview.innerHTML = `<div style="color:#e53935;">エラー: ${e.message}</div>`;
+  }
+}
+
+async function restoreBackup() {
+  const date = document.getElementById('backupDate').value;
+  if (!date) return alert('バックアップ日を選択してください');
+
+  const label = `${date.slice(0,4)}/${date.slice(4,6)}/${date.slice(6,8)}`;
+  if (!confirm(`${label} のバックアップで復元しますか？\n\n⚠️ 現在のデータはすべて上書きされます。`)) return;
+
+  const preview = document.getElementById('restorePreview');
+  preview.innerHTML = '<div style="color:#999;">復元中...</div>';
+
+  try {
+    const { children, transactions } = await fetchBackup(date);
+    await doRestore(children, transactions);
+  } catch (e) {
+    preview.innerHTML = `<div style="color:#e53935;">復元エラー: ${e.message}</div>`;
+  }
+}
+
+async function doRestore(children, transactions) {
+  const preview = document.getElementById('restorePreview');
+  preview.innerHTML = '<div style="color:#999;">復元中...</div>';
+
+  try {
+    await client.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await client.from('children').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (children.length > 0) {
+      await client.from('children').insert(children);
+    }
+    if (transactions.length > 0) {
+      for (let i = 0; i < transactions.length; i += 100) {
+        await client.from('transactions').insert(transactions.slice(i, i + 100));
+      }
+    }
+
+    preview.innerHTML = '';
+    const msg = document.getElementById('restoreMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+    loadChildren();
+  } catch (e) {
+    preview.innerHTML = `<div style="color:#e53935;">復元エラー: ${e.message}</div>`;
+  }
+}
+
 loadChildren();
+loadBackupDates();
 </script>
 
 </body>
