@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>お小遣い管理 - 個別</title>
+<title>お小遣い手帳 - 個別</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -101,7 +101,7 @@ async function load() {
   child = cData;
 
   document.getElementById('childName').textContent = child.name;
-  document.title = `${child.name} - お小遣い管理`;
+  document.title = `${child.name} - お小遣い手帳`;
 
   const balEl = document.getElementById('childBalance');
   balEl.textContent = `${child.balance.toLocaleString()}円`;
