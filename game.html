@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>💴パズル</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; overflow: hidden; touch-action: none;
+}
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 400px; padding: 12px 8px;
+}
+.back { color: #88f; text-decoration: none; font-size: 0.9em; }
+.score { font-size: 1.2em; font-weight: 700; }
+.combo { font-size: 0.9em; color: #ff6; min-width: 80px; text-align: right; }
+canvas {
+  border: 2px solid #333; border-radius: 8px;
+  background: #16213e; display: block;
+}
+.game-over {
+  display: none; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.85); padding: 32px; border-radius: 16px;
+  text-align: center; z-index: 10;
+}
+.game-over h2 { font-size: 1.5em; margin-bottom: 12px; }
+.game-over .final-score { font-size: 2em; color: #ff6; margin-bottom: 16px; }
+.game-over button {
+  padding: 12px 32px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
+  cursor: pointer; margin: 4px;
+}
+.game-over button:hover { opacity: 0.9; }
+.game-over .btn-back { background: #555; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" href="index.html">← 戻る</a>
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="combo" id="comboText"></div>
+</div>
+<div style="position:relative;">
+  <canvas id="game"></canvas>
+  <div class="game-over" id="gameOver">
+    <h2>GAME OVER</h2>
+    <div class="final-score" id="finalScore">0</div>
+    <button onclick="startGame()">もう一回</button>
+    <button class="btn-back" onclick="location.href='index.html'">戻る</button>
+  </div>
+</div>
+</body>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// レスポンシブサイズ
+const W = Math.min(400, window.innerWidth - 16);
+const H = Math.round(W * 1.5);
+canvas.width = W;
+canvas.height = H;
+
+const COLS = 8;
+const ROWS = 12;
+const CELL = W / COLS;
+const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
+const COLOR_NAMES = ['赤','緑','青','黄','紫'];
+
+let grid = [];
+let score = 0;
+let combo = 0;
+let gameRunning = false;
+let dropping = false;
+let animating = false;
+let shooter = { col: Math.floor(COLS/2), color: 0, nextColor: 0 };
+let particles = [];
+let comboTimer = 0;
+
+function initGrid() {
+  grid = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      grid[r][c] = null;
+    }
+  }
+}
+
+function randColor() {
+  return Math.floor(Math.random() * COLORS.length);
+}
+
+function startGame() {
+  initGrid();
+  score = 0;
+  combo = 0;
+  particles = [];
+  document.getElementById('score').textContent = '0';
+  document.getElementById('comboText').textContent = '';
+  document.getElementById('gameOver').style.display = 'none';
+  shooter.col = Math.floor(COLS/2);
+  shooter.color = randColor();
+  shooter.nextColor = randColor();
+  gameRunning = true;
+  dropping = false;
+  animating = false;
+
+  // 初期ブロック（下3行にランダム配置）
+  for (let r = ROWS - 3; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (Math.random() < 0.6) {
+        grid[r][c] = { color: randColor(), y: r * CELL, targetY: r * CELL };
+      }
+    }
+  }
+  // 初期マッチを消す
+  setTimeout(() => checkAndClear(), 100);
+}
+
+// --- 描画 ---
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // グリッド線
+  ctx.strokeStyle = '#1a1a3e';
+  ctx.lineWidth = 0.5;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*CELL, 0); ctx.lineTo(c*CELL, H); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*CELL); ctx.lineTo(W, r*CELL); ctx.stroke();
+  }
+
+  // ブロック
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const b = grid[r][c];
+      if (b) {
+        drawBlock(c * CELL, b.y, COLORS[b.color], b.clearing);
+      }
+    }
+  }
+
+  // シューター（上部）
+  if (gameRunning && !animating) {
+    // 現在のブロック
+    drawBlock(shooter.col * CELL, 0, COLORS[shooter.color], false, true);
+    // 次のブロック（小さく表示）
+    ctx.globalAlpha = 0.5;
+    const nx = W - CELL * 1.5;
+    ctx.fillStyle = COLORS[shooter.nextColor];
+    ctx.beginPath();
+    ctx.roundRect(nx, 4, CELL * 0.6, CELL * 0.6, 4);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('NEXT', nx, CELL * 0.6 + 16);
+  }
+
+  // パーティクル
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // デッドライン
+  ctx.strokeStyle = 'rgba(255,50,50,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(0, CELL); ctx.lineTo(W, CELL); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawBlock(x, y, color, clearing, isShooter) {
+  const pad = 2;
+  const s = CELL - pad * 2;
+  ctx.fillStyle = color;
+  if (clearing) ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  ctx.roundRect(x + pad, y + pad, s, s, 6);
+  ctx.fill();
+  // ハイライト
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.roundRect(x + pad + 2, y + pad + 2, s - 4, s * 0.4, 4);
+  ctx.fill();
+  if (clearing) ctx.globalAlpha = 1;
+  if (isShooter) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x + pad, y + pad, s, s, 6);
+    ctx.stroke();
+  }
+}
+
+// --- 物理・ロジック ---
+function dropBlock() {
+  if (dropping || animating || !gameRunning) return;
+  dropping = true;
+
+  let row = 0;
+  // 一番下の空きを探す
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (!grid[r][shooter.col]) { row = r; break; }
+  }
+
+  if (row === 0 && grid[0][shooter.col]) {
+    gameOver();
+    return;
+  }
+
+  grid[row][shooter.col] = {
+    color: shooter.color,
+    y: 0,
+    targetY: row * CELL
+  };
+
+  shooter.color = shooter.nextColor;
+  shooter.nextColor = randColor();
+
+  // 落下アニメーション後にチェック
+  animating = true;
+  setTimeout(() => {
+    animating = false;
+    dropping = false;
+    checkAndClear();
+  }, 300);
+}
+
+function checkAndClear() {
+  const toClear = new Set();
+
+  // 横チェック
+  for (let r = 0; r < ROWS; r++) {
+    let count = 1;
+    for (let c = 1; c < COLS; c++) {
+      if (grid[r][c] && grid[r][c-1] && grid[r][c].color === grid[r][c-1].color) {
+        count++;
+      } else {
+        if (count >= 3) {
+          for (let k = c - count; k < c; k++) toClear.add(`${r},${k}`);
+        }
+        count = 1;
+      }
+    }
+    if (count >= 3) {
+      for (let k = COLS - count; k < COLS; k++) toClear.add(`${r},${k}`);
+    }
+  }
+
+  // 縦チェック
+  for (let c = 0; c < COLS; c++) {
+    let count = 1;
+    for (let r = 1; r < ROWS; r++) {
+      if (grid[r][c] && grid[r-1][c] && grid[r][c].color === grid[r-1][c].color) {
+        count++;
+      } else {
+        if (count >= 3) {
+          for (let k = r - count; k < r; k++) toClear.add(`${k},${c}`);
+        }
+        count = 1;
+      }
+    }
+    if (count >= 3) {
+      for (let k = ROWS - count; k < ROWS; k++) toClear.add(`${k},${c}`);
+    }
+  }
+
+  if (toClear.size > 0) {
+    combo++;
+    const pts = toClear.size * 10 * combo;
+    score += pts;
+    document.getElementById('score').textContent = score;
+
+    if (combo > 1) {
+      document.getElementById('comboText').textContent = `${combo} COMBO!`;
+      comboTimer = 60;
+    }
+
+    // パーティクル生成
+    toClear.forEach(key => {
+      const [r, c] = key.split(',').map(Number);
+      const b = grid[r][c];
+      if (b) {
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: c * CELL + CELL/2,
+            y: r * CELL + CELL/2,
+            vx: (Math.random()-0.5) * 6,
+            vy: (Math.random()-0.5) * 6,
+            color: COLORS[b.color],
+            size: 3 + Math.random() * 3,
+            life: 1
+          });
+        }
+      }
+    });
+
+    // 消す
+    toClear.forEach(key => {
+      const [r, c] = key.split(',').map(Number);
+      grid[r][c] = null;
+    });
+
+    // 落下処理
+    setTimeout(() => {
+      gravity();
+      setTimeout(() => checkAndClear(), 200);
+    }, 150);
+  } else {
+    combo = 0;
+    // ゲームオーバーチェック（1行目にブロックがあるか）
+    for (let c = 0; c < COLS; c++) {
+      if (grid[0][c]) { gameOver(); return; }
+    }
+    // 一定間隔で下からブロックを追加
+    addBottomRow();
+  }
+}
+
+function gravity() {
+  for (let c = 0; c < COLS; c++) {
+    let writeRow = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c]) {
+        if (r !== writeRow) {
+          grid[writeRow][c] = grid[r][c];
+          grid[writeRow][c].targetY = writeRow * CELL;
+          grid[r][c] = null;
+        }
+        writeRow--;
+      }
+    }
+  }
+}
+
+let dropCounter = 0;
+function addBottomRow() {
+  dropCounter++;
+  if (dropCounter % 5 !== 0) return; // 5手ごとに追加
+
+  // 全体を1行上にシフト
+  for (let r = 0; r < ROWS - 1; r++) {
+    for (let c = 0; c < COLS; c++) {
+      grid[r][c] = grid[r+1][c];
+      if (grid[r][c]) grid[r][c].targetY = r * CELL;
+    }
+  }
+  // 最下行に新しいブロック
+  for (let c = 0; c < COLS; c++) {
+    grid[ROWS-1][c] = Math.random() < 0.5
+      ? { color: randColor(), y: ROWS * CELL, targetY: (ROWS-1) * CELL }
+      : null;
+  }
+}
+
+function gameOver() {
+  gameRunning = false;
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOver').style.display = 'block';
+}
+
+// --- アニメーションループ ---
+function update() {
+  // ブロック落下アニメーション
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const b = grid[r][c];
+      if (b) {
+        b.y += (b.targetY - b.y) * 0.25;
+      }
+    }
+  }
+
+  // パーティクル更新
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.life -= 0.02;
+    return p.life > 0;
+  });
+
+  // コンボ表示タイマー
+  if (comboTimer > 0) {
+    comboTimer--;
+    if (comboTimer === 0) document.getElementById('comboText').textContent = '';
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+// --- 入力 ---
+document.addEventListener('keydown', e => {
+  if (!gameRunning || animating) return;
+  if (e.key === 'ArrowLeft') shooter.col = Math.max(0, shooter.col - 1);
+  if (e.key === 'ArrowRight') shooter.col = Math.min(COLS - 1, shooter.col + 1);
+  if (e.key === 'ArrowDown' || e.key === ' ') dropBlock();
+});
+
+// タッチ操作
+let touchStartX = 0;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touchStartX = e.touches[0].clientX;
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!gameRunning || animating) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.touches[0].clientX - rect.left;
+  shooter.col = Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL)));
+});
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  dropBlock();
+});
+
+// マウス操作
+canvas.addEventListener('mousemove', e => {
+  if (!gameRunning || animating) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  shooter.col = Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL)));
+});
+canvas.addEventListener('click', () => dropBlock());
+
+startGame();
+update();
+</script>
+</html>

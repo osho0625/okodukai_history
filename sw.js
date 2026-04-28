@@ -5,6 +5,7 @@ const ASSETS = [
   './child.html',
   './settings.html',
   './admin.html',
+  './game.html',
   './manifest.json',
   './2728.png'
 ];
