@@ -191,16 +191,63 @@ function goAdmin() {
   setTimeout(() => document.getElementById('adminPwInput').focus(), 100);
 }
 
+let adminFailCount = 0;
+
 function submitAdminPw() {
   const input = document.getElementById('adminPwInput').value;
   if (input === 'mgmlv') {
+    adminFailCount = 0;
     document.getElementById('adminOverlay').classList.remove('active');
     window.location.href = 'admin.html';
   } else {
+    adminFailCount++;
     document.getElementById('adminError').style.display = 'block';
     document.getElementById('adminPwInput').value = '';
     document.getElementById('adminPwInput').focus();
+
+    if (adminFailCount >= 10) {
+      closeAdminModal();
+      unleashRoaches();
+    }
   }
+}
+
+function unleashRoaches() {
+  for (let i = 0; i < 15; i++) {
+    setTimeout(() => spawnRoach(), i * 300);
+  }
+}
+
+function spawnRoach() {
+  const r = document.createElement('div');
+  r.textContent = '🪳';
+  r.style.cssText = `
+    position:fixed; font-size:${30 + Math.random()*30}px; z-index:9999;
+    pointer-events:none; transition:none;
+    left:${Math.random()*90}vw; top:${Math.random()*90}vh;
+  `;
+  document.body.appendChild(r);
+
+  function move() {
+    const x = parseFloat(r.style.left) + (Math.random()-0.5)*20;
+    const y = parseFloat(r.style.top) + (Math.random()-0.5)*20;
+    const angle = Math.random()*360;
+    r.style.left = Math.max(0, Math.min(95, x)) + 'vw';
+    r.style.top = Math.max(0, Math.min(95, y)) + 'vh';
+    r.style.transform = `rotate(${angle}deg)`;
+  }
+
+  const interval = setInterval(move, 80 + Math.random()*120);
+
+  // クリックで潰せる
+  r.style.pointerEvents = 'auto';
+  r.style.cursor = 'pointer';
+  r.addEventListener('click', () => {
+    clearInterval(interval);
+    r.textContent = '💀';
+    r.style.transform = 'scale(1.3)';
+    setTimeout(() => r.remove(), 1000);
+  });
 }
 
 function closeAdminModal() {
