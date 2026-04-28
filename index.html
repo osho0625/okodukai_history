@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="お小遣い手帳">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="2728.png">
 <title>お小遣い手帳 - トップ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <style>
@@ -204,6 +210,11 @@ function closeAdminModal() {
 document.getElementById('adminPwInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') submitAdminPw();
 });
+
+// SW登録
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
 
 load();
 </script>
