@@ -83,12 +83,14 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   display: flex; flex-direction: column; align-items: center;
 }
 .puyo-sprout:hover { transform: translateY(-3px); }
-.puyo-sprout img {
-  width: 40px; height: 40px; border-radius: 50%;
-  object-fit: cover; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+.puyo-sprout .sprout-leaf {
+  font-size: 22px; line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
 }
-.puyo-sprout .leaves {
-  font-size: 14px; line-height: 1; margin-bottom: -4px;
+.puyo-sprout.pulled .sprout-leaf {
+  transition: transform 0.3s, opacity 0.3s;
+  transform: scale(0.3);
+  opacity: 0;
 }
 .puyo-sprout.pulled {
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -120,7 +122,7 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 </head>
 <body>
 
-<h1><a href="pages/game.html" style="text-decoration:none;">💴</a> お小遣い手帳 <span id="gardenBtn" style="cursor:pointer; font-size:0.6em; opacity:0.4;">🪴</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">🔧</span></h1>
+<h1><span id="gardenBtn" style="cursor:pointer; text-decoration:none;">🪴</span><a href="pages/game.html" style="text-decoration:none;">💴</a> お小遣い手帳 <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="clearCacheAndReload()">🔄</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">🔧</span></h1>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
@@ -621,6 +623,18 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
 
+async function clearCacheAndReload() {
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+  }
+  location.reload(true);
+}
+
 // --- ぷよ畑 ---
 let gardenInitialized = false;
 let puyoSprouts = [];
@@ -687,17 +701,13 @@ function spawnSprout() {
   const sprout = document.createElement('div');
   sprout.className = 'puyo-sprout';
   sprout.style.left = x + 'px';
+  sprout.dataset.img = src;
 
-  const leaves = document.createElement('div');
-  leaves.className = 'leaves';
-  leaves.textContent = '🌱';
+  const leaf = document.createElement('div');
+  leaf.className = 'sprout-leaf';
+  leaf.textContent = '🌱';
 
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = 'puyo';
-
-  sprout.appendChild(leaves);
-  sprout.appendChild(img);
+  sprout.appendChild(leaf);
   garden.appendChild(sprout);
 
   puyoSprouts.push(sprout);
@@ -712,7 +722,7 @@ function spawnSprout() {
     sprout.style.transform = 'translateY(0)';
   }, 50);
 
-  sprout.addEventListener('click', () => pullSinglePuyo(sprout, img.src));
+  sprout.addEventListener('click', () => pullSinglePuyo(sprout, src));
 }
 
 function pullSinglePuyo(sprout, imgSrc) {
@@ -729,8 +739,8 @@ function pullAllPuyo() {
     setTimeout(() => {
       if (sprout.dataset.pulled) return;
       sprout.dataset.pulled = 'true';
-      const img = sprout.querySelector('img');
-      doPullAnimation(sprout, img ? img.src : '');
+      const imgSrc = sprout.dataset.img || '';
+      doPullAnimation(sprout, imgSrc);
       puyoCount--;
       checkGardenClear();
     }, i * 120);
@@ -739,6 +749,9 @@ function pullAllPuyo() {
 
 function doPullAnimation(sprout, imgSrc) {
   const rect = sprout.getBoundingClientRect();
+
+  // 芽を消す
+  sprout.classList.add('pulled');
 
   // 土煙
   for (let i = 0; i < 3; i++) {
@@ -753,9 +766,7 @@ function doPullAnimation(sprout, imgSrc) {
     setTimeout(() => poof.remove(), 600);
   }
 
-  sprout.classList.add('pulled');
-
-  // 飛んでいくぷよ
+  // ぷよが地面から飛び出す
   setTimeout(() => {
     const fly = document.createElement('div');
     fly.className = 'puyo-fly';
@@ -763,7 +774,7 @@ function doPullAnimation(sprout, imgSrc) {
     flyImg.src = imgSrc;
     fly.appendChild(flyImg);
     fly.style.left = rect.left + 'px';
-    fly.style.top = (rect.top - 60) + 'px';
+    fly.style.top = rect.top + 'px';
     document.body.appendChild(fly);
     flyImg.style.animation = 'puyoBounce 0.5s ease';
 
@@ -774,7 +785,7 @@ function doPullAnimation(sprout, imgSrc) {
       fly.style.transform = 'scale(0.3) rotate(360deg)';
     }, 50);
     setTimeout(() => fly.remove(), 900);
-  }, 200);
+  }, 150);
 
   setTimeout(() => sprout.remove(), 800);
 }
