@@ -42,3 +42,10 @@ jobs:
           git add backups/
           git diff --cached --quiet || git commit -m "backup: $(date +%Y-%m-%d)"
           git push
+
+      - name: Notify Discord
+        if: success()
+        run: |
+          curl -s -H "Content-Type: application/json" \
+            -d "{\"content\":\"💾 自動バックアップ完了 ($(date +%Y/%m/%d))\"}" \
+            "${{ secrets.DISCORD_WEBHOOK }}"

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1a2e">
-<title>💴パズル</title>
+<title>💴ぷよ</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -14,46 +14,61 @@ body {
 }
 .header {
   display: flex; justify-content: space-between; align-items: center;
-  width: 100%; max-width: 400px; padding: 12px 8px;
+  width: 100%; max-width: 400px; padding: 10px 8px;
 }
 .back { color: #88f; text-decoration: none; font-size: 0.9em; }
-.score { font-size: 1.2em; font-weight: 700; }
-.combo { font-size: 0.9em; color: #ff6; min-width: 80px; text-align: right; }
-canvas {
-  border: 2px solid #333; border-radius: 8px;
-  background: #16213e; display: block;
+.score-area { text-align: right; }
+.score { font-size: 1.1em; font-weight: 700; }
+.chain { font-size: 0.9em; color: #ff6; height: 1.2em; }
+canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; display: block; }
+.controls {
+  display: flex; gap: 12px; margin-top: 12px; max-width: 400px; width: 100%;
+  justify-content: center;
 }
+.ctrl-btn {
+  width: 60px; height: 60px; border: none; border-radius: 12px;
+  background: rgba(255,255,255,0.1); color: #fff; font-size: 1.5em;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.ctrl-btn:active { background: rgba(255,255,255,0.25); }
 .game-over {
   display: none; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.85); padding: 32px; border-radius: 16px;
+  background: rgba(0,0,0,0.9); padding: 32px; border-radius: 16px;
   text-align: center; z-index: 10;
 }
-.game-over h2 { font-size: 1.5em; margin-bottom: 12px; }
-.game-over .final-score { font-size: 2em; color: #ff6; margin-bottom: 16px; }
+.game-over h2 { font-size: 1.5em; margin-bottom: 8px; }
+.game-over .final { font-size: 2em; color: #ff6; margin-bottom: 16px; }
 .game-over button {
-  padding: 12px 32px; border: none; border-radius: 8px;
+  padding: 12px 28px; border: none; border-radius: 8px;
   background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
   cursor: pointer; margin: 4px;
 }
-.game-over button:hover { opacity: 0.9; }
 .game-over .btn-back { background: #555; }
 </style>
 </head>
 <body>
 <div class="header">
   <a class="back" href="index.html">← 戻る</a>
-  <div class="score">Score: <span id="score">0</span></div>
-  <div class="combo" id="comboText"></div>
+  <div class="score-area">
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="chain" id="chain"></div>
+  </div>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
   <div class="game-over" id="gameOver">
     <h2>GAME OVER</h2>
-    <div class="final-score" id="finalScore">0</div>
+    <div class="final" id="finalScore">0</div>
     <button onclick="startGame()">もう一回</button>
     <button class="btn-back" onclick="location.href='index.html'">戻る</button>
   </div>
+</div>
+<div class="controls">
+  <button class="ctrl-btn" ontouchstart="moveLeft()" onclick="moveLeft()">◀</button>
+  <button class="ctrl-btn" ontouchstart="rotate()" onclick="rotate()">🔄</button>
+  <button class="ctrl-btn" ontouchstart="hardDrop()" onclick="hardDrop()">⬇</button>
+  <button class="ctrl-btn" ontouchstart="moveRight()" onclick="moveRight()">▶</button>
 </div>
 </body>
 
@@ -61,385 +76,360 @@ canvas {
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// レスポンシブサイズ
-const W = Math.min(400, window.innerWidth - 16);
-const H = Math.round(W * 1.5);
-canvas.width = W;
+const W = Math.min(300, window.innerWidth - 16);
+const CELL = Math.floor(W / 6);
+const COLS = 6;
+const ROWS = 13;
+const H = CELL * ROWS;
+canvas.width = CELL * COLS;
 canvas.height = H;
 
-const COLS = 8;
-const ROWS = 12;
-const CELL = W / COLS;
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
-const COLOR_NAMES = ['赤','緑','青','黄','紫'];
+const PUYO_R = CELL * 0.42;
 
-let grid = [];
-let score = 0;
-let combo = 0;
-let gameRunning = false;
-let dropping = false;
-let animating = false;
-let shooter = { col: Math.floor(COLS/2), color: 0, nextColor: 0 };
-let particles = [];
-let comboTimer = 0;
+let grid, score, chainCount, state, pair, nextPair;
+let dropTimer, dropInterval, particles;
 
-function initGrid() {
+function rand() { return Math.floor(Math.random() * COLORS.length); }
+
+function makePair() {
+  return { c1: rand(), c2: rand(), col: 2, row: 0, dir: 0 };
+  // dir: 0=上, 1=右, 2=下, 3=左 (c2の位置)
+}
+
+function c2Pos(p) {
+  const d = [[0,-1],[1,0],[0,1],[-1,0]];
+  return { col: p.col + d[p.dir][0], row: p.row + d[p.dir][1] };
+}
+
+function inBounds(c, r) { return c >= 0 && c < COLS && r >= 0 && r < ROWS; }
+function isEmpty(c, r) { return inBounds(c, r) && grid[r][c] === null; }
+
+function startGame() {
   grid = [];
   for (let r = 0; r < ROWS; r++) {
-    grid[r] = [];
-    for (let c = 0; c < COLS; c++) {
-      grid[r][c] = null;
-    }
+    grid[r] = new Array(COLS).fill(null);
+  }
+  score = 0; chainCount = 0;
+  dropInterval = 500;
+  particles = [];
+  document.getElementById('score').textContent = '0';
+  document.getElementById('chain').textContent = '';
+  document.getElementById('gameOver').style.display = 'none';
+  nextPair = makePair();
+  spawnPair();
+  state = 'play';
+  dropTimer = 0;
+}
+
+function spawnPair() {
+  pair = nextPair;
+  pair.col = 2; pair.row = 0; pair.dir = 0;
+  nextPair = makePair();
+  const p2 = c2Pos(pair);
+  if (!isEmpty(pair.col, pair.row) || !isEmpty(p2.col, p2.row)) {
+    state = 'over';
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('gameOver').style.display = 'block';
   }
 }
 
-function randColor() {
-  return Math.floor(Math.random() * COLORS.length);
+// --- 操作 ---
+function moveLeft() {
+  if (state !== 'play') return;
+  const p2 = c2Pos({...pair, col: pair.col - 1});
+  if (isEmpty(pair.col - 1, pair.row) && isEmpty(p2.col, p2.row)) pair.col--;
+}
+function moveRight() {
+  if (state !== 'play') return;
+  const p2 = c2Pos({...pair, col: pair.col + 1});
+  if (isEmpty(pair.col + 1, pair.row) && isEmpty(p2.col, p2.row)) pair.col++;
+}
+function rotate() {
+  if (state !== 'play') return;
+  const newDir = (pair.dir + 1) % 4;
+  const test = {...pair, dir: newDir};
+  const p2 = c2Pos(test);
+  if (isEmpty(p2.col, p2.row)) {
+    pair.dir = newDir;
+  } else {
+    // 壁キック
+    const kick = {...test, col: test.col + (p2.col < 0 ? 1 : p2.col >= COLS ? -1 : 0)};
+    const kp2 = c2Pos(kick);
+    if (isEmpty(kick.col, kick.row) && isEmpty(kp2.col, kp2.row)) {
+      pair.col = kick.col;
+      pair.dir = newDir;
+    }
+  }
+}
+function hardDrop() {
+  if (state !== 'play') return;
+  while (canDrop()) pair.row++;
+  lockPair();
 }
 
-function startGame() {
-  initGrid();
-  score = 0;
-  combo = 0;
-  particles = [];
-  document.getElementById('score').textContent = '0';
-  document.getElementById('comboText').textContent = '';
-  document.getElementById('gameOver').style.display = 'none';
-  shooter.col = Math.floor(COLS/2);
-  shooter.color = randColor();
-  shooter.nextColor = randColor();
-  gameRunning = true;
-  dropping = false;
-  animating = false;
+function canDrop() {
+  const nr = pair.row + 1;
+  const p2 = c2Pos({...pair, row: nr});
+  return isEmpty(pair.col, nr) && isEmpty(p2.col, p2.row);
+}
 
-  // 初期ブロック（下3行にランダム配置）
-  for (let r = ROWS - 3; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (Math.random() < 0.6) {
-        grid[r][c] = { color: randColor(), y: r * CELL, targetY: r * CELL };
+function lockPair() {
+  state = 'chain';
+  // c1を落とす
+  let r1 = pair.row;
+  while (r1 + 1 < ROWS && grid[r1 + 1][pair.col] === null) r1++;
+  grid[r1][pair.col] = { color: pair.c1, y: pair.row * CELL, targetY: r1 * CELL };
+
+  // c2を落とす
+  const p2 = c2Pos(pair);
+  let r2 = p2.row;
+  if (r2 < 0) r2 = 0;
+  while (r2 + 1 < ROWS && grid[r2 + 1][p2.col] === null) r2++;
+  // c1が同じ列なら、c2はその上まで
+  if (p2.col === pair.col && r2 >= r1) r2 = r1 - 1;
+  if (r2 >= 0 && r2 < ROWS) {
+    grid[r2][p2.col] = { color: pair.c2, y: p2.row * CELL, targetY: r2 * CELL };
+  }
+
+  chainCount = 0;
+  setTimeout(() => resolveChain(), 250);
+}
+
+// --- 連鎖処理 ---
+function resolveChain() {
+  applyGravity();
+  setTimeout(() => {
+    const cleared = findAndClear();
+    if (cleared > 0) {
+      chainCount++;
+      score += cleared * 10 * chainCount;
+      document.getElementById('score').textContent = score;
+      document.getElementById('chain').textContent = chainCount > 1 ? `${chainCount}連鎖!` : '';
+      setTimeout(() => resolveChain(), 400);
+    } else {
+      document.getElementById('chain').textContent = '';
+      state = 'play';
+      spawnPair();
+      dropInterval = Math.max(150, 500 - Math.floor(score / 500) * 20);
+    }
+  }, 200);
+}
+
+function applyGravity() {
+  for (let c = 0; c < COLS; c++) {
+    let wr = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c]) {
+        if (r !== wr) {
+          grid[wr][c] = grid[r][c];
+          grid[wr][c].targetY = wr * CELL;
+          grid[r][c] = null;
+        }
+        wr--;
       }
     }
   }
-  // 初期マッチを消す
-  setTimeout(() => checkAndClear(), 100);
 }
 
+function findAndClear() {
+  const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
+  let totalCleared = 0;
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c] && !visited[r][c]) {
+        const group = [];
+        const color = grid[r][c].color;
+        const stack = [{r, c}];
+        while (stack.length) {
+          const {r: cr, c: cc} = stack.pop();
+          if (cr < 0 || cr >= ROWS || cc < 0 || cc >= COLS) continue;
+          if (visited[cr][cc]) continue;
+          if (!grid[cr][cc] || grid[cr][cc].color !== color) continue;
+          visited[cr][cc] = true;
+          group.push({r: cr, c: cc});
+          stack.push({r:cr-1,c:cc},{r:cr+1,c:cc},{r:cr,c:cc-1},{r:cr,c:cc+1});
+        }
+        if (group.length >= 4) {
+          totalCleared += group.length;
+          group.forEach(({r: gr, c: gc}) => {
+            // パーティクル
+            for (let i = 0; i < 5; i++) {
+              particles.push({
+                x: gc * CELL + CELL/2, y: gr * CELL + CELL/2,
+                vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6,
+                color: COLORS[grid[gr][gc].color],
+                size: 3 + Math.random()*3, life: 1
+              });
+            }
+            grid[gr][gc] = null;
+          });
+        }
+      }
+    }
+  }
+  return totalCleared;
+}
+</script>
+
+<script>
 // --- 描画 ---
+function drawPuyo(x, y, colorIdx, ghost) {
+  ctx.globalAlpha = ghost ? 0.3 : 1;
+  ctx.fillStyle = COLORS[colorIdx];
+  ctx.beginPath();
+  ctx.arc(x + CELL/2, y + CELL/2, PUYO_R, 0, Math.PI * 2);
+  ctx.fill();
+  // ハイライト
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  ctx.arc(x + CELL*0.38, y + CELL*0.35, PUYO_R*0.35, 0, Math.PI*2);
+  ctx.fill();
+  // 目
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x + CELL*0.36, y + CELL*0.45, 3, 0, Math.PI*2);
+  ctx.arc(x + CELL*0.56, y + CELL*0.45, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(x + CELL*0.38, y + CELL*0.46, 1.5, 0, Math.PI*2);
+  ctx.arc(x + CELL*0.58, y + CELL*0.46, 1.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
 function draw() {
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0, 0, canvas.width, H);
 
-  // グリッド線
-  ctx.strokeStyle = '#1a1a3e';
-  ctx.lineWidth = 0.5;
-  for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath(); ctx.moveTo(c*CELL, 0); ctx.lineTo(c*CELL, H); ctx.stroke();
-  }
-  for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath(); ctx.moveTo(0, r*CELL); ctx.lineTo(W, r*CELL); ctx.stroke();
-  }
-
-  // ブロック
+  // グリッド
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const b = grid[r][c];
       if (b) {
-        drawBlock(c * CELL, b.y, COLORS[b.color], b.clearing);
+        // アニメーション補間
+        b.y += (b.targetY - b.y) * 0.3;
+        drawPuyo(c * CELL, b.y, b.color);
       }
     }
   }
 
-  // シューター（上部）
-  if (gameRunning && !animating) {
-    // 現在のブロック
-    drawBlock(shooter.col * CELL, 0, COLORS[shooter.color], false, true);
-    // 次のブロック（小さく表示）
-    ctx.globalAlpha = 0.5;
-    const nx = W - CELL * 1.5;
-    ctx.fillStyle = COLORS[shooter.nextColor];
-    ctx.beginPath();
-    ctx.roundRect(nx, 4, CELL * 0.6, CELL * 0.6, 4);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#aaa';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('NEXT', nx, CELL * 0.6 + 16);
+  // 操作中のペア
+  if (state === 'play' && pair) {
+    // ゴースト（着地位置）
+    let ghostRow = pair.row;
+    while (true) {
+      const nr = ghostRow + 1;
+      const gp2 = c2Pos({...pair, row: nr});
+      if (isEmpty(pair.col, nr) && isEmpty(gp2.col, gp2.row)) ghostRow++;
+      else break;
+    }
+    const gp2 = c2Pos({...pair, row: ghostRow});
+    drawPuyo(pair.col * CELL, ghostRow * CELL, pair.c1, true);
+    if (inBounds(gp2.col, gp2.row)) drawPuyo(gp2.col * CELL, gp2.row * CELL, pair.c2, true);
+
+    // 実体
+    drawPuyo(pair.col * CELL, pair.row * CELL, pair.c1);
+    const p2 = c2Pos(pair);
+    if (inBounds(p2.col, p2.row)) drawPuyo(p2.col * CELL, p2.row * CELL, pair.c2);
+  }
+
+  // NEXT
+  if (nextPair) {
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(canvas.width - CELL * 1.2, 4, CELL, CELL * 2.2);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('NEXT', canvas.width - CELL * 1.15, 14);
+    const ns = CELL * 0.7;
+    const nx = canvas.width - CELL * 1.1;
+    drawSmallPuyo(nx, 18, nextPair.c1, ns);
+    drawSmallPuyo(nx, 18 + ns, nextPair.c2, ns);
   }
 
   // パーティクル
-  particles.forEach(p => {
+  particles = particles.filter(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.025;
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+    return p.life > 0;
   });
   ctx.globalAlpha = 1;
 
   // デッドライン
-  ctx.strokeStyle = 'rgba(255,50,50,0.3)';
+  ctx.strokeStyle = 'rgba(255,80,80,0.3)';
   ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.moveTo(0, CELL); ctx.lineTo(W, CELL); ctx.stroke();
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(0, CELL); ctx.lineTo(canvas.width, CELL); ctx.stroke();
   ctx.setLineDash([]);
 }
 
-function drawBlock(x, y, color, clearing, isShooter) {
-  const pad = 2;
-  const s = CELL - pad * 2;
-  ctx.fillStyle = color;
-  if (clearing) ctx.globalAlpha = 0.5;
+function drawSmallPuyo(x, y, colorIdx, size) {
+  ctx.fillStyle = COLORS[colorIdx];
   ctx.beginPath();
-  ctx.roundRect(x + pad, y + pad, s, s, 6);
+  ctx.arc(x + size/2, y + size/2, size * 0.4, 0, Math.PI*2);
   ctx.fill();
-  // ハイライト
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.beginPath();
-  ctx.roundRect(x + pad + 2, y + pad + 2, s - 4, s * 0.4, 4);
-  ctx.fill();
-  if (clearing) ctx.globalAlpha = 1;
-  if (isShooter) {
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(x + pad, y + pad, s, s, 6);
-    ctx.stroke();
-  }
 }
 
-// --- 物理・ロジック ---
-function dropBlock() {
-  if (dropping || animating || !gameRunning) return;
-  dropping = true;
+// --- ゲームループ ---
+let lastTime = 0;
+function gameLoop(time) {
+  const dt = time - lastTime;
+  lastTime = time;
 
-  let row = 0;
-  // 一番下の空きを探す
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (!grid[r][shooter.col]) { row = r; break; }
-  }
-
-  if (row === 0 && grid[0][shooter.col]) {
-    gameOver();
-    return;
-  }
-
-  grid[row][shooter.col] = {
-    color: shooter.color,
-    y: 0,
-    targetY: row * CELL
-  };
-
-  shooter.color = shooter.nextColor;
-  shooter.nextColor = randColor();
-
-  // 落下アニメーション後にチェック
-  animating = true;
-  setTimeout(() => {
-    animating = false;
-    dropping = false;
-    checkAndClear();
-  }, 300);
-}
-
-function checkAndClear() {
-  const toClear = new Set();
-
-  // 横チェック
-  for (let r = 0; r < ROWS; r++) {
-    let count = 1;
-    for (let c = 1; c < COLS; c++) {
-      if (grid[r][c] && grid[r][c-1] && grid[r][c].color === grid[r][c-1].color) {
-        count++;
+  if (state === 'play') {
+    dropTimer += dt;
+    if (dropTimer >= dropInterval) {
+      dropTimer = 0;
+      if (canDrop()) {
+        pair.row++;
       } else {
-        if (count >= 3) {
-          for (let k = c - count; k < c; k++) toClear.add(`${r},${k}`);
-        }
-        count = 1;
+        lockPair();
       }
     }
-    if (count >= 3) {
-      for (let k = COLS - count; k < COLS; k++) toClear.add(`${r},${k}`);
-    }
-  }
-
-  // 縦チェック
-  for (let c = 0; c < COLS; c++) {
-    let count = 1;
-    for (let r = 1; r < ROWS; r++) {
-      if (grid[r][c] && grid[r-1][c] && grid[r][c].color === grid[r-1][c].color) {
-        count++;
-      } else {
-        if (count >= 3) {
-          for (let k = r - count; k < r; k++) toClear.add(`${k},${c}`);
-        }
-        count = 1;
-      }
-    }
-    if (count >= 3) {
-      for (let k = ROWS - count; k < ROWS; k++) toClear.add(`${k},${c}`);
-    }
-  }
-
-  if (toClear.size > 0) {
-    combo++;
-    const pts = toClear.size * 10 * combo;
-    score += pts;
-    document.getElementById('score').textContent = score;
-
-    if (combo > 1) {
-      document.getElementById('comboText').textContent = `${combo} COMBO!`;
-      comboTimer = 60;
-    }
-
-    // パーティクル生成
-    toClear.forEach(key => {
-      const [r, c] = key.split(',').map(Number);
-      const b = grid[r][c];
-      if (b) {
-        for (let i = 0; i < 6; i++) {
-          particles.push({
-            x: c * CELL + CELL/2,
-            y: r * CELL + CELL/2,
-            vx: (Math.random()-0.5) * 6,
-            vy: (Math.random()-0.5) * 6,
-            color: COLORS[b.color],
-            size: 3 + Math.random() * 3,
-            life: 1
-          });
-        }
-      }
-    });
-
-    // 消す
-    toClear.forEach(key => {
-      const [r, c] = key.split(',').map(Number);
-      grid[r][c] = null;
-    });
-
-    // 落下処理
-    setTimeout(() => {
-      gravity();
-      setTimeout(() => checkAndClear(), 200);
-    }, 150);
-  } else {
-    combo = 0;
-    // ゲームオーバーチェック（1行目にブロックがあるか）
-    for (let c = 0; c < COLS; c++) {
-      if (grid[0][c]) { gameOver(); return; }
-    }
-    // 一定間隔で下からブロックを追加
-    addBottomRow();
-  }
-}
-
-function gravity() {
-  for (let c = 0; c < COLS; c++) {
-    let writeRow = ROWS - 1;
-    for (let r = ROWS - 1; r >= 0; r--) {
-      if (grid[r][c]) {
-        if (r !== writeRow) {
-          grid[writeRow][c] = grid[r][c];
-          grid[writeRow][c].targetY = writeRow * CELL;
-          grid[r][c] = null;
-        }
-        writeRow--;
-      }
-    }
-  }
-}
-
-let dropCounter = 0;
-function addBottomRow() {
-  dropCounter++;
-  if (dropCounter % 5 !== 0) return; // 5手ごとに追加
-
-  // 全体を1行上にシフト
-  for (let r = 0; r < ROWS - 1; r++) {
-    for (let c = 0; c < COLS; c++) {
-      grid[r][c] = grid[r+1][c];
-      if (grid[r][c]) grid[r][c].targetY = r * CELL;
-    }
-  }
-  // 最下行に新しいブロック
-  for (let c = 0; c < COLS; c++) {
-    grid[ROWS-1][c] = Math.random() < 0.5
-      ? { color: randColor(), y: ROWS * CELL, targetY: (ROWS-1) * CELL }
-      : null;
-  }
-}
-
-function gameOver() {
-  gameRunning = false;
-  document.getElementById('finalScore').textContent = score;
-  document.getElementById('gameOver').style.display = 'block';
-}
-
-// --- アニメーションループ ---
-function update() {
-  // ブロック落下アニメーション
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const b = grid[r][c];
-      if (b) {
-        b.y += (b.targetY - b.y) * 0.25;
-      }
-    }
-  }
-
-  // パーティクル更新
-  particles = particles.filter(p => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.15;
-    p.life -= 0.02;
-    return p.life > 0;
-  });
-
-  // コンボ表示タイマー
-  if (comboTimer > 0) {
-    comboTimer--;
-    if (comboTimer === 0) document.getElementById('comboText').textContent = '';
   }
 
   draw();
-  requestAnimationFrame(update);
+  requestAnimationFrame(gameLoop);
 }
 
-// --- 入力 ---
+// --- キーボード ---
 document.addEventListener('keydown', e => {
-  if (!gameRunning || animating) return;
-  if (e.key === 'ArrowLeft') shooter.col = Math.max(0, shooter.col - 1);
-  if (e.key === 'ArrowRight') shooter.col = Math.min(COLS - 1, shooter.col + 1);
-  if (e.key === 'ArrowDown' || e.key === ' ') dropBlock();
+  if (state !== 'play') return;
+  if (e.key === 'ArrowLeft') moveLeft();
+  if (e.key === 'ArrowRight') moveRight();
+  if (e.key === 'ArrowUp' || e.key === 'z') rotate();
+  if (e.key === 'ArrowDown') { if (canDrop()) pair.row++; dropTimer = 0; }
+  if (e.key === ' ') hardDrop();
 });
 
-// タッチ操作
-let touchStartX = 0;
+// --- タッチスワイプ ---
+let touchX = 0, touchY = 0;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  touchStartX = e.touches[0].clientX;
-});
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (!gameRunning || animating) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.touches[0].clientX - rect.left;
-  shooter.col = Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL)));
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
 });
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
-  dropBlock();
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+  if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+    rotate();
+  } else if (Math.abs(dy) > Math.abs(dx) && dy > 30) {
+    hardDrop();
+  }
 });
-
-// マウス操作
-canvas.addEventListener('mousemove', e => {
-  if (!gameRunning || animating) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  shooter.col = Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL)));
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const dx = e.touches[0].clientX - touchX;
+  if (dx > CELL * 0.7) { moveRight(); touchX = e.touches[0].clientX; }
+  if (dx < -CELL * 0.7) { moveLeft(); touchX = e.touches[0].clientX; }
 });
-canvas.addEventListener('click', () => dropBlock());
 
 startGame();
-update();
+requestAnimationFrame(gameLoop);
 </script>
 </html>
