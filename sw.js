@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v2';
+const CACHE_NAME = 'okozukai-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -24,8 +24,9 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ネットワーク優先、失敗時にキャッシュ
+// ネットワーク優先、失敗時にキャッシュ（GETのみキャッシュ）
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     fetch(e.request)
       .then(res => {

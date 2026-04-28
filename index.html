@@ -312,48 +312,66 @@ async function clearCacheAndReload() {
 
 // ぷよ・ゴキブリカウント
 async function incrementPuyoCount(imgSrc) {
-  const match = imgSrc.match(/puyo_(\d)/);
-  if (!match) return;
-  const puyoId = parseInt(match[1]);
-  const puyoName = 'puyo_' + puyoId;
-  const { data } = await client.from('puyo_counts').select('count').eq('id', puyoId).single();
-  if (data) {
-    await client.from('puyo_counts').update({ count: data.count + 1 }).eq('id', puyoId);
-  }
-  await client.from('activity_log').insert({ type: 'puyo', name: puyoName });
+  try {
+    const match = imgSrc.match(/puyo_(\d)/);
+    if (!match) return;
+    const puyoId = parseInt(match[1]);
+    const puyoName = 'puyo_' + puyoId;
+    // upsertでカウントを増やす（レコードがなくても安全）
+    const { data } = await client.from('puyo_counts').select('count').eq('id', puyoId).maybeSingle();
+    if (data) {
+      await client.from('puyo_counts').update({ count: data.count + 1 }).eq('id', puyoId);
+    } else {
+      await client.from('puyo_counts').upsert({ id: puyoId, name: puyoName, count: 1 });
+    }
+    await client.from('activity_log').insert({ type: 'puyo', name: puyoName });
+  } catch (e) { console.error('incrementPuyoCount error:', e); }
 }
 
 async function incrementRoachCount() {
-  const { data } = await client.from('roach_counts').select('count').eq('id', 1).single();
-  if (data) {
-    await client.from('roach_counts').update({ count: data.count + 1 }).eq('id', 1);
-  }
-  await client.from('activity_log').insert({ type: 'roach', name: 'roach' });
+  try {
+    const { data } = await client.from('roach_counts').select('count').eq('id', 1).maybeSingle();
+    if (data) {
+      await client.from('roach_counts').update({ count: data.count + 1 }).eq('id', 1);
+    } else {
+      await client.from('roach_counts').upsert({ id: 1, count: 1 });
+    }
+    await client.from('activity_log').insert({ type: 'roach', name: 'roach' });
+  } catch (e) { console.error('incrementRoachCount error:', e); }
 }
 
 async function loadPuyoCounts() {
   const { data: puyoData } = await client.from('puyo_counts').select('*').order('id');
-  const { data: roachData } = await client.from('roach_counts').select('count').eq('id', 1).single();
   const container = document.getElementById('puyoStats');
   if (!container) return;
   let html = '';
   if (puyoData) {
     html += puyoData.map(p =>
-      `<span style="margin:0 3px;"><img src="images/${p.name}.avif" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;object-fit:cover;">${p.count}</span>`
+      `<span style="margin:0 3px;"><img src="images/${p.name}.avif" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;object-fit:cover;"><span id="cnt_${p.id}">${p.count}</span></span>`
     ).join('');
-  }
-  if (roachData) {
-    html += `<span style="margin-left:6px;">\u{1FAB3}${roachData.count}</span>`;
   }
   container.innerHTML = html;
 }
 
+// リアルタイム更新: ぷよカウントが変わったら即反映
+function setupRealtimePuyoCounts() {
+  client.channel('puyo_counts_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'puyo_counts' }, payload => {
+      const el = document.getElementById('cnt_' + payload.new.id);
+      if (el) el.textContent = payload.new.count;
+    })
+    .subscribe();
+}
+
 load();
 loadPuyoCounts();
+setupRealtimePuyoCounts();
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
+
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.0.2</a></div>
 
 </body>
 </html>

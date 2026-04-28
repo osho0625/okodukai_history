@@ -165,6 +165,26 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- イタズラ設定 -->
+<h2 onclick="toggleSection('prankSection', this)"><span class="toggle">&#x25B6;</span> &#x1F608; イタズラ設定</h2>
+<div class="section-body" id="prankSection">
+  <div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span>ぷよのコケやすさ 10倍</span>
+      <button class="btn-sm" id="tripBoostBtn" onclick="toggleTripBoost()" style="padding:8px 16px;">OFF</button>
+    </div>
+    <div style="font-size:0.85em; color:#999; margin-bottom:16px;">ONにすると全ぷよがめちゃくちゃコケます</div>
+    <div style="border-top:1px solid #eee; padding-top:12px;">
+      <div style="font-weight:600; margin-bottom:8px;">カウントリセット</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-sm btn-danger" onclick="resetPuyoCount()" style="flex:1; padding:10px;">ぷよカウント</button>
+        <button class="btn-sm btn-danger" onclick="resetRoachCount()" style="flex:1; padding:10px;">ゴキブリカウント</button>
+      </div>
+      <div class="msg" id="resetMsg" style="margin-top:8px;">&#x2713; リセットしました</div>
+    </div>
+  </div>
+</div>
+
 <!-- アクティビティログ -->
 <h2 onclick="toggleSection('logSection', this)"><span class="toggle">&#x25B6;</span> &#x1F4CA; アクティビティログ</h2>
 <div class="section-body" id="logSection">
@@ -594,6 +614,43 @@ async function loadActivityLog(filter) {
     </div>`;
   });
 }
+
+// --- イタズラ設定 ---
+async function resetPuyoCount() {
+  if (!confirm('ぷよカウントをすべて0にリセットしますか？')) return;
+  await client.from('puyo_counts').update({ count: 0 }).neq('id', 0);
+  const msg = document.getElementById('resetMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function resetRoachCount() {
+  if (!confirm('ゴキブリカウントを0にリセットしますか？')) return;
+  await client.from('roach_counts').update({ count: 0 }).eq('id', 1);
+  const msg = document.getElementById('resetMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+function toggleTripBoost() {
+  const btn = document.getElementById('tripBoostBtn');
+  const current = localStorage.getItem('tripBoost') === 'true';
+  const newVal = !current;
+  localStorage.setItem('tripBoost', newVal);
+  btn.textContent = newVal ? 'ON' : 'OFF';
+  btn.style.background = newVal ? '#e53935' : '';
+  btn.style.color = newVal ? '#fff' : '';
+}
+
+// 初期状態を反映
+(function initTripBoost() {
+  const btn = document.getElementById('tripBoostBtn');
+  if (!btn) return;
+  const on = localStorage.getItem('tripBoost') === 'true';
+  btn.textContent = on ? 'ON' : 'OFF';
+  btn.style.background = on ? '#e53935' : '';
+  btn.style.color = on ? '#fff' : '';
+})();
 
 loadChildren();
 loadBackupDates();
