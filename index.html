@@ -128,13 +128,12 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 </head>
 <body>
 
+<div id="puyoStats" style="text-align:center; margin-bottom:4px; font-size:0.75em; color:#999;"></div>
 <h1><span style="cursor:pointer;" onclick="clearCacheAndReload()">&#x1F504;</span><span id="gardenBtn" style="cursor:pointer;">&#x1FAB4;</span><a href="pages/game.html" style="text-decoration:none;">&#x1F4B4;</a> &#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
 </div>
-
-<div id="puyoStats" style="text-align:center; margin-bottom:16px; font-size:0.9em; color:#666;"></div>
 
 <!-- ぷよ畑 -->
 <div class="puyo-garden" id="puyoGarden" style="display:none;">
@@ -686,17 +685,6 @@ function addPuyoBatch() {
     gardenInitialized = true;
   }
 
-  // ブロッカー追加（まだなければ）
-  if (!document.getElementById('puyoBlocker')) {
-    const blocker = document.createElement('div');
-    blocker.id = 'puyoBlocker';
-    blocker.style.cssText = `
-      position:fixed; top:0; left:0; width:100%; height:100%;
-      background:transparent; z-index:49;
-    `;
-    document.body.appendChild(blocker);
-  }
-
   // 5個追加
   for (let i = 0; i < 5; i++) {
     setTimeout(() => spawnSprout(), i * 150);
@@ -815,16 +803,6 @@ function checkGardenClear() {
   if (puyoCount <= 0) {
     puyoCount = 0;
     puyoSprouts = [];
-    const blocker = document.getElementById('puyoBlocker');
-    if (blocker) blocker.remove();
-    // 歩いているぷよが全部消えるまで待つ
-    const waitForWalkers = setInterval(() => {
-      if (document.querySelectorAll('.puyo-fly').length === 0) {
-        clearInterval(waitForWalkers);
-        const garden = document.getElementById('puyoGarden');
-        garden.style.display = 'none';
-      }
-    }, 300);
   }
 }
 
@@ -865,11 +843,11 @@ async function loadPuyoCounts() {
   let html = '';
   if (puyoData) {
     html += puyoData.map(p =>
-      `<span style="margin:0 4px;"><img src="images/${p.name}.avif" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;object-fit:cover;"> ${p.count}</span>`
+      `<span style="margin:0 3px;"><img src="images/${p.name}.avif" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;object-fit:cover;">${p.count}</span>`
     ).join('');
   }
   if (roachData) {
-    html += `<span style="margin:0 4px;">\u{1FAB3} ${roachData.count}</span>`;
+    html += `<span style="margin-left:6px;">\u{1FAB3}${roachData.count}</span>`;
   }
   container.innerHTML = html;
 }
