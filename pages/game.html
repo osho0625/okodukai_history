@@ -16,7 +16,7 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   width: 100%; max-width: 400px; padding: 10px 8px;
 }
-.back { color: #88f; text-decoration: none; font-size: 0.9em; }
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
 .score-area { text-align: right; }
 .score { font-size: 1.1em; font-weight: 700; }
 .chain { font-size: 0.9em; color: #ff6; height: 1.2em; }
@@ -49,7 +49,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </head>
 <body>
 <div class="header">
-  <a class="back" href="../index.html">🏠</a>
+  <a class="back" href="../index.html">←</a>
   <div class="score-area">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="chain" id="chain"></div>
@@ -61,7 +61,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
     <h2>GAME OVER</h2>
     <div class="final" id="finalScore">0</div>
     <button onclick="startGame()">もう一回</button>
-    <button class="btn-back" onclick="location.href='../index.html'">🏠</button>
+    <button class="btn-back" onclick="location.href='../index.html'">←</button>
   </div>
 </div>
 <div class="controls">
