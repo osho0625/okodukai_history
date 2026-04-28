@@ -140,8 +140,9 @@ function submitPassword() {
   const input = document.getElementById('pwInput').value;
 
   if (input === child.password) {
+    const targetId = pendingChildId;
     closeModal();
-    window.location.href = `child.html?id=${pendingChildId}`;
+    window.location.href = `child.html?id=${targetId}`;
   } else {
     document.getElementById('pwError').style.display = 'block';
     document.getElementById('pwInput').value = '';
