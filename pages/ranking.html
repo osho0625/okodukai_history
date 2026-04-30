@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>ランキング - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 20px; max-width: 480px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #eee; text-decoration: none; font-size: 1.6em; padding: 8px 12px; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; }
+.rank-row {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px 16px;
+  margin-bottom: 8px;
+}
+.rank-num { font-size: 1.3em; font-weight: 700; width: 36px; text-align: center; }
+.rank-1 { color: #ffd700; }
+.rank-2 { color: #c0c0c0; }
+.rank-3 { color: #cd7f32; }
+.rank-info { flex: 1; }
+.rank-name { font-weight: 600; font-size: 1.05em; }
+.rank-date { font-size: 0.8em; color: #888; }
+.rank-score { font-size: 1.2em; font-weight: 700; color: #ff6; }
+.empty { text-align: center; color: #666; margin-top: 40px; }
+</style>
+</head>
+<body>
+<a class="back" href="game.html">&#x2190;</a>
+<h1>&#x1F3C6; ランキング TOP10</h1>
+<div id="rankList"><div class="empty">読み込み中...</div></div>
+
+<script>
+const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadRanking() {
+  const { data } = await client.from('game_rankings').select('*').order('score', { ascending: false }).limit(10);
+  const list = document.getElementById('rankList');
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty">まだ記録がありません</div>';
+    return;
+  }
+  list.innerHTML = '';
+  data.forEach((r, i) => {
+    const rank = i + 1;
+    const cls = rank <= 3 ? ` rank-${rank}` : '';
+    const medal = rank === 1 ? '\u{1F947}' : rank === 2 ? '\u{1F948}' : rank === 3 ? '\u{1F949}' : rank;
+    const d = new Date(r.created_at);
+    const dateStr = d.toLocaleDateString('ja-JP') + ' ' + d.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+    list.innerHTML += `<div class="rank-row">
+      <div class="rank-num${cls}">${medal}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.name}</div>
+        <div class="rank-date">${dateStr}</div>
+      </div>
+      <div class="rank-score">${r.score.toLocaleString()}</div>
+    </div>`;
+  });
+}
+loadRanking();
+</script>
+</body>
+</html>

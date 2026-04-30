@@ -54,27 +54,39 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
     <div class="score">Score: <span id="score">0</span></div>
     <div class="chain" id="chain"></div>
   </div>
+  <a href="ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
   <div class="game-over" id="gameOver">
     <h2>GAME OVER</h2>
     <div class="final" id="finalScore">0</div>
+    <div id="rankInMsg" style="display:none; color:#ff6; font-size:1.1em; margin-bottom:12px;"></div>
+    <div id="rankInForm" style="display:none; margin-bottom:12px;">
+      <input type="text" id="rankName" placeholder="名前を入力" style="width:100%; padding:10px; border:1px solid #555; border-radius:8px; background:#2a2a4e; color:#fff; font-size:1em; text-align:center; margin-bottom:8px;">
+      <button onclick="submitRanking()" style="width:100%; padding:10px; border:none; border-radius:8px; background:#ffd700; color:#333; font-weight:700; font-size:1em; cursor:pointer;">ランキングに登録</button>
+    </div>
     <button onclick="startGame()">もう一回</button>
     <button class="btn-back" onclick="location.href='../index.html'">←</button>
   </div>
 </div>
 <div class="controls">
-  <button class="ctrl-btn" ontouchstart="moveLeft()" onclick="moveLeft()">◀</button>
-  <button class="ctrl-btn" ontouchstart="rotate()" onclick="rotate()">🔄</button>
-  <button class="ctrl-btn" ontouchstart="hardDrop()" onclick="hardDrop()">⬇</button>
-  <button class="ctrl-btn" ontouchstart="moveRight()" onclick="moveRight()">▶</button>
+  <button class="ctrl-btn" ontouchstart="rotate()" onclick="rotate()">&#x21BB;</button>
+  <button class="ctrl-btn" ontouchstart="moveLeft()" onclick="moveLeft()">&#x25C0;</button>
+  <button class="ctrl-btn" ontouchstart="moveRight()" onclick="moveRight()">&#x25B6;</button>
+  <button class="ctrl-btn" ontouchstart="hardDrop()" onclick="hardDrop()">&#x25BC;</button>
 </div>
 </body>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
+const sbClient = supabase.createClient(
+  "https://ynecezxnltigplrfzzoh.supabase.co",
+  "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4"
+);
 
 // スマホの画面に収まるようにサイズ計算
 const headerH = 44; // ヘッダー
@@ -149,6 +161,8 @@ function startGame() {
   document.getElementById('score').textContent = '0';
   document.getElementById('chain').textContent = '';
   document.getElementById('gameOver').style.display = 'none';
+  document.getElementById('rankInMsg').style.display = 'none';
+  document.getElementById('rankInForm').style.display = 'none';
   nextPair = makePair();
   spawnPair();
   state = 'play';
@@ -161,9 +175,7 @@ function spawnPair() {
   nextPair = makePair();
   // row 1 にc1、row 0 にc2(上方向)で開始
   if (grid[1][pair.col] !== null) {
-    state = 'over';
-    document.getElementById('finalScore').textContent = score;
-    document.getElementById('gameOver').style.display = 'block';
+    doGameOver();
   }
 }
 
@@ -493,6 +505,54 @@ canvas.addEventListener('touchmove', e => {
   if (dx > CELL * 0.7) { moveRight(); touchX = e.touches[0].clientX; }
   if (dx < -CELL * 0.7) { moveLeft(); touchX = e.touches[0].clientX; }
 });
+
+// --- ランキング ---
+let pendingRankScore = 0;
+let pendingRank = 0;
+
+async function doGameOver() {
+  state = 'over';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOver').style.display = 'block';
+
+  // ランキングチェック
+  try {
+    const { data } = await sbClient.from('game_rankings').select('score').order('score', { ascending: false }).limit(10);
+    const rankings = data || [];
+    let rank = rankings.length + 1;
+    for (let i = 0; i < rankings.length; i++) {
+      if (score > rankings[i].score) { rank = i + 1; break; }
+    }
+    if (rank <= 10 && score > 0) {
+      pendingRankScore = score;
+      pendingRank = rank;
+      document.getElementById('rankInMsg').textContent = rank + '\u4F4D\u306B\u30E9\u30F3\u30AF\u30A4\u30F3\uFF01';
+      document.getElementById('rankInMsg').style.display = 'block';
+      document.getElementById('rankInForm').style.display = 'block';
+      document.getElementById('rankName').value = '';
+      document.getElementById('rankName').focus();
+    }
+  } catch (e) { console.error('ranking check error:', e); }
+}
+
+async function submitRanking() {
+  const name = document.getElementById('rankName').value.trim();
+  if (!name) return alert('\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044');
+
+  try {
+    await sbClient.from('game_rankings').insert({ name, score: pendingRankScore });
+
+    // 10位以下を削除
+    const { data } = await sbClient.from('game_rankings').select('id, score').order('score', { ascending: false });
+    if (data && data.length > 10) {
+      const toDelete = data.slice(10).map(r => r.id);
+      await sbClient.from('game_rankings').delete().in('id', toDelete);
+    }
+
+    document.getElementById('rankInForm').style.display = 'none';
+    document.getElementById('rankInMsg').textContent = pendingRank + '\u4F4D\u306B\u767B\u9332\u3057\u307E\u3057\u305F\uFF01';
+  } catch (e) { console.error('ranking submit error:', e); }
+}
 
 startGame();
 requestAnimationFrame(gameLoop);
