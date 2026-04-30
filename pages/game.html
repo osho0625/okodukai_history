@@ -129,6 +129,8 @@ let imgsReady = false;
 
 let grid, score, chainCount, state, pair, nextPair;
 let dropTimer, dropInterval, particles;
+let lockDelayTimer = 0;
+const LOCK_DELAY = 1000; // 着地後の猶予時間(ms)
 
 function rand() { return Math.floor(Math.random() * COLORS.length); }
 
@@ -167,6 +169,7 @@ function startGame() {
   spawnPair();
   state = 'play';
   dropTimer = 0;
+  lockDelayTimer = 0;
 }
 
 function spawnPair() {
@@ -197,6 +200,7 @@ function rotate() {
   const p2 = c2Pos(test);
   if (isEmpty(p2.col, p2.row)) {
     pair.dir = newDir;
+    lockDelayTimer = 0; // 回転成功で猶予リセット
   } else {
     // 壁キック
     const kick = {...test, col: test.col + (p2.col < 0 ? 1 : p2.col >= COLS ? -1 : 0)};
@@ -240,27 +244,28 @@ function lockPair() {
   });
 
   chainCount = 0;
-  setTimeout(() => resolveChain(), 250);
+  setTimeout(() => resolveChain(), 100);
 }
 
 // --- 連鎖処理 ---
 function resolveChain() {
   applyGravity();
   setTimeout(() => {
-    const cleared = findAndClear();
-    if (cleared > 0) {
+    const clearResult = findAndClear();
+    if (clearResult.totalCleared > 0) {
       chainCount++;
-      score += cleared * 10 * chainCount;
+      score += calcScore(chainCount, clearResult);
       document.getElementById('score').textContent = score;
       document.getElementById('chain').textContent = chainCount > 1 ? `${chainCount}連鎖!` : '';
-      setTimeout(() => resolveChain(), 400);
+      setTimeout(() => resolveChain(), 200);
     } else {
       document.getElementById('chain').textContent = '';
       state = 'play';
       spawnPair();
+      lockDelayTimer = 0;
       dropInterval = Math.max(150, 500 - Math.floor(score / 500) * 20);
     }
-  }, 200);
+  }, 80);
 }
 
 function applyGravity() {
@@ -282,6 +287,8 @@ function applyGravity() {
 function findAndClear() {
   const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
   let totalCleared = 0;
+  const groups = []; // { color, count }
+  const colorsCleared = new Set();
 
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -300,8 +307,9 @@ function findAndClear() {
         }
         if (group.length >= 4) {
           totalCleared += group.length;
+          groups.push({ color, count: group.length });
+          colorsCleared.add(color);
           group.forEach(({r: gr, c: gc}) => {
-            // パーティクル
             for (let i = 0; i < 5; i++) {
               particles.push({
                 x: gc * CELL + CELL/2, y: gr * CELL + CELL/2,
@@ -316,7 +324,37 @@ function findAndClear() {
       }
     }
   }
-  return totalCleared;
+  return { totalCleared, groups, colorCount: colorsCleared.size };
+}
+
+// 本家ぷよぷよ風スコア計算
+// スコア = (消したぷよ数) × 10 × (連鎖ボーナス + 連結ボーナス + 色数ボーナス)
+// ボーナス合計が0の場合は1として扱う
+const CHAIN_BONUS = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
+const CONNECT_BONUS = [0, 0, 0, 0, 0, 2, 3, 4, 5, 6, 7, 10]; // 4個=0, 5個=2, 6個=3...
+const COLOR_BONUS = [0, 0, 3, 6, 12, 24]; // 1色=0, 2色=3, 3色=6...
+
+function calcScore(chainNum, clearResult) {
+  const { totalCleared, groups, colorCount } = clearResult;
+  if (totalCleared === 0) return 0;
+
+  // 連鎖ボーナス
+  const cb = CHAIN_BONUS[Math.min(chainNum, CHAIN_BONUS.length - 1)] || 0;
+
+  // 連結ボーナス（各グループの個数に応じて加算）
+  let connectB = 0;
+  groups.forEach(g => {
+    const idx = Math.min(g.count, CONNECT_BONUS.length - 1);
+    connectB += CONNECT_BONUS[idx];
+  });
+
+  // 色数ボーナス
+  const colorB = COLOR_BONUS[Math.min(colorCount, COLOR_BONUS.length - 1)] || 0;
+
+  // ボーナス合計（最低1）
+  const bonus = Math.max(1, Math.min(999, cb + connectB + colorB));
+
+  return totalCleared * 10 * bonus;
 }
 </script>
 
@@ -462,8 +500,14 @@ function gameLoop(time) {
       dropTimer = 0;
       if (canDrop()) {
         pair.row++;
+        lockDelayTimer = 0; // まだ落下中なのでリセット
       } else {
-        lockPair();
+        // 着地中: 猶予タイマーを加算
+        lockDelayTimer += dropInterval;
+        if (lockDelayTimer >= LOCK_DELAY) {
+          lockDelayTimer = 0;
+          lockPair();
+        }
       }
     }
   }
@@ -540,7 +584,8 @@ async function submitRanking() {
   if (!name) return alert('\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044');
 
   try {
-    await sbClient.from('game_rankings').insert({ name, score: pendingRankScore });
+    const { error: insertErr } = await sbClient.from('game_rankings').insert({ name, score: pendingRankScore });
+    if (insertErr) { console.error('ranking insert error:', insertErr); alert('登録に失敗しました: ' + insertErr.message); return; }
 
     // 10位以下を削除
     const { data } = await sbClient.from('game_rankings').select('id, score').order('score', { ascending: false });
@@ -551,7 +596,7 @@ async function submitRanking() {
 
     document.getElementById('rankInForm').style.display = 'none';
     document.getElementById('rankInMsg').textContent = pendingRank + '\u4F4D\u306B\u767B\u9332\u3057\u307E\u3057\u305F\uFF01';
-  } catch (e) { console.error('ranking submit error:', e); }
+  } catch (e) { console.error('ranking submit error:', e); alert('登録に失敗しました'); }
 }
 
 startGame();
