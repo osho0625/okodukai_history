@@ -416,9 +416,27 @@ document.getElementById('adminPwInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') submitAdminPw();
 });
 
-// --- Service Worker ---
+// --- Service Worker（PWA更新チェック付き） ---
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    // 起動時に即座に更新チェック
+    reg.update();
+    // 新しいSWが待機中なら即アクティベート→リロード
+    if (reg.waiting) { reg.waiting.postMessage({type:'SKIP_WAITING'}); }
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'activated') {
+          location.reload();
+        }
+      });
+    });
+  });
+  // controllerchangeでリロード（SW切り替わり時）
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; location.reload(); }
+  });
 }
 
 // --- キャッシュクリア（将来のUI復活用に残す） ---
@@ -526,7 +544,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.6.9</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.7.5</a></div>
 
 </body>
 </html>
