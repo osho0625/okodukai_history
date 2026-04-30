@@ -166,7 +166,7 @@ function doPullAnimation(sprout, imgSrc) {
       const distFactor = distance / window.innerWidth;
       const speedFactor = walkSpeed / 80;
       const tripMult = PUYO_TRIP_MULT[puyoKey] || 1.0;
-      const tripBoost = localStorage.getItem('tripBoost') === 'true';
+      const tripBoost = sessionStorage.getItem('tripBoost') === 'true';
       const tripChance = tripBoost ? 1.0 : Math.min(0.20, 0.035 * distFactor * speedFactor * tripMult);
       const willTrip = Math.random() < tripChance;
       if (willTrip) {

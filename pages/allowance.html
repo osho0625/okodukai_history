@@ -82,8 +82,24 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
 
+// 未読入金情報をlocalStorageに保存（複数回入金を累積）
+function savePendingDeposit(childId, oldBalance, newBalance, amount) {
+  const key = 'pending_deposit_' + childId;
+  const existing = localStorage.getItem(key);
+  if (existing) {
+    // 既に未読がある場合、最初のoldBalanceを維持しつつnewBalanceを更新
+    const prev = JSON.parse(existing);
+    prev.newBalance = newBalance;
+    prev.totalAmount += amount;
+    localStorage.setItem(key, JSON.stringify(prev));
+  } else {
+    localStorage.setItem(key, JSON.stringify({ oldBalance, newBalance, totalAmount: amount }));
+  }
+}
+
 let allChildren = [];
 let selectedChildId = null;
+let irohaDebtChild = null; // いろはの借金アカウント
 
 async function load() {
   const { data } = await client.from('children').select('*').order('sort_order', { ascending: true });
@@ -91,7 +107,10 @@ async function load() {
   const container = document.getElementById('childBtns');
   container.innerHTML = '';
 
-  data.forEach(c => {
+  // 「いろはの借金」を記憶しつつ、ボタンには表示しない
+  irohaDebtChild = allChildren.find(c => c.name === 'いろはの借金') || null;
+
+  data.filter(c => c.name !== 'いろはの借金').forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'child-btn';
     btn.textContent = c.name;
@@ -117,28 +136,73 @@ async function addAllowance(amount) {
   // ボタンを一時無効化
   document.querySelectorAll('.amount-btn').forEach(b => b.disabled = true);
 
-  const newBalance = child.balance + amount;
-  await client.from('children').update({ balance: newBalance }).eq('id', selectedChildId);
-  await client.from('transactions').insert({
-    child_id: selectedChildId, type: 'add', amount, memo: 'お手伝いポイント'
-  });
+  // いろは選択時: 借金アカウントがあれば半分ずつ振り分け、なければ全額いろはへ
+  const isIroha = child.name === 'いろは' && irohaDebtChild;
+  if (isIroha) {
+    const half = Math.floor(amount / 2);
+    const remainder = amount - half; // 奇数の場合、いろは本体に1円多く
 
-  // Discord通知
-  try {
-    await fetch(DISCORD_WEBHOOK, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ content: '\u{1F4B0} **' + child.name + '** \u306B ' + amount + '\u5186 \u304A\u5C0F\u9063\u3044\uFF01\n\u{1F4B3} \u6B8B\u9AD8: ' + newBalance.toLocaleString() + '\u5186' })
+    // いろは本体
+    const newBalance = child.balance + remainder;
+    // 未読入金情報を保存（演出用）
+    savePendingDeposit(child.id, child.balance, newBalance, remainder);
+    await client.from('children').update({ balance: newBalance }).eq('id', child.id);
+    await client.from('transactions').insert({
+      child_id: child.id, type: 'add', amount: remainder, memo: 'お手伝いポイント'
     });
-  } catch(e) {}
 
-  // ローカルデータ更新
-  child.balance = newBalance;
+    // いろはの借金
+    const debtNewBalance = irohaDebtChild.balance + half;
+    savePendingDeposit(irohaDebtChild.id, irohaDebtChild.balance, debtNewBalance, half);
+    await client.from('children').update({ balance: debtNewBalance }).eq('id', irohaDebtChild.id);
+    await client.from('transactions').insert({
+      child_id: irohaDebtChild.id, type: 'add', amount: half, memo: 'お手伝いポイント（いろは分）'
+    });
 
-  // 結果表示
-  const result = document.getElementById('result');
-  document.getElementById('resultMsg').textContent = child.name + ' \u306B ' + amount + '\u5186 \u3042\u3052\u305F\uFF01';
-  document.getElementById('resultBalance').textContent = '\u6B8B\u9AD8: ' + newBalance.toLocaleString() + '\u5186';
-  result.style.display = 'block';
+    // Discord通知
+    try {
+      await fetch(DISCORD_WEBHOOK, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ content: '\u{1F4B0} **いろは** に ' + amount + '円 お小遣い！\n　→ いろは: ' + remainder + '円（残高: ' + newBalance.toLocaleString() + '円）\n　→ いろはの借金: ' + half + '円（残高: ' + debtNewBalance.toLocaleString() + '円）' })
+      });
+    } catch(e) {}
+
+    // ローカルデータ更新
+    child.balance = newBalance;
+    irohaDebtChild.balance = debtNewBalance;
+
+    // 結果表示
+    const result = document.getElementById('result');
+    document.getElementById('resultMsg').textContent = 'いろは に ' + amount + '円 あげた！';
+    document.getElementById('resultBalance').textContent = 'いろは: ' + newBalance.toLocaleString() + '円 / 借金返済: ' + debtNewBalance.toLocaleString() + '円';
+    result.style.display = 'block';
+  } else {
+    // 通常処理
+    const newBalance = child.balance + amount;
+    // 未読入金情報を保存（演出用）
+    savePendingDeposit(child.id, child.balance, newBalance, amount);
+    await client.from('children').update({ balance: newBalance }).eq('id', selectedChildId);
+    await client.from('transactions').insert({
+      child_id: selectedChildId, type: 'add', amount, memo: 'お手伝いポイント'
+    });
+
+    // Discord通知
+    try {
+      await fetch(DISCORD_WEBHOOK, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ content: '\u{1F4B0} **' + child.name + '** に ' + amount + '円 お小遣い！\n\u{1F4B3} 残高: ' + newBalance.toLocaleString() + '円' })
+      });
+    } catch(e) {}
+
+    // ローカルデータ更新
+    child.balance = newBalance;
+
+    // 結果表示
+    const result = document.getElementById('result');
+    document.getElementById('resultMsg').textContent = child.name + ' に ' + amount + '円 あげた！';
+    document.getElementById('resultBalance').textContent = '残高: ' + newBalance.toLocaleString() + '円';
+    result.style.display = 'block';
+  }
 
   // ボタン再有効化
   setTimeout(() => {

@@ -58,6 +58,10 @@ h2 { margin-bottom: 12px; color: #333; }
   .btn { padding: 14px; font-size: 1.05em; }
   .history-item { padding: 12px; }
 }
+@keyframes sparkleUp {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+}
 </style>
 </head>
 <body>
@@ -91,6 +95,59 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const params = new URLSearchParams(window.location.search);
 const childId = params.get('id');
 let child = null;
+
+// カウントアップ演出
+function animateBalance(el, from, to, duration) {
+  const start = performance.now();
+  const diff = to - from;
+
+  // 演出開始時にハイライト
+  el.style.transition = 'color 0.3s, transform 0.3s';
+  el.style.color = '#ff9800';
+  el.style.transform = 'scale(1.15)';
+
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOutCubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + diff * ease);
+
+    el.textContent = `${current.toLocaleString()}円`;
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      // 演出完了
+      el.textContent = `${to.toLocaleString()}円`;
+      el.style.color = to < 0 ? '#e53935' : '#4caf50';
+      el.style.transform = 'scale(1)';
+      el.classList.toggle('negative', to < 0);
+
+      // キラキラ演出
+      showDepositEffect(el);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function showDepositEffect(el) {
+  const sparkles = ['✨', '💰', '🎉'];
+  const rect = el.getBoundingClientRect();
+  sparkles.forEach((emoji, i) => {
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    span.style.cssText = `
+      position: fixed; font-size: 1.5em; pointer-events: none; z-index: 999;
+      left: ${rect.left + rect.width / 2 + (i - 1) * 30}px;
+      top: ${rect.top}px;
+      animation: sparkleUp 1s ease-out forwards;
+      animation-delay: ${i * 0.1}s;
+    `;
+    document.body.appendChild(span);
+    setTimeout(() => span.remove(), 1200);
+  });
+}
 </script>
 
 <script>
@@ -107,8 +164,32 @@ async function load() {
   document.title = `${child.name} - お小遣い手帳`;
 
   const balEl = document.getElementById('childBalance');
-  balEl.textContent = `${child.balance.toLocaleString()}円`;
-  if (child.balance < 0) balEl.classList.add('negative');
+
+  // 未読入金の演出チェック
+  const pendingKey = 'pending_deposit_' + childId;
+  const pendingRaw = localStorage.getItem(pendingKey);
+  if (pendingRaw) {
+    try {
+      const pending = JSON.parse(pendingRaw);
+      // まず入金前の残高を表示
+      balEl.textContent = `${pending.oldBalance.toLocaleString()}円`;
+      if (pending.oldBalance < 0) balEl.classList.add('negative');
+
+      // 少し待ってからカウントアップ演出
+      setTimeout(() => {
+        animateBalance(balEl, pending.oldBalance, child.balance, 1200);
+      }, 600);
+
+      // 未読フラグをクリア
+      localStorage.removeItem(pendingKey);
+    } catch(e) {
+      balEl.textContent = `${child.balance.toLocaleString()}円`;
+      if (child.balance < 0) balEl.classList.add('negative');
+    }
+  } else {
+    balEl.textContent = `${child.balance.toLocaleString()}円`;
+    if (child.balance < 0) balEl.classList.add('negative');
+  }
 
   // 設定リンクを設定
   document.getElementById('settingsLink').href = `settings.html?id=${childId}`;

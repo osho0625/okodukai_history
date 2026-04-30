@@ -212,12 +212,29 @@ h2 .toggle.open { transform: rotate(90deg); }
       </div>
       <div class="msg" id="nightPwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
     </div>
-    <div style="border-top:1px solid #eee; padding-top:12px;">
-      <div style="font-weight:600; margin-bottom:8px;">カウントリセット</div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">&#x1F9F9; お手伝いポイント パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentAllowancePw" style="font-weight:600; color:#333;">-</span></div>
       <div style="display:flex; gap:8px;">
-        <button class="btn-sm btn-danger" onclick="resetPuyoCount()" style="flex:1; padding:10px;">ぷよカウント</button>
-        <button class="btn-sm btn-danger" onclick="resetRoachCount()" style="flex:1; padding:10px;">ゴキブリカウント</button>
-        <button class="btn-sm btn-danger" onclick="resetRanking()" style="flex:1; padding:10px;">ランキング</button>
+        <input type="text" id="allowancePwInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveAllowancePw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="allowancePwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:12px;">
+      <div style="font-weight:600; margin-bottom:12px;">カウント</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0;">
+        <span>ぷよカウント</span>
+        <button class="btn-sm btn-danger" onclick="resetPuyoCount()">リセットする</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>ゴキブリカウント</span>
+        <button class="btn-sm btn-danger" onclick="resetRoachCount()">リセットする</button>
+      </div>
+      <div style="font-weight:600; margin-top:16px; margin-bottom:12px;">ゲーム</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>ランキング</span>
+        <button class="btn-sm btn-danger" onclick="resetRanking()">リセットする</button>
       </div>
       <div class="msg" id="resetMsg" style="margin-top:8px;">&#x2713; リセットしました</div>
     </div>
@@ -683,7 +700,7 @@ async function resetRanking() {
 (function init() {
   const tripToggle = document.getElementById('tripBoostToggle');
   if (tripToggle) {
-    tripToggle.checked = localStorage.getItem('tripBoost') === 'true';
+    tripToggle.checked = sessionStorage.getItem('tripBoost') === 'true';
   }
   const nightToggle = document.getElementById('nightLimitToggle');
   if (nightToggle) {
@@ -695,7 +712,7 @@ async function resetRanking() {
 
 function toggleTripBoost() {
   const on = document.getElementById('tripBoostToggle').checked;
-  localStorage.setItem('tripBoost', on);
+  sessionStorage.setItem('tripBoost', on);
 }
 
 function toggleNightLimit() {
@@ -705,10 +722,13 @@ function toggleNightLimit() {
 
 async function loadNightPw() {
   try {
-    const { data } = await client.from('game_settings').select('night_password').eq('id', 1).maybeSingle();
+    const { data } = await client.from('game_settings').select('night_password, allowance_password').eq('id', 1).maybeSingle();
     const pw = (data && data.night_password) || '299792458';
     const el = document.getElementById('currentNightPw');
     if (el) el.textContent = pw;
+    const aPw = (data && data.allowance_password) || '49468425925';
+    const aEl = document.getElementById('currentAllowancePw');
+    if (aEl) aEl.textContent = aPw;
   } catch(e) {}
 }
 
@@ -718,7 +738,18 @@ async function saveNightPw() {
   await client.from('game_settings').update({ night_password: pw }).eq('id', 1);
   document.getElementById('currentNightPw').textContent = pw;
   document.getElementById('nightPwInput').value = '';
-  const msg = document.getElementById('resetMsg');
+  const msg = document.getElementById('nightPwMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function saveAllowancePw() {
+  const pw = document.getElementById('allowancePwInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ allowance_password: pw }).eq('id', 1);
+  document.getElementById('currentAllowancePw').textContent = pw;
+  document.getElementById('allowancePwInput').value = '';
+  const msg = document.getElementById('allowancePwMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
 }

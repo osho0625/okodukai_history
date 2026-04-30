@@ -16,17 +16,38 @@
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
 h1 { text-align: center; margin-bottom: 24px; color: #333; }
 .children-list { max-width: 480px; margin: 0 auto; width: 100%; }
+.child-row-wrap {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
 .child-card {
   display: flex; justify-content: space-between; align-items: center;
   background: #fff; border-radius: 12px; padding: 20px 24px;
-  margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-  text-decoration: none; color: inherit;
+  text-decoration: none; color: inherit; gap: 10px; flex: 1;
 }
 .child-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-.child-name { font-size: 1.3em; font-weight: 600; }
+.child-name { font-size: 1.3em; font-weight: 600; flex: 1; }
 .child-balance { font-size: 1.3em; font-weight: 700; color: #4caf50; }
 .child-balance.negative { color: #e53935; }
+.notify-bell {
+  font-size: 1.6em; cursor: pointer; line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(255,152,0,0.4));
+}
+.notify-bell.ringing {
+  animation: bellRing 0.6s ease-in-out;
+}
+@keyframes bellRing {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(18deg); }
+  30% { transform: rotate(-16deg); }
+  45% { transform: rotate(12deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(6deg); }
+  90% { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
 .loading { text-align: center; color: #999; margin-top: 40px; }
 
 /* モーダル */
@@ -139,10 +160,23 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 </div>
 
 <div style="text-align:center; margin-top:16px;">
-  <a href="pages/allowance.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
+  <a href="#" onclick="goAllowance(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
 </div>
 
 <!-- お手伝いアイコン（アカウント一覧の下に配置） -->
+
+<!-- お手伝いパスワードモーダル -->
+<div class="overlay" id="allowanceOverlay">
+  <div class="modal">
+    <h2>&#x1F9F9; パスワードを入力</h2>
+    <div class="error-msg" id="allowanceError">パスワードが違います</div>
+    <input type="password" id="allowancePwInput" placeholder="パスワード" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAllowanceModal()">キャンセル</button>
+      <button class="btn-ok" onclick="submitAllowancePw()">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- ぷよ畑 -->
 <div class="puyo-garden" id="puyoGarden" style="display:none;">
@@ -186,10 +220,58 @@ const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I
 let allChildren = [];
 let pendingChildId = null;
 let adminFailCount = 0;
+let allowancePassword = null;
+
+// --- お手伝いパスワード読み込み ---
+async function loadAllowancePw() {
+  try {
+    const { data } = await client.from('game_settings').select('allowance_password').eq('id', 1).maybeSingle();
+    allowancePassword = (data && data.allowance_password) || '49468425925';
+  } catch(e) { allowancePassword = '49468425925'; }
+}
+
+function goAllowance() {
+  document.getElementById('allowanceError').style.display = 'none';
+  document.getElementById('allowancePwInput').value = '';
+  document.getElementById('allowanceOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('allowancePwInput').focus(), 100);
+}
+
+function submitAllowancePw() {
+  const input = document.getElementById('allowancePwInput').value;
+  if (input === allowancePassword) {
+    closeAllowanceModal();
+    window.location.href = 'pages/allowance.html';
+  } else {
+    document.getElementById('allowanceError').style.display = 'block';
+    document.getElementById('allowancePwInput').value = '';
+    document.getElementById('allowancePwInput').focus();
+  }
+}
+
+function closeAllowanceModal() {
+  document.getElementById('allowanceOverlay').classList.remove('active');
+}
+
+// Enterキー対応
+document.getElementById('allowancePwInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAllowancePw();
+});
+document.getElementById('allowanceOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAllowanceModal();
+});
 
 // --- Discord通知 ---
 async function notifyDiscordTop(content) {
   try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) }); } catch(e) {}
+}
+
+// --- ベル揺れ演出 ---
+function ringBell(e, el) {
+  e.stopPropagation(); // カードのクリックを防止
+  el.classList.remove('ringing');
+  void el.offsetWidth; // reflow
+  el.classList.add('ringing');
 }
 
 // --- アカウント一覧読み込み ---
@@ -209,19 +291,38 @@ async function load() {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const hasPassword = c.require_password && c.password;
     const showBalance = !hasPassword && c.show_balance_on_top !== false;
-    const balanceText = showBalance ? `${c.balance.toLocaleString()}円` : '****円';
+
+    // 未読入金チェック
+    const pendingKey = 'pending_deposit_' + c.id;
+    const pendingRaw = localStorage.getItem(pendingKey);
+    let displayBalance = c.balance;
+    let bellHtml = '';
+    if (pendingRaw && showBalance) {
+      try {
+        const pending = JSON.parse(pendingRaw);
+        displayBalance = pending.oldBalance;
+        bellHtml = '<span class="notify-bell" onclick="ringBell(event, this)">&#x1F514;</span>';
+      } catch(e) {}
+    }
+
+    const displayNeg = displayBalance < 0 ? ' negative' : '';
+    const balanceText = showBalance ? `${displayBalance.toLocaleString()}円` : '****円';
     const lock = hasPassword ? ' 🔒' : '';
     container.innerHTML += `
-      <div class="child-card" data-id="${c.id}">
-        <span class="child-name">${c.name}${lock}</span>
-        <span class="child-balance${isNeg}">${balanceText}</span>
+      <div class="child-row-wrap" data-id="${c.id}">
+        ${bellHtml}
+        <div class="child-card">
+          <span class="child-name">${c.name}${lock}</span>
+          <span class="child-balance${displayNeg}">${balanceText}</span>
+        </div>
       </div>
     `;
   });
 
   // カードにクリックイベントを設定
-  container.querySelectorAll('.child-card').forEach(card => {
-    card.addEventListener('click', () => goToChild(card.dataset.id));
+  container.querySelectorAll('.child-row-wrap').forEach(wrap => {
+    const card = wrap.querySelector('.child-card');
+    card.addEventListener('click', () => goToChild(wrap.dataset.id));
   });
 }
 
@@ -413,12 +514,13 @@ async function showRoachCount() {
 load();
 loadPuyoCounts();
 setupRealtimePuyoCounts();
+loadAllowancePw();
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.5.2</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.5.9</a></div>
 
 </body>
 </html>
