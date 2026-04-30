@@ -62,6 +62,72 @@ h2 { margin-bottom: 12px; color: #333; }
   0% { opacity: 1; transform: translateY(0) scale(0.5); }
   100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
 }
+
+/* 入金演出オーバーレイ */
+.deposit-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); z-index: 1000;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.4s;
+}
+.deposit-overlay.show { opacity: 1; }
+.deposit-overlay.fadeout { opacity: 0; }
+.deposit-label {
+  color: #fff; font-size: 1.1em; font-weight: 600; margin-bottom: 8px;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.deposit-label.show { opacity: 1; transform: translateY(0); }
+.deposit-amount {
+  font-size: 3.5em; font-weight: 900; color: #fff;
+  text-shadow: 0 0 20px rgba(76,175,80,0.6), 0 4px 12px rgba(0,0,0,0.3);
+  transform: scale(0.5); opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+}
+.deposit-amount.show { transform: scale(1); opacity: 1; }
+.deposit-amount.counting { color: #ffb74d; }
+.deposit-amount.done {
+  color: #69f0ae;
+  text-shadow: 0 0 30px rgba(105,240,174,0.8), 0 0 60px rgba(105,240,174,0.4);
+}
+.deposit-plus {
+  font-size: 1.4em; font-weight: 700; color: #ffb74d; margin-top: 12px;
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.deposit-plus.show { opacity: 1; transform: translateY(0); }
+.confetti {
+  position: fixed; pointer-events: none; z-index: 1001;
+  font-size: 1.8em;
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(120px) rotate(360deg) scale(0.3); }
+}
+@keyframes confettiRise {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-80px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.6); }
+}
+@media (max-width: 520px) {
+  .deposit-amount { font-size: 2.8em; }
+  .deposit-plus { font-size: 1.2em; }
+}
+.replay-btn {
+  position: fixed; bottom: 20px; left: 20px;
+  font-size: 2em; cursor: pointer; z-index: 50;
+  width: 52px; height: 52px; display: none; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.9); border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+}
+.replay-btn:hover { transform: scale(1.1); }
+.replay-btn:active { transform: scale(0.95); }
+@keyframes replayPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -87,6 +153,9 @@ h2 { margin-bottom: 12px; color: #333; }
   <div class="loading">読み込み中...</div>
 </div>
 
+<!-- リプレイボタン（左下固定） -->
+<div id="replayBtn" class="replay-btn" onclick="replayDeposit()">🎉</div>
+
 <script>
 const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
@@ -96,42 +165,146 @@ const params = new URLSearchParams(window.location.search);
 const childId = params.get('id');
 let child = null;
 
-// カウントアップ演出
+// カウントアップ演出（ヘッダーの残高用、オーバーレイ完了後に使用）
 function animateBalance(el, from, to, duration) {
   const start = performance.now();
   const diff = to - from;
-
-  // 演出開始時にハイライト
-  el.style.transition = 'color 0.3s, transform 0.3s';
-  el.style.color = '#ff9800';
-  el.style.transform = 'scale(1.15)';
-
   function tick(now) {
     const elapsed = now - start;
     const progress = Math.min(elapsed / duration, 1);
-    // easeOutCubic
     const ease = 1 - Math.pow(1 - progress, 3);
     const current = Math.round(from + diff * ease);
-
     el.textContent = `${current.toLocaleString()}円`;
-
     if (progress < 1) {
       requestAnimationFrame(tick);
     } else {
-      // 演出完了
       el.textContent = `${to.toLocaleString()}円`;
       el.style.color = to < 0 ? '#e53935' : '#4caf50';
-      el.style.transform = 'scale(1)';
       el.classList.toggle('negative', to < 0);
-
-      // キラキラ演出
-      showDepositEffect(el);
     }
   }
   requestAnimationFrame(tick);
 }
 
+// フルスクリーン入金演出
+function showDepositOverlay(oldBalance, newBalance, totalAmount, isReplay) {
+  const overlay = document.createElement('div');
+  overlay.className = 'deposit-overlay';
+
+  const label = document.createElement('div');
+  label.className = 'deposit-label';
+  label.textContent = 'お小遣いが増えたよ！';
+
+  const amountEl = document.createElement('div');
+  amountEl.className = 'deposit-amount';
+  amountEl.textContent = `${oldBalance.toLocaleString()}円`;
+
+  const plusEl = document.createElement('div');
+  plusEl.className = 'deposit-plus';
+  plusEl.textContent = `+${totalAmount.toLocaleString()}円`;
+
+  overlay.appendChild(label);
+  overlay.appendChild(amountEl);
+  overlay.appendChild(plusEl);
+  document.body.appendChild(overlay);
+
+  // タップで早送り
+  let skipped = false;
+  overlay.addEventListener('click', () => {
+    if (!skipped) {
+      skipped = true;
+      finishOverlay();
+    }
+  });
+
+  // 演出開始
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    setTimeout(() => {
+      amountEl.classList.add('show');
+      label.classList.add('show');
+    }, 200);
+
+    // +金額を表示
+    setTimeout(() => {
+      plusEl.classList.add('show');
+    }, 800);
+
+    // カウントアップ開始
+    setTimeout(() => {
+      if (skipped) return;
+      amountEl.classList.add('counting');
+      countUp(amountEl, oldBalance, newBalance, 1500, () => {
+        if (skipped) return;
+        finishOverlay();
+      });
+    }, 1400);
+  });
+
+  function finishOverlay() {
+    amountEl.textContent = `${newBalance.toLocaleString()}円`;
+    amountEl.classList.remove('counting');
+    amountEl.classList.add('done');
+    plusEl.style.opacity = '0';
+
+    // 紙吹雪
+    spawnConfetti(overlay);
+
+    // ヘッダーの残高も更新（リプレイ時はスキップ）
+    if (!isReplay) {
+      const balEl = document.getElementById('childBalance');
+      balEl.textContent = `${newBalance.toLocaleString()}円`;
+      balEl.style.color = newBalance < 0 ? '#e53935' : '#4caf50';
+      balEl.classList.toggle('negative', newBalance < 0);
+    }
+
+    // フェードアウト
+    setTimeout(() => {
+      overlay.classList.add('fadeout');
+      setTimeout(() => overlay.remove(), 500);
+    }, 1800);
+  }
+}
+
+function countUp(el, from, to, duration, onDone) {
+  const start = performance.now();
+  const diff = to - from;
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + diff * ease);
+    el.textContent = `${current.toLocaleString()}円`;
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      el.textContent = `${to.toLocaleString()}円`;
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function spawnConfetti(container) {
+  const emojis = ['🎉', '✨', '💰', '🪙', '⭐', '🎊', '💫', '🌟'];
+  for (let i = 0; i < 20; i++) {
+    const span = document.createElement('span');
+    span.className = 'confetti';
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const x = Math.random() * window.innerWidth;
+    const y = window.innerHeight * 0.3 + Math.random() * window.innerHeight * 0.4;
+    span.style.left = x + 'px';
+    span.style.top = y + 'px';
+    const rise = Math.random() < 0.5;
+    span.style.animation = `${rise ? 'confettiRise' : 'confettiFall'} ${0.8 + Math.random() * 0.8}s ease-out forwards`;
+    span.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(span);
+    setTimeout(() => span.remove(), 2000);
+  }
+}
+
 function showDepositEffect(el) {
+  // 既存のキラキラ（ヘッダー用、フォールバック）
   const sparkles = ['✨', '💰', '🎉'];
   const rect = el.getBoundingClientRect();
   sparkles.forEach((emoji, i) => {
@@ -147,6 +320,19 @@ function showDepositEffect(el) {
     document.body.appendChild(span);
     setTimeout(() => span.remove(), 1200);
   });
+}
+
+function showReplayBtn() {
+  // リプレイボタンは隠しコマンドで表示（残高10回タップ）
+}
+
+function replayDeposit() {
+  const lastRaw = localStorage.getItem('last_deposit_' + childId);
+  if (!lastRaw) return;
+  try {
+    const last = JSON.parse(lastRaw);
+    showDepositOverlay(last.oldBalance, last.newBalance, last.totalAmount, true);
+  } catch(e) {}
 }
 </script>
 
@@ -171,17 +357,20 @@ async function load() {
   if (pendingRaw) {
     try {
       const pending = JSON.parse(pendingRaw);
-      // まず入金前の残高を表示
+      // ヘッダーは入金前の残高を表示
       balEl.textContent = `${pending.oldBalance.toLocaleString()}円`;
       if (pending.oldBalance < 0) balEl.classList.add('negative');
 
-      // 少し待ってからカウントアップ演出
-      setTimeout(() => {
-        animateBalance(balEl, pending.oldBalance, child.balance, 1200);
-      }, 600);
+      // 直前の演出データとして保存（リプレイ用）
+      localStorage.setItem('last_deposit_' + childId, pendingRaw);
 
       // 未読フラグをクリア
       localStorage.removeItem(pendingKey);
+
+      // フルスクリーン演出を開始
+      setTimeout(() => {
+        showDepositOverlay(pending.oldBalance, child.balance, pending.totalAmount);
+      }, 400);
     } catch(e) {
       balEl.textContent = `${child.balance.toLocaleString()}円`;
       if (child.balance < 0) balEl.classList.add('negative');
@@ -266,6 +455,46 @@ async function useMoney() {
   document.getElementById('memo').value = '';
   load();
 }
+
+// 残高10回タップで🎉リプレイボタン表示
+(function setupReplaySecret() {
+  const balEl = document.getElementById('childBalance');
+  let taps = [];
+  let touchUsed = false;
+  balEl.style.cursor = 'default';
+  balEl.style.touchAction = 'manipulation';
+  balEl.style.userSelect = 'none';
+  balEl.style.webkitUserSelect = 'none';
+
+  function onTap() {
+    const now = Date.now();
+    taps.push(now);
+    taps = taps.filter(t => now - t < 4000);
+    if (taps.length >= 5) {
+      taps = [];
+      if (localStorage.getItem('last_deposit_' + childId)) {
+        const btn = document.getElementById('replayBtn');
+        btn.style.display = 'flex';
+        btn.style.opacity = '1';
+        btn.style.transform = 'scale(1)';
+        btn.style.animation = 'none';
+        void btn.offsetWidth;
+        btn.style.animation = 'replayPop 0.5s ease-out';
+      }
+    }
+  }
+
+  balEl.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    touchUsed = true;
+    onTap();
+  });
+  balEl.addEventListener('click', (e) => {
+    if (touchUsed) return; // タッチデバイスではclickを無視
+    e.preventDefault();
+    onTap();
+  });
+})();
 
 load();
 </script>

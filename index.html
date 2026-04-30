@@ -221,16 +221,22 @@ let allChildren = [];
 let pendingChildId = null;
 let adminFailCount = 0;
 let allowancePassword = null;
+let adminPassword = null;
 
-// --- お手伝いパスワード読み込み ---
-async function loadAllowancePw() {
+// --- パスワード読み込み（Supabase） ---
+async function loadPasswords() {
   try {
-    const { data } = await client.from('game_settings').select('allowance_password').eq('id', 1).maybeSingle();
-    allowancePassword = (data && data.allowance_password) || '49468425925';
-  } catch(e) { allowancePassword = '49468425925'; }
+    const { data } = await client.from('game_settings').select('allowance_password, admin_password').eq('id', 1).maybeSingle();
+    allowancePassword = (data && data.allowance_password) || null;
+    adminPassword = (data && data.admin_password) || null;
+  } catch(e) {}
 }
 
 function goAllowance() {
+  if (!allowancePassword) {
+    window.location.href = 'pages/allowance.html';
+    return;
+  }
   document.getElementById('allowanceError').style.display = 'none';
   document.getElementById('allowancePwInput').value = '';
   document.getElementById('allowanceOverlay').classList.add('active');
@@ -384,7 +390,7 @@ function goAdmin() {
 
 function submitAdminPw() {
   const input = document.getElementById('adminPwInput').value;
-  if (input === 'mgmlv') {
+  if (adminPassword && input === adminPassword) {
     adminFailCount = 0;
     document.getElementById('adminOverlay').classList.remove('active');
     notifyDiscordTop('🔧 管理者ページにログインしました');
@@ -514,13 +520,13 @@ async function showRoachCount() {
 load();
 loadPuyoCounts();
 setupRealtimePuyoCounts();
-loadAllowancePw();
+loadPasswords();
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.5.9</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.6.8</a></div>
 
 </body>
 </html>

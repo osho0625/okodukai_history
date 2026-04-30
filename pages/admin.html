@@ -204,6 +204,15 @@ h2 .toggle.open { transform: rotate(90deg); }
     </div>
     <div style="font-size:0.85em; color:#999; margin-bottom:16px;">OFFにすると夜間もゲームできます（リロードで戻ります）</div>
     <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">&#x1F527; 管理者パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentAdminPw" style="font-weight:600; color:#333;">-</span></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="adminPwChangeInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveAdminPw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="adminPwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
       <div style="font-weight:600; margin-bottom:8px;">夜間制限 解除パスワード</div>
       <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentNightPw" style="font-weight:600; color:#333;">-</span></div>
       <div style="display:flex; gap:8px;">
@@ -336,7 +345,9 @@ async function loadChildren() {
 
   data.forEach(c => {
     const negClass = c.balance < 0 ? ' neg' : '';
-    const pwText = c.require_password ? '🔒 パスワードあり' : 'パスワードなし';
+    const pwText = c.require_password && c.password
+      ? `🔒 PW: ${c.password}`
+      : 'パスワードなし';
     list.innerHTML += `
       <div class="child-row">
         <div class="child-info">
@@ -722,13 +733,16 @@ function toggleNightLimit() {
 
 async function loadNightPw() {
   try {
-    const { data } = await client.from('game_settings').select('night_password, allowance_password').eq('id', 1).maybeSingle();
-    const pw = (data && data.night_password) || '299792458';
+    const { data } = await client.from('game_settings').select('night_password, allowance_password, admin_password').eq('id', 1).maybeSingle();
+    const pw = (data && data.night_password) || '';
     const el = document.getElementById('currentNightPw');
-    if (el) el.textContent = pw;
-    const aPw = (data && data.allowance_password) || '49468425925';
+    if (el) el.textContent = pw || '(未設定)';
+    const aPw = (data && data.allowance_password) || '';
     const aEl = document.getElementById('currentAllowancePw');
-    if (aEl) aEl.textContent = aPw;
+    if (aEl) aEl.textContent = aPw || '(未設定)';
+    const adPw = (data && data.admin_password) || '';
+    const adEl = document.getElementById('currentAdminPw');
+    if (adEl) adEl.textContent = adPw || '(未設定)';
   } catch(e) {}
 }
 
@@ -750,6 +764,17 @@ async function saveAllowancePw() {
   document.getElementById('currentAllowancePw').textContent = pw;
   document.getElementById('allowancePwInput').value = '';
   const msg = document.getElementById('allowancePwMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function saveAdminPw() {
+  const pw = document.getElementById('adminPwChangeInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ admin_password: pw }).eq('id', 1);
+  document.getElementById('currentAdminPw').textContent = pw;
+  document.getElementById('adminPwChangeInput').value = '';
+  const msg = document.getElementById('adminPwMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
 }
