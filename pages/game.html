@@ -22,12 +22,12 @@ body {
 .chain { font-size: 0.9em; color: #ff6; height: 1.2em; }
 canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; display: block; }
 .controls {
-  display: flex; gap: 12px; margin-top: 12px; max-width: 400px; width: 100%;
+  display: flex; gap: 12px; margin-top: 8px; max-width: 400px; width: 100%;
   justify-content: center;
 }
 .ctrl-btn {
-  width: 60px; height: 60px; border: none; border-radius: 12px;
-  background: rgba(255,255,255,0.1); color: #fff; font-size: 1.5em;
+  width: 56px; height: 56px; border: none; border-radius: 12px;
+  background: rgba(255,255,255,0.1); color: #fff; font-size: 1.4em;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .ctrl-btn:active { background: rgba(255,255,255,0.25); }
@@ -76,12 +76,19 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-const W = Math.min(300, window.innerWidth - 16);
-const CELL = Math.floor(W / 6);
+// スマホの画面に収まるようにサイズ計算
+const headerH = 44; // ヘッダー
+const controlsH = 80; // 操作ボタン
+const padding = 24;
+const availH = window.innerHeight - headerH - controlsH - padding;
+const availW = Math.min(300, window.innerWidth - 16);
+
 const COLS = 6;
 const ROWS = 13;
+const CELL = Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS));
+const W = CELL * COLS;
 const H = CELL * ROWS;
-canvas.width = CELL * COLS;
+canvas.width = W;
 canvas.height = H;
 
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
