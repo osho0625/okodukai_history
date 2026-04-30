@@ -119,6 +119,22 @@ h2 .toggle.open { transform: rotate(90deg); }
   .child-row { flex-direction: column; align-items: flex-start; gap: 8px; }
   .child-actions { width: 100%; }
 }
+/* トグルスイッチ */
+.toggle-switch {
+  position: relative; width: 50px; height: 26px; cursor: pointer; flex-shrink: 0;
+}
+.toggle-switch input { display: none; }
+.toggle-track {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: #ccc; border-radius: 13px; transition: background 0.2s;
+}
+.toggle-switch input:checked + .toggle-track { background: #4caf50; }
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  background: #fff; border-radius: 50%; transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked ~ .toggle-knob { left: 27px; }
 </style>
 </head>
 <body>
@@ -171,14 +187,63 @@ h2 .toggle.open { transform: rotate(90deg); }
   <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
       <span>ぷよのコケやすさ 10倍</span>
-      <button class="btn-sm" id="tripBoostBtn" onclick="toggleTripBoost()" style="padding:8px 16px;">OFF</button>
+      <label class="toggle-switch">
+        <input type="checkbox" id="tripBoostToggle" onchange="toggleTripBoost()">
+        <div class="toggle-track"></div>
+        <div class="toggle-knob"></div>
+      </label>
     </div>
     <div style="font-size:0.85em; color:#999; margin-bottom:16px;">ONにすると全ぷよがめちゃくちゃコケます</div>
-    <div style="border-top:1px solid #eee; padding-top:12px;">
-      <div style="font-weight:600; margin-bottom:8px;">カウントリセット</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span>夜間ゲーム制限</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="nightLimitToggle" onchange="toggleNightLimit()" checked>
+        <div class="toggle-track"></div>
+        <div class="toggle-knob"></div>
+      </label>
+    </div>
+    <div style="font-size:0.85em; color:#999; margin-bottom:16px;">OFFにすると夜間もゲームできます（リロードで戻ります）</div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">&#x1F527; 管理者パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentAdminPw" style="font-weight:600; color:#333;">-</span></div>
       <div style="display:flex; gap:8px;">
-        <button class="btn-sm btn-danger" onclick="resetPuyoCount()" style="flex:1; padding:10px;">ぷよカウント</button>
-        <button class="btn-sm btn-danger" onclick="resetRoachCount()" style="flex:1; padding:10px;">ゴキブリカウント</button>
+        <input type="text" id="adminPwChangeInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveAdminPw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="adminPwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">夜間制限 解除パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentNightPw" style="font-weight:600; color:#333;">-</span></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="nightPwInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveNightPw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="nightPwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">&#x1F9F9; お手伝いポイント パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentAllowancePw" style="font-weight:600; color:#333;">-</span></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="allowancePwInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveAllowancePw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="allowancePwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:12px;">
+      <div style="font-weight:600; margin-bottom:12px;">カウント</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0;">
+        <span>ぷよカウント</span>
+        <button class="btn-sm btn-danger" onclick="resetPuyoCount()">リセットする</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>ゴキブリカウント</span>
+        <button class="btn-sm btn-danger" onclick="resetRoachCount()">リセットする</button>
+      </div>
+      <div style="font-weight:600; margin-top:16px; margin-bottom:12px;">ゲーム</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>ランキング</span>
+        <button class="btn-sm btn-danger" onclick="resetRanking()">リセットする</button>
       </div>
       <div class="msg" id="resetMsg" style="margin-top:8px;">&#x2713; リセットしました</div>
     </div>
@@ -280,7 +345,9 @@ async function loadChildren() {
 
   data.forEach(c => {
     const negClass = c.balance < 0 ? ' neg' : '';
-    const pwText = c.require_password ? '🔒 パスワードあり' : 'パスワードなし';
+    const pwText = c.require_password && c.password
+      ? `🔒 PW: ${c.password}`
+      : 'パスワードなし';
     list.innerHTML += `
       <div class="child-row">
         <div class="child-info">
@@ -632,25 +699,85 @@ async function resetRoachCount() {
   setTimeout(() => msg.style.display = 'none', 2000);
 }
 
-function toggleTripBoost() {
-  const btn = document.getElementById('tripBoostBtn');
-  const current = localStorage.getItem('tripBoost') === 'true';
-  const newVal = !current;
-  localStorage.setItem('tripBoost', newVal);
-  btn.textContent = newVal ? 'ON' : 'OFF';
-  btn.style.background = newVal ? '#e53935' : '';
-  btn.style.color = newVal ? '#fff' : '';
+async function resetRanking() {
+  if (!confirm('ランキングを全件削除しますか？')) return;
+  await client.from('game_rankings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const msg = document.getElementById('resetMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
 }
 
 // 初期状態を反映
-(function initTripBoost() {
-  const btn = document.getElementById('tripBoostBtn');
-  if (!btn) return;
-  const on = localStorage.getItem('tripBoost') === 'true';
-  btn.textContent = on ? 'ON' : 'OFF';
-  btn.style.background = on ? '#e53935' : '';
-  btn.style.color = on ? '#fff' : '';
+(function init() {
+  const tripToggle = document.getElementById('tripBoostToggle');
+  if (tripToggle) {
+    tripToggle.checked = sessionStorage.getItem('tripBoost') === 'true';
+  }
+  const nightToggle = document.getElementById('nightLimitToggle');
+  if (nightToggle) {
+    const off = localStorage.getItem('nightLimitOff') === 'true';
+    nightToggle.checked = !off; // ON=制限あり=checked
+  }
+  loadNightPw();
 })();
+
+function toggleTripBoost() {
+  const on = document.getElementById('tripBoostToggle').checked;
+  sessionStorage.setItem('tripBoost', on);
+}
+
+function toggleNightLimit() {
+  const on = document.getElementById('nightLimitToggle').checked;
+  localStorage.setItem('nightLimitOff', !on); // OFF=制限なし
+}
+
+async function loadNightPw() {
+  try {
+    const { data } = await client.from('game_settings').select('night_password, allowance_password, admin_password').eq('id', 1).maybeSingle();
+    const pw = (data && data.night_password) || '';
+    const el = document.getElementById('currentNightPw');
+    if (el) el.textContent = pw || '(未設定)';
+    const aPw = (data && data.allowance_password) || '';
+    const aEl = document.getElementById('currentAllowancePw');
+    if (aEl) aEl.textContent = aPw || '(未設定)';
+    const adPw = (data && data.admin_password) || '';
+    const adEl = document.getElementById('currentAdminPw');
+    if (adEl) adEl.textContent = adPw || '(未設定)';
+  } catch(e) {}
+}
+
+async function saveNightPw() {
+  const pw = document.getElementById('nightPwInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ night_password: pw }).eq('id', 1);
+  document.getElementById('currentNightPw').textContent = pw;
+  document.getElementById('nightPwInput').value = '';
+  const msg = document.getElementById('nightPwMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function saveAllowancePw() {
+  const pw = document.getElementById('allowancePwInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ allowance_password: pw }).eq('id', 1);
+  document.getElementById('currentAllowancePw').textContent = pw;
+  document.getElementById('allowancePwInput').value = '';
+  const msg = document.getElementById('allowancePwMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function saveAdminPw() {
+  const pw = document.getElementById('adminPwChangeInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ admin_password: pw }).eq('id', 1);
+  document.getElementById('currentAdminPw').textContent = pw;
+  document.getElementById('adminPwChangeInput').value = '';
+  const msg = document.getElementById('adminPwMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
 
 loadChildren();
 loadBackupDates();

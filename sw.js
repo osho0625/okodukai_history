@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v3';
+const CACHE_NAME = 'okozukai-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,11 @@ const ASSETS = [
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
+});
+
+// SKIP_WAITINGメッセージで即アクティベート
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {

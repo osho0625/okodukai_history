@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -22,29 +22,61 @@ body {
 .chain { font-size: 0.9em; color: #ff6; height: 1.2em; }
 canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; display: block; }
 .controls {
-  display: flex; gap: 12px; margin-top: 12px; max-width: 400px; width: 100%;
+  display: flex; gap: 12px; margin-top: 8px; max-width: 400px; width: 100%;
   justify-content: center;
 }
 .ctrl-btn {
-  width: 60px; height: 60px; border: none; border-radius: 12px;
-  background: rgba(255,255,255,0.1); color: #fff; font-size: 1.5em;
+  width: 56px; height: 56px; border: none; border-radius: 12px;
+  background: rgba(255,255,255,0.1); color: #fff; font-size: 1.4em;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .ctrl-btn:active { background: rgba(255,255,255,0.25); }
 .game-over {
   display: none; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.9); padding: 32px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(10,10,40,0.95), rgba(30,20,60,0.95));
+  padding: 20px 24px; border-radius: 20px;
   text-align: center; z-index: 10;
+  border: 1px solid rgba(255,215,0,0.2);
+  box-shadow: 0 0 40px rgba(255,215,0,0.1), 0 8px 32px rgba(0,0,0,0.5);
+  width: 90%; max-width: 340px;
 }
-.game-over h2 { font-size: 1.5em; margin-bottom: 8px; }
-.game-over .final { font-size: 2em; color: #ff6; margin-bottom: 16px; }
+.game-over h2 { font-size: 1.2em; margin-bottom: 4px; letter-spacing: 2px; }
+.game-over .final { font-size: 1.8em; color: #ff6; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255,255,100,0.4); }
+.game-over button { font-size: 0.9em; padding: 10px 20px; }
+.game-over .rank-in-msg {
+  display: none; color: #ffd700; font-size: 1em; font-weight: 700;
+  margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,215,0,0.5);
+  animation: rankPulse 1s ease-in-out infinite;
+}
+.game-over .rank-form { display: none; margin-bottom: 10px; }
+.game-over .rank-form input {
+  width: 100%; padding: 10px; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px;
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 0.95em;
+  text-align: center; margin-bottom: 8px; outline: none;
+}
+.game-over .rank-form input:focus { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.2); }
+.game-over .rank-form button {
+  width: 100%; padding: 10px; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00); color: #333;
+  font-weight: 700; font-size: 0.95em; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255,215,0,0.3);
+}
 .game-over button {
   padding: 12px 28px; border: none; border-radius: 8px;
   background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
   cursor: pointer; margin: 4px;
 }
 .game-over .btn-back { background: #555; }
+@keyframes titlePuyoWalk {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(-4deg); }
+  75% { transform: translateY(-3px) rotate(4deg); }
+}
+@keyframes poofUp {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
+}
 </style>
 </head>
 <body>
@@ -54,34 +86,69 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
     <div class="score">Score: <span id="score">0</span></div>
     <div class="chain" id="chain"></div>
   </div>
+  <a href="ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
+  <!-- タイトルメニュー -->
+  <div id="titleMenu" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(26,26,46,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;border-radius:8px;overflow:hidden;">
+    <button onclick="dismissMenu(); startGame();" style="width:200px;padding:14px;border:none;border-radius:12px;background:#4caf50;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;margin-bottom:12px;">ゲーム開始</button>
+    <button onclick="location.href='ranking.html'" style="width:200px;padding:14px;border:none;border-radius:12px;background:#1976d2;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;">&#x1F3C6; ランキング</button>
+    <!-- 地面＋ぷよ -->
+    <div id="titleGround" style="position:absolute;bottom:0;left:0;width:100%;height:50px;border-radius:0 0 8px 8px;overflow:visible;">
+      <div style="position:absolute;bottom:0;left:0;width:100%;height:30px;background:linear-gradient(to bottom,#8B6914,#6B4F12,#5a4210);"></div>
+      <div style="position:absolute;bottom:28px;left:0;width:100%;height:6px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,#6a9f30 8px,#6a9f30 10px);opacity:0.6;"></div>
+    </div>
+    <div id="titleSprout" style="position:absolute;bottom:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;display:none;">
+      <div id="titleSproutLeaf" style="font-size:28px;line-height:1;">&#x1F331;</div>
+    </div>
+    <div id="titlePuyo" style="position:absolute;bottom:8px;cursor:pointer;">
+      <img id="titlePuyoImg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4));pointer-events:none;">
+    </div>
+  </div>
   <div class="game-over" id="gameOver">
     <h2>GAME OVER</h2>
     <div class="final" id="finalScore">0</div>
+    <div id="rankInMsg" style="display:none; color:#ff6; font-size:1.1em; margin-bottom:12px;"></div>
+    <div id="rankInForm" style="display:none; margin-bottom:12px;">
+      <input type="text" id="rankName" placeholder="名前を入力" style="width:100%; padding:10px; border:1px solid #555; border-radius:8px; background:#2a2a4e; color:#fff; font-size:1em; text-align:center; margin-bottom:8px;">
+      <button onclick="submitRanking()" style="width:100%; padding:10px; border:none; border-radius:8px; background:#ffd700; color:#333; font-weight:700; font-size:1em; cursor:pointer;">ランキングに登録</button>
+    </div>
     <button onclick="startGame()">もう一回</button>
     <button class="btn-back" onclick="location.href='../index.html'">←</button>
   </div>
 </div>
-<div class="controls">
-  <button class="ctrl-btn" ontouchstart="moveLeft()" onclick="moveLeft()">◀</button>
-  <button class="ctrl-btn" ontouchstart="rotate()" onclick="rotate()">🔄</button>
-  <button class="ctrl-btn" ontouchstart="hardDrop()" onclick="hardDrop()">⬇</button>
-  <button class="ctrl-btn" ontouchstart="moveRight()" onclick="moveRight()">▶</button>
+<div class="controls" id="gameControls" style="display:none;">
+  <button class="ctrl-btn" id="btnRotate">&#x21BB;</button>
+  <button class="ctrl-btn" id="btnLeft">&#x25C0;</button>
+  <button class="ctrl-btn" id="btnRight">&#x25B6;</button>
+  <button class="ctrl-btn" id="btnDrop">&#x25BC;</button>
 </div>
 </body>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-const W = Math.min(300, window.innerWidth - 16);
-const CELL = Math.floor(W / 6);
+const sbClient = supabase.createClient(
+  "https://ynecezxnltigplrfzzoh.supabase.co",
+  "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4"
+);
+
+// スマホの画面に収まるようにサイズ計算
+const headerH = 44; // ヘッダー
+const controlsH = 80; // 操作ボタン
+const padding = 24;
+const availH = window.innerHeight - headerH - controlsH - padding;
+const availW = Math.min(300, window.innerWidth - 16);
+
 const COLS = 6;
 const ROWS = 13;
+const CELL = Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS));
+const W = CELL * COLS;
 const H = CELL * ROWS;
-canvas.width = CELL * COLS;
+canvas.width = W;
 canvas.height = H;
 
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
@@ -109,7 +176,14 @@ let imgsReady = false;
 })();
 
 let grid, score, chainCount, state, pair, nextPair;
-let dropTimer, dropInterval, particles;
+let dropTimer = 0, dropInterval = 500, particles = [];
+let lockDelayTimer = 0;
+let lockDelayActive = false; // 回転操作中のみtrue
+const LOCK_DELAY = 2000;
+
+// grid初期化
+grid = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
+particles = [];
 
 function rand() { return Math.floor(Math.random() * COLORS.length); }
 
@@ -131,8 +205,136 @@ function isEmpty(c, r) {
   return grid[r][c] === null;
 }
 
+// 夜22時～朝4時はゲーム禁止
+// --- 夜間ゲーム制限 ---
+function getNightStartHour() {
+  const day = new Date().getDay();
+  return (day === 5 || day === 6) ? 22 : 21;
+}
+
+function isNightTime() {
+  if (localStorage.getItem('nightLimitOff') === 'true') return false;
+  if (localStorage.getItem('nightUnlocked') === 'true') return false;
+  const h = new Date().getHours();
+  return h >= getNightStartHour() || h < 4;
+}
+
+const NIGHT_MESSAGES = [
+  '\u3082\u3046\u591C\u3060\u3088\uFF01',
+  '\u65E9\u304F\u5BDD\u306A\u3055\u3044\uFF01',
+  '\u304A\u3084\u3059\u307F\uFF01',
+  '\u591C\u66F4\u304B\u3057\u306F\u304A\u808C\u306E\u6575\u3060\u3088\uFF01',
+  '\u3082\u3046\u5BDD\u308B\u6642\u9593\uFF01'
+];
+const SPECIAL_MESSAGES = {
+  5: '\u4F55\u56DE\u3082\u540C\u3058\u3053\u3068\u3057\u3066\u305F\u3089\u6012\u308B\u304B\u3089\u306D\uFF01',
+  6: '\u307E\u3060\u3084\u308B\u306E\uFF1F',
+  7: '\u305D\u308D\u305D\u308D\u3084\u3081\u306A',
+  8: '\u3088\u304F\u98FD\u304D\u306A\u3044\u306D',
+  9: '\u3082\u3046\u4F55\u3082\u306A\u3044\u3088',
+  10: '\u3061\u306A\u307F\u306B\u3001\u3053\u308C\u5168\u90E8\u901A\u77E5\u3055\u308C\u3066\u308B\u304B\u3089\u306D\u3002'
+};
+
+let nightAttempts = 0;
+let nightLocked = false;
+let nightPwAttempts = 0;
+
+const DISCORD_WEBHOOK_GAME = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
+
+function showNightWarning() {
+  nightAttempts++;
+  let msg, emoji = '\u{1F620}', lock = false;
+
+  if (nightAttempts >= 10) {
+    msg = SPECIAL_MESSAGES[10]; emoji = '\u{1F6D1}'; lock = true; nightLocked = true;
+  } else if (SPECIAL_MESSAGES[nightAttempts]) {
+    msg = SPECIAL_MESSAGES[nightAttempts];
+    emoji = nightAttempts >= 7 ? '\u{1F612}' : '\u{1F620}';
+  } else {
+    msg = NIGHT_MESSAGES[Math.floor(Math.random() * NIGHT_MESSAGES.length)];
+  }
+
+  const h = new Date().getHours();
+  const m = String(new Date().getMinutes()).padStart(2, '0');
+  const attempt = nightAttempts >= 10 ? '(10\u56DE\u76EE-\u30ED\u30C3\u30AF)' : '(' + nightAttempts + '\u56DE\u76EE)';
+  fetch(DISCORD_WEBHOOK_GAME, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ content: emoji + ' ' + h + ':' + m + ' \u306B\u8AB0\u304B\u304C\u30B2\u30FC\u30E0\u3092\u904A\u307C\u3046\u3068\u3057\u307E\u3057\u305F\uFF01' + attempt + '\n\u{1F4AC} \u300C' + msg + '\u300D' })
+  }).catch(function(){});
+
+  const limitStr = (new Date().getDay() === 5 || new Date().getDay() === 6) ? '22' : '21';
+  const overlay = document.createElement('div');
+  overlay.id = 'nightOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+
+  if (lock) {
+    overlay.innerHTML = '<div style="font-size:4em;margin-bottom:16px;">' + emoji + '</div><div style="color:#e53935;font-size:1.3em;font-weight:700;text-align:center;padding:0 24px;">' + msg + '</div>';
+  } else {
+    overlay.innerHTML = '<div style="position:absolute;top:12px;left:12px;font-size:1.5em;cursor:pointer;opacity:0.6;" onclick="showNightUnlock()">\u{1F512}</div>'
+      + '<div style="font-size:4em;margin-bottom:16px;">' + emoji + '</div>'
+      + '<div style="color:#ff6;font-size:1.3em;font-weight:700;text-align:center;padding:0 24px;margin-bottom:8px;">' + msg + '</div>'
+      + '<div style="color:#999;font-size:0.85em;margin-bottom:20px;">' + limitStr + '\u6642\uFF5E4\u6642\u306F\u30B2\u30FC\u30E0\u7981\u6B62\u3060\u3088</div>'
+      + '<button style="padding:12px 32px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1em;cursor:pointer;" onclick="this.parentElement.remove()">...\u306F\u3044</button>';
+  }
+  document.body.appendChild(overlay);
+}
+
+function showNightUnlock() {
+  if (nightPwAttempts >= 5) return;
+  var existing = document.getElementById('nightPwModal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'nightPwModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;border-radius:16px;padding:24px;z-index:10000;text-align:center;width:85%;max-width:300px;';
+  modal.innerHTML = '<div style="color:#fff;font-size:1em;margin-bottom:12px;">\u{1F511} \u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B</div>'
+    + '<div id="nightPwError" style="color:#e53935;font-size:0.85em;margin-bottom:8px;display:none;">\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3044\u307E\u3059</div>'
+    + '<input type="password" id="nightPwInput" style="width:100%;padding:10px;border:1px solid #555;border-radius:8px;background:#333;color:#fff;font-size:1em;text-align:center;margin-bottom:10px;" autocomplete="off">'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button style="flex:1;padding:10px;border:none;border-radius:8px;background:#555;color:#fff;cursor:pointer;" onclick="document.getElementById(\'nightPwModal\').remove()">\u30AD\u30E3\u30F3\u30BB\u30EB</button>'
+    + '<button style="flex:1;padding:10px;border:none;border-radius:8px;background:#4caf50;color:#fff;cursor:pointer;" onclick="submitNightPw()">OK</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  setTimeout(function(){ document.getElementById('nightPwInput').focus(); }, 100);
+  document.getElementById('nightPwInput').addEventListener('keydown', function(e){ if(e.key==='Enter') submitNightPw(); });
+}
+
+async function submitNightPw() {
+  var input = document.getElementById('nightPwInput').value;
+  var correctPw = '299792458';
+  try {
+    var res = await sbClient.from('game_settings').select('night_password').eq('id', 1).maybeSingle();
+    if (res.data && res.data.night_password) correctPw = res.data.night_password;
+  } catch(e) {}
+
+  if (input === correctPw) {
+    localStorage.setItem('nightUnlocked', 'true');
+    nightAttempts = 0; nightLocked = false; nightPwAttempts = 0;
+    var modal = document.getElementById('nightPwModal');
+    var overlay = document.getElementById('nightOverlay');
+    if (modal) modal.remove();
+    if (overlay) overlay.remove();
+    startGame();
+  } else {
+    nightPwAttempts++;
+    document.getElementById('nightPwError').style.display = 'block';
+    document.getElementById('nightPwInput').value = '';
+    if (nightPwAttempts >= 5) {
+      document.getElementById('nightPwModal').remove();
+      nightLocked = true;
+      fetch(DISCORD_WEBHOOK_GAME, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ content: '\u{1F6D1} \u89E3\u9664\u30D1\u30B9\u30EF\u30FC\u30C9\u30925\u56DE\u9593\u9055\u3048\u307E\u3057\u305F\uFF01\u5B8C\u5168\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\u3002' })
+      }).catch(function(){});
+      var ov = document.getElementById('nightOverlay');
+      if (ov) ov.innerHTML = '<div style="font-size:4em;margin-bottom:16px;">\u{1F6D1}</div><div style="color:#e53935;font-size:1.3em;font-weight:700;text-align:center;padding:0 24px;">\u30D1\u30B9\u30EF\u30FC\u30C9\u30925\u56DE\u9593\u9055\u3048\u305F\u306E\u3067\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\u3002</div>';
+    }
+  }
+}
+
 function startGame() {
-  grid = [];
+  if (nightLocked) return;
+  if (isNightTime()) { showNightWarning(); return; }
+  localStorage.removeItem('nightUnlocked');
   for (let r = 0; r < ROWS; r++) {
     grid[r] = new Array(COLS).fill(null);
   }
@@ -142,10 +344,63 @@ function startGame() {
   document.getElementById('score').textContent = '0';
   document.getElementById('chain').textContent = '';
   document.getElementById('gameOver').style.display = 'none';
+  document.getElementById('rankInMsg').style.display = 'none';
+  document.getElementById('rankInForm').style.display = 'none';
+  document.getElementById('gameControls').style.display = 'flex';
   nextPair = makePair();
-  spawnPair();
-  state = 'play';
+  pair = makePair();
+  pair.col = 2; pair.row = 1; pair.dir = 0;
+  state = 'countdown';
   dropTimer = 0;
+  lockDelayTimer = 0;
+  lockDelayActive = false;
+  showCountdown(3, () => {
+    state = 'play';
+  });
+}
+
+function showCountdown(sec, onDone) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:15;pointer-events:none;background:rgba(22,33,62,0.6);border-radius:8px;';
+  const num = document.createElement('div');
+  num.style.cssText = 'font-size:5em;font-weight:900;color:#fdd835;text-shadow:0 0 40px rgba(253,216,53,0.6),0 4px 12px rgba(0,0,0,0.4);';
+  el.appendChild(num);
+  canvas.parentElement.appendChild(el);
+
+  let count = sec;
+  function tick() {
+    if (count > 0) {
+      num.textContent = count;
+      num.style.transform = 'scale(1.5)';
+      num.style.opacity = '1';
+      num.style.transition = 'none';
+      requestAnimationFrame(() => {
+        num.style.transition = 'transform 0.8s ease-out, opacity 0.8s';
+        num.style.transform = 'scale(0.8)';
+        num.style.opacity = '0.2';
+      });
+      count--;
+      setTimeout(tick, 1000);
+    } else {
+      el.style.background = 'none';
+      num.textContent = 'GO!';
+      num.style.transition = 'none';
+      num.style.transform = 'scale(0.5)';
+      num.style.opacity = '1';
+      num.style.color = '#69f0ae';
+      num.style.textShadow = '0 0 40px rgba(105,240,174,0.8)';
+      requestAnimationFrame(() => {
+        num.style.transition = 'transform 0.3s ease-out, opacity 0.5s';
+        num.style.transform = 'scale(1.8)';
+        setTimeout(() => {
+          num.style.opacity = '0';
+          setTimeout(() => el.remove(), 500);
+        }, 400);
+      });
+      onDone();
+    }
+  }
+  tick();
 }
 
 function spawnPair() {
@@ -154,9 +409,7 @@ function spawnPair() {
   nextPair = makePair();
   // row 1 にc1、row 0 にc2(上方向)で開始
   if (grid[1][pair.col] !== null) {
-    state = 'over';
-    document.getElementById('finalScore').textContent = score;
-    document.getElementById('gameOver').style.display = 'block';
+    doGameOver();
   }
 }
 
@@ -178,13 +431,27 @@ function rotate() {
   const p2 = c2Pos(test);
   if (isEmpty(p2.col, p2.row)) {
     pair.dir = newDir;
+    if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
+    else { lockDelayActive = true; }
   } else {
-    // 壁キック
-    const kick = {...test, col: test.col + (p2.col < 0 ? 1 : p2.col >= COLS ? -1 : 0)};
-    const kp2 = c2Pos(kick);
-    if (isEmpty(kick.col, kick.row) && isEmpty(kp2.col, kp2.row)) {
-      pair.col = kick.col;
+    for (const offset of [1, -1, 0]) {
+      const kicked = {...test, col: test.col + offset};
+      const kp2 = c2Pos(kicked);
+      if (isEmpty(kicked.col, kicked.row) && isEmpty(kp2.col, kp2.row)) {
+        pair.col = kicked.col;
+        pair.dir = newDir;
+        if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
+        else { lockDelayActive = true; }
+        return;
+      }
+    }
+    const upTest = {...test, row: test.row - 1};
+    const up2 = c2Pos(upTest);
+    if (isEmpty(upTest.col, upTest.row) && isEmpty(up2.col, up2.row)) {
+      pair.row = upTest.row;
       pair.dir = newDir;
+      if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
+      else { lockDelayActive = true; }
     }
   }
 }
@@ -221,27 +488,28 @@ function lockPair() {
   });
 
   chainCount = 0;
-  setTimeout(() => resolveChain(), 250);
+  setTimeout(() => resolveChain(), 100);
 }
 
 // --- 連鎖処理 ---
 function resolveChain() {
   applyGravity();
   setTimeout(() => {
-    const cleared = findAndClear();
-    if (cleared > 0) {
+    const clearResult = findAndClear();    if (clearResult.totalCleared > 0) {
       chainCount++;
-      score += cleared * 10 * chainCount;
+      score += calcScore(chainCount, clearResult);
       document.getElementById('score').textContent = score;
       document.getElementById('chain').textContent = chainCount > 1 ? `${chainCount}連鎖!` : '';
-      setTimeout(() => resolveChain(), 400);
+      setTimeout(() => resolveChain(), 350);
     } else {
       document.getElementById('chain').textContent = '';
       state = 'play';
       spawnPair();
+      lockDelayTimer = 0;
+      lockDelayActive = false;
       dropInterval = Math.max(150, 500 - Math.floor(score / 500) * 20);
     }
-  }, 200);
+  }, 250);
 }
 
 function applyGravity() {
@@ -263,6 +531,8 @@ function applyGravity() {
 function findAndClear() {
   const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
   let totalCleared = 0;
+  const groups = []; // { color, count }
+  const colorsCleared = new Set();
 
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -281,8 +551,9 @@ function findAndClear() {
         }
         if (group.length >= 4) {
           totalCleared += group.length;
+          groups.push({ color, count: group.length });
+          colorsCleared.add(color);
           group.forEach(({r: gr, c: gc}) => {
-            // パーティクル
             for (let i = 0; i < 5; i++) {
               particles.push({
                 x: gc * CELL + CELL/2, y: gr * CELL + CELL/2,
@@ -297,7 +568,37 @@ function findAndClear() {
       }
     }
   }
-  return totalCleared;
+  return { totalCleared, groups, colorCount: colorsCleared.size };
+}
+
+// 本家ぷよぷよ風スコア計算
+// スコア = (消したぷよ数) × 10 × (連鎖ボーナス + 連結ボーナス + 色数ボーナス)
+// ボーナス合計が0の場合は1として扱う
+const CHAIN_BONUS = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
+const CONNECT_BONUS = [0, 0, 0, 0, 0, 2, 3, 4, 5, 6, 7, 10]; // 4個=0, 5個=2, 6個=3...
+const COLOR_BONUS = [0, 0, 3, 6, 12, 24]; // 1色=0, 2色=3, 3色=6...
+
+function calcScore(chainNum, clearResult) {
+  const { totalCleared, groups, colorCount } = clearResult;
+  if (totalCleared === 0) return 0;
+
+  // 連鎖ボーナス
+  const cb = CHAIN_BONUS[Math.min(chainNum, CHAIN_BONUS.length - 1)] || 0;
+
+  // 連結ボーナス（各グループの個数に応じて加算）
+  let connectB = 0;
+  groups.forEach(g => {
+    const idx = Math.min(g.count, CONNECT_BONUS.length - 1);
+    connectB += CONNECT_BONUS[idx];
+  });
+
+  // 色数ボーナス
+  const colorB = COLOR_BONUS[Math.min(colorCount, COLOR_BONUS.length - 1)] || 0;
+
+  // ボーナス合計（最低1）
+  const bonus = Math.max(1, Math.min(999, cb + connectB + colorB));
+
+  return totalCleared * 10 * bonus;
 }
 </script>
 
@@ -357,14 +658,14 @@ function draw() {
       const b = grid[r][c];
       if (b) {
         // アニメーション補間
-        b.y += (b.targetY - b.y) * 0.3;
+        b.y += (b.targetY - b.y) * 0.12;
         drawPuyo(c * CELL, b.y, b.color);
       }
     }
   }
 
-  // 操作中のペア
-  if (state === 'play' && pair) {
+  // 操作中のペア（カウントダウン中も表示）
+  if ((state === 'play' || state === 'countdown') && pair) {
     // ゴースト（着地位置）
     let ghostRow = pair.row;
     while (true) {
@@ -443,8 +744,23 @@ function gameLoop(time) {
       dropTimer = 0;
       if (canDrop()) {
         pair.row++;
+        lockDelayTimer = 0;
+        lockDelayActive = false;
+      } else if (lockDelayActive) {
+        // 回転操作中: 猶予タイマー加算
+        lockDelayTimer += dropInterval;
+        if (lockDelayTimer >= LOCK_DELAY) {
+          lockDelayTimer = 0;
+          lockDelayActive = false;
+          lockPair();
+        }
       } else {
-        lockPair();
+        // 回転操作なし: 0.3秒の基本猶予
+        lockDelayTimer += dropInterval;
+        if (lockDelayTimer >= 300) {
+          lockDelayTimer = 0;
+          lockPair();
+        }
       }
     }
   }
@@ -487,7 +803,186 @@ canvas.addEventListener('touchmove', e => {
   if (dx < -CELL * 0.7) { moveLeft(); touchX = e.touches[0].clientX; }
 });
 
-startGame();
+// --- ランキング ---
+let pendingRankScore = 0;
+let pendingRank = 0;
+
+async function doGameOver() {
+  state = 'over';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOver').style.display = 'block';
+
+  // ランキングチェック
+  try {
+    const { data } = await sbClient.from('game_rankings').select('score').order('score', { ascending: false }).limit(10);
+    const rankings = data || [];
+    let rank = rankings.length + 1;
+    for (let i = 0; i < rankings.length; i++) {
+      if (score > rankings[i].score) { rank = i + 1; break; }
+    }
+    if (rank <= 10 && score > 0) {
+      pendingRankScore = score;
+      pendingRank = rank;
+      document.getElementById('rankInMsg').textContent = rank + '\u4F4D\u306B\u30E9\u30F3\u30AF\u30A4\u30F3\uFF01';
+      document.getElementById('rankInMsg').style.display = 'block';
+      document.getElementById('rankInForm').style.display = 'block';
+      document.getElementById('rankName').value = '';
+      document.getElementById('rankName').focus();
+    }
+  } catch (e) { console.error('ranking check error:', e); }
+}
+
+async function submitRanking() {
+  const name = document.getElementById('rankName').value.trim();
+  if (!name) return alert('\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044');
+
+  try {
+    const { error: insertErr } = await sbClient.from('game_rankings').insert({ name, score: pendingRankScore });
+    if (insertErr) { console.error('ranking insert error:', insertErr); alert('登録に失敗しました: ' + insertErr.message); return; }
+
+    // 10位以下を削除
+    const { data } = await sbClient.from('game_rankings').select('id, score').order('score', { ascending: false });
+    if (data && data.length > 10) {
+      const toDelete = data.slice(10).map(r => r.id);
+      await sbClient.from('game_rankings').delete().in('id', toDelete);
+    }
+
+    document.getElementById('rankInForm').style.display = 'none';
+    document.getElementById('rankInMsg').textContent = pendingRank + '\u4F4D\u306B\u767B\u9332\u3057\u307E\u3057\u305F\uFF01';
+  } catch (e) { console.error('ranking submit error:', e); alert('登録に失敗しました'); }
+}
+
+// --- ボタン操作（タッチ・クリック） ---
+function setupBtn(id, fn) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('click', e => { e.preventDefault(); fn(); });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); fn(); });
+}
+setupBtn('btnRotate', rotate);
+setupBtn('btnLeft', moveLeft);
+setupBtn('btnRight', moveRight);
+setupBtn('btnDrop', hardDrop);
+
+function dismissMenu() {
+  const menu = document.getElementById('titleMenu');
+  if (menu) menu.style.display = 'none';
+  document.getElementById('gameControls').style.display = 'flex';
+}
+
+// タイトル画面のぷよ（初回はぷよ直接表示、再出現時は芽→引き抜き）
+(function setupTitlePuyo() {
+  const sproutEl = document.getElementById('titleSprout');
+  const puyoEl = document.getElementById('titlePuyo');
+  const imgEl = document.getElementById('titlePuyoImg');
+  const menu = document.getElementById('titleMenu');
+  if (!sproutEl || !puyoEl || !imgEl || !menu) return;
+
+  const menuW = menu.offsetWidth || canvas.width || 300;
+  const centerX = (menuW - 80) / 2;
+  const sproutCenterX = (menuW - 28) / 2;
+  let busy = false;
+
+  // 初回: ぷよを直接表示
+  const idx = Math.floor(Math.random() * PUYO_IMGS.length);
+  imgEl.src = PUYO_IMGS[idx];
+  puyoEl.style.left = centerX + 'px';
+  puyoEl.style.display = 'block';
+  puyoEl.style.animation = 'titlePuyoWalk 1.2s ease-in-out infinite';
+
+  // ぷよをタップ → 逃走 → 5秒後に芽で再出現
+  puyoEl.addEventListener('click', () => {
+    if (busy) return;
+    busy = true;
+    puyoEl.style.animation = 'none';
+    puyoEl.style.transition = 'bottom 0.15s ease-out';
+    puyoEl.style.bottom = '50px';
+
+    const curLeft = parseFloat(puyoEl.style.left) || centerX;
+    const goLeft = Math.random() < 0.5;
+    const dest = goLeft ? -100 : menuW + 20;
+
+    setTimeout(() => {
+      puyoEl.style.transition = 'bottom 0.1s ease-in';
+      puyoEl.style.bottom = '8px';
+      setTimeout(() => {
+        const dist = Math.abs(dest - curLeft);
+        const dur = Math.max(0.5, dist / 250);
+        imgEl.style.transform = goLeft ? 'scaleX(-1)' : 'scaleX(1)';
+        puyoEl.style.transition = 'left ' + dur + 's linear';
+        puyoEl.style.animation = 'titlePuyoWalk 0.2s ease-in-out infinite';
+        puyoEl.style.left = dest + 'px';
+
+        setTimeout(() => {
+          puyoEl.style.transition = 'opacity 0.3s';
+          puyoEl.style.opacity = '0';
+          setTimeout(() => {
+            puyoEl.style.display = 'none';
+            puyoEl.style.animation = 'none';
+            imgEl.style.transform = '';
+          }, 400);
+        }, dur * 800);
+
+        // 5秒後に芽を表示
+        setTimeout(() => {
+          sproutEl.style.left = sproutCenterX + 'px';
+          sproutEl.style.transition = 'none';
+          sproutEl.style.transform = 'translateY(10px) scale(0.3)';
+          sproutEl.style.opacity = '0';
+          sproutEl.style.display = 'flex';
+          requestAnimationFrame(() => {
+            sproutEl.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s';
+            sproutEl.style.transform = 'translateY(0) scale(1)';
+            sproutEl.style.opacity = '1';
+          });
+        }, 5000);
+      }, 120);
+    }, 150);
+  });
+
+  // 芽をタップ → 引き抜き → ぷよ出現 → 揺れ → タップ待ち
+  sproutEl.addEventListener('click', () => {
+    if (!busy) return; // busyでないと芽は出ていない
+
+    // 芽を引き抜く
+    sproutEl.style.transition = 'transform 0.3s ease-out, opacity 0.3s';
+    sproutEl.style.transform = 'translateY(-30px) scale(0.5)';
+    sproutEl.style.opacity = '0';
+
+    // 土煙
+    for (let i = 0; i < 3; i++) {
+      const poof = document.createElement('div');
+      poof.textContent = '\u{1F4A8}';
+      poof.style.cssText = 'position:absolute;font-size:18px;pointer-events:none;z-index:25;bottom:20px;left:' + (sproutCenterX + Math.random() * 20 - 5) + 'px;animation:poofUp 0.6s ease-out forwards;';
+      menu.appendChild(poof);
+      setTimeout(() => poof.remove(), 700);
+    }
+
+    setTimeout(() => {
+      sproutEl.style.display = 'none';
+      const newIdx = Math.floor(Math.random() * PUYO_IMGS.length);
+      imgEl.src = PUYO_IMGS[newIdx];
+      puyoEl.style.left = centerX + 'px';
+      puyoEl.style.opacity = '1';
+      puyoEl.style.display = 'block';
+      puyoEl.style.transition = 'none';
+      // 地面の中から引き抜かれる（下から上へ）
+      puyoEl.style.bottom = '-30px';
+      puyoEl.style.transform = 'scale(0.8)';
+      requestAnimationFrame(() => {
+        puyoEl.style.transition = 'bottom 0.4s cubic-bezier(0.34,1.56,0.64,1), transform 0.4s ease-out';
+        puyoEl.style.bottom = '8px';
+        puyoEl.style.transform = 'scale(1)';
+      });
+
+      setTimeout(() => {
+        puyoEl.style.animation = 'titlePuyoWalk 1.2s ease-in-out infinite';
+        busy = false;
+      }, 350);
+    }, 350);
+  });
+})();
+
+state = 'menu';
 requestAnimationFrame(gameLoop);
 </script>
 </html>
