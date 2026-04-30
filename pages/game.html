@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -34,11 +34,34 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 .game-over {
   display: none; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.9); padding: 32px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(10,10,40,0.95), rgba(30,20,60,0.95));
+  padding: 32px 28px; border-radius: 20px;
   text-align: center; z-index: 10;
+  border: 1px solid rgba(255,215,0,0.2);
+  box-shadow: 0 0 40px rgba(255,215,0,0.1), 0 8px 32px rgba(0,0,0,0.5);
 }
-.game-over h2 { font-size: 1.5em; margin-bottom: 8px; }
-.game-over .final { font-size: 2em; color: #ff6; margin-bottom: 16px; }
+.game-over h2 { font-size: 1.5em; margin-bottom: 8px; letter-spacing: 2px; }
+.game-over .final { font-size: 2.2em; color: #ff6; margin-bottom: 16px; text-shadow: 0 0 20px rgba(255,255,100,0.4); }
+.game-over .rank-in-msg {
+  display: none; color: #ffd700; font-size: 1.2em; font-weight: 700;
+  margin-bottom: 14px; text-shadow: 0 0 10px rgba(255,215,0,0.5);
+  animation: rankPulse 1s ease-in-out infinite;
+}
+@keyframes rankPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+.game-over .rank-form { display: none; margin-bottom: 16px; }
+.game-over .rank-form input {
+  width: 100%; padding: 12px; border: 1px solid rgba(255,215,0,0.3); border-radius: 10px;
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 1.05em;
+  text-align: center; margin-bottom: 10px; outline: none;
+}
+.game-over .rank-form input:focus { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.2); }
+.game-over .rank-form button {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00); color: #333;
+  font-weight: 700; font-size: 1.05em; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255,215,0,0.3);
+}
+.game-over .rank-form button:hover { opacity: 0.9; }
 .game-over button {
   padding: 12px 28px; border: none; border-radius: 8px;
   background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
@@ -71,10 +94,10 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
   </div>
 </div>
 <div class="controls">
-  <button class="ctrl-btn" ontouchstart="rotate()" onclick="rotate()">&#x21BB;</button>
-  <button class="ctrl-btn" ontouchstart="moveLeft()" onclick="moveLeft()">&#x25C0;</button>
-  <button class="ctrl-btn" ontouchstart="moveRight()" onclick="moveRight()">&#x25B6;</button>
-  <button class="ctrl-btn" ontouchstart="hardDrop()" onclick="hardDrop()">&#x25BC;</button>
+  <button class="ctrl-btn" id="btnRotate">&#x21BB;</button>
+  <button class="ctrl-btn" id="btnLeft">&#x25C0;</button>
+  <button class="ctrl-btn" id="btnRight">&#x25B6;</button>
+  <button class="ctrl-btn" id="btnDrop">&#x25BC;</button>
 </div>
 </body>
 
@@ -130,7 +153,8 @@ let imgsReady = false;
 let grid, score, chainCount, state, pair, nextPair;
 let dropTimer, dropInterval, particles;
 let lockDelayTimer = 0;
-const LOCK_DELAY = 1000; // 着地後の猶予時間(ms)
+let lockDelayActive = false; // 回転操作中のみtrue
+const LOCK_DELAY = 2000;
 
 function rand() { return Math.floor(Math.random() * COLORS.length); }
 
@@ -170,6 +194,7 @@ function startGame() {
   state = 'play';
   dropTimer = 0;
   lockDelayTimer = 0;
+  lockDelayActive = false;
 }
 
 function spawnPair() {
@@ -200,14 +225,27 @@ function rotate() {
   const p2 = c2Pos(test);
   if (isEmpty(p2.col, p2.row)) {
     pair.dir = newDir;
-    lockDelayTimer = 0; // 回転成功で猶予リセット
+    lockDelayActive = true;
+    if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
   } else {
-    // 壁キック
-    const kick = {...test, col: test.col + (p2.col < 0 ? 1 : p2.col >= COLS ? -1 : 0)};
-    const kp2 = c2Pos(kick);
-    if (isEmpty(kick.col, kick.row) && isEmpty(kp2.col, kp2.row)) {
-      pair.col = kick.col;
+    for (const offset of [1, -1, 0]) {
+      const kicked = {...test, col: test.col + offset};
+      const kp2 = c2Pos(kicked);
+      if (isEmpty(kicked.col, kicked.row) && isEmpty(kp2.col, kp2.row)) {
+        pair.col = kicked.col;
+        pair.dir = newDir;
+        lockDelayActive = true;
+        if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
+        return;
+      }
+    }
+    const upTest = {...test, row: test.row - 1};
+    const up2 = c2Pos(upTest);
+    if (isEmpty(upTest.col, upTest.row) && isEmpty(up2.col, up2.row)) {
+      pair.row = upTest.row;
       pair.dir = newDir;
+      lockDelayActive = true;
+      if (canDrop()) { lockDelayTimer = 0; lockDelayActive = false; }
     }
   }
 }
@@ -251,21 +289,21 @@ function lockPair() {
 function resolveChain() {
   applyGravity();
   setTimeout(() => {
-    const clearResult = findAndClear();
-    if (clearResult.totalCleared > 0) {
+    const clearResult = findAndClear();    if (clearResult.totalCleared > 0) {
       chainCount++;
       score += calcScore(chainCount, clearResult);
       document.getElementById('score').textContent = score;
       document.getElementById('chain').textContent = chainCount > 1 ? `${chainCount}連鎖!` : '';
-      setTimeout(() => resolveChain(), 200);
+      setTimeout(() => resolveChain(), 350);
     } else {
       document.getElementById('chain').textContent = '';
       state = 'play';
       spawnPair();
       lockDelayTimer = 0;
+      lockDelayActive = false;
       dropInterval = Math.max(150, 500 - Math.floor(score / 500) * 20);
     }
-  }, 80);
+  }, 250);
 }
 
 function applyGravity() {
@@ -414,7 +452,7 @@ function draw() {
       const b = grid[r][c];
       if (b) {
         // アニメーション補間
-        b.y += (b.targetY - b.y) * 0.3;
+        b.y += (b.targetY - b.y) * 0.12;
         drawPuyo(c * CELL, b.y, b.color);
       }
     }
@@ -500,11 +538,20 @@ function gameLoop(time) {
       dropTimer = 0;
       if (canDrop()) {
         pair.row++;
-        lockDelayTimer = 0; // まだ落下中なのでリセット
-      } else {
-        // 着地中: 猶予タイマーを加算
+        lockDelayTimer = 0;
+        lockDelayActive = false;
+      } else if (lockDelayActive) {
+        // 回転操作中: 猶予タイマー加算
         lockDelayTimer += dropInterval;
         if (lockDelayTimer >= LOCK_DELAY) {
+          lockDelayTimer = 0;
+          lockDelayActive = false;
+          lockPair();
+        }
+      } else {
+        // 回転操作なし: 0.3秒の基本猶予
+        lockDelayTimer += dropInterval;
+        if (lockDelayTimer >= 300) {
           lockDelayTimer = 0;
           lockPair();
         }
@@ -598,6 +645,17 @@ async function submitRanking() {
     document.getElementById('rankInMsg').textContent = pendingRank + '\u4F4D\u306B\u767B\u9332\u3057\u307E\u3057\u305F\uFF01';
   } catch (e) { console.error('ranking submit error:', e); alert('登録に失敗しました'); }
 }
+
+// --- ボタン操作（タッチ・クリック） ---
+function setupBtn(id, fn) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('click', e => { e.preventDefault(); fn(); });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); fn(); });
+}
+setupBtn('btnRotate', rotate);
+setupBtn('btnLeft', moveLeft);
+setupBtn('btnRight', moveRight);
+setupBtn('btnDrop', hardDrop);
 
 startGame();
 requestAnimationFrame(gameLoop);
