@@ -174,11 +174,17 @@ h2 .toggle.open { transform: rotate(90deg); }
       <button class="btn-sm" id="tripBoostBtn" onclick="toggleTripBoost()" style="padding:8px 16px;">OFF</button>
     </div>
     <div style="font-size:0.85em; color:#999; margin-bottom:16px;">ONにすると全ぷよがめちゃくちゃコケます</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span>夜間ゲーム制限</span>
+      <button class="btn-sm" id="nightLimitBtn" onclick="toggleNightLimit()" style="padding:8px 16px;">ON</button>
+    </div>
+    <div style="font-size:0.85em; color:#999; margin-bottom:16px;">OFFにすると22時以降もゲームできます</div>
     <div style="border-top:1px solid #eee; padding-top:12px;">
       <div style="font-weight:600; margin-bottom:8px;">カウントリセット</div>
       <div style="display:flex; gap:8px;">
         <button class="btn-sm btn-danger" onclick="resetPuyoCount()" style="flex:1; padding:10px;">ぷよカウント</button>
         <button class="btn-sm btn-danger" onclick="resetRoachCount()" style="flex:1; padding:10px;">ゴキブリカウント</button>
+        <button class="btn-sm btn-danger" onclick="resetRanking()" style="flex:1; padding:10px;">ランキング</button>
       </div>
       <div class="msg" id="resetMsg" style="margin-top:8px;">&#x2713; リセットしました</div>
     </div>
@@ -632,6 +638,14 @@ async function resetRoachCount() {
   setTimeout(() => msg.style.display = 'none', 2000);
 }
 
+async function resetRanking() {
+  if (!confirm('ランキングを全件削除しますか？')) return;
+  await client.from('game_rankings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const msg = document.getElementById('resetMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
 function toggleTripBoost() {
   const btn = document.getElementById('tripBoostBtn');
   const current = localStorage.getItem('tripBoost') === 'true';
@@ -639,6 +653,16 @@ function toggleTripBoost() {
   localStorage.setItem('tripBoost', newVal);
   btn.textContent = newVal ? 'ON' : 'OFF';
   btn.style.background = newVal ? '#e53935' : '';
+  btn.style.color = newVal ? '#fff' : '';
+}
+
+function toggleNightLimit() {
+  const btn = document.getElementById('nightLimitBtn');
+  const current = localStorage.getItem('nightLimitOff') === 'true';
+  const newVal = !current;
+  localStorage.setItem('nightLimitOff', newVal);
+  btn.textContent = newVal ? 'OFF' : 'ON';
+  btn.style.background = newVal ? '#4caf50' : '';
   btn.style.color = newVal ? '#fff' : '';
 }
 
@@ -650,6 +674,15 @@ function toggleTripBoost() {
   btn.textContent = on ? 'ON' : 'OFF';
   btn.style.background = on ? '#e53935' : '';
   btn.style.color = on ? '#fff' : '';
+})();
+
+(function initNightLimit() {
+  const btn = document.getElementById('nightLimitBtn');
+  if (!btn) return;
+  const off = localStorage.getItem('nightLimitOff') === 'true';
+  btn.textContent = off ? 'OFF' : 'ON';
+  btn.style.background = off ? '#4caf50' : '';
+  btn.style.color = off ? '#fff' : '';
 })();
 
 loadChildren();
