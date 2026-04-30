@@ -1,0 +1,5 @@
+[{"id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","name":"はるちか","balance":264,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":0}, 
+ {"id":"dc1dc522-3bae-4428-86f3-24068b4473b4","name":"いろはの借金","balance":-4970,"show_balance_on_top":true,"require_password":true,"password":"526633","sort_order":0}, 
+ {"id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","name":"いろは","balance":25,"show_balance_on_top":true,"require_password":true,"password":"526633","sort_order":0}, 
+ {"id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","name":"りょうすけ","balance":-5800,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":5}, 
+ {"id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","name":"かいせい","balance":310,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":0}]
