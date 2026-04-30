@@ -35,6 +35,40 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.4.2</span><span class="date">2026/04/30</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 夜間制限ON/OFFトグルを復活（localStorage保存、キャッシュクリアで制限に戻る）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.4.1</span><span class="date">2026/04/30</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 管理者ページから夜間制限ON/OFFトグルを削除（錠前パスワードで運用）</li>
+    <li><span class="tag tag-fix">fix</span> パスワード変更UIを改善（現在のパスワードを常時表示）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.4.0</span><span class="date">2026/04/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 曜日別ゲーム制限（日～木:21時、金土:22時）</li>
+    <li><span class="tag tag-feat">feat</span> 制限画面に錠前アイコン → パスワードで解除可能</li>
+    <li><span class="tag tag-feat">feat</span> パスワード5回ミスで完全ロック＋Discord通知</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページでパスワード変更（Supabase保存）</li>
+    <li><span class="tag tag-fun">fun</span> 段階的お叱りメッセージ（5～10回目で特殊メッセージ、10回で完全ロック）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.3.3</span><span class="date">2026/04/30</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> 夜間制限の段階的メッセージ（5回目以降は特殊メッセージ、10回目で完全ロック）</li>
+    <li><span class="tag tag-feat">feat</span> 試行回数をDiscord通知に含める</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.3.2</span><span class="date">2026/04/30</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 夜間ゲーム制限発動時にDiscord通知（時刻とお叱りメッセージ付き）</li>

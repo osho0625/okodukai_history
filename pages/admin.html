@@ -178,7 +178,16 @@ h2 .toggle.open { transform: rotate(90deg); }
       <span>夜間ゲーム制限</span>
       <button class="btn-sm" id="nightLimitBtn" onclick="toggleNightLimit()" style="padding:8px 16px;">ON</button>
     </div>
-    <div style="font-size:0.85em; color:#999; margin-bottom:16px;">OFFにすると22時以降もゲームできます</div>
+    <div style="font-size:0.85em; color:#999; margin-bottom:16px;">OFFにすると夜間もゲームできます（リロードで戻ります）</div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">夜間制限 解除パスワード</div>
+      <div style="font-size:0.85em; color:#666; margin-bottom:8px;">現在のパスワード: <span id="currentNightPw" style="font-weight:600; color:#333;">-</span></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="nightPwInput" placeholder="新しいパスワード" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm btn-primary" onclick="saveNightPw()" style="padding:8px 14px;">変更</button>
+      </div>
+      <div class="msg" id="nightPwMsg" style="margin-top:6px;">&#x2713; 変更しました</div>
+    </div>
     <div style="border-top:1px solid #eee; padding-top:12px;">
       <div style="font-weight:600; margin-bottom:8px;">カウントリセット</div>
       <div style="display:flex; gap:8px;">
@@ -656,6 +665,25 @@ function toggleTripBoost() {
   btn.style.color = newVal ? '#fff' : '';
 }
 
+// 初期状態を反映
+(function init() {
+  const tripBtn = document.getElementById('tripBoostBtn');
+  if (tripBtn) {
+    const on = localStorage.getItem('tripBoost') === 'true';
+    tripBtn.textContent = on ? 'ON' : 'OFF';
+    tripBtn.style.background = on ? '#e53935' : '';
+    tripBtn.style.color = on ? '#fff' : '';
+  }
+  const nightBtn = document.getElementById('nightLimitBtn');
+  if (nightBtn) {
+    const off = localStorage.getItem('nightLimitOff') === 'true';
+    nightBtn.textContent = off ? 'OFF' : 'ON';
+    nightBtn.style.background = off ? '#4caf50' : '';
+    nightBtn.style.color = off ? '#fff' : '';
+  }
+  loadNightPw();
+})();
+
 function toggleNightLimit() {
   const btn = document.getElementById('nightLimitBtn');
   const current = localStorage.getItem('nightLimitOff') === 'true';
@@ -666,24 +694,25 @@ function toggleNightLimit() {
   btn.style.color = newVal ? '#fff' : '';
 }
 
-// 初期状態を反映
-(function initTripBoost() {
-  const btn = document.getElementById('tripBoostBtn');
-  if (!btn) return;
-  const on = localStorage.getItem('tripBoost') === 'true';
-  btn.textContent = on ? 'ON' : 'OFF';
-  btn.style.background = on ? '#e53935' : '';
-  btn.style.color = on ? '#fff' : '';
-})();
+async function loadNightPw() {
+  try {
+    const { data } = await client.from('game_settings').select('night_password').eq('id', 1).maybeSingle();
+    const pw = (data && data.night_password) || '299792458';
+    const el = document.getElementById('currentNightPw');
+    if (el) el.textContent = pw;
+  } catch(e) {}
+}
 
-(function initNightLimit() {
-  const btn = document.getElementById('nightLimitBtn');
-  if (!btn) return;
-  const off = localStorage.getItem('nightLimitOff') === 'true';
-  btn.textContent = off ? 'OFF' : 'ON';
-  btn.style.background = off ? '#4caf50' : '';
-  btn.style.color = off ? '#fff' : '';
-})();
+async function saveNightPw() {
+  const pw = document.getElementById('nightPwInput').value.trim();
+  if (!pw) return alert('パスワードを入力してください');
+  await client.from('game_settings').update({ night_password: pw }).eq('id', 1);
+  document.getElementById('currentNightPw').textContent = pw;
+  document.getElementById('nightPwInput').value = '';
+  const msg = document.getElementById('resetMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
 
 loadChildren();
 loadBackupDates();
