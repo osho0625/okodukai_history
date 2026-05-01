@@ -86,15 +86,19 @@ function savePendingDeposit(childId, oldBalance, newBalance, amount) {
 
 let allChildren = [];
 let selectedChildId = null;
-let irohaDebtChild = null;
+
+// 返済用アカウント判定（「〇〇が返すお金」パターン）
+function isRepaymentAccount(name) { return name.endsWith('が返すお金'); }
+function findRepaymentFor(name) {
+  return allChildren.find(c => c.name === name + 'が返すお金') || null;
+}
 
 async function load() {
   const { data } = await client.from('children').select('*').order('sort_order', { ascending: true });
   allChildren = data || [];
-  irohaDebtChild = allChildren.find(c => c.name === 'いろはの借金') || null;
   const container = document.getElementById('childBtns');
   container.innerHTML = '';
-  data.filter(c => c.name !== 'いろはの借金').forEach(c => {
+  data.filter(c => !isRepaymentAccount(c.name)).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'child-btn';
     btn.textContent = c.name;
@@ -120,22 +124,23 @@ async function doTransaction(type) {
   const child = allChildren.find(c => c.id === selectedChildId);
   if (!child) return;
 
-  const isIroha = child.name === 'いろは' && irohaDebtChild && type === 'add';
+  const repaymentChild = findRepaymentFor(child.name);
+  const hasRepayment = repaymentChild && type === 'add';
 
-  if (isIroha) {
+  if (hasRepayment) {
     const half = Math.floor(amount / 2);
     const remainder = amount - half;
     const newBal = child.balance + remainder;
     savePendingDeposit(child.id, child.balance, newBal, remainder);
     await client.from('children').update({ balance: newBal }).eq('id', child.id);
     await client.from('transactions').insert({ child_id: child.id, type: 'add', amount: remainder, memo: memo || '入金' });
-    const debtNew = irohaDebtChild.balance + half;
-    savePendingDeposit(irohaDebtChild.id, irohaDebtChild.balance, debtNew, half);
-    await client.from('children').update({ balance: debtNew }).eq('id', irohaDebtChild.id);
-    await client.from('transactions').insert({ child_id: irohaDebtChild.id, type: 'add', amount: half, memo: (memo || '入金') + '（いろは分）' });
-    child.balance = newBal; irohaDebtChild.balance = debtNew;
-    try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: '\u{1F4B0} **いろは** に ' + amount + '円\n→ いろは: ' + remainder + '円 / 借金: ' + half + '円' }) }); } catch(e) {}
-    showResult('いろは に ' + amount + '円 追加', 'いろは: ' + newBal.toLocaleString() + '円 / 借金: ' + debtNew.toLocaleString() + '円');
+    const debtNew = repaymentChild.balance + half;
+    savePendingDeposit(repaymentChild.id, repaymentChild.balance, debtNew, half);
+    await client.from('children').update({ balance: debtNew }).eq('id', repaymentChild.id);
+    await client.from('transactions').insert({ child_id: repaymentChild.id, type: 'add', amount: half, memo: (memo || '入金') + '（' + child.name + '分）' });
+    child.balance = newBal; repaymentChild.balance = debtNew;
+    try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: '\u{1F4B0} **' + child.name + '** に ' + amount + '円\n→ ' + child.name + ': ' + remainder + '円 / 返済: ' + half + '円' }) }); } catch(e) {}
+    showResult(child.name + ' に ' + amount + '円 入金', child.name + ': ' + newBal.toLocaleString() + '円 / 返済: ' + debtNew.toLocaleString() + '円');
   } else {
     const diff = type === 'add' ? amount : -amount;
     const newBal = child.balance + diff;

@@ -361,9 +361,9 @@ async function load() {
     const lock = (hasPassword && !bypassed) ? ' 🔒' : '';
     const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
 
-    // ポイント情報（いろはの借金は除外）
+    // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
-    if (c.name !== 'いろはの借金') {
+    if (!c.name.endsWith('が返すお金')) {
       const pts = Math.min(pointsByChild[c.id] || 0, 400);
       let nextInfo = '';
       for (let m = 20; m <= 400; m += 20) {
@@ -610,7 +610,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.11.5</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.11.6</a></div>
 
 </body>
 </html>

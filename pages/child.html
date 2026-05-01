@@ -196,7 +196,7 @@ h2 { margin-bottom: 12px; color: #333; }
 </div>
 
 <!-- ポイント表 -->
-<div style="max-width:480px; margin-bottom:20px;">
+<div id="pointsSectionWrap" style="max-width:480px; margin-bottom:20px;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
     <span style="font-weight:600; color:#555;">⭐ お手伝いポイント</span>
     <span style="font-weight:700; color:#ff9800;"><span id="totalPts">0</span> / 400</span>
@@ -487,6 +487,15 @@ async function load() {
   document.getElementById('childName').textContent = child.name;
   document.title = `${child.name} - お小遣い手帳`;
 
+  // 返済用アカウント判定（「〇〇が返すお金」パターン）
+  const isRepayment = child.name.endsWith('が返すお金');
+  if (isRepayment) {
+    const wrap = document.getElementById('pointsSectionWrap');
+    if (wrap) wrap.style.display = 'none';
+    const approval = document.getElementById('approvalAccordion');
+    if (approval) approval.style.display = 'none';
+  }
+
   const balEl = document.getElementById('childBalance');
 
   // 未読入金の演出チェック
@@ -761,20 +770,20 @@ async function addChorePoints() {
 
 async function giveAllowance(amount) {
   const { data: allData } = await client.from('children').select('*');
-  const irohaDebt = (allData || []).find(c => c.name === 'いろはの借金');
-  const isIroha = child.name === 'いろは' && irohaDebt;
+  const repayChild = (allData || []).find(c => c.name === child.name + 'が返すお金');
+  const hasRepay = !!repayChild;
 
-  if (isIroha) {
+  if (hasRepay) {
     const half = Math.floor(amount / 2);
     const remainder = amount - half;
     const { data: d1 } = await client.from('children').select('balance').eq('id', child.id).single();
     const nb1 = (d1 ? d1.balance : 0) + remainder;
     await client.from('children').update({ balance: nb1 }).eq('id', child.id);
     await client.from('transactions').insert({ child_id: child.id, type: 'add', amount: remainder, memo: 'ポイント表ご褒美' });
-    const { data: d2 } = await client.from('children').select('balance').eq('id', irohaDebt.id).single();
+    const { data: d2 } = await client.from('children').select('balance').eq('id', repayChild.id).single();
     const nb2 = (d2 ? d2.balance : 0) + half;
-    await client.from('children').update({ balance: nb2 }).eq('id', irohaDebt.id);
-    await client.from('transactions').insert({ child_id: irohaDebt.id, type: 'add', amount: half, memo: 'ポイント表ご褒美（いろは分）' });
+    await client.from('children').update({ balance: nb2 }).eq('id', repayChild.id);
+    await client.from('transactions').insert({ child_id: repayChild.id, type: 'add', amount: half, memo: 'ポイント表ご褒美（' + child.name + '分）' });
     child.balance = nb1;
   } else {
     const { data: d } = await client.from('children').select('balance').eq('id', child.id).single();
