@@ -35,6 +35,105 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+<div class="release">
+  <div><span class="ver">v1.15.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 個別ページの履歴にポイント履歴も統合表示（⭐マーク＋オレンジ左線）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「ポイント履歴管理」セクション追加（編集/削除対応）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> TOP画面の✅アイコンタップでページリロード</li>
+    <li><span class="tag tag-fix">fix</span> 🎉リプレイ時はお金演出のみ再生（ポイントスタンプ演出を除外）</li>
+    <li><span class="tag tag-fix">fix</span> 承認/却下後にページリロードで✅バッジを即反映</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイントスタンプ演出にキラキラパーティクルエフェクト追加</li>
+    <li><span class="tag tag-fix">fix</span> スタンプ間隔をゆっくりに（最大600ms、全体5秒）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> TOP画面にポイント承認UIを追加（admin権限のみ、名前の下に表示）</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面から直接承認/却下が可能に（マイルストーンお小遣い発生も対応）</li>
+    <li><span class="tag tag-feat">feat</span> 演出データをSupabase pending_effectsテーブルに保存（別端末間で演出共有可能に）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> admin権限で演出スキップ時にlocalStorageデータを消費しないよう修正（userが見るまで残る）</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面のぷよ・オリマーアイコンの位置を少し上に調整</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> スタンプ演出をゆっくりに（最大3秒、1つ400ms）</li>
+    <li><span class="tag tag-feat">feat</span> 🎉リプレイでポイント演出→お金演出の順で再生可能に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出・お金演出をuser権限のみに制限（adminはデータ消化のみ）</li>
+    <li><span class="tag tag-fix">fix</span> ポイント追加時のラベルを大きく</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイント演出をスタンプアニメーションに変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出を地味なバナー表示に変更（フルスクリーンから軽量化）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント演出→お金演出の連続再生対応（ポイント消化後にお小遣い演出）</li>
+    <li><span class="tag tag-feat">feat</span> 承認時のお小遣い発生でpending_depositを自動保存（次回ログイン時に演出）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント承認時にアニメーション演出データを保存</li>
+    <li><span class="tag tag-feat">feat</span> 個別ページ表示時に未読ポイントのフルスクリーン演出（+○pt＋家事名＋紙吹雪）</li>
+    <li><span class="tag tag-fix">fix</span> マイルストーン計算を枚またぎ対応に修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.8</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> TOP画面の承認待ちアイコン（✅）をuser権限でも表示</li>
+    <li><span class="tag tag-fix">fix</span> 個別ページの承認UIを残高の下に移動</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.7</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> 個別ページの名前横にもぷよ＋オリマーアイコンを表示</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.12.6</span><span class="date">2026/05/01</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> TOP画面の⚙️設定モーダルをアコーディオン構造に変更</li>

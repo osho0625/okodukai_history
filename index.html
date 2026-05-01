@@ -106,6 +106,27 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   .child-name, .child-balance { font-size: 1.1em; }
 }
 
+/* 承認UI（TOP画面admin用） */
+.approval-section {
+  max-width: 480px; margin: -4px auto 12px; padding: 0 8px;
+}
+.approval-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff8e1; border-radius: 8px; padding: 8px 12px;
+  margin-bottom: 4px; border: 1px solid #ffe082;
+}
+.approval-info { display: flex; flex-direction: column; gap: 2px; }
+.approval-chore { font-size: 0.85em; font-weight: 600; color: #555; }
+.approval-date { font-size: 0.75em; color: #aaa; }
+.approval-btns { display: flex; gap: 6px; }
+.approval-btn {
+  padding: 4px 10px; border: none; border-radius: 6px;
+  font-size: 0.8em; font-weight: 600; cursor: pointer; color: #fff;
+}
+.approval-btn.approve { background: #4caf50; }
+.approval-btn.reject { background: #e53935; }
+.approval-btn:hover { opacity: 0.85; }
+
 /* ぷよ畑（garden.jsと連動） */
 .puyo-garden {
   position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
@@ -406,16 +427,17 @@ async function load() {
   allChildren = data;
   container.innerHTML = '';
 
-  // 承認待ちポイントをチェック（admin権限のみ）
+  // 承認待ちポイントをチェック
   let pendingByChild = {};
-  if (localStorage.getItem('deviceRole') === 'admin') {
-    try {
-      const { data: pendingData } = await client.from('chore_points').select('child_id, points').eq('status', 'pending');
-      (pendingData || []).forEach(p => {
-        pendingByChild[p.child_id] = (pendingByChild[p.child_id] || 0) + p.points;
-      });
-    } catch(e) {}
-  }
+  let pendingDetailsByChild = {};
+  try {
+    const { data: pendingData } = await client.from('chore_points').select('id, child_id, chore_name, points, created_at').eq('status', 'pending').order('created_at', { ascending: true });
+    (pendingData || []).forEach(p => {
+      pendingByChild[p.child_id] = (pendingByChild[p.child_id] || 0) + p.points;
+      if (!pendingDetailsByChild[p.child_id]) pendingDetailsByChild[p.child_id] = [];
+      pendingDetailsByChild[p.child_id].push(p);
+    });
+  } catch(e) {}
 
   // ポイント情報を取得
   let pointsByChild = {};
@@ -424,6 +446,13 @@ async function load() {
     (ptsData || []).forEach(p => {
       pointsByChild[p.child_id] = (pointsByChild[p.child_id] || 0) + p.points;
     });
+  } catch(e) {}
+
+  // 未読入金演出データを取得（Supabase）
+  let depositEffectsByChild = {};
+  try {
+    const { data: depEffects } = await client.from('pending_effects').select('child_id, data').eq('type', 'deposit');
+    (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
   } catch(e) {}
 
   function getAllowanceForMilestone(pts) {
@@ -440,23 +469,19 @@ async function load() {
     const bypassed = localStorage.getItem('deviceRole') === 'admin';
     const showBalance = (!hasPassword || bypassed) && c.show_balance_on_top !== false;
 
-    // 未読入金チェック
-    const pendingKey = 'pending_deposit_' + c.id;
-    const pendingRaw = localStorage.getItem(pendingKey);
+    // 未読入金チェック（Supabase pending_effects）
+    const depEffect = depositEffectsByChild[c.id];
     let displayBalance = c.balance;
     let bellHtml = '';
-    if (pendingRaw && showBalance) {
-      try {
-        const pending = JSON.parse(pendingRaw);
-        displayBalance = pending.oldBalance;
-        bellHtml = '<span class="notify-bell" onclick="ringBell(event, this)">&#x1F514;</span>';
-      } catch(e) {}
+    if (depEffect && showBalance) {
+      displayBalance = depEffect.oldBalance;
+      bellHtml = '<span class="notify-bell" onclick="ringBell(event, this)">&#x1F514;</span>';
     }
 
     const displayNeg = displayBalance < 0 ? ' negative' : '';
     const balanceText = showBalance ? `${displayBalance.toLocaleString()}円` : '****円';
     const lock = (hasPassword && !bypassed) ? ' 🔒' : '';
-    const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
+    const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" onclick="event.stopPropagation();location.reload();" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
 
     // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
@@ -485,14 +510,14 @@ async function load() {
         const puyoCount = completedSheets % 5;
         let icons = '';
         for (let i = 0; i < olimars; i++) {
-          icons += '<img src="images/olimar.png" style="width:54px;height:54px;vertical-align:middle;object-fit:contain;">';
+          icons += '<img src="images/olimar.png" style="width:34px;height:34px;vertical-align:-4px;object-fit:contain;">';
         }
         // ぷよは被らないようにシャッフルして選ぶ
         if (puyoCount > 0) {
           const indices = [1,2,3,4,5];
           for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; }
           for (let i = 0; i < puyoCount; i++) {
-            icons += '<img src="images/puyo_' + indices[i] + '.avif" style="width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle;">';
+            icons += '<img src="images/puyo_' + indices[i] + '.avif" style="width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:-4px;">';
           }
         }
         starsHtml = ' <span style="font-size:0.7em;">' + icons + '</span>';
@@ -511,6 +536,23 @@ async function load() {
         </div>
       </div>
     `;
+
+    // admin用: 承認待ちUIをカードの下に表示
+    if (localStorage.getItem('deviceRole') === 'admin' && pendingDetailsByChild[c.id]) {
+      let approvalHtml = '<div class="approval-section" data-child-id="' + c.id + '">';
+      pendingDetailsByChild[c.id].forEach(p => {
+        const d = new Date(p.created_at);
+        const dateStr = (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+        approvalHtml += '<div class="approval-item" id="approval-' + p.id + '">'
+          + '<div class="approval-info"><span class="approval-chore">' + p.chore_name + ' ' + p.points + 'pt</span><span class="approval-date">' + dateStr + '</span></div>'
+          + '<div class="approval-btns">'
+          + '<button class="approval-btn approve" onclick="approveFromTop(\'' + p.id + '\',\'' + c.id + '\')">承認</button>'
+          + '<button class="approval-btn reject" onclick="rejectFromTop(\'' + p.id + '\',\'' + c.id + '\')">却下</button>'
+          + '</div></div>';
+      });
+      approvalHtml += '</div>';
+      container.innerHTML += approvalHtml;
+    }
   });
 
   // カードにクリックイベントを設定
@@ -723,6 +765,115 @@ async function showRoachCount() {
   }
 }
 
+// --- TOP画面からの承認/却下（admin用） ---
+async function approveFromTop(pointId, childId) {
+  const { data: pt } = await client.from('chore_points').select('child_id, points, chore_name').eq('id', pointId).single();
+  if (!pt) return;
+  await client.from('chore_points').update({ status: 'approved' }).eq('id', pointId);
+
+  // ポイント演出データをSupabaseに保存（別端末でも演出可能）
+  const { data: existing } = await client.from('pending_effects')
+    .select('id, data').eq('child_id', pt.child_id).eq('type', 'points');
+  if (existing && existing.length > 0) {
+    const row = existing[0];
+    const updated = { addedPoints: row.data.addedPoints + pt.points, chores: row.data.chores.concat([pt.chore_name]) };
+    await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
+  } else {
+    await client.from('pending_effects').insert({ child_id: pt.child_id, type: 'points', data: { addedPoints: pt.points, chores: [pt.chore_name] } });
+  }
+
+  // マイルストーンチェック
+  const { data: allPts } = await client.from('chore_points').select('points').eq('child_id', pt.child_id).eq('status', 'approved');
+  const totalAfter = (allPts || []).reduce((s, r) => s + r.points, 0);
+  const totalBefore = totalAfter - pt.points;
+  let totalAllowance = 0;
+  for (let p = totalBefore + 1; p <= totalAfter; p++) {
+    if (p % 20 === 0) {
+      const sheetPt = ((p - 1) % 400) + 1;
+      if (sheetPt % 20 === 0) {
+        totalAllowance += getAllowanceForMilestoneTop(sheetPt);
+      }
+    }
+  }
+  if (totalAllowance > 0) {
+    const targetChild = allChildren.find(c => c.id === pt.child_id);
+    if (targetChild) await giveAllowanceFromTop(targetChild, totalAllowance);
+  }
+
+  // UIから削除
+  const el = document.getElementById('approval-' + pointId);
+  if (el) el.remove();
+  // セクションが空なら削除
+  const section = document.querySelector('.approval-section[data-child-id="' + childId + '"]');
+  if (section && section.children.length === 0) section.remove();
+
+  // Discord通知
+  const child = allChildren.find(c => c.id === pt.child_id);
+  let content = '✅ **' + (child ? child.name : '') + '** の「' + pt.chore_name + '」' + pt.points + 'pt を承認';
+  if (totalAllowance > 0) content += ' 💰 ' + totalAllowance + '円発生！';
+  notifyDiscordTop(content);
+
+  // ページをリロードして表示を更新
+  setTimeout(() => location.reload(), 300);
+}
+
+async function rejectFromTop(pointId, childId) {
+  if (!confirm('却下しますか？')) return;
+  await client.from('chore_points').delete().eq('id', pointId);
+  const el = document.getElementById('approval-' + pointId);
+  if (el) el.remove();
+  const section = document.querySelector('.approval-section[data-child-id="' + childId + '"]');
+  if (section && section.children.length === 0) section.remove();
+  setTimeout(() => location.reload(), 300);
+}
+
+function getAllowanceForMilestoneTop(pts) {
+  if (pts === 400) return 400;
+  if (pts === 200) return 200;
+  if (pts % 60 === 0) return 300;
+  if (pts % 20 === 0) return 40;
+  return 0;
+}
+
+async function giveAllowanceFromTop(targetChild, amount) {
+  const repayChild = allChildren.find(c => c.name === targetChild.name + 'が返すお金');
+  const hasRepay = !!repayChild;
+
+  if (hasRepay) {
+    const half = Math.floor(amount / 2);
+    const remainder = amount - half;
+    const { data: d1 } = await client.from('children').select('balance').eq('id', targetChild.id).single();
+    const oldBal = d1 ? d1.balance : 0;
+    const nb1 = oldBal + remainder;
+    await client.from('children').update({ balance: nb1 }).eq('id', targetChild.id);
+    await client.from('transactions').insert({ child_id: targetChild.id, type: 'add', amount: remainder, memo: 'ポイント表ご褒美' });
+    await savePendingDepositLocalTop(targetChild.id, oldBal, nb1, remainder);
+    const { data: d2 } = await client.from('children').select('balance').eq('id', repayChild.id).single();
+    const nb2 = (d2 ? d2.balance : 0) + half;
+    await client.from('children').update({ balance: nb2 }).eq('id', repayChild.id);
+    await client.from('transactions').insert({ child_id: repayChild.id, type: 'add', amount: half, memo: 'ポイント表ご褒美（' + targetChild.name + '分）' });
+  } else {
+    const { data: d } = await client.from('children').select('balance').eq('id', targetChild.id).single();
+    const oldBal = d ? d.balance : 0;
+    const nb = oldBal + amount;
+    await client.from('children').update({ balance: nb }).eq('id', targetChild.id);
+    await client.from('transactions').insert({ child_id: targetChild.id, type: 'add', amount, memo: 'ポイント表ご褒美' });
+    await savePendingDepositLocalTop(targetChild.id, oldBal, nb, amount);
+  }
+}
+
+async function savePendingDepositLocalTop(cid, oldBalance, newBalance, amount) {
+  const { data: existing } = await client.from('pending_effects')
+    .select('id, data').eq('child_id', cid).eq('type', 'deposit');
+  if (existing && existing.length > 0) {
+    const row = existing[0];
+    const updated = { ...row.data, newBalance, totalAmount: row.data.totalAmount + amount };
+    await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
+  } else {
+    await client.from('pending_effects').insert({ child_id: cid, type: 'deposit', data: { oldBalance, newBalance, totalAmount: amount } });
+  }
+}
+
 load();
 loadPuyoCounts();
 setupRealtimePuyoCounts();
@@ -732,7 +883,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.12.6</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.15.0</a></div>
 
 </body>
 </html>

@@ -181,6 +181,32 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- ポイント履歴管理 -->
+<h2 onclick="toggleSection('pointsHistSection', this)"><span class="toggle">▶</span> ⭐ ポイント履歴管理</h2>
+<div class="section-body" id="pointsHistSection">
+  <div class="card">
+    <div class="history-btns" id="ptsHistBtns"></div>
+    <div id="ptsHistList"></div>
+  </div>
+</div>
+
+<!-- ポイント編集モーダル -->
+<div class="overlay" id="editPtsOverlay">
+  <div class="modal">
+    <h3>📝 ポイント履歴を編集</h3>
+    <input type="text" id="editPtsChore" placeholder="家事名">
+    <input type="number" id="editPtsPoints" placeholder="ポイント数" min="1">
+    <select id="editPtsStatus">
+      <option value="approved">承認済み</option>
+      <option value="pending">承認待ち</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePtsEdit()">キャンセル</button>
+      <button class="btn-ok" onclick="savePtsEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 家事マスタ管理 -->
 <h2 onclick="toggleSection('choreSection', this)"><span class="toggle">&#x25B6;</span> &#x1F9F9; 家事マスタ管理</h2>
 <div class="section-body" id="choreSection">
@@ -842,7 +868,15 @@ async function saveAdminPw() {
 let choreList = [];
 
 async function loadChoreTypes() {
-  const { data } = await client.from('chore_types').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true });
+  let data;
+  try {
+    const res = await client.from('chore_types').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+    data = res.data;
+  } catch(e) {
+    // sort_orderカラムがない場合はidでソート
+    const res = await client.from('chore_types').select('*').order('id', { ascending: true });
+    data = res.data;
+  }
   choreList = data || [];
   const list = document.getElementById('choreAdminList');
   if (!data || data.length === 0) {
@@ -869,8 +903,12 @@ async function moveChore(idx, dir) {
   if (newIdx < 0 || newIdx >= choreList.length) return;
   const a = choreList[idx];
   const b = choreList[newIdx];
-  await client.from('chore_types').update({ sort_order: newIdx }).eq('id', a.id);
-  await client.from('chore_types').update({ sort_order: idx }).eq('id', b.id);
+  try {
+    await client.from('chore_types').update({ sort_order: newIdx }).eq('id', a.id);
+    await client.from('chore_types').update({ sort_order: idx }).eq('id', b.id);
+  } catch(e) {
+    alert('並べ替えにはsort_orderカラムが必要です。SQLを実行してください。');
+  }
   loadChoreTypes();
 }
 
@@ -952,6 +990,94 @@ async function setPointsDirect() {
   setTimeout(() => msg.style.display = 'none', 2000);
 }
 
+// --- ポイント履歴管理 ---
+let ptsHistChildId = null;
+let editingPtsId = null;
+
+function loadPtsHistChildren() {
+  const btns = document.getElementById('ptsHistBtns');
+  if (!btns) return;
+  btns.innerHTML = '';
+  allChildren.filter(c => !c.name.endsWith('が返すお金')).forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'history-btn';
+    btn.textContent = c.name;
+    btn.addEventListener('click', () => {
+      ptsHistChildId = c.id;
+      btns.querySelectorAll('.history-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadPtsHistory();
+    });
+    btns.appendChild(btn);
+  });
+}
+
+async function loadPtsHistory() {
+  const list = document.getElementById('ptsHistList');
+  if (!ptsHistChildId) { list.innerHTML = ''; return; }
+
+  const { data } = await client.from('chore_points')
+    .select('*').eq('child_id', ptsHistChildId)
+    .order('created_at', { ascending: false });
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">ポイント履歴がありません</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  data.forEach(p => {
+    const date = new Date(p.created_at).toLocaleDateString('ja-JP');
+    const statusBadge = p.status === 'pending'
+      ? '<span style="font-size:0.75em;background:#ff9800;color:#fff;padding:1px 6px;border-radius:4px;">承認待ち</span>'
+      : '<span style="font-size:0.75em;background:#4caf50;color:#fff;padding:1px 6px;border-radius:4px;">承認済み</span>';
+    list.innerHTML += `
+      <div class="tx-row">
+        <div class="tx-info">
+          <span class="tx-memo">⭐ ${p.chore_name} ${statusBadge}</span>
+          <span class="tx-date">${date}</span>
+        </div>
+        <span class="tx-amount" style="color:#ff9800;">+${p.points}pt</span>
+        <div class="tx-actions">
+          <button class="btn-sm btn-primary" onclick="openPtsEdit('${p.id}', '${p.chore_name.replace(/'/g, "\\'")}', ${p.points}, '${p.status}')">編集</button>
+          <button class="btn-sm btn-danger" onclick="deletePtsHist('${p.id}')">削除</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function openPtsEdit(id, chore, points, status) {
+  editingPtsId = id;
+  document.getElementById('editPtsChore').value = chore;
+  document.getElementById('editPtsPoints').value = points;
+  document.getElementById('editPtsStatus').value = status;
+  document.getElementById('editPtsOverlay').classList.add('active');
+}
+
+function closePtsEdit() {
+  document.getElementById('editPtsOverlay').classList.remove('active');
+  editingPtsId = null;
+}
+
+async function savePtsEdit() {
+  const chore = document.getElementById('editPtsChore').value.trim();
+  const points = parseInt(document.getElementById('editPtsPoints').value);
+  const status = document.getElementById('editPtsStatus').value;
+  if (!chore) return alert('家事名を入力してください');
+  if (!points || points <= 0) return alert('ポイント数を入力してください');
+
+  await client.from('chore_points').update({ chore_name: chore, points, status }).eq('id', editingPtsId);
+  closePtsEdit();
+  loadPtsHistory();
+}
+
+async function deletePtsHist(id) {
+  if (!confirm('このポイント履歴を削除しますか？')) return;
+  await client.from('chore_points').delete().eq('id', id);
+  loadPtsHistory();
+}
+
 loadChildren();
 loadBackupDates();
 loadChoreTypes();
@@ -959,6 +1085,7 @@ loadChoreTypes();
 // loadChildren完了後に実行
 setTimeout(() => {
   loadPointsChildren();
+  loadPtsHistChildren();
 }, 500);
 </script>
 </body>
