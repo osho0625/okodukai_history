@@ -38,6 +38,15 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 .notify-bell.ringing {
   animation: bellRing 0.6s ease-in-out;
 }
+.pending-badge {
+  font-size: 1.4em; cursor: pointer; line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(76,175,80,0.4));
+  animation: pendingPulse 2s ease-in-out infinite;
+}
+@keyframes pendingPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
 @keyframes bellRing {
   0% { transform: rotate(0deg); }
   15% { transform: rotate(18deg); }
@@ -159,10 +168,16 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <div class="loading">読み込み中...</div>
 </div>
 
-<div style="text-align:center; margin-top:16px; display:flex; justify-content:center; gap:20px;">
+<div id="adminIcons" style="text-align:center; margin-top:16px; display:none; justify-content:center; gap:20px;">
   <a href="#" onclick="goAllowance(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
-  <a href="pages/points.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x2B50;</a>
 </div>
+
+<script>
+// admin権限ならアイコン表示
+if (localStorage.getItem('deviceRole') === 'admin') {
+  document.getElementById('adminIcons').style.display = 'flex';
+}
+</script>
 
 <!-- お手伝いアイコン（アカウント一覧の下に配置） -->
 
@@ -234,7 +249,7 @@ async function loadPasswords() {
 }
 
 function goAllowance() {
-  if (!allowancePassword) {
+  if (!allowancePassword || localStorage.getItem('deviceRole') === 'admin') {
     window.location.href = 'pages/allowance.html';
     return;
   }
@@ -294,10 +309,39 @@ async function load() {
   allChildren = data;
   container.innerHTML = '';
 
+  // 承認待ちポイントをチェック（admin権限のみ）
+  let pendingByChild = {};
+  if (localStorage.getItem('deviceRole') === 'admin') {
+    try {
+      const { data: pendingData } = await client.from('chore_points').select('child_id, points').eq('status', 'pending');
+      (pendingData || []).forEach(p => {
+        pendingByChild[p.child_id] = (pendingByChild[p.child_id] || 0) + p.points;
+      });
+    } catch(e) {}
+  }
+
+  // ポイント情報を取得
+  let pointsByChild = {};
+  try {
+    const { data: ptsData } = await client.from('chore_points').select('child_id, points').eq('status', 'approved');
+    (ptsData || []).forEach(p => {
+      pointsByChild[p.child_id] = (pointsByChild[p.child_id] || 0) + p.points;
+    });
+  } catch(e) {}
+
+  function getAllowanceForMilestone(pts) {
+    if (pts === 400) return 400;
+    if (pts === 200) return 200;
+    if (pts % 60 === 0) return 300;
+    if (pts % 20 === 0) return 40;
+    return 0;
+  }
+
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const hasPassword = c.require_password && c.password;
-    const showBalance = !hasPassword && c.show_balance_on_top !== false;
+    const bypassed = localStorage.getItem('deviceRole') === 'admin';
+    const showBalance = (!hasPassword || bypassed) && c.show_balance_on_top !== false;
 
     // 未読入金チェック
     const pendingKey = 'pending_deposit_' + c.id;
@@ -314,12 +358,33 @@ async function load() {
 
     const displayNeg = displayBalance < 0 ? ' negative' : '';
     const balanceText = showBalance ? `${displayBalance.toLocaleString()}円` : '****円';
-    const lock = hasPassword ? ' 🔒' : '';
+    const lock = (hasPassword && !bypassed) ? ' 🔒' : '';
+    const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
+
+    // ポイント情報（いろはの借金は除外）
+    let ptsHtml = '';
+    if (c.name !== 'いろはの借金') {
+      const pts = Math.min(pointsByChild[c.id] || 0, 400);
+      let nextInfo = '';
+      for (let m = 20; m <= 400; m += 20) {
+        if (pts < m) {
+          const amt = getAllowanceForMilestone(m);
+          nextInfo = 'あと' + (m - pts) + 'ptで' + amt + '円';
+          break;
+        }
+      }
+      if (pts >= 400) nextInfo = '🎉コンプリート！';
+      ptsHtml = '<div style="font-size:0.7em;color:#888;margin-top:2px;">⭐' + pts + '/400 ' + nextInfo + '</div>';
+    }
+
     container.innerHTML += `
       <div class="child-row-wrap" data-id="${c.id}">
-        ${bellHtml}
+        ${bellHtml}${pendingBadge}
         <div class="child-card">
-          <span class="child-name">${c.name}${lock}</span>
+          <div style="flex:1;">
+            <span class="child-name">${c.name}${lock}</span>
+            ${ptsHtml}
+          </div>
           <span class="child-balance${displayNeg}">${balanceText}</span>
         </div>
       </div>
@@ -338,7 +403,7 @@ function goToChild(id) {
   const child = allChildren.find(c => String(c.id) === String(id));
   if (!child) return;
 
-  if (child.require_password && child.password) {
+  if (child.require_password && child.password && localStorage.getItem('deviceRole') !== 'admin') {
     // パスワードが必要 → モーダル表示
     pendingChildId = id;
     document.getElementById('pwTitle').textContent = `🔒 ${child.name} のパスワード`;
@@ -545,7 +610,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.9.1</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.11.5</a></div>
 
 </body>
 </html>
