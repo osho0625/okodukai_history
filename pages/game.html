@@ -77,6 +77,34 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
   0% { opacity: 1; transform: translateY(0) scale(0.5); }
   100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
 }
+/* ぷよ逃走アニメーション */
+.puyo-escape {
+  position: fixed; pointer-events: none; z-index: 30;
+  width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
+}
+.puyo-escape.burst {
+  animation: puyoBurst 0.3s ease-out forwards;
+}
+@keyframes puyoBurst {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(0.6) translateY(8px); }
+}
+.puyo-escape.scatter {
+  transition: top 0.4s cubic-bezier(0.4, 0, 1, 1), left 0.1s linear;
+}
+.puyo-escape.getup {
+  transition: transform 0.3s ease-out;
+  transform: scale(1) rotate(0deg) !important;
+}
+.puyo-escape.running img {
+  animation: puyoWobble 0.2s ease-in-out infinite;
+}
+@keyframes puyoWobble {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(-8deg) translateY(-2px); }
+  75% { transform: rotate(8deg) translateY(-2px); }
+}
 </style>
 </head>
 <body>
@@ -488,7 +516,7 @@ function lockPair() {
   });
 
   chainCount = 0;
-  setTimeout(() => resolveChain(), 100);
+  setTimeout(() => resolveChain(), 50);
 }
 
 // --- 連鎖処理 ---
@@ -500,16 +528,19 @@ function resolveChain() {
       score += calcScore(chainCount, clearResult);
       document.getElementById('score').textContent = score;
       document.getElementById('chain').textContent = chainCount > 1 ? `${chainCount}連鎖!` : '';
-      setTimeout(() => resolveChain(), 350);
+      setTimeout(() => resolveChain(), 500);
     } else {
       document.getElementById('chain').textContent = '';
-      state = 'play';
-      spawnPair();
-      lockDelayTimer = 0;
-      lockDelayActive = false;
-      dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 25);
+      // 連鎖終了後、500ms待ってから次のぷよを出す
+      setTimeout(() => {
+        state = 'play';
+        spawnPair();
+        lockDelayTimer = 0;
+        lockDelayActive = false;
+        dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 25);
+      }, 500);
     }
-  }, 250);
+  }, 200);
 }
 
 function applyGravity() {
@@ -526,6 +557,59 @@ function applyGravity() {
       }
     }
   }
+}
+
+function spawnEscapePuyo(col, row, colorIdx) {
+  const canvasRect = canvas.getBoundingClientRect();
+  const startX = canvasRect.left + col * CELL + CELL / 2 - 19;
+  const startY = canvasRect.top + row * CELL + CELL / 2 - 19;
+
+  const el = document.createElement('div');
+  el.className = 'puyo-escape';
+  const img = document.createElement('img');
+  img.src = PUYO_IMGS[colorIdx];
+  img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+  el.appendChild(img);
+  el.style.left = startX + 'px';
+  el.style.top = startY + 'px';
+  document.body.appendChild(el);
+
+  // 1. 弾ける
+  el.classList.add('burst');
+
+  // 2. 散らばって地面に落ちる（300ms後）
+  setTimeout(() => {
+    el.classList.remove('burst');
+    el.classList.add('scatter');
+    const groundY = canvasRect.bottom + 10 + Math.random() * 20;
+    const scatterX = startX + (Math.random() - 0.5) * 40;
+    el.style.top = groundY + 'px';
+    el.style.left = scatterX + 'px';
+    el.style.transform = 'rotate(' + (Math.random() * 60 - 30) + 'deg) scale(0.8)';
+  }, 300);
+
+  // 3. 起き上がる（700ms後）
+  setTimeout(() => {
+    el.classList.remove('scatter');
+    el.classList.add('getup');
+  }, 750);
+
+  // 4. 走って画面端へ逃げる（1000ms後）
+  setTimeout(() => {
+    el.classList.remove('getup');
+    el.classList.add('running');
+    const goLeft = Math.random() < 0.5;
+    const targetX = goLeft ? -40 : window.innerWidth + 40;
+    const currentX = parseFloat(el.style.left);
+    const distance = Math.abs(targetX - currentX);
+    const speed = 100 + Math.random() * 40; // 100-140px/s（garden.jsの80に近い速度）
+    const duration = distance / speed;
+
+    el.style.transition = 'left ' + duration + 's linear';
+    el.style.left = targetX + 'px';
+
+    setTimeout(() => el.remove(), duration * 1000 + 100);
+  }, 1050);
 }
 
 function findAndClear() {
@@ -554,12 +638,14 @@ function findAndClear() {
           groups.push({ color, count: group.length });
           colorsCleared.add(color);
           group.forEach(({r: gr, c: gc}) => {
-            for (let i = 0; i < 5; i++) {
+            // 逃走アニメーション生成
+            spawnEscapePuyo(gc, gr, grid[gr][gc].color);
+            for (let i = 0; i < 3; i++) {
               particles.push({
                 x: gc * CELL + CELL/2, y: gr * CELL + CELL/2,
-                vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6,
+                vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4,
                 color: COLORS[grid[gr][gc].color],
-                size: 3 + Math.random()*3, life: 1
+                size: 2 + Math.random()*2, life: 0.6
               });
             }
             grid[gr][gc] = null;
@@ -693,8 +779,8 @@ function draw() {
     ctx.fillText('NEXT', canvas.width - CELL * 1.15, 14);
     const ns = CELL * 0.7;
     const nx = canvas.width - CELL * 1.1;
-    drawSmallPuyo(nx, 18, nextPair.c1, ns);
-    drawSmallPuyo(nx, 18 + ns, nextPair.c2, ns);
+    drawSmallPuyo(nx, 18, nextPair.c2, ns);
+    drawSmallPuyo(nx, 18 + ns, nextPair.c1, ns);
   }
 
   // パーティクル
@@ -746,22 +832,27 @@ function gameLoop(time) {
         pair.row++;
         lockDelayTimer = 0;
         lockDelayActive = false;
-      } else if (lockDelayActive) {
-        // 回転操作中: 猶予タイマー加算
-        lockDelayTimer += dropInterval;
+      }
+    }
+    // 着地判定を毎フレームで行う
+    if (!canDrop()) {
+      lockDelayTimer += dt;
+      if (lockDelayActive) {
+        // 回転操作中: 猶予2000ms
         if (lockDelayTimer >= LOCK_DELAY) {
           lockDelayTimer = 0;
           lockDelayActive = false;
           lockPair();
         }
       } else {
-        // 回転操作なし: 0.3秒の基本猶予
-        lockDelayTimer += dropInterval;
-        if (lockDelayTimer >= 300) {
+        // 回転操作なし: 400msの基本猶予
+        if (lockDelayTimer >= 400) {
           lockDelayTimer = 0;
           lockPair();
         }
       }
+    } else {
+      lockDelayTimer = 0;
     }
   }
 
