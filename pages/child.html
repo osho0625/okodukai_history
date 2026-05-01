@@ -80,6 +80,26 @@ h2 { margin-bottom: 12px; color: #333; }
   border-radius: 50%; object-fit: cover; z-index: 1;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
+.puyo-sticker.animating {
+  animation: puyoStickerPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes puyoStickerPop {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  40% { transform: scale(1.5) rotate(20deg); opacity: 1; }
+  60% { transform: scale(0.8) rotate(-10deg); }
+  80% { transform: scale(1.15) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.milestone-flash {
+  position: absolute; top: -6px; left: -6px; width: calc(100% + 12px); height: calc(100% + 12px);
+  border-radius: 50%; z-index: 0; pointer-events: none;
+  animation: milestoneGlow 1s ease-out forwards;
+}
+@keyframes milestoneGlow {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.8); transform: scale(0.5); }
+  50% { box-shadow: 0 0 20px 8px rgba(255,215,0,0.6); transform: scale(1.2); }
+  100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); transform: scale(1); }
+}
 .milestone-label {
   font-size: 0.6em; color: #999; text-align: center; padding: 0 2px;
   grid-column: 21; white-space: nowrap;
@@ -96,7 +116,7 @@ h2 { margin-bottom: 12px; color: #333; }
 .chore-popup {
   position: fixed; z-index: 200; background: #333; color: #fff;
   padding: 8px 14px; border-radius: 10px; font-size: 0.85em;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3); pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   white-space: nowrap; transform: translateX(-50%);
   opacity: 0; transition: opacity 0.2s;
 }
@@ -105,10 +125,10 @@ h2 { margin-bottom: 12px; color: #333; }
   animation: stampIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 @keyframes stampIn {
-  0% { transform: scale(2.5); opacity: 0; background: #fff; }
-  50% { transform: scale(0.85); opacity: 1; background: #ffe082; }
+  0% { transform: scale(2.5); opacity: 0; }
+  50% { transform: scale(0.85); opacity: 1; }
   70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; background: #ffcc02; }
+  100% { transform: scale(1); opacity: 1; }
 }
 .stamp-sparkle {
   position: absolute; pointer-events: none; font-size: 0.9em; z-index: 10;
@@ -718,6 +738,16 @@ function adjustPts(delta) {
 }
 
 async function loadPointsGrid() {
+  // 月ごとの色設定を取得
+  if (!window._monthColors) {
+    window._monthColors = { 1:'#e57373', 2:'#f06292', 3:'#ba68c8', 4:'#9575cd', 5:'#7986cb', 6:'#64b5f6', 7:'#4fc3f7', 8:'#4dd0e1', 9:'#4db6ac', 10:'#81c784', 11:'#aed581', 12:'#dce775' };
+    try {
+      const { data: settings } = await client.from('game_settings').select('month_colors').eq('id', 1).maybeSingle();
+      if (settings && settings.month_colors) window._monthColors = { ...window._monthColors, ...settings.month_colors };
+    } catch(e) {}
+  }
+  const monthColors = window._monthColors;
+
   const { data } = await client.from('chore_points')
     .select('points, chore_name, created_at, status')
     .eq('child_id', childId)
@@ -729,24 +759,29 @@ async function loadPointsGrid() {
   (data || []).forEach(r => {
     if (r.status === 'pending') { pendingCount += r.points; return; }
     const d = new Date(r.created_at);
-    const dateStr = (d.getMonth() + 1) + '/' + d.getDate();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
     if (r.points > 0) {
       for (let i = 0; i < r.points; i++) {
-        allCells.push({ date: dateStr, chore: r.chore_name });
+        allCells.push({ month, day, chore: r.chore_name, fullDate: month + '/' + day });
       }
     } else if (r.points < 0) {
-      // マイナスポイント（管理者調整）: 末尾からセルを削除
       const removeCount = Math.min(Math.abs(r.points), allCells.length);
       allCells.splice(allCells.length - removeCount, removeCount);
     }
   });
 
   const totalApproved = allCells.length;
-  const sheetIdx = totalApproved > 0 ? Math.floor((totalApproved - 1) / 400) : 0; // 0始まり
+
+  // 演出がある場合は、演出分を除外してグリッドを描画（演出で追加する）
+  const animPts = (pendingPtsEffect && !isAdmin) ? pendingPtsEffect.addedPoints : 0;
+  const displayTotal = Math.max(0, totalApproved - animPts);
+
+  const sheetIdx = displayTotal > 0 ? Math.floor((displayTotal - 1) / 400) : 0; // 0始まり
   const sheetNum = sheetIdx + 1;
-  const currentSheetPts = totalApproved > 0 ? totalApproved - (sheetIdx * 400) : 0;
-  // 現在の枚のセル（400個まで）
-  const cells = allCells.slice(sheetIdx * 400, sheetIdx * 400 + 400);
+  const currentSheetPts = displayTotal > 0 ? displayTotal - (sheetIdx * 400) : 0;
+  // 現在の枚のセル（400個まで）— 演出分を除外
+  const cells = allCells.slice(sheetIdx * 400, sheetIdx * 400 + Math.min(currentSheetPts, 400));
 
   document.getElementById('sheetNum').textContent = sheetNum + '枚目';
   document.getElementById('totalPts').textContent = currentSheetPts;
@@ -797,9 +832,17 @@ async function loadPointsGrid() {
         cell.style.overflow = 'visible';
         cell.appendChild(img);
       } else {
-        cell.textContent = cells[i].date;
+        // 月初のみ「5/1」、以降は日にちだけ
+        const cellData = cells[i];
+        const prevMonth = (i > 0) ? cells[i - 1].month : null;
+        const displayText = (cellData.month !== prevMonth) ? cellData.month + '/' + cellData.day : '' + cellData.day;
+        cell.textContent = displayText;
+        // 月ごとの色
+        const mColor = monthColors[cellData.month] || '#ffcc02';
+        cell.style.background = mColor;
+        cell.style.color = '#fff';
       }
-      cell.addEventListener('click', ((info) => (e) => showChorePopup(e, info))(cells[i]));
+      cell.addEventListener('click', ((info) => (e) => showChorePopup(e, { date: info.fullDate, chore: info.chore }))(cells[i]));
     }
     grid.appendChild(cell);
 
@@ -840,18 +883,59 @@ function showPointsAnimation(addedPts, choreNames, onDone) {
   if (cellsToStamp === 0) { if (onDone) onDone(); return; }
 
   const uniqueChores = [...new Set(choreNames)];
+  const labelText = uniqueChores.join('・') + ' +' + addedPts + 'pt';
 
-  // ヘッダーに家事名を一瞬表示
+  // ラベル演出: 画面中央に大きく表示→縮小しながら定位置に移動して収まる
   const wrap = document.getElementById('pointsSectionWrap');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+  document.body.appendChild(overlay);
+
+  // ラベル要素（最終的にwrap内に収まる）
   const choreLabel = document.createElement('div');
-  choreLabel.style.cssText = 'text-align:center;font-size:1.2em;color:#ff9800;font-weight:700;margin-bottom:10px;opacity:0;transition:opacity 0.3s;';
-  choreLabel.textContent = uniqueChores.join('・') + ' +' + addedPts + 'pt';
-  if (wrap) wrap.insertBefore(choreLabel, wrap.firstChild);
-  requestAnimationFrame(() => { choreLabel.style.opacity = '1'; });
+  choreLabel.style.cssText = 'position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:2.5em;font-weight:900;color:#ff9800;text-shadow:0 2px 8px rgba(0,0,0,0.3);text-align:center;z-index:501;opacity:0;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;white-space:nowrap;';
+  choreLabel.textContent = labelText;
+  document.body.appendChild(choreLabel);
+
+  // ポンッと登場
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    choreLabel.style.opacity = '1';
+    choreLabel.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+
+  // 1秒後に定位置へ縮小移動
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    // 定位置の座標を計算
+    const wrapRect = wrap.getBoundingClientRect();
+    const targetTop = wrapRect.top + 'px';
+    const targetLeft = (wrapRect.left + wrapRect.width / 2) + 'px';
+    choreLabel.style.transition = 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    choreLabel.style.top = targetTop;
+    choreLabel.style.left = targetLeft;
+    choreLabel.style.fontSize = '1.2em';
+    choreLabel.style.transform = 'translate(-50%, 0) scale(1)';
+    choreLabel.style.textShadow = 'none';
+  }, 1000);
+
+  // 1.7秒後にオーバーレイ削除、ラベルを定位置に固定
+  setTimeout(() => {
+    overlay.remove();
+    // fixedからwrap内のstaticに切り替え
+    choreLabel.style.position = 'relative';
+    choreLabel.style.top = '';
+    choreLabel.style.left = '';
+    choreLabel.style.transform = '';
+    choreLabel.style.marginBottom = '10px';
+    choreLabel.style.transition = '';
+    choreLabel.style.zIndex = '';
+    if (wrap) wrap.insertBefore(choreLabel, wrap.firstChild);
+  }, 1700);
 
   // 1つずつスタンプ
   let stamped = 0;
-  const interval = Math.min(600, 5000 / cellsToStamp); // 全体で最大5秒、1つあたり最大600ms
+  const interval = Math.min(900, 8000 / cellsToStamp); // 全体で最大8秒、1つあたり最大900ms
 
   function spawnStampSparkles(cell) {
     const sparkles = ['✨', '⭐', '💫', '🌟'];
@@ -895,13 +979,54 @@ function showPointsAnimation(addedPts, choreNames, onDone) {
 
     const cell = emptyCells[stamped];
     cell.classList.add('filled', 'stamping');
-    cell.textContent = new Date().getMonth() + 1 + '/' + new Date().getDate();
-    spawnStampSparkles(cell);
+    const now = new Date();
+    const mc = window._monthColors || {};
+
+    // セルのグリッド内位置を取得してマイルストーン判定
+    const allGridCells = grid.querySelectorAll('.grid-cell');
+    const cellIndex = Array.from(allGridCells).indexOf(cell);
+    const ptNum = cellIndex + 1; // 1始まりのポイント番号
+    const isMilestoneBig = (ptNum === 200 || ptNum === 400 || ptNum % 60 === 0);
+    const isMilestone = (!isMilestoneBig && ptNum % 20 === 0);
+
+    if (isMilestone || isMilestoneBig) {
+      // マイルストーン: ぷよシールを表示（特別演出）
+      const PUYO_IMGS = ['../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif','../images/puyo_4.avif','../images/puyo_5.avif'];
+      const stickerIdx = Math.floor(((ptNum / 20) - 1) % 5);
+      const img = document.createElement('img');
+      img.src = PUYO_IMGS[stickerIdx];
+      img.className = 'puyo-sticker animating';
+      cell.style.position = 'relative';
+      cell.style.overflow = 'visible';
+      cell.textContent = '';
+      cell.appendChild(img);
+      // グローエフェクト
+      const flash = document.createElement('div');
+      flash.className = 'milestone-flash';
+      cell.appendChild(flash);
+      setTimeout(() => flash.remove(), 1100);
+      // キラキラ多め
+      spawnStampSparkles(cell);
+      spawnStampSparkles(cell);
+    } else {
+      cell.textContent = (stamped === 0) ? (now.getMonth() + 1) + '/' + now.getDate() : '' + now.getDate();
+    }
+
+    // シール部分は黄色固定、通常セルは月色
+    if (isMilestone || isMilestoneBig) {
+      cell.style.background = '#ffcc02';
+    } else {
+      cell.style.background = mc[now.getMonth() + 1] || '#ffcc02';
+    }
+    cell.style.color = '#fff';
+    if (!(isMilestone || isMilestoneBig)) spawnStampSparkles(cell);
     stamped++;
-    setTimeout(stampNext, interval);
+    // マイルストーン時は長めの間隔
+    const nextDelay = (isMilestone || isMilestoneBig) ? interval + 600 : interval;
+    setTimeout(stampNext, nextDelay);
   }
 
-  setTimeout(stampNext, 400);
+  setTimeout(stampNext, 2000);
 }
 
 // お金演出チェック（ポイント演出の後に実行、userのみ）
@@ -914,8 +1039,10 @@ function checkDepositAnimation() {
     showDepositOverlay(pendingDepEffect.oldBalance, child.balance, pendingDepEffect.totalAmount);
   }
 }
+let popupEl = null;
 function showChorePopup(e, info) {
-  if (popupEl) popupEl.remove();
+  e.stopPropagation();
+  if (popupEl) { popupEl.remove(); popupEl = null; }
   popupEl = document.createElement('div');
   popupEl.className = 'chore-popup';
   popupEl.textContent = info.date + ' ' + info.chore;
@@ -924,8 +1051,14 @@ function showChorePopup(e, info) {
   popupEl.style.left = (rect.left + rect.width / 2) + 'px';
   popupEl.style.top = (rect.top - 36) + 'px';
   requestAnimationFrame(() => popupEl.classList.add('show'));
-  setTimeout(() => { if (popupEl) { popupEl.remove(); popupEl = null; } }, 2000);
 }
+// 他の領域タップでポップアップを閉じる
+document.addEventListener('click', () => {
+  if (popupEl) { popupEl.remove(); popupEl = null; }
+});
+document.addEventListener('touchstart', (e) => {
+  if (popupEl && !popupEl.contains(e.target)) { popupEl.remove(); popupEl = null; }
+}, { passive: true });
 
 async function addChorePoints() {
   if (!childId || selectedChoreIdx === null || currentPts <= 0) return;
@@ -962,8 +1095,19 @@ async function addChorePoints() {
     }
   }
 
-  // admin即承認時はポイント演出データを保存しない（今見ているので）
-  // user申請時もなし（承認時に保存する）
+  // admin即承認時もポイント演出データをSupabaseに保存（別端末のuser用）
+  if (isAdmin) {
+    const { data: existingPts } = await client.from('pending_effects')
+      .select('id, data').eq('child_id', childId).eq('type', 'points');
+    if (existingPts && existingPts.length > 0) {
+      const row = existingPts[0];
+      const updated = { addedPoints: row.data.addedPoints + currentPts, chores: row.data.chores.concat([chore.name]) };
+      await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
+    } else {
+      await client.from('pending_effects').insert({ child_id: childId, type: 'points', data: { addedPoints: currentPts, chores: [chore.name] } });
+    }
+  }
+  // user申請時はなし（承認時に保存する）
 
   // Discord通知
   try {

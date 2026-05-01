@@ -287,6 +287,17 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- 月色設定 -->
+<h2 onclick="toggleSection('monthColorSection', this)"><span class="toggle">&#x25B6;</span> &#x1F3A8; ポイント表 月色設定</h2>
+<div class="section-body" id="monthColorSection">
+  <div class="card">
+    <div style="font-size:0.85em; color:#999; margin-bottom:12px;">お手伝い表のスタンプ色を月ごとに設定します</div>
+    <div id="monthColorList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+    <button class="btn-add" onclick="saveMonthColors()" style="width:100%; margin-top:12px;">色を保存</button>
+    <div class="msg" id="monthColorMsg">&#x2713; 保存しました</div>
+  </div>
+</div>
+
 <!-- イタズラ設定 -->
 <h2 onclick="toggleSection('prankSection', this)"><span class="toggle">&#x25B6;</span> &#x1F608; イタズラ設定</h2>
 <div class="section-body" id="prankSection">
@@ -421,7 +432,15 @@ async function loadChildren() {
     list.innerHTML += `
       <div class="child-row">
         <div class="child-info">
-          <span class="name">${c.name}</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span class="edit-name-icon" onclick="startEditName('${c.id}')" style="cursor:pointer;opacity:0.5;font-size:0.9em;">✏</span>
+            <span class="name" id="name-display-${c.id}">${c.name}</span>
+            <div id="name-edit-${c.id}" style="display:none;align-items:center;gap:4px;">
+              <input type="text" id="name-input-${c.id}" value="${c.name.replace(/"/g, '&quot;')}" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:0.95em;width:140px;">
+              <button class="btn-sm btn-primary" onclick="saveEditName('${c.id}')" style="padding:4px 10px;font-size:0.8em;">保存</button>
+              <button class="btn-sm btn-cancel" onclick="cancelEditName('${c.id}')" style="padding:4px 8px;font-size:0.8em;background:#eee;color:#333;">✕</button>
+            </div>
+          </div>
           <span class="balance${negClass}">${c.balance.toLocaleString()}円</span>
           <span class="pw-status">${pwText}</span>
         </div>
@@ -471,6 +490,25 @@ async function deleteChild(id, name) {
 async function resetPassword(id) {
   if (!confirm('パスワードを解除しますか？')) return;
   await client.from('children').update({ require_password: false, password: null }).eq('id', id);
+  loadChildren();
+}
+
+function startEditName(id) {
+  document.getElementById('name-display-' + id).style.display = 'none';
+  document.getElementById('name-edit-' + id).style.display = 'flex';
+  document.getElementById('name-input-' + id).focus();
+}
+
+function cancelEditName(id) {
+  document.getElementById('name-display-' + id).style.display = '';
+  document.getElementById('name-edit-' + id).style.display = 'none';
+}
+
+async function saveEditName(id) {
+  const input = document.getElementById('name-input-' + id);
+  const newName = input.value.trim();
+  if (!newName) return alert('名前を入力してください');
+  await client.from('children').update({ name: newName }).eq('id', id);
   loadChildren();
 }
 
@@ -753,6 +791,39 @@ async function loadActivityLog(filter) {
 }
 
 // --- イタズラ設定 ---
+
+// --- 月色設定 ---
+const DEFAULT_MONTH_COLORS = { 1:'#e57373', 2:'#f06292', 3:'#ba68c8', 4:'#9575cd', 5:'#7986cb', 6:'#64b5f6', 7:'#4fc3f7', 8:'#4dd0e1', 9:'#4db6ac', 10:'#81c784', 11:'#aed581', 12:'#dce775' };
+const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+async function loadMonthColors() {
+  let colors = { ...DEFAULT_MONTH_COLORS };
+  try {
+    const { data } = await client.from('game_settings').select('month_colors').eq('id', 1).maybeSingle();
+    if (data && data.month_colors) colors = { ...colors, ...data.month_colors };
+  } catch(e) {}
+  const list = document.getElementById('monthColorList');
+  list.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    list.innerHTML += `<div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.85em;min-width:32px;">${MONTH_NAMES[m-1]}</span>
+      <input type="color" id="mcolor_${m}" value="${colors[m]}" style="width:36px;height:28px;border:none;cursor:pointer;">
+    </div>`;
+  }
+}
+
+async function saveMonthColors() {
+  const colors = {};
+  for (let m = 1; m <= 12; m++) {
+    colors[m] = document.getElementById('mcolor_' + m).value;
+  }
+  await client.from('game_settings').update({ month_colors: colors }).eq('id', 1);
+  const msg = document.getElementById('monthColorMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+loadMonthColors();
 async function resetPuyoCount() {
   if (!confirm('ぷよカウントをすべて0にリセットしますか？')) return;
   await client.from('puyo_counts').update({ count: 0 }).neq('id', 0);
