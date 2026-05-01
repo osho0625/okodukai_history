@@ -179,22 +179,6 @@ h2 { margin-bottom: 12px; color: #333; }
   <a class="settings-icon" id="settingsLink" href="#">⚙️</a>
 </div>
 
-<!-- 出金UI（全ユーザー）＋入金UI（adminのみ） -->
-<div style="max-width:480px; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-  <div onclick="toggleAccordion('txBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
-    <span class="acc-arrow">▶</span> 💰 入出金
-  </div>
-  <div id="txBody" style="display:none; padding:0 16px 16px;">
-    <input type="number" id="txAmount" placeholder="金額" min="0" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
-    <input type="text" id="txMemo" placeholder="メモ" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
-    <div style="display:flex; gap:8px;">
-      <button id="btnDeposit" onclick="doChildTx('add')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-size:1em;font-weight:600;cursor:pointer;display:none;">＋ 入金</button>
-      <button onclick="doChildTx('use')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">－ 出金</button>
-    </div>
-    <div id="txResultMsg" style="text-align:center;margin-top:8px;color:#4caf50;font-weight:600;display:none;"></div>
-  </div>
-</div>
-
 <!-- ポイント表 -->
 <div id="pointsSectionWrap" style="max-width:480px; margin-bottom:20px;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -222,6 +206,22 @@ h2 { margin-bottom: 12px; color: #333; }
       <button id="btnAddPts" onclick="addChorePoints()" disabled style="width:100%;padding:12px;border:none;border-radius:10px;background:#ff9800;color:#fff;font-size:1em;font-weight:700;cursor:pointer;opacity:0.4;">ポイントを追加</button>
       <div id="choreResultMsg" style="text-align:center;margin-top:8px;color:#4caf50;font-weight:600;display:none;"></div>
     </div>
+  </div>
+</div>
+
+<!-- 入出金UI（ポイント追加の下、履歴の上） -->
+<div style="max-width:480px; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+  <div onclick="toggleAccordion('txBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> 💰 入出金
+  </div>
+  <div id="txBody" style="display:none; padding:0 16px 16px;">
+    <input type="number" id="txAmount" placeholder="金額" min="0" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+    <input type="text" id="txMemo" placeholder="メモ" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+    <div style="display:flex; gap:8px;">
+      <button id="btnDeposit" onclick="doChildTx('add')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-size:1em;font-weight:600;cursor:pointer;display:none;">＋ 入金</button>
+      <button onclick="doChildTx('use')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">－ 出金</button>
+    </div>
+    <div id="txResultMsg" style="text-align:center;margin-top:8px;color:#4caf50;font-weight:600;display:none;"></div>
   </div>
 </div>
 
@@ -584,7 +584,7 @@ let currentPts = 0;
 
 async function loadChores() {
   try {
-    const { data } = await client.from('chore_types').select('*').order('id');
+    const { data } = await client.from('chore_types').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true });
     chores = (data && data.length > 0) ? data : DEFAULT_CHORES;
   } catch(e) { chores = DEFAULT_CHORES; }
   renderChores();

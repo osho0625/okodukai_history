@@ -839,17 +839,22 @@ async function saveAdminPw() {
 }
 
 // --- 家事マスタ管理 ---
+let choreList = [];
+
 async function loadChoreTypes() {
-  const { data } = await client.from('chore_types').select('*').order('id');
+  const { data } = await client.from('chore_types').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true });
+  choreList = data || [];
   const list = document.getElementById('choreAdminList');
   if (!data || data.length === 0) {
     list.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">家事が登録されていません</div>';
     return;
   }
   list.innerHTML = '';
-  data.forEach(ch => {
+  data.forEach((ch, idx) => {
     list.innerHTML += `
-      <div style="display:flex; align-items:center; gap:4px; padding:6px 0; border-bottom:1px solid #f0f0f0; flex-wrap:nowrap;">
+      <div style="display:flex; align-items:center; gap:3px; padding:6px 0; border-bottom:1px solid #f0f0f0; flex-wrap:nowrap;">
+        <button class="sort-btn" onclick="moveChore(${idx},-1)" style="width:24px;height:24px;font-size:0.7em;border:none;border-radius:4px;background:#e0e0e0;cursor:pointer;"${idx === 0 ? ' disabled style="width:24px;height:24px;font-size:0.7em;border:none;border-radius:4px;background:#e0e0e0;cursor:pointer;opacity:0.3;"' : ''}>▲</button>
+        <button class="sort-btn" onclick="moveChore(${idx},1)" style="width:24px;height:24px;font-size:0.7em;border:none;border-radius:4px;background:#e0e0e0;cursor:pointer;"${idx === data.length - 1 ? ' disabled style="width:24px;height:24px;font-size:0.7em;border:none;border-radius:4px;background:#e0e0e0;cursor:pointer;opacity:0.3;"' : ''}>▼</button>
         <input type="text" value="${ch.name}" id="choreName_${ch.id}" style="flex:1; min-width:0; padding:5px 6px; border:1px solid #ddd; border-radius:6px; font-size:0.8em;">
         <input type="number" value="${ch.default_points}" id="chorePts_${ch.id}" min="1" style="width:40px; padding:5px 2px; border:1px solid #ddd; border-radius:6px; font-size:0.8em; text-align:center;">
         <button class="btn-sm btn-primary" onclick="saveChoreType(${ch.id})" style="padding:4px 8px; font-size:0.75em;">保存</button>
@@ -857,6 +862,16 @@ async function loadChoreTypes() {
       </div>
     `;
   });
+}
+
+async function moveChore(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= choreList.length) return;
+  const a = choreList[idx];
+  const b = choreList[newIdx];
+  await client.from('chore_types').update({ sort_order: newIdx }).eq('id', a.id);
+  await client.from('chore_types').update({ sort_order: idx }).eq('id', b.id);
+  loadChoreTypes();
 }
 
 async function saveChoreType(id) {

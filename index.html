@@ -43,6 +43,20 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   filter: drop-shadow(0 1px 3px rgba(76,175,80,0.4));
   animation: pendingPulse 2s ease-in-out infinite;
 }
+.sort-item {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  background: #f9f9f9; border-radius: 8px; margin-bottom: 6px;
+}
+.sort-item .sort-name { flex: 1; font-weight: 600; font-size: 0.95em; }
+.sort-btn {
+  width: 32px; height: 32px; border: none; border-radius: 6px;
+  background: #e0e0e0; font-size: 1em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.sort-btn:hover { background: #bbb; }
+.sort-btn:active { background: #999; }
+.acc-arrow-s { display: inline-block; transition: transform 0.2s; font-size: 0.8em; }
+.acc-arrow-s.open { transform: rotate(90deg); }
 @keyframes pendingPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -170,6 +184,7 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 
 <div id="adminIcons" style="text-align:center; margin-top:16px; display:none; justify-content:center; gap:20px;">
   <a href="#" onclick="goAllowance(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
+  <a href="#" onclick="openSortModal(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x2699;&#xFE0F;</a>
 </div>
 
 <script>
@@ -190,6 +205,28 @@ if (localStorage.getItem('deviceRole') === 'admin') {
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeAllowanceModal()">キャンセル</button>
       <button class="btn-ok" onclick="submitAllowancePw()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div class="overlay" id="sortOverlay">
+  <div class="modal" style="text-align:left; max-height:80vh; overflow-y:auto;">
+    <h2 style="text-align:center; margin-bottom:16px;">&#x2699;&#xFE0F; 設定</h2>
+
+    <!-- 表示順変更 -->
+    <div style="background:#f9f9f9; border-radius:10px; overflow:hidden; margin-bottom:10px;">
+      <div onclick="toggleSettingAcc('sortBody', this)" style="padding:12px 14px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+        <span class="acc-arrow-s">▶</span> 📋 表示順の変更
+      </div>
+      <div id="sortBody" style="display:none; padding:0 14px 14px;">
+        <div id="sortList"></div>
+        <button class="btn-ok" onclick="saveSortOrder()" style="width:100%; margin-top:10px;">保存</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:12px;">
+      <button class="btn-cancel" onclick="closeSortModal()" style="width:100%;">閉じる</button>
     </div>
   </div>
 </div>
@@ -238,6 +275,66 @@ let pendingChildId = null;
 let adminFailCount = 0;
 let allowancePassword = null;
 let adminPassword = null;
+
+// --- 設定モーダル内アコーディオン ---
+function toggleSettingAcc(bodyId, headerEl) {
+  const body = document.getElementById(bodyId);
+  const arrow = headerEl.querySelector('.acc-arrow-s');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    if (arrow) arrow.classList.add('open');
+  } else {
+    body.style.display = 'none';
+    if (arrow) arrow.classList.remove('open');
+  }
+}
+
+// --- 表示順変更モーダル ---
+let sortItems = [];
+
+function openSortModal() {
+  sortItems = allChildren.slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  renderSortList();
+  document.getElementById('sortOverlay').classList.add('active');
+}
+
+function closeSortModal() {
+  document.getElementById('sortOverlay').classList.remove('active');
+}
+
+document.getElementById('sortOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSortModal();
+});
+
+function renderSortList() {
+  const list = document.getElementById('sortList');
+  list.innerHTML = '';
+  sortItems.forEach((c, idx) => {
+    const item = document.createElement('div');
+    item.className = 'sort-item';
+    item.innerHTML = '<span class="sort-name">' + c.name + '</span>'
+      + '<button class="sort-btn" onclick="moveSortItem(' + idx + ',-1)"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + '>&#x25B2;</button>'
+      + '<button class="sort-btn" onclick="moveSortItem(' + idx + ',1)"' + (idx === sortItems.length - 1 ? ' disabled style="opacity:0.3"' : '') + '>&#x25BC;</button>';
+    list.appendChild(item);
+  });
+}
+
+function moveSortItem(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= sortItems.length) return;
+  const tmp = sortItems[idx];
+  sortItems[idx] = sortItems[newIdx];
+  sortItems[newIdx] = tmp;
+  renderSortList();
+}
+
+async function saveSortOrder() {
+  for (let i = 0; i < sortItems.length; i++) {
+    await client.from('children').update({ sort_order: i }).eq('id', sortItems[i].id);
+  }
+  closeSortModal();
+  load(); // 一覧を再読み込み
+}
 
 // --- パスワード読み込み（Supabase） ---
 async function loadPasswords() {
@@ -363,6 +460,7 @@ async function load() {
 
     // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
+    let starsHtml = '';
     if (!c.name.endsWith('が返すお金')) {
       const totalPts = pointsByChild[c.id] || 0;
       const sheetNum = totalPts > 0 ? Math.floor((totalPts - 1) / 400) + 1 : 1;
@@ -379,6 +477,26 @@ async function load() {
       if (displayPts >= 400) nextInfo = '🎉コンプリート！';
       const sheetLabel = sheetNum > 1 ? '(' + sheetNum + '枚目)' : '';
       ptsHtml = '<div style="font-size:0.7em;color:#888;margin-top:2px;">⭐' + displayPts + '/400' + sheetLabel + ' ' + nextInfo + '</div>';
+
+      // 完了枚数に応じたアイコン表示（ぷよ5つでオリマー1つに変換）
+      const completedSheets = totalPts > 0 ? Math.floor(totalPts / 400) : 0;
+      if (completedSheets > 0) {
+        const olimars = Math.floor(completedSheets / 5);
+        const puyoCount = completedSheets % 5;
+        let icons = '';
+        for (let i = 0; i < olimars; i++) {
+          icons += '<img src="images/olimar.png" style="width:54px;height:54px;vertical-align:middle;object-fit:contain;">';
+        }
+        // ぷよは被らないようにシャッフルして選ぶ
+        if (puyoCount > 0) {
+          const indices = [1,2,3,4,5];
+          for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; }
+          for (let i = 0; i < puyoCount; i++) {
+            icons += '<img src="images/puyo_' + indices[i] + '.avif" style="width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle;">';
+          }
+        }
+        starsHtml = ' <span style="font-size:0.7em;">' + icons + '</span>';
+      }
     }
 
     container.innerHTML += `
@@ -386,7 +504,7 @@ async function load() {
         ${bellHtml}${pendingBadge}
         <div class="child-card">
           <div style="flex:1;">
-            <span class="child-name">${c.name}${lock}</span>
+            <span class="child-name">${c.name}${starsHtml}${lock}</span>
             ${ptsHtml}
           </div>
           <span class="child-balance${displayNeg}">${balanceText}</span>
@@ -614,7 +732,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.12.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.12.6</a></div>
 
 </body>
 </html>
