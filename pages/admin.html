@@ -207,7 +207,7 @@ h2 .toggle.open { transform: rotate(90deg); }
     <div id="pointsDirectForm" style="display:none; margin-top:12px;">
       <div style="margin-bottom:8px;">現在: <span id="directCurrentPts" style="font-weight:700;">0</span>pt</div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <input type="number" id="directNewPts" placeholder="新しいポイント数" min="0" max="400" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <input type="number" id="directNewPts" placeholder="新しい合計ポイント数" min="0" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
         <button class="btn-sm btn-primary" onclick="setPointsDirect()" style="padding:8px 14px;">設定</button>
       </div>
       <div class="msg" id="directPtsMsg" style="margin-top:6px;">&#x2713; 設定しました</div>
@@ -894,7 +894,7 @@ let directChildId = null;
 function loadPointsChildren() {
   const btns = document.getElementById('pointsChildBtns');
   btns.innerHTML = '';
-  allChildren.filter(c => c.name !== 'いろはの借金').forEach(c => {
+  allChildren.filter(c => !c.name.endsWith('が返すお金')).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'history-btn';
     btn.textContent = c.name;
@@ -910,20 +910,28 @@ async function selectDirectChild(id, btn) {
   document.getElementById('pointsDirectForm').style.display = 'block';
   const { data } = await client.from('chore_points').select('points').eq('child_id', id).eq('status', 'approved');
   const total = (data || []).reduce((s, r) => s + r.points, 0);
-  document.getElementById('directCurrentPts').textContent = Math.min(total, 400);
+  const sheetNum = total > 0 ? Math.floor((total - 1) / 400) + 1 : 1;
+  const sheetPts = total > 0 ? ((total - 1) % 400) + 1 : 0;
+  document.getElementById('directCurrentPts').textContent = total + 'pt（' + sheetNum + '枚目: ' + (total === 0 ? 0 : sheetPts) + '/400）';
   document.getElementById('directNewPts').value = '';
+  document.getElementById('directNewPts').placeholder = '新しい合計ポイント数';
+  document.getElementById('directNewPts').max = '';
+  document.getElementById('directNewPts').min = '0';
 }
 
 async function setPointsDirect() {
   if (!directChildId) return;
   const newPts = parseInt(document.getElementById('directNewPts').value);
-  if (isNaN(newPts) || newPts < 0 || newPts > 400) return alert('0〜400の範囲で入力してください');
+  if (isNaN(newPts) || newPts < 0) return alert('0以上の数値を入力してください');
   const { data } = await client.from('chore_points').select('points').eq('child_id', directChildId).eq('status', 'approved');
   const currentTotal = (data || []).reduce((s, r) => s + r.points, 0);
   const diff = newPts - currentTotal;
   if (diff === 0) return;
   await client.from('chore_points').insert({ child_id: directChildId, chore_name: '管理者調整', points: diff, status: 'approved' });
-  document.getElementById('directCurrentPts').textContent = newPts;
+  const sheetNum = newPts > 0 ? Math.floor((newPts - 1) / 400) + 1 : 1;
+  const sheetPts = newPts > 0 ? ((newPts - 1) % 400) + 1 : 0;
+  document.getElementById('directCurrentPts').textContent = newPts + 'pt（' + sheetNum + '枚目: ' + (newPts === 0 ? 0 : sheetPts) + '/400）';
+  document.getElementById('directNewPts').value = '';
   const msg = document.getElementById('directPtsMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);

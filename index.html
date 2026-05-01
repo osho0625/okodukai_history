@@ -364,17 +364,21 @@ async function load() {
     // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
     if (!c.name.endsWith('が返すお金')) {
-      const pts = Math.min(pointsByChild[c.id] || 0, 400);
+      const totalPts = pointsByChild[c.id] || 0;
+      const sheetNum = totalPts > 0 ? Math.floor((totalPts - 1) / 400) + 1 : 1;
+      const currentSheetPts = totalPts > 0 ? ((totalPts - 1) % 400) + 1 : 0;
+      const displayPts = totalPts === 0 ? 0 : (totalPts % 400 === 0 ? 400 : totalPts % 400);
       let nextInfo = '';
       for (let m = 20; m <= 400; m += 20) {
-        if (pts < m) {
+        if (displayPts < m) {
           const amt = getAllowanceForMilestone(m);
-          nextInfo = 'あと' + (m - pts) + 'ptで' + amt + '円';
+          nextInfo = 'あと' + (m - displayPts) + 'ptで' + amt + '円';
           break;
         }
       }
-      if (pts >= 400) nextInfo = '🎉コンプリート！';
-      ptsHtml = '<div style="font-size:0.7em;color:#888;margin-top:2px;">⭐' + pts + '/400 ' + nextInfo + '</div>';
+      if (displayPts >= 400) nextInfo = '🎉コンプリート！';
+      const sheetLabel = sheetNum > 1 ? '(' + sheetNum + '枚目)' : '';
+      ptsHtml = '<div style="font-size:0.7em;color:#888;margin-top:2px;">⭐' + displayPts + '/400' + sheetLabel + ' ' + nextInfo + '</div>';
     }
 
     container.innerHTML += `
@@ -610,7 +614,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.11.6</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.12.0</a></div>
 
 </body>
 </html>
