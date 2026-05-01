@@ -176,7 +176,7 @@ let imgsReady = false;
 })();
 
 let grid, score, chainCount, state, pair, nextPair;
-let dropTimer = 0, dropInterval = 500, particles = [];
+let dropTimer = 0, dropInterval = 800, particles = [];
 let lockDelayTimer = 0;
 let lockDelayActive = false; // 回転操作中のみtrue
 const LOCK_DELAY = 2000;
@@ -339,7 +339,7 @@ function startGame() {
     grid[r] = new Array(COLS).fill(null);
   }
   score = 0; chainCount = 0;
-  dropInterval = 500;
+  dropInterval = 800;
   particles = [];
   document.getElementById('score').textContent = '0';
   document.getElementById('chain').textContent = '';
@@ -507,7 +507,7 @@ function resolveChain() {
       spawnPair();
       lockDelayTimer = 0;
       lockDelayActive = false;
-      dropInterval = Math.max(150, 500 - Math.floor(score / 500) * 20);
+      dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 25);
     }
   }, 250);
 }

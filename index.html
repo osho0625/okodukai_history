@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="images/2728.png">
 <title>お小遣い手帳 - トップ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="js/common.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
@@ -285,12 +286,6 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 </div>
 
 <script>
-const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
-
 let allChildren = [];
 let pendingChildId = null;
 let adminFailCount = 0;
@@ -401,11 +396,6 @@ document.getElementById('allowanceOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeAllowanceModal();
 });
 
-// --- Discord通知 ---
-async function notifyDiscordTop(content) {
-  try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) }); } catch(e) {}
-}
-
 // --- ベル揺れ演出 ---
 function ringBell(e, el) {
   e.stopPropagation(); // カードのクリックを防止
@@ -454,14 +444,6 @@ async function load() {
     const { data: depEffects } = await client.from('pending_effects').select('child_id, data').eq('type', 'deposit');
     (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
   } catch(e) {}
-
-  function getAllowanceForMilestone(pts) {
-    if (pts === 400) return 400;
-    if (pts === 200) return 200;
-    if (pts % 60 === 0) return 300;
-    if (pts % 20 === 0) return 40;
-    return 0;
-  }
 
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
@@ -623,7 +605,7 @@ function submitAdminPw() {
   if (adminPassword && input === adminPassword) {
     adminFailCount = 0;
     document.getElementById('adminOverlay').classList.remove('active');
-    notifyDiscordTop('🔧 管理者ページにログインしました');
+    notifyDiscord('🔧 管理者ページにログインしました');
     window.location.href = 'pages/admin.html';
   } else {
     adminFailCount++;
@@ -791,7 +773,7 @@ async function approveFromTop(pointId, childId) {
     if (p % 20 === 0) {
       const sheetPt = ((p - 1) % 400) + 1;
       if (sheetPt % 20 === 0) {
-        totalAllowance += getAllowanceForMilestoneTop(sheetPt);
+        totalAllowance += getAllowanceForMilestone(sheetPt);
       }
     }
   }
@@ -811,7 +793,7 @@ async function approveFromTop(pointId, childId) {
   const child = allChildren.find(c => c.id === pt.child_id);
   let content = '✅ **' + (child ? child.name : '') + '** の「' + pt.chore_name + '」' + pt.points + 'pt を承認';
   if (totalAllowance > 0) content += ' 💰 ' + totalAllowance + '円発生！';
-  notifyDiscordTop(content);
+  notifyDiscord(content);
 
   // ページをリロードして表示を更新
   setTimeout(() => location.reload(), 300);
@@ -827,14 +809,6 @@ async function rejectFromTop(pointId, childId) {
   setTimeout(() => location.reload(), 300);
 }
 
-function getAllowanceForMilestoneTop(pts) {
-  if (pts === 400) return 400;
-  if (pts === 200) return 200;
-  if (pts % 60 === 0) return 300;
-  if (pts % 20 === 0) return 40;
-  return 0;
-}
-
 async function giveAllowanceFromTop(targetChild, amount) {
   const repayChild = allChildren.find(c => c.name === targetChild.name + 'が返すお金');
   const hasRepay = !!repayChild;
@@ -847,7 +821,7 @@ async function giveAllowanceFromTop(targetChild, amount) {
     const nb1 = oldBal + remainder;
     await client.from('children').update({ balance: nb1 }).eq('id', targetChild.id);
     await client.from('transactions').insert({ child_id: targetChild.id, type: 'add', amount: remainder, memo: 'ポイント表ご褒美' });
-    await savePendingDepositLocalTop(targetChild.id, oldBal, nb1, remainder);
+    await savePendingDeposit(targetChild.id, oldBal, nb1, remainder);
     const { data: d2 } = await client.from('children').select('balance').eq('id', repayChild.id).single();
     const nb2 = (d2 ? d2.balance : 0) + half;
     await client.from('children').update({ balance: nb2 }).eq('id', repayChild.id);
@@ -858,19 +832,7 @@ async function giveAllowanceFromTop(targetChild, amount) {
     const nb = oldBal + amount;
     await client.from('children').update({ balance: nb }).eq('id', targetChild.id);
     await client.from('transactions').insert({ child_id: targetChild.id, type: 'add', amount, memo: 'ポイント表ご褒美' });
-    await savePendingDepositLocalTop(targetChild.id, oldBal, nb, amount);
-  }
-}
-
-async function savePendingDepositLocalTop(cid, oldBalance, newBalance, amount) {
-  const { data: existing } = await client.from('pending_effects')
-    .select('id, data').eq('child_id', cid).eq('type', 'deposit');
-  if (existing && existing.length > 0) {
-    const row = existing[0];
-    const updated = { ...row.data, newBalance, totalAmount: row.data.totalAmount + amount };
-    await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
-  } else {
-    await client.from('pending_effects').insert({ child_id: cid, type: 'deposit', data: { oldBalance, newBalance, totalAmount: amount } });
+    await savePendingDeposit(targetChild.id, oldBal, nb, amount);
   }
 }
 
@@ -883,7 +845,7 @@ loadPasswords();
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.15.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.15.3</a></div>
 
 </body>
 </html>
