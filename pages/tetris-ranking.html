@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>🧱 テトリス ランキング</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif;
+  padding: 20px; min-height: 100vh;
+}
+.header { display: flex; align-items: center; gap: 12px; max-width: 400px; margin: 0 auto 20px; }
+.back { color: #eee; text-decoration: none; font-size: 1.6em; }
+h1 { font-size: 1.3em; }
+.ranking-list { max-width: 400px; margin: 0 auto; }
+.rank-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: rgba(255,255,255,0.05);
+  border-radius: 10px; margin-bottom: 8px;
+}
+.rank-num { font-size: 1.4em; font-weight: 900; width: 36px; text-align: center; }
+.rank-1 { color: #ffd700; }
+.rank-2 { color: #c0c0c0; }
+.rank-3 { color: #cd7f32; }
+.rank-name { flex: 1; font-weight: 600; }
+.rank-score { font-size: 1.1em; font-weight: 700; color: #ffd700; }
+.empty { text-align: center; color: #666; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" href="tetris.html">←</a>
+  <h1>🏆 テトリス ランキング</h1>
+</div>
+<div class="ranking-list" id="list">
+  <div class="empty">読み込み中...</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+const sb = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
+(async () => {
+  const { data } = await sb.from('tetris_rankings').select('*').order('score', { ascending: false }).limit(10);
+  const list = document.getElementById('list');
+  if (!data || data.length === 0) { list.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  list.innerHTML = '';
+  data.forEach((r, i) => {
+    const cls = i < 3 ? ' rank-' + (i+1) : '';
+    list.innerHTML += '<div class="rank-row"><span class="rank-num' + cls + '">' + (i+1) + '</span><span class="rank-name">' + r.name + '</span><span class="rank-score">' + r.score.toLocaleString() + '</span></div>';
+  });
+})();
+</script>
+</body>
+</html>

@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1a2e">
-<title>💥 ブロックブラスト</title>
+<title>💥 ピクミンブラスト</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif;
   display: flex; flex-direction: column; align-items: center;
   min-height: 100vh; touch-action: none; overflow: hidden;
+  user-select: none; -webkit-user-select: none;
 }
 .header {
   display: flex; justify-content: space-between; align-items: center;
@@ -18,6 +19,7 @@ body {
 }
 .back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
 .score { font-size: 1.1em; font-weight: 700; }
+.board-container { position: relative; }
 .board {
   display: grid; grid-template-columns: repeat(8, 1fr);
   gap: 2px; padding: 4px; background: rgba(255,255,255,0.05);
@@ -26,40 +28,80 @@ body {
 }
 .cell {
   border-radius: 4px; background: rgba(255,255,255,0.03);
-  aspect-ratio: 1; transition: background 0.15s;
+  aspect-ratio: 1; transition: background 0.15s, transform 0.15s;
+  position: relative; overflow: hidden;
 }
 .cell.filled { box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.15); }
-.cell.preview { opacity: 0.5; }
-.cell.invalid { background: rgba(255,0,0,0.3) !important; }
+.cell.filled img {
+  position: absolute; top: 50%; left: 50%;
+  width: 110%; height: 110%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%; object-fit: cover;
+}
+.cell.preview { opacity: 0.6; border: 1px dashed rgba(255,255,255,0.4); }
+.cell.preview img {
+  position: absolute; top: 50%; left: 50%;
+  width: 110%; height: 110%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%; object-fit: cover;
+}
+.cell.invalid-preview { background: rgba(255,60,60,0.25) !important; border: 1px dashed rgba(255,60,60,0.5); }
+.cell.clearing {
+  animation: cellClear 0.4s ease-out forwards;
+}
+@keyframes cellClear {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.8; }
+  100% { transform: scale(0); opacity: 0; }
+}
+.cell.placed {
+  animation: cellPlace 0.2s ease-out;
+}
+@keyframes cellPlace {
+  0% { transform: scale(0.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
 .pieces-area {
-  display: flex; gap: 16px; justify-content: center; align-items: center;
-  margin-top: 16px; min-height: 80px; flex-wrap: wrap;
+  display: flex; gap: 12px; justify-content: center; align-items: center;
+  margin-top: 16px; min-height: 90px;
 }
 .piece-container {
-  display: grid; gap: 1px; padding: 6px;
-  background: rgba(255,255,255,0.04); border-radius: 8px;
+  display: grid; gap: 1px; padding: 8px;
+  background: rgba(255,255,255,0.04); border-radius: 10px;
   cursor: grab; touch-action: none;
-  transition: transform 0.1s, opacity 0.1s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.piece-container:active { transform: scale(1.1); }
-.piece-container.selected { box-shadow: 0 0 12px rgba(255,215,0,0.4); transform: scale(1.05); }
-.piece-container.used { opacity: 0.2; pointer-events: none; }
+.piece-container:active { cursor: grabbing; }
+.piece-container.selected {
+  box-shadow: 0 0 16px rgba(255,215,0,0.5);
+  transform: scale(1.08);
+  background: rgba(255,215,0,0.08);
+}
+.piece-container.used { opacity: 0.15; pointer-events: none; transform: scale(0.8); }
 .piece-cell {
-  width: 18px; height: 18px; border-radius: 3px;
+  width: 20px; height: 20px; border-radius: 3px;
 }
-.piece-cell.filled { box-shadow: inset 0 -1px 2px rgba(0,0,0,0.3); }
+.piece-cell.filled { box-shadow: inset 0 -1px 2px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.15); }
+.drag-ghost {
+  position: fixed; pointer-events: none; z-index: 200;
+  display: grid; gap: 1px; opacity: 0.85;
+  transform: translate(-50%, -50%);
+}
+.drag-ghost .piece-cell { width: var(--cell-size); height: var(--cell-size); }
 .game-over-overlay {
   display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8); z-index: 100;
+  background: rgba(0,0,0,0.85); z-index: 100;
   justify-content: center; align-items: center;
 }
 .game-over-overlay.active { display: flex; }
 .game-over-box {
-  background: #222; border-radius: 16px; padding: 24px; text-align: center;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #1a1a2e, #2a2a4e);
+  border-radius: 20px; padding: 28px; text-align: center;
+  border: 1px solid rgba(255,215,0,0.2);
+  box-shadow: 0 0 40px rgba(255,215,0,0.1);
 }
-.game-over-box h2 { margin-bottom: 8px; }
-.game-over-box .final { font-size: 1.8em; color: #ff6; margin-bottom: 16px; }
+.game-over-box h2 { margin-bottom: 8px; letter-spacing: 2px; }
+.game-over-box .final { font-size: 2em; color: #ffd700; margin-bottom: 16px; text-shadow: 0 0 20px rgba(255,215,0,0.4); }
 .game-over-box button {
   padding: 12px 28px; border: none; border-radius: 8px;
   background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
@@ -68,13 +110,44 @@ body {
 .game-over-box .btn-back { background: #555; }
 .combo-msg {
   position: fixed; top: 30%; left: 50%; transform: translate(-50%,-50%);
-  font-size: 2em; font-weight: 900; color: #ffd700; pointer-events: none;
-  text-shadow: 0 0 20px rgba(255,215,0,0.6);
-  animation: comboFade 1s ease-out forwards; z-index: 50;
+  font-size: 2.2em; font-weight: 900; color: #ffd700; pointer-events: none;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(255,215,0,0.4);
+  animation: comboFade 1.2s ease-out forwards; z-index: 50;
 }
 @keyframes comboFade {
-  0% { opacity: 1; transform: translate(-50%,-50%) scale(1.2); }
-  100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8) translateY(-30px); }
+  0% { opacity: 1; transform: translate(-50%,-50%) scale(0.5); }
+  20% { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1) translateY(-40px); }
+}
+.line-flash {
+  position: absolute; pointer-events: none; z-index: 10;
+  background: rgba(255,215,0,0.4);
+  animation: flashAnim 0.4s ease-out forwards;
+}
+@keyframes flashAnim {
+  0% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1.05); }
+}
+.particle {
+  position: absolute; pointer-events: none; border-radius: 50%;
+  animation: particleFly 0.6s ease-out forwards;
+}
+@keyframes particleFly {
+  0% { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+}
+@keyframes puyoEscapeWobble {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(-8deg) translateY(-2px); }
+  75% { transform: rotate(8deg) translateY(-2px); }
+}
+@keyframes puyoEscapeFly {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-6px) rotate(5deg); }
+}
+@keyframes puyoEscapeGhost {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.05); }
 }
 </style>
 </head>
@@ -82,70 +155,214 @@ body {
 <div class="header">
   <a class="back" href="arcade.html">←</a>
   <div class="score">Score: <span id="score">0</span></div>
+  <a href="blast-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
 </div>
-<div class="board" id="board"></div>
+<div class="board-container" id="boardContainer">
+  <div class="board" id="board"></div>
+  <!-- タイトル画面 -->
+  <div id="titleMenu" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(26,26,46,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;border-radius:12px;gap:12px;">
+    <div style="font-size:3em;margin-bottom:8px;">💥</div>
+    <div style="font-size:1.4em;font-weight:700;margin-bottom:16px;">ピクミンブラスト</div>
+    <button onclick="dismissTitle(); startGame();" style="width:200px;padding:14px;border:none;border-radius:12px;background:#4caf50;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;">ゲーム開始</button>
+    <button onclick="location.href='blast-ranking.html'" style="width:200px;padding:14px;border:none;border-radius:12px;background:#1976d2;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;">🏆 ランキング</button>
+  </div>
+</div>
 <div class="pieces-area" id="pieces"></div>
 
 <div class="game-over-overlay" id="gameOver">
   <div class="game-over-box">
     <h2>GAME OVER</h2>
     <div class="final" id="finalScore">0</div>
+    <div id="rankInMsg" style="display:none; color:#ffd700; font-size:1em; margin-bottom:10px;"></div>
+    <div id="rankInForm" style="display:none; margin-bottom:10px;">
+      <input type="text" id="rankName" placeholder="名前を入力" style="width:100%; padding:10px; border:1px solid #555; border-radius:8px; background:#2a2a4e; color:#fff; font-size:1em; text-align:center; margin-bottom:8px;">
+      <button onclick="submitRanking()" style="width:100%; padding:10px; border:none; border-radius:8px; background:#ffd700; color:#333; font-weight:700; font-size:0.95em; cursor:pointer;">ランキングに登録</button>
+    </div>
     <button onclick="startGame()">もう一回</button>
     <button class="btn-back" onclick="location.href='arcade.html'">←</button>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/puyo-escape.js"></script>
 <script>
-const GRID = 8;
-const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da'];
+const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
 
-// ブロックピースの形状定義
-const PIECE_SHAPES = [
-  [[1]],
-  [[1,1]],
-  [[1],[1]],
-  [[1,1,1]],
-  [[1],[1],[1]],
-  [[1,1],[1,0]],
-  [[1,1],[0,1]],
-  [[0,1],[1,1]],
-  [[1,0],[1,1]],
-  [[1,1,1],[1,0,0]],
-  [[1,1,1],[0,0,1]],
-  [[1,0,0],[1,1,1]],
-  [[0,0,1],[1,1,1]],
-  [[1,1],[1,1]],
-  [[1,1,1,1]],
-  [[1],[1],[1],[1]],
-  [[1,1,1],[0,1,0]],
-  [[1,1,1],[1,1,1],[1,1,1]],
+const GRID = 8;
+const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da','#ec407a'];
+const PUYO_IMGS = [
+  '../images/puyo_1.avif', '../images/puyo_2.avif', '../images/puyo_3.avif',
+  '../images/puyo_4.avif', '../images/puyo_5.avif', '../images/puyo_6.avif',
+  '../images/puyo_7.avif', '../images/puyo_8.avif', '../images/puyo_9.avif'
 ];
 
+// 本家Block Blast準拠のピース定義（重み付き）
+// 大ピース（よく出る）、中ピース（普通）、小ピース（たまに出る）
+const PIECE_DEFS = [
+  // 1セル（weight: 1 — たまに）
+  { shape: [[1]], weight: 1 },
+  // 2セル横・縦（weight: 2 — たまに）
+  { shape: [[1,1]], weight: 2 },
+  { shape: [[1],[1]], weight: 2 },
+  // 2セル斜め（weight: 2）
+  { shape: [[1,0],[0,1]], weight: 2 },
+  { shape: [[0,1],[1,0]], weight: 2 },
+  // 3セル横・縦（weight: 4）
+  { shape: [[1,1,1]], weight: 4 },
+  { shape: [[1],[1],[1]], weight: 4 },
+  // 3セル斜め（weight: 2）
+  { shape: [[1,0,0],[0,1,0],[0,0,1]], weight: 2 },
+  { shape: [[0,0,1],[0,1,0],[1,0,0]], weight: 2 },
+  // L字2x2（weight: 5）
+  { shape: [[1,1],[1,0]], weight: 5 },
+  { shape: [[1,1],[0,1]], weight: 5 },
+  { shape: [[0,1],[1,1]], weight: 5 },
+  { shape: [[1,0],[1,1]], weight: 5 },
+  // L字3x2（weight: 6 — よく出る）
+  { shape: [[1,1,1],[1,0,0]], weight: 6 },
+  { shape: [[1,1,1],[0,0,1]], weight: 6 },
+  { shape: [[1,0,0],[1,1,1]], weight: 6 },
+  { shape: [[0,0,1],[1,1,1]], weight: 6 },
+  { shape: [[1,1],[0,1],[0,1]], weight: 6 },
+  { shape: [[1,1],[1,0],[1,0]], weight: 6 },
+  { shape: [[1,0],[1,0],[1,1]], weight: 6 },
+  { shape: [[0,1],[0,1],[1,1]], weight: 6 },
+  // 2x2正方形（weight: 5）
+  { shape: [[1,1],[1,1]], weight: 5 },
+  // 4セル横・縦（weight: 4）
+  { shape: [[1,1,1,1]], weight: 4 },
+  { shape: [[1],[1],[1],[1]], weight: 4 },
+  // T字（weight: 4）
+  { shape: [[1,1,1],[0,1,0]], weight: 4 },
+  { shape: [[0,1,0],[1,1,1]], weight: 4 },
+  { shape: [[1,0],[1,1],[1,0]], weight: 4 },
+  { shape: [[0,1],[1,1],[0,1]], weight: 4 },
+  // S/Z字（weight: 4）
+  { shape: [[0,1,1],[1,1,0]], weight: 4 },
+  { shape: [[1,1,0],[0,1,1]], weight: 4 },
+  { shape: [[1,0],[1,1],[0,1]], weight: 4 },
+  { shape: [[0,1],[1,1],[1,0]], weight: 4 },
+  // 5セル横・縦（weight: 5 — よく出る）
+  { shape: [[1,1,1,1,1]], weight: 5 },
+  { shape: [[1],[1],[1],[1],[1]], weight: 5 },
+  // 5セルL字（weight: 5 — よく出る）
+  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 5 },
+  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 5 },
+  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 5 },
+  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 5 },
+  // 3x3正方形（weight: 4 — よく出る）
+  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 4 },
+  // 2x3 / 3x2 長方形（weight: 5 — よく出る）
+  { shape: [[1,1,1],[1,1,1]], weight: 5 },
+  { shape: [[1,1],[1,1],[1,1]], weight: 5 },
+];
+
+// 重み付きランダム選択
+const PIECE_WEIGHT_TOTAL = PIECE_DEFS.reduce((s, p) => s + p.weight, 0);
+function pickRandomPiece() {
+  let r = Math.random() * PIECE_WEIGHT_TOTAL;
+  for (const def of PIECE_DEFS) {
+    r -= def.weight;
+    if (r <= 0) return def.shape;
+  }
+  return PIECE_DEFS[0].shape;
+}
+
 let grid, score, pieces, selectedIdx;
-let boardSize;
+let boardSize, cellSize;
+let dragging = false, dragPieceIdx = -1, dragGhost = null;
+let boardRect = null;
 
 function init() {
-  const maxW = Math.min(360, window.innerWidth - 24);
-  const maxH = window.innerHeight - 200;
+  const maxW = Math.min(340, window.innerWidth - 32);
+  const maxH = window.innerHeight - 220;
   boardSize = Math.min(maxW, maxH);
+  cellSize = Math.floor((boardSize - 8 - 2*7) / GRID); // account for padding and gaps
   document.documentElement.style.setProperty('--board-size', boardSize + 'px');
+  document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+}
+
+// 初期盤面にランダムブロックを配置（本家風：盤面全体に散らばる少量のブロック）
+function generateInitialBoard() {
+  grid = Array.from({length: GRID}, () => new Array(GRID).fill(null));
+  const maxColors = getUnlockedPuyoColorCount();
+  // 盤面全体に10〜18個程度のブロックをランダム配置
+  const blockCount = 10 + Math.floor(Math.random() * 9);
+  let placed = 0;
+  while (placed < blockCount) {
+    const x = Math.floor(Math.random() * GRID);
+    const y = Math.floor(Math.random() * GRID);
+    if (grid[y][x] === null) {
+      const puyoIdx = Math.floor(Math.random() * maxColors);
+      grid[y][x] = COLORS[puyoIdx % COLORS.length];
+      placed++;
+    }
+  }
+  // 完成した行があれば部分的に空ける（初期状態で揃わないように）
+  for (let y = 0; y < GRID; y++) {
+    if (grid[y].every(c => c !== null)) {
+      const removeCount = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < removeCount; i++) {
+        const rx = Math.floor(Math.random() * GRID);
+        grid[y][rx] = null;
+      }
+    }
+  }
+  // 完成した列も同様にチェック
+  for (let x = 0; x < GRID; x++) {
+    if (grid.every(row => row[x] !== null)) {
+      const removeCount = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < removeCount; i++) {
+        const ry = Math.floor(Math.random() * GRID);
+        grid[ry][x] = null;
+      }
+    }
+  }
+}
+
+// 指定ピースが盤面のどこかに配置可能か
+function canFitAnywhere(shape) {
+  for (let y = 0; y < GRID; y++)
+    for (let x = 0; x < GRID; x++)
+      if (canPlace(shape, x, y)) return true;
+  return false;
 }
 
 function startGame() {
-  grid = Array.from({length: GRID}, () => new Array(GRID).fill(null));
+  dismissTitle();
+  generateInitialBoard();
   score = 0; selectedIdx = -1;
   document.getElementById('score').textContent = '0';
   document.getElementById('gameOver').classList.remove('active');
-  generatePieces();
+  generatePiecesGuaranteed();
   renderBoard();
+}
+
+// 初回は詰みなしを保証してピースを生成
+function generatePiecesGuaranteed() {
+  pieces = [];
+  const maxColors = getUnlockedPuyoColorCount();
+  let attempts = 0;
+  do {
+    pieces = [];
+    for (let i = 0; i < 3; i++) {
+      const shape = pickRandomPiece();
+      const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
+      pieces.push({ shape, puyoMap, used: false });
+    }
+    attempts++;
+  } while (attempts < 100 && !pieces.every(p => canFitAnywhere(p.shape)));
+
+  renderPieces();
 }
 
 function generatePieces() {
   pieces = [];
+  const maxColors = getUnlockedPuyoColorCount();
   for (let i = 0; i < 3; i++) {
-    const idx = Math.floor(Math.random() * PIECE_SHAPES.length);
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    pieces.push({ shape: PIECE_SHAPES[idx], color, used: false });
+    const shape = pickRandomPiece();
+    const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
+    pieces.push({ shape, puyoMap, used: false });
   }
   renderPieces();
 }
@@ -157,11 +374,19 @@ function renderBoard() {
     for (let x = 0; x < GRID; x++) {
       const cell = document.createElement('div');
       cell.className = 'cell' + (grid[y][x] ? ' filled' : '');
-      if (grid[y][x]) cell.style.background = grid[y][x];
+      cell.id = 'c_' + x + '_' + y;
+      if (grid[y][x]) {
+        // ぷよ画像で表示（色からインデックスを逆引き）
+        const puyoIdx = COLORS.indexOf(grid[y][x]);
+        const imgSrc = PUYO_IMGS[(puyoIdx >= 0 ? puyoIdx : 0) % PUYO_IMGS.length];
+        cell.style.background = 'none';
+        cell.innerHTML = '<img src="' + imgSrc + '">';
+      }
       cell.dataset.x = x; cell.dataset.y = y;
-      cell.addEventListener('click', () => placePiece(x, y));
+      cell.addEventListener('click', () => handleCellClick(x, y));
       board.appendChild(cell);
     }
+  boardRect = document.getElementById('board').getBoundingClientRect();
 }
 
 function renderPieces() {
@@ -170,22 +395,177 @@ function renderPieces() {
   pieces.forEach((p, i) => {
     const container = document.createElement('div');
     container.className = 'piece-container' + (p.used ? ' used' : '') + (i === selectedIdx ? ' selected' : '');
-    container.style.gridTemplateColumns = `repeat(${p.shape[0].length}, 18px)`;
-    p.shape.forEach(row => row.forEach(v => {
+    container.style.gridTemplateColumns = `repeat(${p.shape[0].length}, 20px)`;
+    container.dataset.idx = i;
+    p.shape.forEach((row, ry) => row.forEach((v, rx) => {
       const cell = document.createElement('div');
       cell.className = 'piece-cell' + (v ? ' filled' : '');
-      if (v) cell.style.background = p.color;
+      if (v) {
+        const pidx = p.puyoMap[ry][rx];
+        cell.style.background = 'none';
+        cell.innerHTML = '<img src="' + PUYO_IMGS[pidx] + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+      } else {
+        cell.style.background = 'transparent';
+      }
       container.appendChild(cell);
     }));
-    container.addEventListener('click', () => {
+    // タップで選択
+    container.addEventListener('click', (e) => {
+      if (dragging) return;
       if (p.used) return;
       selectedIdx = (selectedIdx === i) ? -1 : i;
       renderPieces();
     });
+    // ドラッグ開始
+    container.addEventListener('mousedown', (e) => startDrag(e, i));
+    container.addEventListener('touchstart', (e) => startDrag(e, i), { passive: false });
     area.appendChild(container);
   });
 }
 
+// --- ドラッグ操作 ---
+function startDrag(e, idx) {
+  if (pieces[idx].used) return;
+  e.preventDefault();
+  dragging = true;
+  dragPieceIdx = idx;
+  selectedIdx = idx;
+  renderPieces();
+
+  const p = pieces[idx];
+  // ゴースト作成（ぷよ画像で表示）
+  dragGhost = document.createElement('div');
+  dragGhost.className = 'drag-ghost';
+  dragGhost.style.gridTemplateColumns = `repeat(${p.shape[0].length}, var(--cell-size))`;
+  p.shape.forEach((row, ry) => row.forEach((v, rx) => {
+    const cell = document.createElement('div');
+    cell.className = 'piece-cell' + (v ? ' filled' : '');
+    if (v) {
+      const pidx = p.puyoMap[ry][rx];
+      cell.style.background = 'none';
+      cell.innerHTML = '<img src="' + PUYO_IMGS[pidx] + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+    } else {
+      cell.style.background = 'transparent';
+    }
+    dragGhost.appendChild(cell);
+  }));
+  document.body.appendChild(dragGhost);
+
+  const pos = getEventPos(e);
+  moveDragGhost(pos.x, pos.y);
+  updatePreview(pos.x, pos.y);
+}
+
+function moveDragGhost(x, y) {
+  if (!dragGhost) return;
+  dragGhost.style.left = x + 'px';
+  dragGhost.style.top = (y - 40) + 'px'; // offset above finger
+}
+
+function getEventPos(e) {
+  if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function getBoardCell(px, py) {
+  // 毎回最新のrectを取得（スクロール・リサイズ対応）
+  const rect = document.getElementById('board').getBoundingClientRect();
+  const cellW = (rect.width - 8) / GRID;
+  const cellH = (rect.height - 8) / GRID;
+  const x = Math.floor((px - rect.left - 4 + cellW * 0.5) / cellW - 0.5);
+  const y = Math.floor((py - rect.top - 4 + cellH * 0.5) / cellH - 0.5);
+  return { x, y };
+}
+
+function updatePreview(px, py) {
+  clearPreview();
+  if (dragPieceIdx < 0) return;
+  const p = pieces[dragPieceIdx];
+  // ゴーストは指の40px上に表示されるので、ボード座標もそれに合わせる
+  const adjustedY = py - 40;
+  const cell = getBoardCell(px, adjustedY);
+  const ox = cell.x - Math.floor(p.shape[0].length / 2);
+  const oy = cell.y - Math.floor(p.shape.length / 2);
+  const canFit = canPlace(p.shape, ox, oy);
+
+  for (let y = 0; y < p.shape.length; y++)
+    for (let x = 0; x < p.shape[y].length; x++)
+      if (p.shape[y][x]) {
+        const nx = ox + x, ny = oy + y;
+        if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+          const el = document.getElementById('c_' + nx + '_' + ny);
+          if (el && !grid[ny][nx]) {
+            el.classList.add(canFit ? 'preview' : 'invalid-preview');
+            if (canFit) {
+              const pidx = p.puyoMap[y][x];
+              el.style.background = 'none';
+              el.innerHTML = '<img src="' + PUYO_IMGS[pidx] + '">';
+            }
+          }
+        }
+      }
+}
+
+function clearPreview() {
+  document.querySelectorAll('.cell.preview, .cell.invalid-preview').forEach(el => {
+    el.classList.remove('preview', 'invalid-preview');
+    const x = parseInt(el.dataset.x), y = parseInt(el.dataset.y);
+    if (!grid[y][x]) {
+      el.style.background = '';
+      el.innerHTML = '';
+    }
+  });
+}
+
+function endDrag(e) {
+  if (!dragging) return;
+  dragging = false;
+  clearPreview();
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+
+  const pos = getEventPos(e);
+  const p = pieces[dragPieceIdx];
+  const cell = getBoardCell(pos.x, pos.y - 40);
+  const ox = cell.x - Math.floor(p.shape[0].length / 2);
+  const oy = cell.y - Math.floor(p.shape.length / 2);
+
+  if (canPlace(p.shape, ox, oy)) {
+    doPlace(dragPieceIdx, ox, oy);
+  }
+  dragPieceIdx = -1;
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const pos = getEventPos(e);
+  moveDragGhost(pos.x, pos.y);
+  updatePreview(pos.x, pos.y);
+});
+document.addEventListener('touchmove', (e) => {
+  if (!dragging) return;
+  e.preventDefault();
+  const pos = getEventPos(e);
+  moveDragGhost(pos.x, pos.y);
+  updatePreview(pos.x, pos.y);
+}, { passive: false });
+document.addEventListener('mouseup', endDrag);
+document.addEventListener('touchend', endDrag);
+
+// --- タップ配置 ---
+function handleCellClick(x, y) {
+  if (dragging) return;
+  if (selectedIdx < 0 || selectedIdx >= pieces.length) return;
+  const p = pieces[selectedIdx];
+  if (p.used) return;
+  const ox = x - Math.floor(p.shape[0].length / 2);
+  const oy = y - Math.floor(p.shape.length / 2);
+  if (canPlace(p.shape, ox, oy)) {
+    doPlace(selectedIdx, ox, oy);
+  }
+}
+
+// --- 配置ロジック ---
 function canPlace(shape, px, py) {
   for (let y = 0; y < shape.length; y++)
     for (let x = 0; x < shape[y].length; x++)
@@ -197,16 +577,13 @@ function canPlace(shape, px, py) {
   return true;
 }
 
-function placePiece(px, py) {
-  if (selectedIdx < 0 || selectedIdx >= pieces.length) return;
-  const p = pieces[selectedIdx];
-  if (p.used) return;
-  if (!canPlace(p.shape, px, py)) return;
+function doPlace(pieceIdx, px, py) {
+  const p = pieces[pieceIdx];
 
   // 配置
   for (let y = 0; y < p.shape.length; y++)
     for (let x = 0; x < p.shape[y].length; x++)
-      if (p.shape[y][x]) grid[py + y][px + x] = p.color;
+      if (p.shape[y][x]) grid[py + y][px + x] = COLORS[p.puyoMap[y][x] % COLORS.length];
 
   p.used = true;
   selectedIdx = -1;
@@ -216,51 +593,142 @@ function placePiece(px, py) {
   p.shape.forEach(r => r.forEach(v => { if (v) blockCount++; }));
   score += blockCount;
 
-  // ライン消去チェック
-  const cleared = clearLines();
-  if (cleared > 0) {
+  // ライン消去判定（配置直後、renderBoard前に判定）
+  const result = findClearLines();
+
+  if (result.cellsToClear.size > 0) {
+    // 消去対象セルを先にgridからクリア
+    result.cellsToClear.forEach(key => {
+      const [cx, cy] = key.split(',').map(Number);
+      grid[cy][cx] = null;
+    });
+
+    const cleared = result.rows.length + result.cols.length;
     score += cleared * GRID * (cleared > 1 ? cleared : 1);
     if (cleared > 1) showCombo(cleared);
+
+    // 描画（消去済みの状態で描画）
+    renderBoard();
+    document.getElementById('score').textContent = score;
+
+    // 演出（消去済みセルの位置にアニメーション）
+    animateClearEffect(result);
+
+    renderPieces();
+    if (pieces.every(pp => pp.used)) generatePieces();
+    checkGameOver();
+  } else {
+    renderBoard();
+    document.getElementById('score').textContent = score;
+    renderPieces();
+    if (pieces.every(pp => pp.used)) generatePieces();
+    checkGameOver();
   }
-
-  document.getElementById('score').textContent = score;
-  renderBoard();
-  renderPieces();
-
-  // 全ピース使い切ったら新しいセットを生成
-  if (pieces.every(pp => pp.used)) {
-    generatePieces();
-  }
-
-  // ゲームオーバーチェック
-  checkGameOver();
 }
 
-function clearLines() {
-  let cleared = 0;
+function findClearLines() {
+  const rows = [], cols = [];
+  const cellsToClear = new Set();
+  const colors = {};
+
   // 行チェック
   for (let y = 0; y < GRID; y++) {
     if (grid[y].every(c => c !== null)) {
-      grid[y].fill(null);
-      cleared++;
+      rows.push(y);
+      for (let x = 0; x < GRID; x++) {
+        const key = x + ',' + y;
+        cellsToClear.add(key);
+        colors[key] = grid[y][x];
+      }
     }
   }
   // 列チェック
   for (let x = 0; x < GRID; x++) {
     if (grid.every(row => row[x] !== null)) {
-      for (let y = 0; y < GRID; y++) grid[y][x] = null;
-      cleared++;
+      cols.push(x);
+      for (let y = 0; y < GRID; y++) {
+        const key = x + ',' + y;
+        cellsToClear.add(key);
+        colors[key] = grid[y][x];
+      }
     }
   }
-  return cleared;
+  return { rows, cols, cellsToClear, colors };
+}
+
+function animateClearEffect(result) {
+  const container = document.getElementById('boardContainer');
+  const boardEl = document.getElementById('board');
+  const bRect = boardEl.getBoundingClientRect();
+  const cSize = (bRect.width - 8) / GRID;
+  const gap = 2;
+
+  // 行フラッシュ
+  result.rows.forEach(y => {
+    const flash = document.createElement('div');
+    flash.className = 'line-flash';
+    flash.style.left = '4px';
+    flash.style.top = (4 + y * (cSize + gap)) + 'px';
+    flash.style.width = (bRect.width - 8) + 'px';
+    flash.style.height = cSize + 'px';
+    flash.style.borderRadius = '4px';
+    container.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+  });
+
+  // 列フラッシュ
+  result.cols.forEach(x => {
+    const flash = document.createElement('div');
+    flash.className = 'line-flash';
+    flash.style.left = (4 + x * (cSize + gap)) + 'px';
+    flash.style.top = '4px';
+    flash.style.width = cSize + 'px';
+    flash.style.height = (bRect.height - 8) + 'px';
+    flash.style.borderRadius = '4px';
+    container.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+  });
+
+  // 各セルにぷよ逃走アニメーション
+  result.cellsToClear.forEach(key => {
+    const [cx, cy] = key.split(',').map(Number);
+    const color = result.colors[key];
+    const puyoIdx = COLORS.indexOf(color);
+    const startX = bRect.left + 4 + cx * (cSize + gap) + cSize / 2 - 12;
+    const startY = bRect.top + 4 + cy * (cSize + gap) + cSize / 2 - 12;
+    spawnBlastEscapePuyo(startX, startY, puyoIdx >= 0 ? puyoIdx : 0);
+  });
+}
+
+function spawnBlastEscapePuyo(startX, startY, puyoIdx) {
+  const imgSrc = PUYO_IMGS[puyoIdx % PUYO_IMGS.length];
+  spawnPuyoEscape(startX, startY, imgSrc, puyoIdx, { size: 24 });
+}
+
+function spawnParticles(container, cx, cy, color) {
+  for (let i = 0; i < 4; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 20 + Math.random() * 30;
+    p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    p.style.width = (3 + Math.random() * 4) + 'px';
+    p.style.height = p.style.width;
+    p.style.background = color || '#ffd700';
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
 }
 
 function showCombo(n) {
   const el = document.createElement('div');
   el.className = 'combo-msg';
-  el.textContent = n + 'ライン!';
+  el.textContent = n > 2 ? '🔥 ' + n + 'ライン!' : n + 'ライン!';
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
+  setTimeout(() => el.remove(), 1200);
 }
 
 function checkGameOver() {
@@ -276,12 +744,53 @@ function checkGameOver() {
     setTimeout(() => {
       document.getElementById('finalScore').textContent = score;
       document.getElementById('gameOver').classList.add('active');
-    }, 300);
+      document.getElementById('rankInMsg').style.display = 'none';
+      document.getElementById('rankInForm').style.display = 'none';
+      checkBlastRanking();
+    }, 500);
   }
 }
 
+async function checkBlastRanking() {
+  try {
+    const { data } = await sbClient.from('blast_rankings').select('score').order('score', { ascending: false }).limit(10);
+    const rankings = data || [];
+    let rank = rankings.length + 1;
+    for (let i = 0; i < rankings.length; i++) {
+      if (score > rankings[i].score) { rank = i + 1; break; }
+    }
+    if (rank <= 10 && score > 0) {
+      document.getElementById('rankInMsg').textContent = rank + '位にランクイン！';
+      document.getElementById('rankInMsg').style.display = 'block';
+      document.getElementById('rankInForm').style.display = 'block';
+      document.getElementById('rankName').value = '';
+      document.getElementById('rankName').focus();
+    }
+  } catch(e) { console.error('ranking check:', e); }
+}
+
+async function submitRanking() {
+  const name = document.getElementById('rankName').value.trim();
+  if (!name) return;
+  try {
+    await sbClient.from('blast_rankings').insert({ name, score });
+    const { data } = await sbClient.from('blast_rankings').select('id, score').order('score', { ascending: false });
+    if (data && data.length > 10) {
+      const toDelete = data.slice(10).map(r => r.id);
+      await sbClient.from('blast_rankings').delete().in('id', toDelete);
+    }
+    document.getElementById('rankInForm').style.display = 'none';
+    document.getElementById('rankInMsg').textContent = '登録しました！';
+  } catch(e) { console.error('ranking submit:', e); }
+}
+
+function dismissTitle() {
+  const menu = document.getElementById('titleMenu');
+  if (menu) menu.style.display = 'none';
+}
+
 init();
-startGame();
+window.addEventListener('resize', () => { init(); renderBoard(); });
 </script>
 </body>
 </html>

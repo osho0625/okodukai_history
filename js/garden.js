@@ -6,8 +6,19 @@ const PUYO_IMAGES = [
   'images/puyo_2.avif',
   'images/puyo_3.avif',
   'images/puyo_4.avif',
-  'images/puyo_5.avif'
+  'images/puyo_5.avif',
+  'images/puyo_6.avif',
+  'images/puyo_7.avif',
+  'images/puyo_8.avif',
+  'images/puyo_9.avif'
 ];
+
+// 解放状況に応じた使用可能ぷよ数
+function getGardenPuyoCount() {
+  if (localStorage.getItem('puyo_special_unlocked') === 'true') return 9;
+  if (localStorage.getItem('puyo_hard_unlocked') === 'true') return 6;
+  return 5;
+}
 
 let gardenInitialized = false;
 let puyoSprouts = [];
@@ -48,7 +59,7 @@ function addPuyoBatch() {
 
 function spawnSprout() {
   const garden = document.getElementById('puyoGarden');
-  const src = PUYO_IMAGES[Math.floor(Math.random() * PUYO_IMAGES.length)];
+  const src = PUYO_IMAGES[Math.floor(Math.random() * getGardenPuyoCount())];
   const x = Math.random() * (window.innerWidth - 50) + 5;
 
   const sprout = document.createElement('div');
@@ -105,7 +116,11 @@ const PUYO_SPEED = {
   'puyo_2': 60,   // 紫: 遅い
   'puyo_3': 110,  // 黄色: 早い
   'puyo_4': 80,   // 青: 普通
-  'puyo_5': 70    // 白: ちょっと遅い
+  'puyo_5': 70,   // 白: ちょっと遅い
+  'puyo_6': 90,   // 6: やや早い
+  'puyo_7': 65,   // 7: やや遅い
+  'puyo_8': 80,   // 8: 普通（飛行）
+  'puyo_9': 45    // 9: 一番遅い（ふよふよ）
 };
 
 // 種類ごとのコケやすさ補正（1.0が基準）
@@ -114,7 +129,11 @@ const PUYO_TRIP_MULT = {
   'puyo_2': 0.8,  // 紫: コケにくい
   'puyo_3': 1.2,  // 黄色: ちょっとコケやすい
   'puyo_4': 1.0,  // 青: 普通
-  'puyo_5': 8.0   // 白: かなりコケやすい（7匹に1回くらい）
+  'puyo_5': 8.0,  // 白: かなりコケやすい
+  'puyo_6': 1.1,  // 6: ちょっとコケやすい
+  'puyo_7': 0.7,  // 7: コケにくい
+  'puyo_8': 0,    // 8: 絶対コケない（飛行）
+  'puyo_9': 0     // 9: 絶対コケない（ユーレイ）
 };
 
 function doPullAnimation(sprout, imgSrc) {
@@ -157,6 +176,47 @@ function doPullAnimation(sprout, imgSrc) {
       const targetX = goLeft ? -80 : window.innerWidth + 20;
       const distance = Math.abs(targetX - startX);
       const duration = distance / walkSpeed;
+
+      // 特殊モーション: puyo_8（飛行）、puyo_9（ふよふよ）
+      if (puyoKey === 'puyo_8') {
+        // 飛行: 上に浮いてから飛んでいく
+        flyImg.style.animation = 'none';
+        fly.style.transition = 'top 0.5s ease-out';
+        fly.style.top = (landY - 60 - Math.random() * 40) + 'px';
+        setTimeout(() => {
+          flyImg.style.animation = 'puyoFly 0.4s ease-in-out infinite';
+          fly.style.transition = 'left ' + duration + 's linear, top ' + duration + 's ease-in-out';
+          fly.style.left = targetX + 'px';
+          fly.style.top = (landY - 80 - Math.random() * 30) + 'px';
+          setTimeout(() => {
+            fly.style.opacity = '0';
+            setTimeout(() => fly.remove(), 300);
+          }, duration * 1000 - 300);
+        }, 500);
+        // カウント
+        if (typeof incrementPuyoCount === 'function') incrementPuyoCount(imgSrc);
+        return;
+      }
+
+      if (puyoKey === 'puyo_9') {
+        // ふよふよ: ユーレイのように上下に揺れながらゆっくり移動
+        flyImg.style.animation = 'puyoGhost 1.5s ease-in-out infinite';
+        fly.style.transition = 'top 0.6s ease-out';
+        fly.style.top = (landY - 30 - Math.random() * 20) + 'px';
+        fly.style.opacity = '0.85';
+        setTimeout(() => {
+          fly.style.transition = 'left ' + duration + 's linear';
+          fly.style.left = targetX + 'px';
+          setTimeout(() => {
+            fly.style.transition = 'opacity 0.5s';
+            fly.style.opacity = '0';
+            setTimeout(() => fly.remove(), 500);
+          }, duration * 1000 - 500);
+        }, 600);
+        // カウント
+        if (typeof incrementPuyoCount === 'function') incrementPuyoCount(imgSrc);
+        return;
+      }
 
       flyImg.style.animation = 'puyoWalk 0.3s ease-in-out infinite';
       fly.style.transition = 'left ' + duration + 's linear';

@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/01 v1.17.2
+最終更新: 2026/05/07 v1.25.5
 
 ## プロジェクト概要
 
@@ -24,14 +24,20 @@
 │   ├── settings.html   # アカウント設定（残高表示ON/OFF、パスワード）
 │   ├── admin.html      # 管理者ページ
 │   ├── allowance.html  # お小遣い入出金ページ（admin専用）
-│   ├── game.html       # ぷよぷよ風パズルゲーム
-│   ├── ranking.html    # ゲームスコアランキングTOP10
+│   ├── arcade.html     # ゲームセンター（ゲーム一覧）
+│   ├── game.html       # ぷよぷよ風パズルゲーム（難易度選択対応）
+│   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
+│   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
+│   ├── ranking.html    # ぷよランキング（難易度別タブ）
+│   ├── tetris-ranking.html  # テトリスランキング
+│   ├── blast-ranking.html   # ブロックブラストランキング
 │   └── release-notes.html # リリースノート
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
 │   └── puyo_1〜5.avif  # ぷよ画像
 ├── js/
+│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知等）
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
 ├── backups/            # 自動バックアップJSON
@@ -58,6 +64,13 @@
 
 ### puyo_counts / roach_counts / activity_log / game_rankings
 - 既存テーブル（変更なし）
+- game_rankings: id UUID, name TEXT, score INT, difficulty TEXT (default 'normal'), created_at TIMESTAMPTZ
+
+### tetris_rankings（テトリスランキング）
+- id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
+
+### blast_rankings（ブロックブラストランキング）
+- id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
 
 ### game_settings（各種設定、id=1の1行）
 - night_password: TEXT, night_limit_enabled: BOOLEAN
@@ -81,7 +94,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 未読入金: 🔔アイコン＋入金前残高表示
 - 承認待ち: ✅アイコン（全ユーザーに表示）
 - admin用: 🧹（入出金ページ）、⚙️（設定モーダル＝表示順変更）
-- 🪴（ぷよ畑）、💴（ぷよゲーム）、🔧（管理者認証）
+- 🪴（ぷよ畑）、�️（ゲームセンター）、🔧（管理者認証）
 
 ### 個別アカウントページ（child.html）
 - 残高表示＋入金演出（フルスクリーンオーバーレイ＋カウントアップ＋紙吹雪）
@@ -110,15 +123,46 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - ⭐ ポイント直接設定（お小遣い発生なし、合計ポイント指定、枚数表示）
 - 🔓 端末権限設定（admin/user切り替え）
 - 🔑 パスワード設定（管理者PW、夜間制限PW）
-- 😈 イタズラ設定（コケやすさ10倍=sessionStorage、夜間制限ON/OFF、カウントリセット）
+- 😈 イタズラ設定（コケやすさ10倍=sessionStorage、夜間制限ON/OFF、カウントリセット、未読通知全消去）
 - 📊 アクティビティログ
 - 💾 バックアップ（手動DL/GitHub復元/ファイル復元）
 
 ### ぷよゲーム（game.html）
-- タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始/ランキング）
+- タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始→難易度選択/ランキング）
+- 難易度選択: Easy(4色/遅い/最速400ms), Normal(5色/普通/最速200ms), Hard(6色/速い/最速150ms), Special(9色/速い/最速100ms/8×16盤面)
+- Hard/Specialはロック制（localStorage管理、Normal3万点→Hard解除、Hard3万点→Special解除）
+- ロック中の難易度タップで解除条件モーダル表示
+- ロック解除時に鍵揺れ→壊れ→解放演出（難易度選択画面を開いた時に再生）
+- 再ロック: 「難易度を選択」テキスト10回タップで確認ダイアログ
+- admin限定🧪デバッグモード（解除閾値を10点に一時変更、sessionStorage）
+- 難易度選択画面にフレーバーテキスト表示（アイコンなし）
+- 難易度比較表はランキングページにadmin限定で表示
+- 加速はEasy以外すべて同じ（accel:25）、初期速度のみ差別化
+- 2段階加速: 150msまでは通常ペース、150ms以下は緩やかに加速（50000点で最速到達）
+- Hard最速150ms、Special最速100ms
 - 3秒カウントダウン後にゲーム開始
-- 本家風スコア計算、ランキングTOP10
+- 本家風スコア計算、ランキングTOP10（難易度別）
+- 操作ボタン配置カスタマイズ（⚙️アイコン、タップ入れ替え方式、localStorage保存）
 - 夜間制限（日〜木21時、金土22時〜4時）
+
+### ゲームセンター（arcade.html）
+- TOP画面の🕹️アイコンからアクセス
+- ぷよ、テトリス、ブロックブラストの3ゲームをカード形式で表示
+
+### テトリス（tetris.html）
+- タイトル画面（ゲーム開始/ランキング/設定）
+- 10×20グリッド、ゴースト表示、NEXT表示
+- Hold機能（💾ボタン、1ターン1回、Cキー/Shift対応）
+- ソフトドロップ（↓）とハードドロップ（⏬）
+- 操作ボタン配置カスタマイズ＋ボタン表示/非表示設定
+- ランキングTOP10（tetris_rankings）
+
+### ブロックブラスト（blast.html）
+- タイトル画面（ゲーム開始/ランキング）
+- 8×8グリッド、3ピースから選んで配置
+- ドラッグ＆ドロップまたはタップで配置（プレビュー表示）
+- 行/列が揃ったら消去（フラッシュ＋パーティクル演出）
+- ランキングTOP10（blast_rankings）
 
 ## localStorage使用一覧
 
@@ -131,6 +175,13 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | last_points_{childId} | 直前のポイント演出（リプレイ用） | 永続 |
 | nightLimitOff | 夜間制限OFF | 永続 |
 | nightUnlocked | 夜間制限解除済み | 永続 |
+| puyoCtrlOrder | ぷよ操作ボタン並び順 | 永続 |
+| tetrisCtrlOrder | テトリス操作ボタン並び順 | 永続 |
+| tetrisHiddenBtns | テトリス非表示ボタン | 永続 |
+| puyo_hard_unlocked | ぷよHard解除フラグ | 永続 |
+| puyo_special_unlocked | ぷよSpecial解除フラグ | 永続 |
+| puyo_hard_unlock_pending | Hard解除演出待ち | 消化で削除 |
+| puyo_special_unlock_pending | Special解除演出待ち | 消化で削除 |
 
 ## sessionStorage使用
 
@@ -141,7 +192,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.17.2
+- 現在: v1.25.5
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -150,8 +201,10 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ## 既知の注意点
 
-- Supabaseの全テーブルはRLS無効化済み
+- Supabaseの全テーブルはRLS無効化済み（game_rankings, tetris_rankings, blast_rankingsはRLS有効＋Allow all policy）
 - SW v5、ネットワーク優先＋PWA起動時に自動更新チェック＋リロード
 - ゲームのSupabaseクライアントは `sbClient`（他ページの `client` とは別名）
 - コケやすさ10倍はsessionStorage（タブ閉じでリセット）
 - chore_typesのsort_orderカラムがない場合はidでフォールバック
+- 個人ページパスワード5回間違い→ゴキブリ発生（管理者PW5回間違いと同様）
+- game_rankingsのdifficultyカラムがnullの既存データはnormal扱い
