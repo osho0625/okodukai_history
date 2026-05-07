@@ -189,6 +189,14 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   25% { transform: translateY(-4px) rotate(-8deg); }
   75% { transform: translateY(-4px) rotate(8deg); }
 }
+@keyframes puyoFly {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+}
+@keyframes puyoGhost {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-12px) scale(1.05); opacity: 0.6; }
+}
 </style>
 </head>
 <body>
@@ -288,6 +296,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 let allChildren = [];
 let pendingChildId = null;
 let adminFailCount = 0;
+let childPwFailCount = 0;
 let allowancePassword = null;
 let adminPassword = null;
 
@@ -450,11 +459,11 @@ async function load() {
     const bypassed = localStorage.getItem('deviceRole') === 'admin';
     const showBalance = (!hasPassword || bypassed) && c.show_balance_on_top !== false;
 
-    // 未読入金チェック（Supabase pending_effects）
+    // 未読入金チェック（Supabase pending_effects）— admin端末では非表示
     const depEffect = depositEffectsByChild[c.id];
     let displayBalance = c.balance;
     let bellHtml = '';
-    if (depEffect && showBalance) {
+    if (depEffect && showBalance && !bypassed) {
       displayBalance = depEffect.oldBalance;
       bellHtml = '<span class="notify-bell" onclick="ringBell(event, this)">&#x1F514;</span>';
     }
@@ -566,13 +575,21 @@ function submitPassword() {
   const input = document.getElementById('pwInput').value;
 
   if (input === child.password) {
+    childPwFailCount = 0;
     const targetId = pendingChildId;
     closeModal();
     window.location.href = `pages/child.html?id=${targetId}`;
   } else {
+    childPwFailCount++;
     document.getElementById('pwError').style.display = 'block';
     document.getElementById('pwInput').value = '';
     document.getElementById('pwInput').focus();
+
+    if (childPwFailCount >= 5) {
+      childPwFailCount = 0;
+      closeModal();
+      unleashRoaches();
+    }
   }
 }
 
@@ -663,59 +680,60 @@ async function clearCacheAndReload() {
   location.reload(true);
 }
 
-// --- ぷよ・ゴキブリカウント（Supabase） ---
-async function incrementPuyoCount(imgSrc) {
-  try {
-    const match = imgSrc.match(/puyo_(\d)/);
-    if (!match) return;
-    const puyoId = parseInt(match[1]);
-    const puyoName = 'puyo_' + puyoId;
-    // upsertでカウントを増やす（レコードがなくても安全）
-    const { data } = await client.from('puyo_counts').select('count').eq('id', puyoId).maybeSingle();
+// --- ぷよ・ゴキブリカウント（端末ごと: localStorage + DB合計も更新） ---
+function incrementPuyoCount(imgSrc) {
+  const match = imgSrc.match(/puyo_(\d)/);
+  if (!match) return;
+  const puyoId = parseInt(match[1]);
+  // ローカルカウント
+  const key = 'puyo_local_count_' + puyoId;
+  const current = parseInt(localStorage.getItem(key) || '0');
+  localStorage.setItem(key, String(current + 1));
+  const el = document.getElementById('cnt_' + puyoId);
+  if (el) el.textContent = current + 1;
+  // DB合計も更新（非同期、エラー無視）
+  const puyoName = 'puyo_' + puyoId;
+  client.from('puyo_counts').select('count').eq('id', puyoId).maybeSingle().then(({ data }) => {
     if (data) {
-      await client.from('puyo_counts').update({ count: data.count + 1 }).eq('id', puyoId);
+      client.from('puyo_counts').update({ count: data.count + 1 }).eq('id', puyoId);
     } else {
-      await client.from('puyo_counts').upsert({ id: puyoId, name: puyoName, count: 1 });
+      client.from('puyo_counts').upsert({ id: puyoId, name: puyoName, count: 1 });
     }
-    await client.from('activity_log').insert({ type: 'puyo', name: puyoName });
-  } catch (e) { console.error('incrementPuyoCount error:', e); }
+  }).catch(() => {});
 }
 
-async function incrementRoachCount() {
-  try {
-    const { data } = await client.from('roach_counts').select('count').eq('id', 1).maybeSingle();
+function incrementRoachCount() {
+  // ローカルカウント
+  const current = parseInt(localStorage.getItem('roach_local_count') || '0');
+  localStorage.setItem('roach_local_count', String(current + 1));
+  // DB合計も更新
+  client.from('roach_counts').select('count').eq('id', 1).maybeSingle().then(({ data }) => {
     if (data) {
-      await client.from('roach_counts').update({ count: data.count + 1 }).eq('id', 1);
+      client.from('roach_counts').update({ count: data.count + 1 }).eq('id', 1);
     } else {
-      await client.from('roach_counts').upsert({ id: 1, count: 1 });
+      client.from('roach_counts').upsert({ id: 1, count: 1 });
     }
-    await client.from('activity_log').insert({ type: 'roach', name: 'roach' });
-  } catch (e) { console.error('incrementRoachCount error:', e); }
+  }).catch(() => {});
 }
 
-// --- カウント表示・リアルタイム更新 ---
+// --- カウント表示 ---
 async function loadPuyoCounts() {
-  const { data: puyoData } = await client.from('puyo_counts').select('*').order('id');
   const container = document.getElementById('puyoStats');
   if (!container) return;
+  // 解放状況に応じて表示するぷよ数を制限
+  let maxPuyo = 5;
+  if (localStorage.getItem('puyo_special_unlocked') === 'true') maxPuyo = 9;
+  else if (localStorage.getItem('puyo_hard_unlocked') === 'true') maxPuyo = 6;
   let html = '';
-  if (puyoData) {
-    html += puyoData.map(p =>
-      `<span style="margin:0 3px;"><img src="images/${p.name}.avif" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;object-fit:cover;"><span id="cnt_${p.id}">${p.count}</span></span>`
-    ).join('');
+  for (let i = 1; i <= maxPuyo; i++) {
+    const count = parseInt(localStorage.getItem('puyo_local_count_' + i) || '0');
+    html += `<span style="margin:0 3px;"><img src="images/puyo_${i}.avif" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;object-fit:cover;"><span id="cnt_${i}">${count}</span></span>`;
   }
   container.innerHTML = html;
 }
 
 // リアルタイム更新: ぷよカウントが変わったら即反映
-function setupRealtimePuyoCounts() {
-  client.channel('puyo_counts_changes')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'puyo_counts' }, payload => {
-      const el = document.getElementById('cnt_' + payload.new.id);
-      if (el) el.textContent = payload.new.count;
-    })
-    .subscribe();
-}
+// (リアルタイム更新は端末ローカルカウントのため不要)
 
 // --- 隠しボタン（ゴキブリカウント表示） ---
 (function setupSecretBtn() {
@@ -732,11 +750,9 @@ function setupRealtimePuyoCounts() {
   });
 })();
 
-async function showRoachCount() {
-  const { data } = await client.from('roach_counts').select('count').eq('id', 1).maybeSingle();
-  const count = data ? data.count : 0;
+function showRoachCount() {
+  const count = parseInt(localStorage.getItem('roach_local_count') || '0');
   const container = document.getElementById('puyoStats');
-  // 既に表示されていなければ追加
   if (!document.getElementById('roachStatSecret')) {
     const span = document.createElement('span');
     span.id = 'roachStatSecret';
@@ -837,14 +853,13 @@ async function giveAllowanceFromTop(targetChild, amount) {
 
 load();
 loadPuyoCounts();
-setupRealtimePuyoCounts();
 loadPasswords();
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.17.2</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.25.5</a></div>
 
 </body>
 </html>

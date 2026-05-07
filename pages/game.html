@@ -73,6 +73,14 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
   25% { transform: translateY(-3px) rotate(-4deg); }
   75% { transform: translateY(-3px) rotate(4deg); }
 }
+@keyframes titlePuyoFly {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-6px) rotate(5deg); }
+}
+@keyframes titlePuyoGhost {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { transform: translateY(-8px) scale(1.05); opacity: 0.5; }
+}
 @keyframes poofUp {
   0% { opacity: 1; transform: translateY(0) scale(0.5); }
   100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
@@ -105,6 +113,48 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
   25% { transform: rotate(-8deg) translateY(-2px); }
   75% { transform: rotate(8deg) translateY(-2px); }
 }
+@keyframes puyoEscapeFly {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+}
+@keyframes puyoEscapeGhost {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.05); }
+}
+@keyframes unlockPop {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes lockShake {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(-15deg); }
+  20% { transform: rotate(15deg); }
+  30% { transform: rotate(-20deg); }
+  40% { transform: rotate(20deg); }
+  50% { transform: rotate(-25deg); }
+  60% { transform: rotate(25deg); }
+  70% { transform: rotate(-15deg); }
+  80% { transform: rotate(10deg); }
+  90% { transform: rotate(-5deg); }
+}
+@keyframes lockBreak {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(0.5) translateY(-40px) rotate(-30deg); opacity: 0; }
+}
+@keyframes unlockReveal {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes btnUnlock {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.1) rotate(-3deg); }
+  40% { transform: scale(1.1) rotate(3deg); }
+  60% { transform: scale(1.05) rotate(-2deg); }
+  80% { transform: scale(1.02) rotate(1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
 </style>
 </head>
 <body>
@@ -115,13 +165,54 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
     <div class="chain" id="chain"></div>
   </div>
   <a href="ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
+  <span id="settingsBtn" style="cursor:pointer; font-size:1.3em; padding:4px 8px; opacity:0.7;">&#x2699;&#xFE0F;</span>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
   <!-- タイトルメニュー -->
   <div id="titleMenu" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(26,26,46,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;border-radius:8px;overflow:hidden;">
-    <button onclick="dismissMenu(); startGame();" style="width:200px;padding:14px;border:none;border-radius:12px;background:#4caf50;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;margin-bottom:12px;">ゲーム開始</button>
-    <button onclick="location.href='ranking.html'" style="width:200px;padding:14px;border:none;border-radius:12px;background:#1976d2;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;">&#x1F3C6; ランキング</button>
+    <div id="titleMain">
+      <button onclick="showDifficultySelect()" style="width:200px;padding:14px;border:none;border-radius:12px;background:#4caf50;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;margin-bottom:12px;display:block;">ゲーム開始</button>
+      <button id="customModeBtn" onclick="showCustomMode()" style="width:200px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff6f00,#aa00ff);color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:12px;display:none;">🎨 カスタムモード</button>
+      <button id="forceUnlockCustomBtn" onclick="forceUnlockCustom()" style="width:200px;padding:10px;border:none;border-radius:12px;background:#333;color:#aaa;font-size:0.85em;cursor:pointer;margin-bottom:12px;display:none;">🔑 カスタム強制解放</button>
+      <button onclick="location.href='ranking.html'" style="width:200px;padding:14px;border:none;border-radius:12px;background:#1976d2;color:#fff;font-size:1.1em;font-weight:700;cursor:pointer;display:block;">&#x1F3C6; ランキング</button>
+    </div>
+    <!-- 難易度選択 -->
+    <div id="difficultySelect" style="display:none; text-align:center; position:relative;">
+      <div id="relockTapArea" style="font-size:1em;font-weight:700;margin-bottom:14px;color:#fff;cursor:default;">難易度を選択</div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <div style="text-align:center;">
+          <button onclick="selectDifficulty('easy')" style="width:200px;padding:12px;border:none;border-radius:10px;background:#43a047;color:#fff;font-size:1em;font-weight:700;cursor:pointer;">Easy</button>
+          <div style="font-size:0.75em;color:#aaa;margin-top:4px;">4種類のぷよを揃えよう まずはここから</div>
+        </div>
+        <div style="text-align:center;">
+          <button onclick="selectDifficulty('normal')" style="width:200px;padding:12px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-size:1em;font-weight:700;cursor:pointer;">Normal</button>
+          <div style="font-size:0.75em;color:#aaa;margin-top:4px;">5種類のぷよを揃えよう 慣れてきた人向け</div>
+        </div>
+        <div style="text-align:center;">
+          <button id="hardBtn" onclick="selectDifficulty('hard')" style="width:200px;padding:12px;border:none;border-radius:10px;background:#e53935;color:#fff;font-size:1em;font-weight:700;cursor:pointer;">Hard</button>
+          <div id="hardFlavor" style="font-size:0.75em;color:#aaa;margin-top:4px;">6種類のぷよを揃えよう Normalが物足りない人向け</div>
+        </div>
+        <div style="text-align:center;">
+          <button id="specialBtn" onclick="selectDifficulty('special')" style="width:200px;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff6f00,#aa00ff);color:#fff;font-size:1em;font-weight:700;cursor:pointer;">Special</button>
+          <div id="specialFlavor" style="font-size:0.75em;color:#aaa;margin-top:4px;">挑戦者、求ム</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;justify-content:center;">
+        <button onclick="hideDifficultySelect()" style="padding:8px 20px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.9em;cursor:pointer;">タイトルに戻る</button>
+        <span id="diffInfoBtnGame" onclick="showDiffInfo()" style="cursor:pointer;font-size:1.2em;opacity:0.7;display:none;">ℹ️</span>
+        <span id="debugUnlockBtn" onclick="enableDebugUnlock()" style="cursor:pointer;font-size:1em;opacity:0.5;display:none;">🧪</span>
+      </div>
+    </div>
+    <!-- カスタムモード画面 -->
+    <div id="customModeScreen" style="display:none; text-align:center;">
+      <div style="font-size:1em;font-weight:700;margin-bottom:14px;color:#fff;">🎨 カスタムモード</div>
+      <button onclick="startCustomGame()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#4caf50;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">ゲーム開始</button><br>
+      <button onclick="showCustomSettings()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">⚙️ 設定</button><br>
+      <button onclick="showSavePreset()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#9c27b0;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">💾 設定を保存</button><br>
+      <button onclick="showPresetList()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#ff9800;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">📋 みんなの設定で遊ぶ</button><br>
+      <button onclick="hideCustomMode()" style="padding:8px 20px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.9em;cursor:pointer;">タイトルに戻る</button>
+    </div>
     <!-- 地面＋ぷよ -->
     <div id="titleGround" style="position:absolute;bottom:0;left:0;width:100%;height:50px;border-radius:0 0 8px 8px;overflow:visible;">
       <div style="position:absolute;bottom:0;left:0;width:100%;height:30px;background:linear-gradient(to bottom,#8B6914,#6B4F12,#5a4210);"></div>
@@ -137,6 +228,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
   <div class="game-over" id="gameOver">
     <h2>GAME OVER</h2>
     <div class="final" id="finalScore">0</div>
+    <div id="unlockNotice" style="display:none; color:#ffd700; font-size:0.95em; margin-bottom:10px; padding:8px 12px; border-radius:8px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3);">🔓 新しい難易度が解放されました！</div>
     <div id="rankInMsg" style="display:none; color:#ff6; font-size:1.1em; margin-bottom:12px;"></div>
     <div id="rankInForm" style="display:none; margin-bottom:12px;">
       <input type="text" id="rankName" placeholder="名前を入力" style="width:100%; padding:10px; border:1px solid #555; border-radius:8px; background:#2a2a4e; color:#fff; font-size:1em; text-align:center; margin-bottom:8px;">
@@ -146,15 +238,171 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
     <button class="btn-back" onclick="location.href='arcade.html'">←</button>
   </div>
 </div>
-<div class="controls" id="gameControls" style="display:none;">
-  <button class="ctrl-btn" id="btnRotate">&#x21BB;</button>
-  <button class="ctrl-btn" id="btnLeft">&#x25C0;</button>
-  <button class="ctrl-btn" id="btnRight">&#x25B6;</button>
-  <button class="ctrl-btn" id="btnDrop">&#x25BC;</button>
+<div class="controls" id="gameControls" style="display:none;"></div>
+
+<!-- 難易度詳細モーダル -->
+<div id="diffInfoOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:300; justify-content:center; align-items:center;">
+  <div style="background:#1e1e3a; border-radius:16px; padding:20px; width:90%; max-width:340px; border:1px solid rgba(255,255,255,0.1);">
+    <h3 style="text-align:center; margin-bottom:14px; font-size:1.1em;">📊 難易度比較</h3>
+    <table style="width:100%; font-size:0.85em; border-collapse:collapse;">
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+        <th style="padding:8px 4px; text-align:left;"></th>
+        <th style="padding:8px 4px; color:#43a047;">Easy</th>
+        <th style="padding:8px 4px; color:#1976d2;">Normal</th>
+        <th style="padding:8px 4px; color:#e53935;">Hard</th>
+        <th style="padding:8px 4px; color:#ff6f00;">Special</th>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+        <td style="padding:8px 4px;">色数</td>
+        <td style="padding:8px 4px;">4色</td>
+        <td style="padding:8px 4px;">5色</td>
+        <td style="padding:8px 4px;">6色</td>
+        <td style="padding:8px 4px;">9色</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+        <td style="padding:8px 4px;">盤面</td>
+        <td style="padding:8px 4px;">6×13</td>
+        <td style="padding:8px 4px;">6×13</td>
+        <td style="padding:8px 4px;">6×13</td>
+        <td style="padding:8px 4px;">8×16</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+        <td style="padding:8px 4px;">初期速度</td>
+        <td style="padding:8px 4px;">800ms</td>
+        <td style="padding:8px 4px;">800ms</td>
+        <td style="padding:8px 4px;">800ms</td>
+        <td style="padding:8px 4px;">800ms</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+        <td style="padding:8px 4px;">加速</td>
+        <td style="padding:8px 4px;">ゆるい</td>
+        <td style="padding:8px 4px;">普通</td>
+        <td style="padding:8px 4px;">普通</td>
+        <td style="padding:8px 4px;">普通</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 4px;">最速</td>
+        <td style="padding:8px 4px;">400ms</td>
+        <td style="padding:8px 4px;">200ms</td>
+        <td style="padding:8px 4px;">150ms</td>
+        <td style="padding:8px 4px;">100ms</td>
+      </tr>
+    </table>
+    <button onclick="document.getElementById('diffInfoOverlay').style.display='none'" style="width:100%; margin-top:14px; padding:10px; border:none; border-radius:8px; background:#555; color:#fff; cursor:pointer;">閉じる</button>
+  </div>
+</div>
+
+<!-- プリセット保存モーダル -->
+<div id="savePresetOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:300; justify-content:center; align-items:center;">
+  <div style="background:#1e1e3a; border-radius:16px; padding:20px; width:90%; max-width:300px; text-align:center; border:1px solid rgba(255,255,255,0.1);">
+    <h3 style="margin-bottom:12px; font-size:1.1em;">💾 設定を保存</h3>
+    <input type="text" id="presetNameInput" placeholder="設定の名前" style="width:100%; padding:10px; border:1px solid #555; border-radius:8px; background:#2a2a4e; color:#fff; font-size:1em; text-align:center; margin-bottom:12px;">
+    <div id="presetSaveStatus" style="font-size:0.85em; color:#aaa; margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('savePresetOverlay').style.display='none'" style="flex:1;padding:10px;border:none;border-radius:8px;background:#555;color:#fff;cursor:pointer;">キャンセル</button>
+      <button onclick="savePreset()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-weight:600;cursor:pointer;">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- プリセット一覧モーダル -->
+<div id="presetListOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:300; justify-content:center; align-items:center;">
+  <div style="background:#1e1e3a; border-radius:16px; padding:20px; width:90%; max-width:340px; text-align:center; border:1px solid rgba(255,255,255,0.1); max-height:80vh; overflow-y:auto;">
+    <h3 style="margin-bottom:12px; font-size:1.1em;">📋 みんなの設定で遊ぶ</h3>
+    <div id="presetListContent" style="text-align:left;"></div>
+    <button onclick="document.getElementById('presetListOverlay').style.display='none'" style="width:100%; margin-top:12px; padding:10px; border:none; border-radius:8px; background:#555; color:#fff; cursor:pointer;">閉じる</button>
+  </div>
+</div>
+
+<!-- カスタムモード設定モーダル -->
+<div id="customSettingsOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:300; justify-content:center; align-items:center;">
+  <div style="background:#1e1e3a; border-radius:16px; padding:20px; width:90%; max-width:340px; text-align:center; border:1px solid rgba(255,255,255,0.1); max-height:80vh; overflow-y:auto;">
+    <h3 style="margin-bottom:14px; font-size:1.1em;">🎨 カスタム設定</h3>
+    <div style="text-align:left; font-size:0.9em; color:#ccc;">
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">色数 <span id="csColorsVal">5</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('colors',-1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="colors" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csColorsBar" style="height:100%;background:#4caf50;border-radius:12px;width:43%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('colors',1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">横幅 <span id="csColsVal">6</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('cols',-1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="cols" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csColsBar" style="height:100%;background:#1976d2;border-radius:12px;width:10%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('cols',1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">縦幅 <span id="csRowsVal">13</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('rows',-1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="rows" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csRowsBar" style="height:100%;background:#1976d2;border-radius:12px;width:50%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('rows',1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">初期速度 <span id="csInitVal">800</span>ms</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('initSpeed',-10)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="initSpeed" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csInitBar" style="height:100%;background:#ff9800;border-radius:12px;width:50%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('initSpeed',10)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">下限速度 <span id="csMinVal">200</span>ms</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('minSpeed',-10)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="minSpeed" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csMinBar" style="height:100%;background:#e53935;border-radius:12px;width:30%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('minSpeed',10)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">加速量 <span id="csAccelVal">25</span>ms</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('accel',-1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="accel" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csAccelBar" style="height:100%;background:#9c27b0;border-radius:12px;width:50%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('accel',1)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div class="cs-row" style="margin-bottom:14px;">
+        <div style="margin-bottom:4px; font-weight:600;">加速間隔 <span id="csAccelIntVal">500</span>pt毎</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="csAdjust('accelInterval',-100)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">−</button>
+          <div class="cs-slider" data-key="accelInterval" style="flex:1;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;touch-action:none;"><div id="csAccelIntBar" style="height:100%;background:#9c27b0;border-radius:12px;width:25%;pointer-events:none;"></div></div>
+          <button onclick="csAdjust('accelInterval',100)" style="width:36px;height:36px;border:none;border-radius:8px;background:#555;color:#fff;font-size:1.2em;cursor:pointer;">＋</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="margin-bottom:4px; font-weight:600;">ホールド</div>
+        <div style="display:flex;gap:8px;">
+          <button id="csHoldOff" onclick="csSetHold(false)" style="flex:1;padding:8px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.9em;cursor:pointer;">OFF</button>
+          <button id="csHoldOn" onclick="csSetHold(true)" style="flex:1;padding:8px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-size:0.9em;cursor:pointer;">ON</button>
+        </div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('customSettingsOverlay').style.display='none'" style="width:100%; margin-top:10px; padding:10px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-weight:600; cursor:pointer;">OK</button>
+  </div>
+</div>
+
+<!-- 操作ボタン設定モーダル -->
+<div id="ctrlSettingsOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:200; justify-content:center; align-items:center;">
+  <div style="background:#1e1e3a; border-radius:16px; padding:24px; width:90%; max-width:340px; text-align:center; border:1px solid rgba(255,255,255,0.1);">
+    <h3 style="margin-bottom:8px; font-size:1.1em;">🎮 ボタン配置</h3>
+    <p style="font-size:0.8em; color:#aaa; margin-bottom:16px;">入れ替えたい2つのボタンをタップ</p>
+    <div id="ctrlSwapArea" style="display:flex; gap:12px; justify-content:center; margin-bottom:16px;"></div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="resetCtrlOrder()" style="flex:1; padding:10px; border:none; border-radius:8px; background:#555; color:#fff; font-size:0.9em; cursor:pointer;">リセット</button>
+      <button onclick="closeCtrlSettings()" style="flex:1; padding:10px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-size:0.9em; font-weight:600; cursor:pointer;">閉じる</button>
+    </div>
+  </div>
 </div>
 </body>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/puyo-escape.js"></script>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -171,23 +419,27 @@ const padding = 24;
 const availH = window.innerHeight - headerH - controlsH - padding;
 const availW = Math.min(300, window.innerWidth - 16);
 
-const COLS = 6;
-const ROWS = 13;
-const CELL = Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS));
-const W = CELL * COLS;
-const H = CELL * ROWS;
+let COLS = 6;
+let ROWS = 13;
+let CELL = Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS));
+let W = CELL * COLS;
+let H = CELL * ROWS;
 canvas.width = W;
 canvas.height = H;
 
-const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa'];
+const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da','#ec407a','#78909c'];
 const PUYO_IMGS = [
   '../images/puyo_1.avif',
   '../images/puyo_2.avif',
   '../images/puyo_3.avif',
   '../images/puyo_4.avif',
-  '../images/puyo_5.avif'
+  '../images/puyo_5.avif',
+  '../images/puyo_6.avif',
+  '../images/puyo_7.avif',
+  '../images/puyo_8.avif',
+  '../images/puyo_9.avif'
 ];
-const PUYO_R = CELL * 0.54;
+let PUYO_R = CELL * 0.54;
 const loadedImgs = [];
 let imgsReady = false;
 
@@ -212,8 +464,6 @@ const LOCK_DELAY = 2000;
 // grid初期化
 grid = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
 particles = [];
-
-function rand() { return Math.floor(Math.random() * COLORS.length); }
 
 function makePair() {
   return { c1: rand(), c2: rand(), col: 2, row: 0, dir: 0 };
@@ -359,25 +609,548 @@ async function submitNightPw() {
   }
 }
 
+// --- 難易度設定 ---
+let currentDifficulty = 'normal';
+const DIFFICULTY_SETTINGS = {
+  easy:    { colors: 4, initSpeed: 800, minSpeed: 400, accel: 15, cols: 6, rows: 13 },
+  normal:  { colors: 5, initSpeed: 800, minSpeed: 200, accel: 25, cols: 6, rows: 13 },
+  hard:    { colors: 6, initSpeed: 800, minSpeed: 150, accel: 25, cols: 6, rows: 13 },
+  special: { colors: 9, initSpeed: 800, minSpeed: 100, accel: 25, cols: 8, rows: 16 }
+};
+
+// 2段階加速: 150msまでは通常ペース、150ms以下はゆっくり加速（50000点で最速到達）
+function calcDropInterval(currentScore, settings) {
+  const interval = settings.accelInterval || 500;
+  const phase1Floor = 150; // 第1段階の下限
+  // 第1段階: 通常加速（interval点ごとにaccel ms減速）
+  let speed = settings.initSpeed - Math.floor(currentScore / interval) * settings.accel;
+  if (speed <= phase1Floor && settings.minSpeed < phase1Floor) {
+    // 第2段階: 150ms→minSpeedまでゆっくり加速
+    const phase1Score = Math.ceil((settings.initSpeed - phase1Floor) / settings.accel) * interval;
+    const phase2Score = currentScore - phase1Score;
+    if (phase2Score > 0) {
+      // 50000点で最速到達するペース
+      const phase2Range = phase1Floor - settings.minSpeed;
+      const phase2Target = 50000 - phase1Score;
+      const phase2Progress = Math.min(1, phase2Score / phase2Target);
+      speed = phase1Floor - phase2Range * phase2Progress;
+    } else {
+      speed = phase1Floor;
+    }
+  }
+  return Math.max(settings.minSpeed, Math.round(speed));
+}
+
+function applyGridSize() {
+  const settings = DIFFICULTY_SETTINGS[currentDifficulty];
+  COLS = settings.cols;
+  ROWS = settings.rows;
+  CELL = Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS));
+  W = CELL * COLS;
+  H = CELL * ROWS;
+  canvas.width = W;
+  canvas.height = H;
+  PUYO_R = CELL * 0.54;
+}
+
+let hardUnlocked = false;
+let specialUnlocked = false;
+
+function checkDifficultyUnlocks() {
+  hardUnlocked = localStorage.getItem('puyo_hard_unlocked') === 'true';
+  specialUnlocked = localStorage.getItem('puyo_special_unlocked') === 'true';
+}
+
+function updateDifficultyButtons() {
+  const hardBtn = document.getElementById('hardBtn');
+  const specialBtn = document.getElementById('specialBtn');
+  const hardFlavor = document.getElementById('hardFlavor');
+  const specialFlavor = document.getElementById('specialFlavor');
+  if (hardUnlocked) {
+    hardBtn.textContent = 'Hard';
+    hardBtn.style.opacity = '1';
+    if (hardFlavor) hardFlavor.style.display = 'block';
+  } else {
+    hardBtn.textContent = '🔒 Hard';
+    hardBtn.style.opacity = '0.5';
+    if (hardFlavor) hardFlavor.style.display = 'none';
+  }
+  if (specialUnlocked) {
+    specialBtn.textContent = 'Special';
+    specialBtn.style.opacity = '1';
+    if (specialFlavor) specialFlavor.style.display = 'block';
+  } else {
+    specialBtn.textContent = '🔒 Special';
+    specialBtn.style.opacity = '0.5';
+    if (specialFlavor) specialFlavor.style.display = 'none';
+  }
+}
+
+function showDifficultySelect() {
+  document.getElementById('titleMain').style.display = 'none';
+  document.getElementById('difficultySelect').style.display = 'block';
+
+  // pending演出があるか先にチェック
+  const hardPending = localStorage.getItem('puyo_hard_unlock_pending') === 'true';
+  const specialPending = localStorage.getItem('puyo_special_unlock_pending') === 'true';
+
+  checkDifficultyUnlocks();
+
+  // pending中のボタンは一旦ロック表示のままにする
+  if (hardPending) hardUnlocked = false;
+  if (specialPending) specialUnlocked = false;
+  updateDifficultyButtons();
+
+  // admin限定でℹ️・🧪表示
+  const infoBtn = document.getElementById('diffInfoBtnGame');
+  const debugBtn = document.getElementById('debugUnlockBtn');
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  if (infoBtn) infoBtn.style.display = isAdmin ? 'inline' : 'none';
+  if (debugBtn) debugBtn.style.display = isAdmin ? 'inline' : 'none';
+
+  // ロック解除演出（pending）
+  if (hardPending) {
+    localStorage.removeItem('puyo_hard_unlock_pending');
+    setTimeout(() => playUnlockAnimation('hardBtn', 'Hard'), 400);
+  } else if (specialPending) {
+    localStorage.removeItem('puyo_special_unlock_pending');
+    setTimeout(() => playUnlockAnimation('specialBtn', 'Special'), 400);
+  }
+}
+
+function hideDifficultySelect() {
+  document.getElementById('difficultySelect').style.display = 'none';
+  document.getElementById('titleMain').style.display = 'block';
+}
+
+// 隠し再ロック機能（左上10回タップ）
+(function setupRelockTap() {
+  let tapCount = 0;
+  let tapTimer = null;
+  const area = document.getElementById('relockTapArea');
+  if (!area) return;
+  area.addEventListener('click', () => {
+    tapCount++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => { tapCount = 0; }, 3000);
+    if (tapCount >= 10) {
+      tapCount = 0;
+      if (confirm('難易度ロックをリセットしますか？\nHardとSpecialが再びロックされます。')) {
+        localStorage.removeItem('puyo_hard_unlocked');
+        localStorage.removeItem('puyo_special_unlocked');
+        hardUnlocked = false;
+        specialUnlocked = false;
+        updateDifficultyButtons();
+      }
+    }
+  });
+})();
+
+function selectDifficulty(diff) {
+  if (diff === 'hard' && !hardUnlocked) { showLockModal('hard'); return; }
+  if (diff === 'special' && !specialUnlocked) { showLockModal('special'); return; }
+  currentDifficulty = diff;
+  dismissMenu();
+  startGame();
+}
+
+function showLockModal(diff) {
+  const cond = diff === 'hard'
+    ? 'Normalで30,000点以上を達成するとアンロックされます！'
+    : 'Hardで30,000点以上を達成するとアンロックされます！';
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:#1e1e3a;border-radius:16px;padding:24px;width:85%;max-width:300px;text-align:center;border:1px solid rgba(255,255,255,0.1);">'
+    + '<div style="font-size:2.5em;margin-bottom:12px;">🔒</div>'
+    + '<div style="font-size:1.1em;font-weight:700;color:#fff;margin-bottom:8px;">' + diff.charAt(0).toUpperCase() + diff.slice(1) + '</div>'
+    + '<div style="font-size:0.9em;color:#aaa;margin-bottom:16px;">' + cond + '</div>'
+    + '<button style="padding:10px 24px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.95em;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">OK</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function showUnlockEffect(diffName) {
+  // フォールバック（直接呼ばれた場合）
+  playUnlockAnimation(diffName === 'Hard' ? 'hardBtn' : 'specialBtn', diffName);
+}
+
+function playUnlockAnimation(btnId, diffName) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+
+  // ボタンの位置を基準にオーバーレイを表示
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;';
+
+  // 鍵アイコン（揺れる）
+  const lockIcon = document.createElement('div');
+  lockIcon.textContent = '🔒';
+  lockIcon.style.cssText = 'font-size:4em;animation:lockShake 1.2s ease-in-out;';
+  overlay.appendChild(lockIcon);
+
+  document.body.appendChild(overlay);
+
+  // 1.2秒後: 鍵が壊れる
+  setTimeout(() => {
+    lockIcon.style.animation = 'lockBreak 0.5s ease-out forwards';
+  }, 1200);
+
+  // 1.7秒後: 解放テキスト表示
+  setTimeout(() => {
+    lockIcon.style.display = 'none';
+    const reveal = document.createElement('div');
+    reveal.style.cssText = 'text-align:center;animation:unlockReveal 0.5s ease-out;';
+    reveal.innerHTML = '<div style="font-size:3em;margin-bottom:12px;">🔓✨</div>'
+      + '<div style="font-size:1.3em;font-weight:700;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px rgba(255,215,0,0.5);">' + diffName + ' 解放！</div>'
+      + '<div style="font-size:0.9em;color:#ccc;margin-bottom:16px;">新しい難易度に挑戦できるようになりました！</div>'
+      + '<button id="unlockOkBtn" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#333;font-weight:700;font-size:1em;cursor:pointer;">OK!</button>';
+    overlay.appendChild(reveal);
+    document.getElementById('unlockOkBtn').addEventListener('click', () => {
+      overlay.remove();
+      // ボタンのロックを外すアニメーション
+      if (diffName === 'Hard') hardUnlocked = true;
+      if (diffName === 'Special') specialUnlocked = true;
+      btn.style.opacity = '0.5';
+      btn.style.transition = 'opacity 0.4s, transform 0.5s';
+      setTimeout(() => {
+        btn.textContent = diffName;
+        btn.style.opacity = '1';
+        btn.style.animation = 'btnUnlock 0.6s ease-out';
+        btn.style.boxShadow = '0 0 16px rgba(255,215,0,0.6)';
+        // フレーバーテキスト表示
+        const flavorId = diffName.toLowerCase() + 'Flavor';
+        const flavor = document.getElementById(flavorId);
+        if (flavor) flavor.style.display = 'block';
+        setTimeout(() => {
+          btn.style.animation = '';
+          btn.style.boxShadow = '';
+          btn.style.transition = '';
+          updateCustomModeButton();
+        }, 800);
+      }, 100);
+    });
+  }, 1700);
+}
+
+function showDiffInfo() {
+  document.getElementById('diffInfoOverlay').style.display = 'flex';
+}
+
+// デバッグ: ロック解除閾値を10点に一時変更（sessionStorage、タブ閉じでリセット）
+let debugUnlockThreshold = null;
+function enableDebugUnlock() {
+  if (sessionStorage.getItem('puyo_debug_unlock') === 'true') {
+    sessionStorage.removeItem('puyo_debug_unlock');
+    debugUnlockThreshold = null;
+    alert('デバッグモード解除。解除閾値を30000点に戻しました。');
+  } else {
+    sessionStorage.setItem('puyo_debug_unlock', 'true');
+    debugUnlockThreshold = 10;
+    alert('デバッグモードON。ロック解除閾値を10点に変更しました（タブを閉じるとリセット）。');
+  }
+}
+// ページ読み込み時にsessionStorageから復元
+if (sessionStorage.getItem('puyo_debug_unlock') === 'true') {
+  debugUnlockThreshold = 10;
+}
+
+// --- カスタムモード ---
+let customSettings = {
+  colors: 5, cols: 6, rows: 13, initSpeed: 800, minSpeed: 200, accel: 25, accelInterval: 500, hold: false
+};
+let customModeUnlocked = localStorage.getItem('puyo_custom_unlocked') === 'true';
+
+function updateCustomModeButton() {
+  customModeUnlocked = localStorage.getItem('puyo_custom_unlocked') === 'true';
+  const btn = document.getElementById('customModeBtn');
+  const forceBtn = document.getElementById('forceUnlockCustomBtn');
+  if (btn) btn.style.display = customModeUnlocked ? 'block' : 'none';
+  // admin限定: カスタム未解放時に強制解放ボタン表示
+  if (forceBtn) {
+    const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+    forceBtn.style.display = (isAdmin && !customModeUnlocked) ? 'block' : 'none';
+  }
+}
+
+function forceUnlockCustom() {
+  localStorage.setItem('puyo_custom_unlocked', 'true');
+  customModeUnlocked = true;
+  updateCustomModeButton();
+}
+
+function checkCustomUnlockPending() {
+  if (localStorage.getItem('puyo_custom_unlock_pending') === 'true') {
+    localStorage.removeItem('puyo_custom_unlock_pending');
+    const btn = document.getElementById('customModeBtn');
+    if (btn) {
+      btn.style.display = 'none'; // 一旦非表示
+      setTimeout(() => {
+        playCustomUnlockEffect();
+      }, 400);
+    }
+  }
+}
+
+function playCustomUnlockEffect() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;';
+
+  const lockIcon = document.createElement('div');
+  lockIcon.textContent = '🔒';
+  lockIcon.style.cssText = 'font-size:4em;animation:lockShake 1.2s ease-in-out;';
+  overlay.appendChild(lockIcon);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    lockIcon.style.animation = 'lockBreak 0.5s ease-out forwards';
+  }, 1200);
+
+  setTimeout(() => {
+    lockIcon.style.display = 'none';
+    const reveal = document.createElement('div');
+    reveal.style.cssText = 'text-align:center;animation:unlockReveal 0.5s ease-out;';
+    reveal.innerHTML = '<div style="font-size:3em;margin-bottom:12px;">🎨✨</div>'
+      + '<div style="font-size:1.3em;font-weight:700;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px rgba(255,215,0,0.5);">カスタムモード 解放！</div>'
+      + '<div style="font-size:0.9em;color:#ccc;margin-bottom:16px;">好きな設定で自由に遊べるようになりました！</div>'
+      + '<button id="customUnlockOkBtn" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#333;font-weight:700;font-size:1em;cursor:pointer;">OK!</button>';
+    overlay.appendChild(reveal);
+    document.getElementById('customUnlockOkBtn').addEventListener('click', () => {
+      overlay.remove();
+      const btn = document.getElementById('customModeBtn');
+      if (btn) {
+        btn.style.display = 'block';
+        btn.style.opacity = '0';
+        btn.style.transition = 'opacity 0.4s';
+        setTimeout(() => {
+          btn.style.opacity = '1';
+          btn.style.animation = 'btnUnlock 0.6s ease-out';
+          setTimeout(() => { btn.style.animation = ''; btn.style.transition = ''; }, 800);
+        }, 100);
+      }
+    });
+  }, 1700);
+}
+
+function showCustomMode() {
+  document.getElementById('titleMain').style.display = 'none';
+  document.getElementById('customModeScreen').style.display = 'block';
+}
+
+function hideCustomMode() {
+  document.getElementById('customModeScreen').style.display = 'none';
+  document.getElementById('titleMain').style.display = 'block';
+}
+
+function showCustomSettings() {
+  csUpdateUI();
+  document.getElementById('customSettingsOverlay').style.display = 'flex';
+}
+
+function csAdjust(key, delta) {
+  const limits = {
+    colors: [2, 9], cols: [6, 10], rows: [6, 20],
+    initSpeed: [100, 2000], minSpeed: [10, 1000], accel: [0, 100], accelInterval: [100, 5000]
+  };
+  const [min, max] = limits[key];
+  customSettings[key] = Math.max(min, Math.min(max, customSettings[key] + delta));
+  csUpdateUI();
+}
+
+function csSetHold(val) {
+  customSettings.hold = val;
+  csUpdateUI();
+}
+
+function csUpdateUI() {
+  document.getElementById('csColorsVal').textContent = customSettings.colors;
+  document.getElementById('csColsVal').textContent = customSettings.cols;
+  document.getElementById('csRowsVal').textContent = customSettings.rows;
+  document.getElementById('csInitVal').textContent = customSettings.initSpeed;
+  document.getElementById('csMinVal').textContent = customSettings.minSpeed;
+  document.getElementById('csAccelVal').textContent = customSettings.accel;
+  document.getElementById('csAccelIntVal').textContent = customSettings.accelInterval;
+  // bars
+  document.getElementById('csColorsBar').style.width = ((customSettings.colors - 2) / 7 * 100) + '%';
+  document.getElementById('csColsBar').style.width = ((customSettings.cols - 6) / 4 * 100) + '%';
+  document.getElementById('csRowsBar').style.width = ((customSettings.rows - 6) / 14 * 100) + '%';
+  document.getElementById('csInitBar').style.width = ((customSettings.initSpeed - 100) / 1900 * 100) + '%';
+  document.getElementById('csMinBar').style.width = ((customSettings.minSpeed - 10) / 990 * 100) + '%';
+  document.getElementById('csAccelBar').style.width = (customSettings.accel / 100 * 100) + '%';
+  document.getElementById('csAccelIntBar').style.width = ((customSettings.accelInterval - 100) / 4900 * 100) + '%';
+  // hold buttons
+  document.getElementById('csHoldOn').style.background = customSettings.hold ? '#4caf50' : '#555';
+  document.getElementById('csHoldOff').style.background = customSettings.hold ? '#555' : '#e53935';
+}
+
+let currentPresetId = null; // 保存済みプリセットでプレイ中のID
+
+function startCustomGame() {
+  currentPresetId = null;
+  currentDifficulty = 'custom';
+  DIFFICULTY_SETTINGS.custom = {
+    colors: customSettings.colors,
+    initSpeed: customSettings.initSpeed,
+    minSpeed: customSettings.minSpeed,
+    accel: customSettings.accel,
+    accelInterval: customSettings.accelInterval,
+    cols: customSettings.cols,
+    rows: customSettings.rows
+  };
+  dismissMenu();
+  startGame();
+}
+
+function startPresetGame(preset) {
+  currentPresetId = preset.id;
+  currentDifficulty = 'custom';
+  const s = preset.settings;
+  customSettings = { ...s };
+  DIFFICULTY_SETTINGS.custom = {
+    colors: s.colors,
+    initSpeed: s.initSpeed,
+    minSpeed: s.minSpeed,
+    accel: s.accel,
+    accelInterval: s.accelInterval || 500,
+    cols: s.cols,
+    rows: s.rows
+  };
+  dismissMenu();
+  startGame();
+}
+
+function showSavePreset() {
+  document.getElementById('presetNameInput').value = '';
+  document.getElementById('presetSaveStatus').textContent = '';
+  document.getElementById('savePresetOverlay').style.display = 'flex';
+}
+
+async function savePreset() {
+  const name = document.getElementById('presetNameInput').value.trim();
+  if (!name) { document.getElementById('presetSaveStatus').textContent = '名前を入力してください'; return; }
+  // 30個制限チェック
+  try {
+    const { data: existing } = await sbClient.from('custom_presets').select('id').order('created_at', { ascending: true });
+    if (existing && existing.length >= 30) {
+      document.getElementById('presetSaveStatus').textContent = '保存上限（30個）に達しています';
+      return;
+    }
+  } catch(e) {}
+  const payload = { name, settings: { ...customSettings }, created_by: localStorage.getItem('deviceRole') === 'admin' ? 'admin' : 'user' };
+  try {
+    const { error } = await sbClient.from('custom_presets').insert(payload);
+    if (error) { document.getElementById('presetSaveStatus').textContent = '保存失敗: ' + error.message; return; }
+    document.getElementById('presetSaveStatus').textContent = '✅ 保存しました！';
+    setTimeout(() => { document.getElementById('savePresetOverlay').style.display = 'none'; }, 1000);
+  } catch(e) { document.getElementById('presetSaveStatus').textContent = '保存失敗'; }
+}
+
+async function showPresetList() {
+  const content = document.getElementById('presetListContent');
+  content.innerHTML = '<div style="color:#888;text-align:center;">読み込み中...</div>';
+  document.getElementById('presetListOverlay').style.display = 'flex';
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  try {
+    const { data } = await sbClient.from('custom_presets').select('*').order('created_at', { ascending: false }).limit(30);
+    if (!data || data.length === 0) {
+      content.innerHTML = '<div style="color:#888;text-align:center;">まだ設定がありません</div>';
+      return;
+    }
+    content.innerHTML = '';
+    data.forEach(p => {
+      const s = p.settings;
+      const info = s.colors + '色 ' + s.cols + '×' + s.rows;
+      const div = document.createElement('div');
+      div.style.cssText = 'background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:8px;';
+      const infoDiv = document.createElement('div');
+      infoDiv.style.cssText = 'flex:1;cursor:pointer;';
+      infoDiv.innerHTML = '<div style="font-weight:600;font-size:1em;margin-bottom:4px;">' + p.name + '</div><div style="font-size:0.8em;color:#aaa;">' + info + ' / ' + s.initSpeed + 'ms→' + s.minSpeed + 'ms</div>';
+      infoDiv.addEventListener('click', () => {
+        document.getElementById('presetListOverlay').style.display = 'none';
+        startPresetGame(p);
+      });
+      div.appendChild(infoDiv);
+      // 削除ボタン（admin or 製作者）
+      if (isAdmin || p.created_by === 'admin') {
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '🗑';
+        delBtn.style.cssText = 'border:none;background:rgba(229,57,53,0.15);font-size:1.4em;cursor:pointer;padding:6px 10px;border-radius:8px;';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('「' + p.name + '」を削除しますか？\nランキングも削除されます。')) return;
+          await sbClient.from('custom_presets').delete().eq('id', p.id);
+          showPresetList();
+        });
+        div.appendChild(delBtn);
+      }
+      content.appendChild(div);
+    });
+  } catch(e) { content.innerHTML = '<div style="color:#e53935;">読み込み失敗</div>'; }
+}
+
+// ページ読み込み時にカスタムモードボタン表示判定
+updateCustomModeButton();
+// カスタムモード解放演出チェック（ページ読み込み時）
+setTimeout(() => checkCustomUnlockPending(), 500);
+
+// スライダードラッグ/タップ操作
+(function setupSliders() {
+  const limits = {
+    colors: [2, 9, 1], cols: [6, 10, 1], rows: [6, 20, 1],
+    initSpeed: [100, 2000, 10], minSpeed: [10, 1000, 10], accel: [0, 100, 1], accelInterval: [100, 5000, 100]
+  };
+  document.querySelectorAll('.cs-slider').forEach(slider => {
+    const key = slider.dataset.key;
+    if (!key || !limits[key]) return;
+    const [min, max, step] = limits[key];
+
+    function setFromX(clientX) {
+      const rect = slider.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const raw = min + ratio * (max - min);
+      customSettings[key] = Math.round(raw / step) * step;
+      customSettings[key] = Math.max(min, Math.min(max, customSettings[key]));
+      csUpdateUI();
+    }
+
+    slider.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      slider.setPointerCapture(e.pointerId);
+      setFromX(e.clientX);
+    });
+    slider.addEventListener('pointermove', e => {
+      if (slider.hasPointerCapture(e.pointerId)) {
+        setFromX(e.clientX);
+      }
+    });
+  });
+})();
+
+function rand() {
+  const settings = DIFFICULTY_SETTINGS[currentDifficulty];
+  return Math.floor(Math.random() * settings.colors);
+}
+
 function startGame() {
   if (nightLocked) return;
   if (isNightTime()) { showNightWarning(); return; }
   localStorage.removeItem('nightUnlocked');
-  for (let r = 0; r < ROWS; r++) {
-    grid[r] = new Array(COLS).fill(null);
-  }
+  applyGridSize();
+  grid = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
+  const settings = DIFFICULTY_SETTINGS[currentDifficulty];
   score = 0; chainCount = 0;
-  dropInterval = 800;
+  dropInterval = settings.initSpeed;
   particles = [];
+  puyoHoldData = null; puyoHoldUsed = false;
   document.getElementById('score').textContent = '0';
   document.getElementById('chain').textContent = '';
   document.getElementById('gameOver').style.display = 'none';
   document.getElementById('rankInMsg').style.display = 'none';
   document.getElementById('rankInForm').style.display = 'none';
   document.getElementById('gameControls').style.display = 'flex';
+  renderControls();
   nextPair = makePair();
   pair = makePair();
-  pair.col = 2; pair.row = 1; pair.dir = 0;
+  pair.col = Math.floor(COLS / 2) - 1; pair.row = 1; pair.dir = 0;
   state = 'countdown';
   dropTimer = 0;
   lockDelayTimer = 0;
@@ -433,7 +1206,7 @@ function showCountdown(sec, onDone) {
 
 function spawnPair() {
   pair = nextPair;
-  pair.col = 2; pair.row = 1; pair.dir = 0;
+  pair.col = Math.floor(COLS / 2) - 1; pair.row = 1; pair.dir = 0;
   nextPair = makePair();
   // row 1 にc1、row 0 にc2(上方向)で開始
   if (grid[1][pair.col] !== null) {
@@ -531,14 +1304,23 @@ function resolveChain() {
       setTimeout(() => resolveChain(), 500);
     } else {
       document.getElementById('chain').textContent = '';
+      // 全消しチェック
+      const allClear = grid.every(row => row.every(cell => cell === null));
+      if (allClear && chainCount > 0) {
+        score += 3600;
+        document.getElementById('score').textContent = score;
+        showAllClearEffect();
+      }
       // 連鎖終了後、500ms待ってから次のぷよを出す
       setTimeout(() => {
         state = 'play';
         spawnPair();
+        puyoHoldUsed = false;
         lockDelayTimer = 0;
         lockDelayActive = false;
-        dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 25);
-      }, 500);
+        const settings = DIFFICULTY_SETTINGS[currentDifficulty];
+        dropInterval = calcDropInterval(score, settings);
+      }, allClear && chainCount > 0 ? 1500 : 500);
     }
   }, 200);
 }
@@ -574,6 +1356,21 @@ function spawnEscapePuyo(col, row, colorIdx) {
   el.style.top = startY + 'px';
   document.body.appendChild(el);
 
+  // puyo_8: 飛行モーション（共通関数使用）
+  if (colorIdx === 7) {
+    el.remove(); // 独自DOM不要、共通関数で生成
+    spawnPuyoEscape(startX, startY, PUYO_IMGS[colorIdx], colorIdx, { size: 38, groundY: canvasRect.bottom + 10 });
+    return;
+  }
+
+  // puyo_9: ふよふよモーション（共通関数使用）
+  if (colorIdx === 8) {
+    el.remove();
+    spawnPuyoEscape(startX, startY, PUYO_IMGS[colorIdx], colorIdx, { size: 38, groundY: canvasRect.bottom + 10 });
+    return;
+  }
+
+  // 通常ぷよ: 弾ける→落下→起き上がる→走って逃げる
   // 1. 弾ける
   el.classList.add('burst');
 
@@ -602,7 +1399,7 @@ function spawnEscapePuyo(col, row, colorIdx) {
     const targetX = goLeft ? -40 : window.innerWidth + 40;
     const currentX = parseFloat(el.style.left);
     const distance = Math.abs(targetX - currentX);
-    const speed = 100 + Math.random() * 40; // 100-140px/s（garden.jsの80に近い速度）
+    const speed = 100 + Math.random() * 40;
     const duration = distance / speed;
 
     el.style.transition = 'left ' + duration + 's linear';
@@ -685,6 +1482,18 @@ function calcScore(chainNum, clearResult) {
   const bonus = Math.max(1, Math.min(999, cb + connectB + colorB));
 
   return totalCleared * 10 * bonus;
+}
+
+function showAllClearEffect() {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:15;pointer-events:none;border-radius:8px;';
+  el.innerHTML = '<div style="text-align:center;animation:unlockPop 0.5s cubic-bezier(0.34,1.56,0.64,1);"><div style="font-size:2.5em;margin-bottom:4px;">✨</div><div style="font-size:1.4em;font-weight:900;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,0.8),0 2px 8px rgba(0,0,0,0.5);">全消し！</div><div style="font-size:0.9em;color:#ff6;margin-top:4px;">+3600</div></div>';
+  canvas.parentElement.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 500);
+  }, 1000);
 }
 </script>
 
@@ -783,6 +1592,24 @@ function draw() {
     drawSmallPuyo(nx, 18 + ns, nextPair.c1, ns);
   }
 
+  // HOLD（カスタムモード＋ホールドON時のみ）
+  if (currentDifficulty === 'custom' && customSettings.hold) {
+    const holdY = CELL * 2.5 + 8;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(canvas.width - CELL * 1.2, holdY, CELL, CELL * 2.2);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('HOLD', canvas.width - CELL * 1.15, holdY + 10);
+    if (puyoHoldData) {
+      const hs = CELL * 0.7;
+      const hx = canvas.width - CELL * 1.1;
+      ctx.globalAlpha = puyoHoldUsed ? 0.4 : 1;
+      drawSmallPuyo(hx, holdY + 14, puyoHoldData.c2, hs);
+      drawSmallPuyo(hx, holdY + 14 + hs, puyoHoldData.c1, hs);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   // パーティクル
   particles = particles.filter(p => {
     p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.025;
@@ -868,6 +1695,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp' || e.key === 'z') rotate();
   if (e.key === 'ArrowDown') { if (canDrop()) pair.row++; dropTimer = 0; }
   if (e.key === ' ') hardDrop();
+  if (e.key === 'c' || e.key === 'C' || e.key === 'Shift') puyoHold();
 });
 
 // --- タッチスワイプ ---
@@ -902,25 +1730,66 @@ async function doGameOver() {
   state = 'over';
   document.getElementById('finalScore').textContent = score;
   document.getElementById('gameOver').style.display = 'block';
+  document.getElementById('unlockNotice').style.display = 'none';
 
-  // ランキングチェック
-  try {
-    const { data } = await sbClient.from('game_rankings').select('score').order('score', { ascending: false }).limit(10);
-    const rankings = data || [];
-    let rank = rankings.length + 1;
-    for (let i = 0; i < rankings.length; i++) {
-      if (score > rankings[i].score) { rank = i + 1; break; }
+  // 難易度ロック解除チェック
+  const unlockThreshold = debugUnlockThreshold || 30000;
+  let unlocked = false;
+  if (score >= unlockThreshold) {
+    if (currentDifficulty === 'normal' && localStorage.getItem('puyo_hard_unlocked') !== 'true') {
+      localStorage.setItem('puyo_hard_unlocked', 'true');
+      localStorage.setItem('puyo_hard_unlock_pending', 'true');
+      hardUnlocked = true;
+      unlocked = true;
+      document.getElementById('unlockNotice').textContent = '🔓 Hard が解放されました！';
     }
-    if (rank <= 10 && score > 0) {
-      pendingRankScore = score;
-      pendingRank = rank;
-      document.getElementById('rankInMsg').textContent = rank + '\u4F4D\u306B\u30E9\u30F3\u30AF\u30A4\u30F3\uFF01';
-      document.getElementById('rankInMsg').style.display = 'block';
-      document.getElementById('rankInForm').style.display = 'block';
-      document.getElementById('rankName').value = '';
-      document.getElementById('rankName').focus();
+    if (currentDifficulty === 'hard' && localStorage.getItem('puyo_special_unlocked') !== 'true') {
+      localStorage.setItem('puyo_special_unlocked', 'true');
+      localStorage.setItem('puyo_special_unlock_pending', 'true');
+      specialUnlocked = true;
+      unlocked = true;
+      document.getElementById('unlockNotice').textContent = '🔓 Special が解放されました！';
     }
-  } catch (e) { console.error('ranking check error:', e); }
+    if (currentDifficulty === 'special' && localStorage.getItem('puyo_custom_unlocked') !== 'true') {
+      localStorage.setItem('puyo_custom_unlocked', 'true');
+      localStorage.setItem('puyo_custom_unlock_pending', 'true');
+      customModeUnlocked = true;
+      unlocked = true;
+      document.getElementById('unlockNotice').textContent = '🔓 カスタムモードが解放されました！';
+    }
+  }
+  if (unlocked) {
+    document.getElementById('unlockNotice').style.display = 'block';
+  }
+
+  // ランキングチェック（難易度別 or カスタムプリセット別）
+  if (currentDifficulty === 'custom' && !currentPresetId) {
+    // プリセット未保存のカスタムモードはランキングなし
+  } else {
+    try {
+      let rankings = [];
+      if (currentPresetId) {
+        const { data } = await sbClient.from('custom_rankings').select('score').eq('preset_id', currentPresetId).order('score', { ascending: false }).limit(10);
+        rankings = data || [];
+      } else {
+        const { data } = await sbClient.from('game_rankings').select('score').eq('difficulty', currentDifficulty).order('score', { ascending: false }).limit(10);
+        rankings = data || [];
+      }
+      let rank = rankings.length + 1;
+      for (let i = 0; i < rankings.length; i++) {
+        if (score > rankings[i].score) { rank = i + 1; break; }
+      }
+      if (rank <= 10 && score > 0) {
+        pendingRankScore = score;
+        pendingRank = rank;
+        document.getElementById('rankInMsg').textContent = rank + '\u4F4D\u306B\u30E9\u30F3\u30AF\u30A4\u30F3\uFF01';
+        document.getElementById('rankInMsg').style.display = 'block';
+        document.getElementById('rankInForm').style.display = 'block';
+        document.getElementById('rankName').value = '';
+        document.getElementById('rankName').focus();
+      }
+    } catch (e) { console.error('ranking check error:', e); }
+  }
 }
 
 async function submitRanking() {
@@ -928,14 +1797,24 @@ async function submitRanking() {
   if (!name) return alert('\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044');
 
   try {
-    const { error: insertErr } = await sbClient.from('game_rankings').insert({ name, score: pendingRankScore });
-    if (insertErr) { console.error('ranking insert error:', insertErr); alert('登録に失敗しました: ' + insertErr.message); return; }
-
-    // 10位以下を削除
-    const { data } = await sbClient.from('game_rankings').select('id, score').order('score', { ascending: false });
-    if (data && data.length > 10) {
-      const toDelete = data.slice(10).map(r => r.id);
-      await sbClient.from('game_rankings').delete().in('id', toDelete);
+    if (currentPresetId) {
+      // カスタムプリセットランキング
+      const { error: insertErr } = await sbClient.from('custom_rankings').insert({ preset_id: currentPresetId, name, score: pendingRankScore });
+      if (insertErr) { alert('登録に失敗しました: ' + insertErr.message); return; }
+      const { data } = await sbClient.from('custom_rankings').select('id, score').eq('preset_id', currentPresetId).order('score', { ascending: false });
+      if (data && data.length > 10) {
+        const toDelete = data.slice(10).map(r => r.id);
+        await sbClient.from('custom_rankings').delete().in('id', toDelete);
+      }
+    } else {
+      // 通常ランキング
+      const { error: insertErr } = await sbClient.from('game_rankings').insert({ name, score: pendingRankScore, difficulty: currentDifficulty });
+      if (insertErr) { alert('登録に失敗しました: ' + insertErr.message); return; }
+      const { data } = await sbClient.from('game_rankings').select('id, score').eq('difficulty', currentDifficulty).order('score', { ascending: false });
+      if (data && data.length > 10) {
+        const toDelete = data.slice(10).map(r => r.id);
+        await sbClient.from('game_rankings').delete().in('id', toDelete);
+      }
     }
 
     document.getElementById('rankInForm').style.display = 'none';
@@ -949,15 +1828,158 @@ function setupBtn(id, fn) {
   btn.addEventListener('click', e => { e.preventDefault(); fn(); });
   btn.addEventListener('touchstart', e => { e.preventDefault(); fn(); });
 }
-setupBtn('btnRotate', rotate);
-setupBtn('btnLeft', moveLeft);
-setupBtn('btnRight', moveRight);
-setupBtn('btnDrop', hardDrop);
+
+// --- 操作ボタン並べ替え設定 ---
+const DEFAULT_CTRL_ORDER = ['rotate', 'left', 'right', 'drop'];
+const CTRL_DEFS = {
+  rotate: { icon: '\u21BB', label: '回転', fn: rotate },
+  left: { icon: '\u25C0', label: '←', fn: moveLeft },
+  right: { icon: '\u25B6', label: '→', fn: moveRight },
+  drop: { icon: '\u25BC', label: '落下', fn: hardDrop },
+  hold: { icon: '\u{1F4BE}', label: 'Hold', fn: puyoHold }
+};
+
+// ぷよホールド機能（カスタムモードのみ）
+let puyoHoldData = null;
+let puyoHoldUsed = false;
+
+function puyoHold() {
+  if (state !== 'play' || puyoHoldUsed) return;
+  if (!customSettings.hold && currentDifficulty === 'custom') return;
+  puyoHoldUsed = true;
+  if (puyoHoldData === null) {
+    puyoHoldData = { c1: pair.c1, c2: pair.c2 };
+    pair = nextPair;
+    pair.col = Math.floor(COLS / 2) - 1; pair.row = 1; pair.dir = 0;
+    nextPair = makePair();
+  } else {
+    const saved = puyoHoldData;
+    puyoHoldData = { c1: pair.c1, c2: pair.c2 };
+    pair = { c1: saved.c1, c2: saved.c2, col: Math.floor(COLS / 2) - 1, row: 1, dir: 0 };
+  }
+}
+
+function getCtrlOrder() {
+  const holdEnabled = currentDifficulty === 'custom' && customSettings.hold;
+  const storageKey = holdEnabled ? 'puyoCtrlOrderHold' : 'puyoCtrlOrder';
+  const defaultOrder = holdEnabled ? ['hold', 'rotate', 'left', 'right', 'drop'] : DEFAULT_CTRL_ORDER;
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const order = JSON.parse(saved);
+      if (order.length === defaultOrder.length && defaultOrder.every(k => order.includes(k))) return order;
+    }
+  } catch(e) {}
+  return defaultOrder.slice();
+}
+
+function renderControls() {
+  const container = document.getElementById('gameControls');
+  container.innerHTML = '';
+  const order = getCtrlOrder();
+  order.forEach(key => {
+    const def = CTRL_DEFS[key];
+    if (!def) return;
+    const btn = document.createElement('button');
+    btn.className = 'ctrl-btn';
+    btn.innerHTML = def.icon;
+    btn.addEventListener('click', e => { e.preventDefault(); def.fn(); });
+    btn.addEventListener('touchstart', e => { e.preventDefault(); def.fn(); });
+    container.appendChild(btn);
+  });
+}
+
+// 設定モーダル（タップ入れ替え方式）
+let swapFirst = -1;
+
+let pausedState = null; // ポーズ前のstate保存用
+
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  // ゲーム中ならポーズ
+  if (state === 'play') {
+    pausedState = 'play';
+    state = 'paused';
+  }
+  swapFirst = -1;
+  renderSwapArea();
+  document.getElementById('ctrlSettingsOverlay').style.display = 'flex';
+});
+
+document.getElementById('ctrlSettingsOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeCtrlSettings();
+});
+
+function renderSwapArea() {
+  const area = document.getElementById('ctrlSwapArea');
+  area.innerHTML = '';
+  const order = getCtrlOrder();
+  order.forEach((key, idx) => {
+    const def = CTRL_DEFS[key];
+    const btn = document.createElement('button');
+    btn.style.cssText = 'width:56px; height:56px; border:2px solid ' + (swapFirst === idx ? '#ffd700' : 'rgba(255,255,255,0.2)') + '; border-radius:12px; background:' + (swapFirst === idx ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.08)') + '; color:#fff; font-size:1.4em; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: border 0.15s, background 0.15s;';
+    btn.innerHTML = def.icon;
+    btn.addEventListener('click', () => handleSwapTap(idx));
+    area.appendChild(btn);
+  });
+}
+
+function handleSwapTap(idx) {
+  if (swapFirst === -1) {
+    swapFirst = idx;
+    renderSwapArea();
+  } else if (swapFirst === idx) {
+    swapFirst = -1;
+    renderSwapArea();
+  } else {
+    // 入れ替え実行
+    const order = getCtrlOrder();
+    const tmp = order[swapFirst];
+    order[swapFirst] = order[idx];
+    order[idx] = tmp;
+    localStorage.setItem(getCtrlStorageKey(), JSON.stringify(order));
+    swapFirst = -1;
+    renderSwapArea();
+    renderControls();
+  }
+}
+
+function getCtrlStorageKey() {
+  const holdEnabled = currentDifficulty === 'custom' && customSettings.hold;
+  return holdEnabled ? 'puyoCtrlOrderHold' : 'puyoCtrlOrder';
+}
+
+function resetCtrlOrder() {
+  const holdEnabled = currentDifficulty === 'custom' && customSettings.hold;
+  const defaultOrder = holdEnabled ? ['hold', 'rotate', 'left', 'right', 'drop'] : DEFAULT_CTRL_ORDER;
+  localStorage.setItem(getCtrlStorageKey(), JSON.stringify(defaultOrder));
+  swapFirst = -1;
+  renderSwapArea();
+  renderControls();
+}
+
+function closeCtrlSettings() {
+  document.getElementById('ctrlSettingsOverlay').style.display = 'none';
+  // ポーズ解除
+  if (pausedState) {
+    state = pausedState;
+    pausedState = null;
+  }
+}
+
+// 初期描画
+renderControls();
 
 function dismissMenu() {
   const menu = document.getElementById('titleMenu');
   if (menu) menu.style.display = 'none';
   document.getElementById('gameControls').style.display = 'flex';
+}
+
+// 解放状況に応じたぷよ色数
+function getUnlockedPuyoCount() {
+  if (localStorage.getItem('puyo_special_unlocked') === 'true') return 9;
+  if (localStorage.getItem('puyo_hard_unlocked') === 'true') return 6;
+  return 5;
 }
 
 // タイトル画面のぷよ（初回はぷよ直接表示、再出現時は芽→引き抜き）
@@ -972,10 +1994,11 @@ function dismissMenu() {
   const centerX = (menuW - 80) / 2;
   const sproutCenterX = (menuW - 28) / 2;
   let busy = false;
+  let currentPuyoIdx = 0; // 現在表示中のぷよインデックス
 
   // 初回: ぷよを直接表示
-  const idx = Math.floor(Math.random() * PUYO_IMGS.length);
-  imgEl.src = PUYO_IMGS[idx];
+  currentPuyoIdx = Math.floor(Math.random() * getUnlockedPuyoCount());
+  imgEl.src = PUYO_IMGS[currentPuyoIdx];
   puyoEl.style.left = centerX + 'px';
   puyoEl.style.display = 'block';
   puyoEl.style.animation = 'titlePuyoWalk 1.2s ease-in-out infinite';
@@ -985,12 +2008,55 @@ function dismissMenu() {
     if (busy) return;
     busy = true;
     puyoEl.style.animation = 'none';
-    puyoEl.style.transition = 'bottom 0.15s ease-out';
-    puyoEl.style.bottom = '50px';
 
     const curLeft = parseFloat(puyoEl.style.left) || centerX;
     const goLeft = Math.random() < 0.5;
     const dest = goLeft ? -100 : menuW + 20;
+
+    // puyo_8: 飛行モーション
+    if (currentPuyoIdx === 7) {
+      puyoEl.style.transition = 'bottom 0.3s ease-out';
+      puyoEl.style.bottom = '80px';
+      setTimeout(() => {
+        const dist = Math.abs(dest - curLeft);
+        const dur = Math.max(0.5, dist / 200);
+        imgEl.style.transform = goLeft ? 'scaleX(-1)' : 'scaleX(1)';
+        puyoEl.style.transition = 'left ' + dur + 's linear, bottom ' + dur + 's ease-in-out';
+        puyoEl.style.animation = 'titlePuyoFly 0.4s ease-in-out infinite';
+        puyoEl.style.left = dest + 'px';
+        puyoEl.style.bottom = '100px';
+        setTimeout(() => {
+          puyoEl.style.transition = 'opacity 0.3s';
+          puyoEl.style.opacity = '0';
+          setTimeout(() => { puyoEl.style.display = 'none'; puyoEl.style.animation = 'none'; imgEl.style.transform = ''; }, 400);
+        }, dur * 800);
+        setTimeout(showSproutAfterDelay, 5000);
+      }, 300);
+      return;
+    }
+
+    // puyo_9: ふよふよモーション
+    if (currentPuyoIdx === 8) {
+      puyoEl.style.transition = 'bottom 0.4s ease-out, opacity 0.3s';
+      puyoEl.style.bottom = '40px';
+      puyoEl.style.opacity = '0.8';
+      setTimeout(() => {
+        const dist = Math.abs(dest - curLeft);
+        const dur = Math.max(1, dist / 80);
+        imgEl.style.transform = goLeft ? 'scaleX(-1)' : 'scaleX(1)';
+        puyoEl.style.transition = 'left ' + dur + 's linear, opacity ' + dur + 's';
+        puyoEl.style.animation = 'titlePuyoGhost 1.2s ease-in-out infinite';
+        puyoEl.style.left = dest + 'px';
+        puyoEl.style.opacity = '0';
+        setTimeout(() => { puyoEl.style.display = 'none'; puyoEl.style.animation = 'none'; imgEl.style.transform = ''; }, dur * 1000);
+        setTimeout(showSproutAfterDelay, 5000);
+      }, 400);
+      return;
+    }
+
+    // 通常ぷよ: ジャンプ→着地→走って逃げる
+    puyoEl.style.transition = 'bottom 0.15s ease-out';
+    puyoEl.style.bottom = '50px';
 
     setTimeout(() => {
       puyoEl.style.transition = 'bottom 0.1s ease-in';
@@ -1013,22 +2079,23 @@ function dismissMenu() {
           }, 400);
         }, dur * 800);
 
-        // 5秒後に芽を表示
-        setTimeout(() => {
-          sproutEl.style.left = sproutCenterX + 'px';
-          sproutEl.style.transition = 'none';
-          sproutEl.style.transform = 'translateY(10px) scale(0.3)';
-          sproutEl.style.opacity = '0';
-          sproutEl.style.display = 'flex';
-          requestAnimationFrame(() => {
-            sproutEl.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s';
-            sproutEl.style.transform = 'translateY(0) scale(1)';
-            sproutEl.style.opacity = '1';
-          });
-        }, 5000);
+        setTimeout(showSproutAfterDelay, 5000);
       }, 120);
     }, 150);
   });
+
+  function showSproutAfterDelay() {
+    sproutEl.style.left = sproutCenterX + 'px';
+    sproutEl.style.transition = 'none';
+    sproutEl.style.transform = 'translateY(10px) scale(0.3)';
+    sproutEl.style.opacity = '0';
+    sproutEl.style.display = 'flex';
+    requestAnimationFrame(() => {
+      sproutEl.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s';
+      sproutEl.style.transform = 'translateY(0) scale(1)';
+      sproutEl.style.opacity = '1';
+    });
+  }
 
   // 芽をタップ → 引き抜き → ぷよ出現 → 揺れ → タップ待ち
   sproutEl.addEventListener('click', () => {
@@ -1050,7 +2117,8 @@ function dismissMenu() {
 
     setTimeout(() => {
       sproutEl.style.display = 'none';
-      const newIdx = Math.floor(Math.random() * PUYO_IMGS.length);
+      const newIdx = Math.floor(Math.random() * getUnlockedPuyoCount());
+      currentPuyoIdx = newIdx;
       imgEl.src = PUYO_IMGS[newIdx];
       puyoEl.style.left = centerX + 'px';
       puyoEl.style.opacity = '1';

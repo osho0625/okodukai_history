@@ -337,6 +337,22 @@ h2 .toggle.open { transform: rotate(90deg); }
       </div>
       <div class="msg" id="resetMsg" style="margin-top:8px;">&#x2713; リセットしました</div>
     </div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
+      <div style="font-weight:600; margin-bottom:12px;">通知</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>未読通知（🔔）を全消去</span>
+        <button class="btn-sm btn-danger" onclick="clearAllNotifications()">全消去</button>
+      </div>
+      <div class="msg" id="notifClearMsg" style="margin-top:8px;">&#x2713; 通知を全て消去しました</div>
+    </div>
+  </div>
+</div>
+
+<!-- ぷよ合計カウント（全端末合計） -->
+<h2 onclick="toggleSection('totalCountSection', this)"><span class="toggle">&#x25B6;</span> &#x1F331; ぷよ合計カウント</h2>
+<div class="section-body" id="totalCountSection">
+  <div class="card">
+    <div id="totalPuyoStats" style="text-align:center; color:#ccc;">読み込み中...</div>
   </div>
 </div>
 
@@ -758,6 +774,30 @@ async function doRestore(children, transactions) {
   }
 }
 
+// --- ぷよ合計カウント ---
+async function loadTotalPuyoCounts() {
+  const container = document.getElementById('totalPuyoStats');
+  if (!container) return;
+  try {
+    const { data: puyoData } = await client.from('puyo_counts').select('*').order('id');
+    const { data: roachData } = await client.from('roach_counts').select('count').eq('id', 1).maybeSingle();
+    let html = '<div style="margin-bottom:8px; font-weight:600;">全端末合計</div>';
+    let total = 0;
+    if (puyoData) {
+      html += '<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:8px;">';
+      puyoData.forEach(p => {
+        total += p.count;
+        html += '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:6px;"><img src="../images/' + p.name + '.avif" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">' + p.count + '</span>';
+      });
+      html += '</div>';
+    }
+    const roachCount = roachData ? roachData.count : 0;
+    html += '<div style="margin-top:8px; font-size:0.9em; color:#aaa;">ぷよ合計: <b style="color:#4caf50;">' + total + '</b>匹 / ゴキブリ合計: <b style="color:#795548;">' + roachCount + '</b>匹</div>';
+    container.innerHTML = html;
+  } catch(e) { container.innerHTML = '<div style="color:#e53935;">読み込み失敗</div>'; }
+}
+loadTotalPuyoCounts();
+
 // --- アクティビティログ ---
 async function loadActivityLog(filter) {
   const list = document.getElementById('activityLogList');
@@ -791,6 +831,17 @@ async function loadActivityLog(filter) {
 }
 
 // --- イタズラ設定 ---
+
+async function clearAllNotifications() {
+  if (!confirm('全ての未読通知（🔔）を消去しますか？')) return;
+  try {
+    await client.from('pending_effects').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const msg = document.getElementById('notifClearMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+    notifyDiscord('🔔 未読通知を全消去しました');
+  } catch(e) { alert('消去に失敗しました: ' + e.message); }
+}
 
 // --- 月色設定 ---
 const DEFAULT_MONTH_COLORS = { 1:'#e57373', 2:'#f06292', 3:'#ba68c8', 4:'#9575cd', 5:'#7986cb', 6:'#64b5f6', 7:'#4fc3f7', 8:'#4dd0e1', 9:'#4db6ac', 10:'#81c784', 11:'#aed581', 12:'#dce775' };
