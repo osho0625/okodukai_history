@@ -1,11 +1,15 @@
-const CACHE_NAME = 'okozukai-v4';
+const CACHE_NAME = 'okozukai-v6';
 const ASSETS = [
   './',
   './index.html',
   './pages/child.html',
   './pages/settings.html',
   './pages/admin.html',
+  './pages/allowance.html',
   './pages/game.html',
+  './pages/ranking.html',
+  './pages/release-notes.html',
+  './js/common.js',
   './manifest.json',
   './images/2728.png'
 ];

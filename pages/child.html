@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="../images/2728.png">
 <title>お小遣い手帳 - 個別</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
@@ -62,6 +63,83 @@ h2 { margin-bottom: 12px; color: #333; }
   0% { opacity: 1; transform: translateY(0) scale(0.5); }
   100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
 }
+.grid-cell {
+  aspect-ratio: 1; border-radius: 3px; background: #eee;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.45em; color: #999; cursor: default; overflow: hidden;
+  line-height: 1.1; text-align: center; padding: 1px;
+}
+.grid-cell.filled { background: #ffcc02; color: #7a6200; font-weight: 600; cursor: pointer; }
+.grid-cell.milestone { border: 2px solid #ff9800; }
+.grid-cell.milestone-big { border: 2px solid #e53935; }
+.grid-cell.milestone.filled, .grid-cell.milestone-big.filled {
+  position: relative; overflow: visible;
+}
+.puyo-sticker {
+  position: absolute; top: -2px; left: -2px; width: calc(100% + 4px); height: calc(100% + 4px);
+  border-radius: 50%; object-fit: cover; z-index: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+.puyo-sticker.animating {
+  animation: puyoStickerPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes puyoStickerPop {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  40% { transform: scale(1.5) rotate(20deg); opacity: 1; }
+  60% { transform: scale(0.8) rotate(-10deg); }
+  80% { transform: scale(1.15) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.milestone-flash {
+  position: absolute; top: -6px; left: -6px; width: calc(100% + 12px); height: calc(100% + 12px);
+  border-radius: 50%; z-index: 0; pointer-events: none;
+  animation: milestoneGlow 1s ease-out forwards;
+}
+@keyframes milestoneGlow {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.8); transform: scale(0.5); }
+  50% { box-shadow: 0 0 20px 8px rgba(255,215,0,0.6); transform: scale(1.2); }
+  100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); transform: scale(1); }
+}
+.milestone-label {
+  font-size: 0.6em; color: #999; text-align: center; padding: 0 2px;
+  grid-column: 21; white-space: nowrap;
+}
+.milestone-label.big { color: #e53935; font-weight: 700; }
+.milestone-label.normal { color: #ff9800; }
+.chore-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border: 2px solid #eee; border-radius: 8px;
+  cursor: pointer; transition: all 0.15s; font-size: 0.9em;
+}
+.chore-item:hover { border-color: #ff9800; }
+.chore-item.selected { border-color: #ff9800; background: #fff8e1; }
+.chore-popup {
+  position: fixed; z-index: 200; background: #333; color: #fff;
+  padding: 8px 14px; border-radius: 10px; font-size: 0.85em;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  white-space: nowrap; transform: translateX(-50%);
+  opacity: 0; transition: opacity 0.2s;
+}
+.chore-popup.show { opacity: 1; }
+.grid-cell.stamping {
+  animation: stampIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes stampIn {
+  0% { transform: scale(2.5); opacity: 0; }
+  50% { transform: scale(0.85); opacity: 1; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.stamp-sparkle {
+  position: absolute; pointer-events: none; font-size: 0.9em; z-index: 10;
+  animation: stampSparkle 0.6s ease-out forwards;
+}
+@keyframes stampSparkle {
+  0% { opacity: 1; transform: translate(0,0) scale(0.5); }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.2); }
+}
+.acc-arrow { display: inline-block; transition: transform 0.2s; font-size: 0.8em; }
+.acc-arrow.open { transform: rotate(90deg); }
 
 /* 入金演出オーバーレイ */
 .deposit-overlay {
@@ -139,31 +217,137 @@ h2 { margin-bottom: 12px; color: #333; }
   <a class="settings-icon" id="settingsLink" href="#">⚙️</a>
 </div>
 
-<div class="form-section">
-  <input type="number" id="amount" placeholder="金額" min="0">
-  <input type="text" id="memo" placeholder="メモ（例: おやつ代）">
-  <div class="btn-row">
-    <button class="btn btn-add" onclick="addMoney()">＋ 追加</button>
-    <button class="btn btn-use" onclick="useMoney()">－ 使用</button>
+<!-- 承認セクション（admin権限のみ表示） -->
+<div id="approvalAccordion" style="max-width:480px; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; display:none;">
+  <div onclick="toggleAccordion('approvalBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> ✅ ポイント承認 <span id="pendingBadge" style="background:#e53935;color:#fff;font-size:0.7em;padding:2px 8px;border-radius:10px;margin-left:4px;display:none;">0</span>
+  </div>
+  <div id="approvalBody" style="display:none; padding:0 16px 16px;">
+    <div id="pendingList"></div>
   </div>
 </div>
 
-<h2>📋 履歴</h2>
-<div class="history-list" id="history">
-  <div class="loading">読み込み中...</div>
+<!-- ポイント表 -->
+<div id="pointsSectionWrap" style="max-width:480px; margin-bottom:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+    <span style="font-weight:600; color:#555;">⭐ お手伝いポイント <span id="sheetNum" style="font-size:0.8em; color:#999;"></span></span>
+    <span style="font-weight:700; color:#ff9800;"><span id="totalPts">0</span> / 400</span>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <span id="totalAllPts" style="font-size:0.75em; color:#aaa;"></span>
+    <span id="nextMilestoneInfo" style="font-size:0.8em; color:#888;"></span>
+  </div>
+  <div style="background:#fff; border-radius:12px; padding:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:4px;">
+    <div style="display:grid; grid-template-columns:repeat(20,1fr) auto; gap:2px; align-items:center;" id="pointsGrid"></div>
+  </div>
+  <div id="choreSection" style="background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+    <div onclick="toggleAccordion('choreBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+      <span class="acc-arrow">▶</span> 🧹 家事を選んでポイント追加
+    </div>
+    <div id="choreBody" style="display:none; padding:0 16px 16px;">
+      <div id="choreList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px;">
+        <button onclick="adjustPts(-1)" style="width:36px;height:36px;border:none;border-radius:50%;background:#e53935;color:#fff;font-size:1.2em;font-weight:700;cursor:pointer;">−</button>
+        <div id="adjustVal" style="font-size:1.3em;font-weight:700;min-width:40px;text-align:center;">0</div>
+        <button onclick="adjustPts(1)" style="width:36px;height:36px;border:none;border-radius:50%;background:#4caf50;color:#fff;font-size:1.2em;font-weight:700;cursor:pointer;">＋</button>
+      </div>
+      <button id="btnAddPts" onclick="addChorePoints()" disabled style="width:100%;padding:12px;border:none;border-radius:10px;background:#ff9800;color:#fff;font-size:1em;font-weight:700;cursor:pointer;opacity:0.4;">ポイントを追加</button>
+      <div id="choreResultMsg" style="text-align:center;margin-top:8px;color:#4caf50;font-weight:600;display:none;"></div>
+    </div>
+  </div>
 </div>
 
+<!-- 入出金UI（ポイント追加の下、履歴の上） -->
+<div style="max-width:480px; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+  <div onclick="toggleAccordion('txBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> 💰 入出金
+  </div>
+  <div id="txBody" style="display:none; padding:0 16px 16px;">
+    <input type="number" id="txAmount" placeholder="金額" min="0" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+    <input type="text" id="txMemo" placeholder="メモ" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+    <div style="display:flex; gap:8px;">
+      <button id="btnDeposit" onclick="doChildTx('add')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-size:1em;font-weight:600;cursor:pointer;display:none;">＋ 入金</button>
+      <button onclick="doChildTx('use')" style="flex:1;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">－ 出金</button>
+    </div>
+    <div id="txResultMsg" style="text-align:center;margin-top:8px;color:#4caf50;font-weight:600;display:none;"></div>
+  </div>
+</div>
+
+<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+  <div onclick="toggleAccordion('historyBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> 📋 履歴
+  </div>
+  <div id="historyBody" style="display:none; padding:0 16px 16px;">
+    <div class="history-list" id="history">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 承認セクション（admin権限のみ表示） -->
 <!-- リプレイボタン（左下固定） -->
 <div id="replayBtn" class="replay-btn" onclick="replayDeposit()">🎉</div>
 
 <script>
-const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const params = new URLSearchParams(window.location.search);
 const childId = params.get('id');
 let child = null;
+let pendingPtsEffect = null;
+let pendingDepEffect = null;
+
+// adminなら入金ボタンを表示
+if (isAdmin) {
+  const btn = document.getElementById('btnDeposit');
+  if (btn) btn.style.display = 'block';
+}
+
+async function doChildTx(type) {
+  const amount = parseInt(document.getElementById('txAmount').value);
+  const memo = document.getElementById('txMemo').value;
+  if (!amount || amount <= 0) return alert('金額を入力してください');
+  if (!child) return;
+
+  const oldBal = child.balance;
+  const diff = type === 'add' ? amount : -amount;
+  const newBal = oldBal + diff;
+
+  // 入金時はpending_effectsに演出データ保存
+  if (type === 'add') {
+    await savePendingDeposit(childId, oldBal, newBal, amount);
+  }
+
+  await client.from('children').update({ balance: newBal }).eq('id', childId);
+  await client.from('transactions').insert({ child_id: childId, type, amount, memo: memo || (type === 'add' ? '入金' : '出金') });
+
+  const emoji = type === 'add' ? '\u{1F4B0}' : '\u{1F4B8}';
+  const action = type === 'add' ? '入金' : '出金';
+  try {
+    await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ content: emoji + ' **' + child.name + '** ' + amount.toLocaleString() + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円' }) });
+  } catch(e) {}
+
+  child.balance = newBal;
+  document.getElementById('childBalance').textContent = newBal.toLocaleString() + '円';
+  document.getElementById('childBalance').classList.toggle('negative', newBal < 0);
+  document.getElementById('txAmount').value = '';
+  document.getElementById('txMemo').value = '';
+  const msg = document.getElementById('txResultMsg');
+  msg.textContent = '\u2713 ' + amount.toLocaleString() + '円 ' + action;
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+function toggleAccordion(bodyId, headerEl) {
+  const body = document.getElementById(bodyId);
+  const arrow = headerEl.querySelector('.acc-arrow');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    if (arrow) arrow.classList.add('open');
+  } else {
+    body.style.display = 'none';
+    if (arrow) arrow.classList.remove('open');
+  }
+}
 
 // カウントアップ演出（ヘッダーの残高用、オーバーレイ完了後に使用）
 function animateBalance(el, from, to, duration) {
@@ -327,12 +511,13 @@ function showReplayBtn() {
 }
 
 function replayDeposit() {
-  const lastRaw = localStorage.getItem('last_deposit_' + childId);
-  if (!lastRaw) return;
-  try {
-    const last = JSON.parse(lastRaw);
-    showDepositOverlay(last.oldBalance, last.newBalance, last.totalAmount, true);
-  } catch(e) {}
+  const lastDepRaw = localStorage.getItem('last_deposit_' + childId);
+  if (lastDepRaw) {
+    try {
+      const dep = JSON.parse(lastDepRaw);
+      showDepositOverlay(dep.oldBalance, dep.newBalance, dep.totalAmount, true);
+    } catch(e) {}
+  }
 }
 </script>
 
@@ -349,29 +534,87 @@ async function load() {
   document.getElementById('childName').textContent = child.name;
   document.title = `${child.name} - お小遣い手帳`;
 
+  // 返済用アカウント判定（「〇〇が返すお金」パターン）
+  const isRepayment = child.name.endsWith('が返すお金');
+
+  // 完了枚数アイコン（返済用以外）
+  if (!isRepayment) {
+    try {
+      const { data: ptsData } = await client.from('chore_points').select('points').eq('child_id', childId).eq('status', 'approved');
+      const totalPts = (ptsData || []).reduce((s, r) => s + r.points, 0);
+      const completedSheets = totalPts > 0 ? Math.floor(totalPts / 400) : 0;
+      if (completedSheets > 0) {
+        const olimars = Math.floor(completedSheets / 5);
+        const puyoCount = completedSheets % 5;
+        let icons = '';
+        for (let i = 0; i < olimars; i++) {
+          icons += '<img src="../images/olimar.png" style="width:36px;height:36px;vertical-align:middle;object-fit:contain;">';
+        }
+        if (puyoCount > 0) {
+          const indices = [1,2,3,4,5];
+          for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; }
+          for (let i = 0; i < puyoCount; i++) {
+            icons += '<img src="../images/puyo_' + indices[i] + '.avif" style="width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;">';
+          }
+        }
+        if (icons) {
+          const span = document.createElement('span');
+          span.innerHTML = ' ' + icons;
+          document.getElementById('childName').appendChild(span);
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (isRepayment) {
+    const wrap = document.getElementById('pointsSectionWrap');
+    if (wrap) wrap.style.display = 'none';
+    const approval = document.getElementById('approvalAccordion');
+    if (approval) approval.style.display = 'none';
+  }
+
   const balEl = document.getElementById('childBalance');
 
-  // 未読入金の演出チェック
-  const pendingKey = 'pending_deposit_' + childId;
-  const pendingRaw = localStorage.getItem(pendingKey);
-  if (pendingRaw) {
-    try {
-      const pending = JSON.parse(pendingRaw);
-      // ヘッダーは入金前の残高を表示
-      balEl.textContent = `${pending.oldBalance.toLocaleString()}円`;
-      if (pending.oldBalance < 0) balEl.classList.add('negative');
+  // Supabaseから演出データを取得（pending_effectsテーブル）
+  pendingPtsEffect = null;
+  pendingDepEffect = null;
+  try {
+    const { data: effects } = await client.from('pending_effects')
+      .select('*').eq('child_id', childId).order('created_at', { ascending: true });
+    (effects || []).forEach(e => {
+      if (e.type === 'points') {
+        if (!pendingPtsEffect) pendingPtsEffect = { ...e.data, ids: [e.id] };
+        else { pendingPtsEffect.addedPoints += e.data.addedPoints; pendingPtsEffect.chores = pendingPtsEffect.chores.concat(e.data.chores); pendingPtsEffect.ids.push(e.id); }
+      }
+      if (e.type === 'deposit') {
+        if (!pendingDepEffect) pendingDepEffect = { ...e.data, ids: [e.id] };
+        else { pendingDepEffect.newBalance = e.data.newBalance; pendingDepEffect.totalAmount += e.data.totalAmount; pendingDepEffect.ids.push(e.id); }
+      }
+    });
+  } catch(e) {}
 
-      // 直前の演出データとして保存（リプレイ用）
-      localStorage.setItem('last_deposit_' + childId, pendingRaw);
+  const hasPendingPoints = !!pendingPtsEffect;
+  const hasPendingDeposit = !!pendingDepEffect;
 
-      // 未読フラグをクリア
-      localStorage.removeItem(pendingKey);
-
-      // フルスクリーン演出を開始
+  if (hasPendingDeposit && !hasPendingPoints) {
+    if (!isAdmin) {
+      balEl.textContent = `${pendingDepEffect.oldBalance.toLocaleString()}円`;
+      if (pendingDepEffect.oldBalance < 0) balEl.classList.add('negative');
+      localStorage.setItem('last_deposit_' + childId, JSON.stringify(pendingDepEffect));
+      // Supabaseから削除（消費）
+      await client.from('pending_effects').delete().in('id', pendingDepEffect.ids);
       setTimeout(() => {
-        showDepositOverlay(pending.oldBalance, child.balance, pending.totalAmount);
+        showDepositOverlay(pendingDepEffect.oldBalance, child.balance, pendingDepEffect.totalAmount);
       }, 400);
-    } catch(e) {
+    } else {
+      balEl.textContent = `${child.balance.toLocaleString()}円`;
+      if (child.balance < 0) balEl.classList.add('negative');
+    }
+  } else if (hasPendingDeposit && hasPendingPoints) {
+    if (!isAdmin) {
+      balEl.textContent = `${pendingDepEffect.oldBalance.toLocaleString()}円`;
+      if (pendingDepEffect.oldBalance < 0) balEl.classList.add('negative');
+    } else {
       balEl.textContent = `${child.balance.toLocaleString()}円`;
       if (child.balance < 0) balEl.classList.add('negative');
     }
@@ -383,77 +626,539 @@ async function load() {
   // 設定リンクを設定
   document.getElementById('settingsLink').href = `settings.html?id=${childId}`;
 
-  // 履歴を取得
+  // 履歴を取得（入出金＋ポイント履歴を統合）
   const { data: tData } = await client
     .from('transactions')
     .select('*')
     .eq('child_id', childId)
     .order('created_at', { ascending: false });
 
+  const { data: pData } = await client
+    .from('chore_points')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false });
+
+  // 統合して日付順にソート
+  const allHistory = [];
+  (tData || []).forEach(t => allHistory.push({ ...t, histType: 'tx' }));
+  (pData || []).forEach(p => allHistory.push({ ...p, histType: 'pt' }));
+  allHistory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
   const list = document.getElementById('history');
-  if (!tData || tData.length === 0) {
+  if (allHistory.length === 0) {
     list.innerHTML = '<div class="loading">履歴がありません</div>';
     return;
   }
 
   list.innerHTML = '';
-  tData.forEach(t => {
-    const sign = t.type === 'add' ? '+' : '-';
-    const cls = t.type === 'add' ? 'add' : 'use';
-    const date = new Date(t.created_at).toLocaleDateString('ja-JP');
-    list.innerHTML += `
-      <div class="history-item">
-        <div class="history-info">
-          <span>${t.memo || '(メモなし)'}</span>
-          <span class="history-date">${date}</span>
+  allHistory.forEach(item => {
+    if (item.histType === 'tx') {
+      const sign = item.type === 'add' ? '+' : '-';
+      const cls = item.type === 'add' ? 'add' : 'use';
+      const date = new Date(item.created_at).toLocaleDateString('ja-JP');
+      list.innerHTML += `
+        <div class="history-item">
+          <div class="history-info">
+            <span>${item.memo || '(メモなし)'}</span>
+            <span class="history-date">${date}</span>
+          </div>
+          <span class="history-amount ${cls}">${sign}${item.amount.toLocaleString()}円</span>
         </div>
-        <span class="history-amount ${cls}">${sign}${t.amount.toLocaleString()}円</span>
-      </div>
-    `;
+      `;
+    } else {
+      const date = new Date(item.created_at).toLocaleDateString('ja-JP');
+      const statusLabel = item.status === 'pending' ? ' ⏳' : '';
+      list.innerHTML += `
+        <div class="history-item" style="border-left:3px solid #ff9800;">
+          <div class="history-info">
+            <span>⭐ ${item.chore_name}${statusLabel}</span>
+            <span class="history-date">${date}</span>
+          </div>
+          <span class="history-amount" style="color:#ff9800;">+${item.points}pt</span>
+        </div>
+      `;
+    }
   });
 }
 
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
+// --- ポイント表 ---
+const DEFAULT_CHORES = [
+  { name: 'お風呂掃除', default_points: 3 },
+  { name: 'トイレ掃除', default_points: 2 },
+  { name: '食器洗い', default_points: 2 },
+  { name: '洗濯物たたみ', default_points: 2 },
+  { name: '掃除機', default_points: 2 },
+  { name: 'ゴミ出し', default_points: 1 },
+  { name: '料理の手伝い', default_points: 3 },
+  { name: '買い物の手伝い', default_points: 2 },
+  { name: 'その他', default_points: 1 }
+];
 
-async function notifyDiscord(name, type, amount, memo, newBalance) {
-  const emoji = type === 'add' ? '💰' : '💸';
-  const action = type === 'add' ? '追加' : '使用';
-  const content = `${emoji} **${name}** が ${amount.toLocaleString()}円 ${action}\n📝 ${memo || '(メモなし)'}\n💳 残高: ${newBalance.toLocaleString()}円`;
+let chores = [];
+let selectedChoreIdx = null;
+let currentPts = 0;
+
+async function loadChores() {
   try {
-    await fetch(DISCORD_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content })
+    let res = await client.from('chore_types').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+    if (!res.data || res.data.length === 0) {
+      res = await client.from('chore_types').select('*').order('id', { ascending: true });
+    }
+    chores = (res.data && res.data.length > 0) ? res.data : DEFAULT_CHORES;
+  } catch(e) { chores = DEFAULT_CHORES; }
+  renderChores();
+}
+
+function renderChores() {
+  const list = document.getElementById('choreList');
+  list.innerHTML = '';
+  chores.forEach((ch, idx) => {
+    const item = document.createElement('div');
+    item.className = 'chore-item';
+    item.innerHTML = '<span>' + ch.name + '</span><span style="color:#ff9800;font-weight:700;">' + ch.default_points + 'pt</span>';
+    item.addEventListener('click', () => {
+      selectedChoreIdx = idx;
+      currentPts = ch.default_points;
+      document.getElementById('adjustVal').textContent = currentPts;
+      document.querySelectorAll('.chore-item').forEach(e => e.classList.remove('selected'));
+      item.classList.add('selected');
+      const btn = document.getElementById('btnAddPts');
+      btn.disabled = false;
+      btn.style.opacity = '1';
     });
-  } catch (e) { /* 通知失敗しても操作は続行 */ }
+    list.appendChild(item);
+  });
 }
 
-async function addMoney() {
-  const amount = parseInt(document.getElementById('amount').value);
-  const memo = document.getElementById('memo').value;
-  if (!amount || amount <= 0) return alert('金額を入力してください');
-
-  const newBalance = child.balance + amount;
-  await client.from('children').update({ balance: newBalance }).eq('id', childId);
-  await client.from('transactions').insert({ child_id: childId, type: 'add', amount, memo });
-  await notifyDiscord(child.name, 'add', amount, memo, newBalance);
-  document.getElementById('amount').value = '';
-  document.getElementById('memo').value = '';
-  load();
+function adjustPts(delta) {
+  if (selectedChoreIdx === null) return;
+  currentPts = Math.max(1, currentPts + delta);
+  document.getElementById('adjustVal').textContent = currentPts;
 }
 
-async function useMoney() {
-  const amount = parseInt(document.getElementById('amount').value);
-  const memo = document.getElementById('memo').value;
-  if (!amount || amount <= 0) return alert('金額を入力してください');
+async function loadPointsGrid() {
+  // 月ごとの色設定を取得
+  if (!window._monthColors) {
+    window._monthColors = { 1:'#e57373', 2:'#f06292', 3:'#ba68c8', 4:'#9575cd', 5:'#7986cb', 6:'#64b5f6', 7:'#4fc3f7', 8:'#4dd0e1', 9:'#4db6ac', 10:'#81c784', 11:'#aed581', 12:'#dce775' };
+    try {
+      const { data: settings } = await client.from('game_settings').select('month_colors').eq('id', 1).maybeSingle();
+      if (settings && settings.month_colors) window._monthColors = { ...window._monthColors, ...settings.month_colors };
+    } catch(e) {}
+  }
+  const monthColors = window._monthColors;
 
-  const newBalance = child.balance - amount;
-  await client.from('children').update({ balance: newBalance }).eq('id', childId);
-  await client.from('transactions').insert({ child_id: childId, type: 'use', amount, memo });
-  await notifyDiscord(child.name, 'use', amount, memo, newBalance);
-  document.getElementById('amount').value = '';
-  document.getElementById('memo').value = '';
-  load();
+  const { data } = await client.from('chore_points')
+    .select('points, chore_name, created_at, status')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: true });
+
+  // 全ポイントを展開（枚数制限なし）
+  const allCells = [];
+  let pendingCount = 0;
+  (data || []).forEach(r => {
+    if (r.status === 'pending') { pendingCount += r.points; return; }
+    const d = new Date(r.created_at);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    if (r.points > 0) {
+      for (let i = 0; i < r.points; i++) {
+        allCells.push({ month, day, chore: r.chore_name, fullDate: month + '/' + day });
+      }
+    } else if (r.points < 0) {
+      const removeCount = Math.min(Math.abs(r.points), allCells.length);
+      allCells.splice(allCells.length - removeCount, removeCount);
+    }
+  });
+
+  const totalApproved = allCells.length;
+
+  // 演出がある場合は、演出分を除外してグリッドを描画（演出で追加する）
+  const animPts = (pendingPtsEffect && !isAdmin) ? pendingPtsEffect.addedPoints : 0;
+  const displayTotal = Math.max(0, totalApproved - animPts);
+
+  const sheetIdx = displayTotal > 0 ? Math.floor((displayTotal - 1) / 400) : 0; // 0始まり
+  const sheetNum = sheetIdx + 1;
+  const currentSheetPts = displayTotal > 0 ? displayTotal - (sheetIdx * 400) : 0;
+  // 現在の枚のセル（400個まで）— 演出分を除外
+  const cells = allCells.slice(sheetIdx * 400, sheetIdx * 400 + Math.min(currentSheetPts, 400));
+
+  document.getElementById('sheetNum').textContent = sheetNum + '枚目';
+  document.getElementById('totalPts').textContent = currentSheetPts;
+  if (pendingCount > 0) {
+    document.getElementById('totalPts').textContent = currentSheetPts + ' (+' + pendingCount + '承認待ち)';
+  }
+  document.getElementById('totalAllPts').textContent = totalApproved > 400 ? '累計: ' + totalApproved + 'pt' : '';
+
+  // 次のお小遣い情報（現在の枚の中で計算）
+  const nextInfo = document.getElementById('nextMilestoneInfo');
+  let nextMilestone = null;
+  for (let m = 20; m <= 400; m += 20) {
+    if (currentSheetPts < m) {
+      const amt = getAllowanceForMilestone(m);
+      nextMilestone = { pts: m, amt, remaining: m - currentSheetPts };
+      break;
+    }
+  }
+  if (nextMilestone) {
+    nextInfo.textContent = 'あと ' + nextMilestone.remaining + 'pt で ' + nextMilestone.amt + '円！';
+  } else {
+    nextInfo.textContent = currentSheetPts >= 400 ? '🎉 コンプリート！' : '';
+  }
+
+  const PUYO_STICKER_IMGS = ['../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif','../images/puyo_4.avif','../images/puyo_5.avif'];
+
+  const grid = document.getElementById('pointsGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 400; i++) {
+    const cell = document.createElement('div');
+    const ptNum = i + 1;
+    const isMilestoneBig = (ptNum === 200 || ptNum === 400 || ptNum % 60 === 0);
+    const isMilestone = (!isMilestoneBig && ptNum % 20 === 0);
+    let cls = 'grid-cell';
+    if (i < cells.length) cls += ' filled';
+    if (isMilestoneBig) cls += ' milestone-big';
+    else if (isMilestone) cls += ' milestone';
+    cell.className = cls;
+
+    if (i < cells.length) {
+      // 達成済みマイルストーンにぷよシール
+      if (isMilestone || isMilestoneBig) {
+        const stickerIdx = Math.floor(((ptNum / 20) - 1) % 5);
+        const img = document.createElement('img');
+        img.src = PUYO_STICKER_IMGS[stickerIdx];
+        img.className = 'puyo-sticker';
+        cell.style.position = 'relative';
+        cell.style.overflow = 'visible';
+        cell.appendChild(img);
+      } else {
+        // 月初のみ「5/1」、以降は日にちだけ
+        const cellData = cells[i];
+        const prevMonth = (i > 0) ? cells[i - 1].month : null;
+        const displayText = (cellData.month !== prevMonth) ? cellData.month + '/' + cellData.day : '' + cellData.day;
+        cell.textContent = displayText;
+        // 月ごとの色
+        const mColor = monthColors[cellData.month] || '#ffcc02';
+        cell.style.background = mColor;
+        cell.style.color = '#fff';
+      }
+      cell.addEventListener('click', ((info) => (e) => showChorePopup(e, { date: info.fullDate, chore: info.chore }))(cells[i]));
+    }
+    grid.appendChild(cell);
+
+    // 行末（20の倍数）に金額ラベルを追加
+    if (ptNum % 20 === 0) {
+      const label = document.createElement('div');
+      label.className = 'milestone-label';
+      const amt = getAllowanceForMilestone(ptNum);
+      label.textContent = amt + '円';
+      if (isMilestoneBig) label.classList.add('big');
+      else label.classList.add('normal');
+      grid.appendChild(label);
+    }
+  }
+
+  // 未読ポイント演出チェック（userのみ消費・演出、adminはスキップしてデータ残す）
+  if (pendingPtsEffect && !isAdmin) {
+    localStorage.setItem('last_points_' + childId, JSON.stringify(pendingPtsEffect));
+    // Supabaseから削除（消費）
+    await client.from('pending_effects').delete().in('id', pendingPtsEffect.ids);
+    setTimeout(() => {
+      showPointsAnimation(pendingPtsEffect.addedPoints, pendingPtsEffect.chores, () => {
+        checkDepositAnimation();
+      });
+    }, 500);
+  }
+}
+
+// ポイント追加アニメーション（スタンプが1つずつ押される）
+function showPointsAnimation(addedPts, choreNames, onDone) {
+  const grid = document.getElementById('pointsGrid');
+  if (!grid) { if (onDone) onDone(); return; }
+
+  // 未埋めのセルを取得（.filledでないgrid-cell）
+  const emptyCells = grid.querySelectorAll('.grid-cell:not(.filled)');
+  const cellsToStamp = Math.min(addedPts, emptyCells.length);
+
+  if (cellsToStamp === 0) { if (onDone) onDone(); return; }
+
+  const uniqueChores = [...new Set(choreNames)];
+  const labelText = uniqueChores.join('・') + ' +' + addedPts + 'pt';
+
+  // ラベル演出: 画面中央に大きく表示→縮小しながら定位置に移動して収まる
+  const wrap = document.getElementById('pointsSectionWrap');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+  document.body.appendChild(overlay);
+
+  // ラベル要素（最終的にwrap内に収まる）
+  const choreLabel = document.createElement('div');
+  choreLabel.style.cssText = 'position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:2.5em;font-weight:900;color:#ff9800;text-shadow:0 2px 8px rgba(0,0,0,0.3);text-align:center;z-index:501;opacity:0;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;white-space:nowrap;';
+  choreLabel.textContent = labelText;
+  document.body.appendChild(choreLabel);
+
+  // ポンッと登場
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    choreLabel.style.opacity = '1';
+    choreLabel.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+
+  // 1秒後に定位置へ縮小移動
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    // 定位置の座標を計算
+    const wrapRect = wrap.getBoundingClientRect();
+    const targetTop = wrapRect.top + 'px';
+    const targetLeft = (wrapRect.left + wrapRect.width / 2) + 'px';
+    choreLabel.style.transition = 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    choreLabel.style.top = targetTop;
+    choreLabel.style.left = targetLeft;
+    choreLabel.style.fontSize = '1.2em';
+    choreLabel.style.transform = 'translate(-50%, 0) scale(1)';
+    choreLabel.style.textShadow = 'none';
+  }, 1000);
+
+  // 1.7秒後にオーバーレイ削除、ラベルを定位置に固定
+  setTimeout(() => {
+    overlay.remove();
+    // fixedからwrap内のstaticに切り替え
+    choreLabel.style.position = 'relative';
+    choreLabel.style.top = '';
+    choreLabel.style.left = '';
+    choreLabel.style.transform = '';
+    choreLabel.style.marginBottom = '10px';
+    choreLabel.style.transition = '';
+    choreLabel.style.zIndex = '';
+    if (wrap) wrap.insertBefore(choreLabel, wrap.firstChild);
+  }, 1700);
+
+  // 1つずつスタンプ
+  let stamped = 0;
+  const interval = Math.min(900, 8000 / cellsToStamp); // 全体で最大8秒、1つあたり最大900ms
+
+  function spawnStampSparkles(cell) {
+    const sparkles = ['✨', '⭐', '💫', '🌟'];
+    const rect = cell.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    for (let i = 0; i < 4; i++) {
+      const sp = document.createElement('span');
+      sp.className = 'stamp-sparkle';
+      sp.textContent = sparkles[i % sparkles.length];
+      const angle = (Math.PI * 2 / 4) * i + Math.random() * 0.5;
+      const dist = 18 + Math.random() * 14;
+      sp.style.left = cx + 'px';
+      sp.style.top = cy + 'px';
+      sp.style.position = 'fixed';
+      sp.style.setProperty('--sx', Math.cos(angle) * dist + 'px');
+      sp.style.setProperty('--sy', Math.sin(angle) * dist + 'px');
+      document.body.appendChild(sp);
+      setTimeout(() => sp.remove(), 700);
+    }
+  }
+
+  function stampNext() {
+    if (stamped >= cellsToStamp) {
+      // 完了
+      setTimeout(() => {
+        choreLabel.style.opacity = '0';
+        setTimeout(() => {
+          choreLabel.remove();
+          // ポイント数を更新
+          const totalEl = document.getElementById('totalPts');
+          if (totalEl) {
+            const current = parseInt(totalEl.textContent) || 0;
+            totalEl.textContent = current + addedPts;
+          }
+          if (onDone) onDone();
+        }, 300);
+      }, 500);
+      return;
+    }
+
+    const cell = emptyCells[stamped];
+    cell.classList.add('filled', 'stamping');
+    const now = new Date();
+    const mc = window._monthColors || {};
+
+    // セルのグリッド内位置を取得してマイルストーン判定
+    const allGridCells = grid.querySelectorAll('.grid-cell');
+    const cellIndex = Array.from(allGridCells).indexOf(cell);
+    const ptNum = cellIndex + 1; // 1始まりのポイント番号
+    const isMilestoneBig = (ptNum === 200 || ptNum === 400 || ptNum % 60 === 0);
+    const isMilestone = (!isMilestoneBig && ptNum % 20 === 0);
+
+    if (isMilestone || isMilestoneBig) {
+      // マイルストーン: ぷよシールを表示（特別演出）
+      const PUYO_IMGS = ['../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif','../images/puyo_4.avif','../images/puyo_5.avif'];
+      const stickerIdx = Math.floor(((ptNum / 20) - 1) % 5);
+      const img = document.createElement('img');
+      img.src = PUYO_IMGS[stickerIdx];
+      img.className = 'puyo-sticker animating';
+      cell.style.position = 'relative';
+      cell.style.overflow = 'visible';
+      cell.textContent = '';
+      cell.appendChild(img);
+      // グローエフェクト
+      const flash = document.createElement('div');
+      flash.className = 'milestone-flash';
+      cell.appendChild(flash);
+      setTimeout(() => flash.remove(), 1100);
+      // キラキラ多め
+      spawnStampSparkles(cell);
+      spawnStampSparkles(cell);
+    } else {
+      cell.textContent = (stamped === 0) ? (now.getMonth() + 1) + '/' + now.getDate() : '' + now.getDate();
+    }
+
+    // シール部分は黄色固定、通常セルは月色
+    if (isMilestone || isMilestoneBig) {
+      cell.style.background = '#ffcc02';
+    } else {
+      cell.style.background = mc[now.getMonth() + 1] || '#ffcc02';
+    }
+    cell.style.color = '#fff';
+    if (!(isMilestone || isMilestoneBig)) spawnStampSparkles(cell);
+    stamped++;
+    // マイルストーン時は長めの間隔
+    const nextDelay = (isMilestone || isMilestoneBig) ? interval + 600 : interval;
+    setTimeout(stampNext, nextDelay);
+  }
+
+  setTimeout(stampNext, 2000);
+}
+
+// お金演出チェック（ポイント演出の後に実行、userのみ）
+function checkDepositAnimation() {
+  if (isAdmin) return;
+  if (pendingDepEffect && child) {
+    localStorage.setItem('last_deposit_' + childId, JSON.stringify(pendingDepEffect));
+    // Supabaseから削除（消費）
+    client.from('pending_effects').delete().in('id', pendingDepEffect.ids).then(() => {});
+    showDepositOverlay(pendingDepEffect.oldBalance, child.balance, pendingDepEffect.totalAmount);
+  }
+}
+let popupEl = null;
+function showChorePopup(e, info) {
+  e.stopPropagation();
+  if (popupEl) { popupEl.remove(); popupEl = null; }
+  popupEl = document.createElement('div');
+  popupEl.className = 'chore-popup';
+  popupEl.textContent = info.date + ' ' + info.chore;
+  document.body.appendChild(popupEl);
+  const rect = e.target.getBoundingClientRect();
+  popupEl.style.left = (rect.left + rect.width / 2) + 'px';
+  popupEl.style.top = (rect.top - 36) + 'px';
+  requestAnimationFrame(() => popupEl.classList.add('show'));
+}
+// 他の領域タップでポップアップを閉じる
+document.addEventListener('click', () => {
+  if (popupEl) { popupEl.remove(); popupEl = null; }
+});
+document.addEventListener('touchstart', (e) => {
+  if (popupEl && !popupEl.contains(e.target)) { popupEl.remove(); popupEl = null; }
+}, { passive: true });
+
+async function addChorePoints() {
+  if (!childId || selectedChoreIdx === null || currentPts <= 0) return;
+  const chore = chores[selectedChoreIdx];
+  const btn = document.getElementById('btnAddPts');
+  btn.disabled = true; btn.style.opacity = '0.4';
+
+  const { data: beforeData } = await client.from('chore_points').select('points, status').eq('child_id', childId);
+  const totalAll = (beforeData || []).filter(r => r.status === 'approved').reduce((s, r) => s + r.points, 0);
+  const beforeSheetPts = totalAll % 400 || (totalAll > 0 ? 400 : 0);
+
+  await client.from('chore_points').insert({ child_id: childId, chore_name: chore.name, points: currentPts, status: isAdmin ? 'approved' : 'pending' });
+
+  const afterAll = totalAll + (isAdmin ? currentPts : 0);
+  const afterSheetPts = afterAll % 400 || (afterAll > 0 ? 400 : 0);
+
+  // マイルストーンチェック（枚をまたぐ場合も対応）
+  let totalAllowance = 0;
+  const milestones = [];
+  if (isAdmin) {
+    // 前の枚の残りマイルストーン + 新しい枚のマイルストーンを全部チェック
+    for (let pt = totalAll + 1; pt <= afterAll; pt++) {
+      if (pt % 20 === 0) {
+        const sheetPt = ((pt - 1) % 400) + 1; // 枚内のポイント位置（1-400）
+        if (sheetPt % 20 === 0) {
+          const amt = getAllowanceForMilestone(sheetPt);
+          totalAllowance += amt;
+          milestones.push({ pts: sheetPt, amt });
+        }
+      }
+    }
+    if (totalAllowance > 0 && child) {
+      await giveAllowance(totalAllowance);
+    }
+  }
+
+  // admin即承認時もポイント演出データをSupabaseに保存（別端末のuser用）
+  if (isAdmin) {
+    const { data: existingPts } = await client.from('pending_effects')
+      .select('id, data').eq('child_id', childId).eq('type', 'points');
+    if (existingPts && existingPts.length > 0) {
+      const row = existingPts[0];
+      const updated = { addedPoints: row.data.addedPoints + currentPts, chores: row.data.chores.concat([chore.name]) };
+      await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
+    } else {
+      await client.from('pending_effects').insert({ child_id: childId, type: 'points', data: { addedPoints: currentPts, chores: [chore.name] } });
+    }
+  }
+  // user申請時はなし（承認時に保存する）
+
+  // Discord通知
+  try {
+    let content = '⭐ **' + child.name + '** が「' + chore.name + '」で ' + currentPts + 'ポイント獲得！（合計: ' + afterAll + '）';
+    if (milestones.length > 0) content += '\n💰 お小遣い発生！ ' + milestones.map(m => m.pts + 'pt→' + m.amt + '円').join(', ');
+    await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) });
+  } catch(e) {}
+
+  const msg = document.getElementById('choreResultMsg');
+  let msgText = isAdmin
+    ? '✓ ' + chore.name + ' で ' + currentPts + 'pt 追加！'
+    : '⏳ ' + chore.name + ' で ' + currentPts + 'pt 申請中（承認待ち）';
+  if (totalAllowance > 0) msgText += ' 💰 ' + totalAllowance + '円！';
+  msg.textContent = msgText;
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 3000);
+
+  loadPointsGrid();
+  setTimeout(() => { btn.disabled = false; btn.style.opacity = '1'; }, 500);
+}
+
+async function giveAllowance(amount) {
+  const { data: allData } = await client.from('children').select('*');
+  const repayChild = (allData || []).find(c => c.name === child.name + 'が返すお金');
+  const hasRepay = !!repayChild;
+
+  if (hasRepay) {
+    const half = Math.floor(amount / 2);
+    const remainder = amount - half;
+    const { data: d1 } = await client.from('children').select('balance').eq('id', child.id).single();
+    const oldBal = d1 ? d1.balance : 0;
+    const nb1 = oldBal + remainder;
+    await client.from('children').update({ balance: nb1 }).eq('id', child.id);
+    await client.from('transactions').insert({ child_id: child.id, type: 'add', amount: remainder, memo: 'ポイント表ご褒美' });
+    // 演出データ保存
+    await savePendingDeposit(child.id, oldBal, nb1, remainder);
+    const { data: d2 } = await client.from('children').select('balance').eq('id', repayChild.id).single();
+    const nb2 = (d2 ? d2.balance : 0) + half;
+    await client.from('children').update({ balance: nb2 }).eq('id', repayChild.id);
+    await client.from('transactions').insert({ child_id: repayChild.id, type: 'add', amount: half, memo: 'ポイント表ご褒美（' + child.name + '分）' });
+    child.balance = nb1;
+  } else {
+    const { data: d } = await client.from('children').select('balance').eq('id', child.id).single();
+    const oldBal = d ? d.balance : 0;
+    const nb = oldBal + amount;
+    await client.from('children').update({ balance: nb }).eq('id', child.id);
+    await client.from('transactions').insert({ child_id: child.id, type: 'add', amount, memo: 'ポイント表ご褒美' });
+    // 演出データ保存
+    await savePendingDeposit(child.id, oldBal, nb, amount);
+    child.balance = nb;
+  }
 }
 
 // 残高10回タップで🎉リプレイボタン表示
@@ -472,7 +1177,7 @@ async function useMoney() {
     taps = taps.filter(t => now - t < 4000);
     if (taps.length >= 5) {
       taps = [];
-      if (localStorage.getItem('last_deposit_' + childId)) {
+      if (localStorage.getItem('last_deposit_' + childId) || localStorage.getItem('last_points_' + childId)) {
         const btn = document.getElementById('replayBtn');
         btn.style.display = 'flex';
         btn.style.opacity = '1';
@@ -496,7 +1201,96 @@ async function useMoney() {
   });
 })();
 
-load();
+load().then(() => {
+  loadPointsGrid();
+});
+loadChores();
+if (isAdmin) loadPendingApprovals();
+
+// --- 承認機能（admin権限のみ） ---
+async function loadPendingApprovals() {
+  const accordion = document.getElementById('approvalAccordion');
+  const { data } = await client.from('chore_points')
+    .select('id, child_id, chore_name, points, created_at')
+    .eq('child_id', childId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+
+  if (!data || data.length === 0) {
+    accordion.style.display = 'none';
+    return;
+  }
+
+  accordion.style.display = 'block';
+  // 承認待ちがある場合はアコーディオンをデフォルトで開く
+  const approvalBody = document.getElementById('approvalBody');
+  if (approvalBody) approvalBody.style.display = 'block';
+  const arrow = accordion.querySelector('.acc-arrow');
+  if (arrow) arrow.classList.add('open');
+
+  const badge = document.getElementById('pendingBadge');
+  badge.textContent = data.length;
+  badge.style.display = 'inline';
+
+  const list = document.getElementById('pendingList');
+  list.innerHTML = '';
+  data.forEach(p => {
+    const d = new Date(p.created_at);
+    const dateStr = (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;gap:8px;';
+    row.innerHTML = '<div style="flex:1;"><div style="font-size:0.9em;font-weight:600;">' + p.chore_name + ' ' + p.points + 'pt</div>'
+      + '<div style="font-size:0.8em;color:#aaa;">' + dateStr + '</div></div>'
+      + '<button style="padding:6px 12px;border:none;border-radius:6px;background:#4caf50;color:#fff;font-size:0.85em;font-weight:600;cursor:pointer;" onclick="approvePoint(\'' + p.id + '\')">承認</button>'
+      + '<button style="padding:6px 12px;border:none;border-radius:6px;background:#e53935;color:#fff;font-size:0.85em;font-weight:600;cursor:pointer;" onclick="rejectPoint(\'' + p.id + '\')">却下</button>';
+    list.appendChild(row);
+  });
+}
+
+async function approvePoint(id) {
+  const { data: pt } = await client.from('chore_points').select('child_id, points, chore_name').eq('id', id).single();
+  await client.from('chore_points').update({ status: 'approved' }).eq('id', id);
+
+  // ポイント演出データをSupabaseに保存（別端末でも演出可能）
+  if (pt) {
+    const { data: existing } = await client.from('pending_effects')
+      .select('id, data').eq('child_id', pt.child_id).eq('type', 'points');
+    if (existing && existing.length > 0) {
+      const row = existing[0];
+      const updated = { addedPoints: row.data.addedPoints + pt.points, chores: row.data.chores.concat([pt.chore_name]) };
+      await client.from('pending_effects').update({ data: updated }).eq('id', row.id);
+    } else {
+      await client.from('pending_effects').insert({ child_id: pt.child_id, type: 'points', data: { addedPoints: pt.points, chores: [pt.chore_name] } });
+    }
+  }
+
+  // マイルストーンチェック
+  if (pt) {
+    const { data: allPts } = await client.from('chore_points').select('points').eq('child_id', pt.child_id).eq('status', 'approved');
+    const totalAfter = (allPts || []).reduce((s, r) => s + r.points, 0);
+    const totalBefore = totalAfter - pt.points;
+    let totalAllowance = 0;
+    for (let pt2 = totalBefore + 1; pt2 <= totalAfter; pt2++) {
+      if (pt2 % 20 === 0) {
+        const sheetPt = ((pt2 - 1) % 400) + 1;
+        if (sheetPt % 20 === 0) {
+          totalAllowance += getAllowanceForMilestone(sheetPt);
+        }
+      }
+    }
+    if (totalAllowance > 0 && child) await giveAllowance(totalAllowance);
+  }
+
+  loadPendingApprovals();
+  loadPointsGrid();
+}
+
+async function rejectPoint(id) {
+  if (!confirm('却下しますか？')) return;
+  await client.from('chore_points').delete().eq('id', id);
+  loadPendingApprovals();
+  loadPointsGrid();
+}
 </script>
 
 </body>

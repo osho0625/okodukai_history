@@ -35,6 +35,439 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+<div class="release">
+  <div><span class="ver">v1.17.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよ着地猶予を400msに調整、連鎖終了後+500msの間を追加</li>
+    <li><span class="tag tag-fix">fix</span> 弾けたぷよのサイズを一回り大きく</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.17.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよ着地判定を毎フレーム化（着地後300msでロック、レスポンス大幅改善）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.17.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 連鎖処理タイミング調整（落下→判定を高速化、判定→連鎖は余韻を残す）</li>
+    <li><span class="tag tag-fun">fun</span> ぷよ破壊演出を全面改善（弾ける→地面に散らばる→起き上がる→画面端まで走って逃げる）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.9</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよゲームの連鎖処理速度を大幅改善（待ち時間を約半分に短縮）</li>
+    <li><span class="tag tag-fun">fun</span> ぷよ破壊時にはじけて落下→起き上がって左右に逃げるアニメーション追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.8</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよゲームの回転操作なし時の落下猶予を半分に短縮（300ms→150ms）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.7</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出ラベルが画面中央から定位置へ連続的に縮小移動するよう改善</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.6</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> admin直接ポイント付与時もポイント演出データをSupabaseに保存（user端末で演出再生可能に）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイント演出冒頭に画面中央ラベル表示（暗転＋ポンッと弾んで登場→縮小して定位置へ）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ぷよシール貼り付け演出を強化（回転バウンス＋グロー＋キラキラ2倍）</li>
+    <li><span class="tag tag-fun">fun</span> マイルストーン達成時はスタンプ間隔を+600ms延長して余韻を演出</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイントスタンプ演出時に月色を反映</li>
+    <li><span class="tag tag-fun">fun</span> マイルストーン達成時のスタンプ演出でぷよシールを表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページのアカウント名変更をインライン編集に改善（✏アイコン→入力→保存）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント表のマスをタップで家事名ポップアップ表示（スマホ対応）</li>
+    <li><span class="tag tag-fix">fix</span> 他の領域タップでポップアップが閉じるように改善</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.16.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント表の日付を短縮表示（月初のみ月/日、以降は日のみ）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント表のスタンプ色を月ごとに変更</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「月色設定」セクション追加（カラーピッカーで変更可能）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出時にグリッドが二重加算される問題を修正（演出分を除外して描画）</li>
+    <li><span class="tag tag-fix">fix</span> スタンプ演出をさらにゆっくりに（最大900ms、全体8秒）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページでアカウント名の変更が可能に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 管理者ポイント調整（マイナス値）がお手伝い表に正しく反映されるよう修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> child.htmlの構文エラー修正（DB接続復旧）</li>
+    <li><span class="tag tag-fix">fix</span> ぷよゲームの初速を遅く（500ms→800ms、最小200ms）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> 共通JS（js/common.js）に定数・ユーティリティを集約しリファクタリング</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v6に更新（common.jsキャッシュ対応）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.15.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 個別ページの履歴にポイント履歴も統合表示（⭐マーク＋オレンジ左線）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「ポイント履歴管理」セクション追加（編集/削除対応）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> TOP画面の✅アイコンタップでページリロード</li>
+    <li><span class="tag tag-fix">fix</span> 🎉リプレイ時はお金演出のみ再生（ポイントスタンプ演出を除外）</li>
+    <li><span class="tag tag-fix">fix</span> 承認/却下後にページリロードで✅バッジを即反映</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイントスタンプ演出にキラキラパーティクルエフェクト追加</li>
+    <li><span class="tag tag-fix">fix</span> スタンプ間隔をゆっくりに（最大600ms、全体5秒）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.14.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> TOP画面にポイント承認UIを追加（admin権限のみ、名前の下に表示）</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面から直接承認/却下が可能に（マイルストーンお小遣い発生も対応）</li>
+    <li><span class="tag tag-feat">feat</span> 演出データをSupabase pending_effectsテーブルに保存（別端末間で演出共有可能に）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> admin権限で演出スキップ時にlocalStorageデータを消費しないよう修正（userが見るまで残る）</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面のぷよ・オリマーアイコンの位置を少し上に調整</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> スタンプ演出をゆっくりに（最大3秒、1つ400ms）</li>
+    <li><span class="tag tag-feat">feat</span> 🎉リプレイでポイント演出→お金演出の順で再生可能に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出・お金演出をuser権限のみに制限（adminはデータ消化のみ）</li>
+    <li><span class="tag tag-fix">fix</span> ポイント追加時のラベルを大きく</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ポイント演出をスタンプアニメーションに変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ポイント演出を地味なバナー表示に変更（フルスクリーンから軽量化）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント演出→お金演出の連続再生対応（ポイント消化後にお小遣い演出）</li>
+    <li><span class="tag tag-feat">feat</span> 承認時のお小遣い発生でpending_depositを自動保存（次回ログイン時に演出）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.13.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント承認時にアニメーション演出データを保存</li>
+    <li><span class="tag tag-feat">feat</span> 個別ページ表示時に未読ポイントのフルスクリーン演出（+○pt＋家事名＋紙吹雪）</li>
+    <li><span class="tag tag-fix">fix</span> マイルストーン計算を枚またぎ対応に修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.8</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> TOP画面の承認待ちアイコン（✅）をuser権限でも表示</li>
+    <li><span class="tag tag-fix">fix</span> 個別ページの承認UIを残高の下に移動</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.7</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> 個別ページの名前横にもぷよ＋オリマーアイコンを表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.6</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> TOP画面の⚙️設定モーダルをアコーディオン構造に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家事マスタ管理に▲▼並べ替えボタン追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> 完了枚数の表示をぷよ画像（5種類ランダム被りなし）に変更、5ぷよでオリマー1つに変換</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 完了枚数の表示を👸ティアラ（5つで👑王冠に変換）に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 個別ページの入出金UIをポイント追加の下、履歴の上に移動</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面で完了枚数に応じて名前の横に★表示（5つで🌟1つに変換）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> TOP画面にadmin用⚙️アイコン追加、表示順変更モーダル（↑↓ボタンで並べ替え）</li>
+    <li><span class="tag tag-fix">fix</span> 個別設定ページから表示順UIを削除</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.12.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント表の複数枚対応（400pt超で自動的に次の枚へ、○枚目表示）</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面のポイント表示も複数枚対応</li>
+    <li><span class="tag tag-fix">fix</span> 管理者ページのポイント直接設定を修正（上限撤廃、枚数表示、合計ポイント指定）</li>
+    <li><span class="tag tag-fix">fix</span> マイルストーンのお小遣い計算を枚またぎ対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.6</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 「いろはの借金」を「〇〇が返すお金」パターンに汎用化</li>
+    <li><span class="tag tag-fix">fix</span> 返済用アカウントの個別ページでポイント表・家事選択UIを非表示</li>
+    <li><span class="tag tag-fix">fix</span> 入金時の半額振り分けを全返済用アカウントに対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🧹ページのボタンを「入金」「出金」に変更</li>
+    <li><span class="tag tag-feat">feat</span> 個人ページに出金UI（全ユーザー）＋入金UI（adminのみ）をアコーディオンで追加</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面にポイント数（⭐○/400）と次のお小遣い情報を表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🧹ページを任意金額の追加/使用UIに変更（ワンタップ入金ボタンを削除）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 家事マスタ管理の入力欄・ボタンサイズを縮小してはみ出し解消</li>
+    <li><span class="tag tag-fix">fix</span> ぷよゲームのぷよサイズをさらに拡大</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページにパスワード設定セクションを独立化（管理者PW・夜間制限PW）</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いポイントパスワードを管理者ページから削除</li>
+    <li><span class="tag tag-fix">fix</span> 「履歴管理」を「おこづかい履歴個別管理」にリネーム</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント承認を個人ページに移動（admin権限のみ表示のアコーディオン）</li>
+    <li><span class="tag tag-fix">fix</span> 管理者ページから承認セクションを削除（重複解消）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> バージョン番号を1.x.x体系に修正（2.0.0→1.10.0、2.0.1→1.10.1、2.1.0→1.11.0）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント表の各行右に金額ラベル（40円/300円/200円/400円）を表示</li>
+    <li><span class="tag tag-feat">feat</span> 達成済みマイルストーンにぷよシールを表示</li>
+    <li><span class="tag tag-feat">feat</span> 「あと○ptで○円！」の次のお小遣い情報を表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.11.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 個人ページの家事選択と履歴をアコーディオンに変更</li>
+    <li><span class="tag tag-feat">feat</span> ポイント承認制：user権限は承認待ち、admin権限は即承認</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページにポイント承認セクション（承認/却下）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページにポイント直接設定（お小遣い発生なし）</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面に承認待ちアイコン（✅）をカード横に表示（admin権限のみ）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.10.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> 不要なpoints.htmlを削除（child.htmlに統合済み）</li>
+    <li><span class="tag tag-infra">infra</span> CONTEXT.mdを全面リライト（v2.0の構成を正確に反映）</li>
+    <li><span class="tag tag-infra">infra</span> Service Workerのキャッシュをv5に更新、全ページをASSETSに追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.10.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 個人ページにポイント表＋家事選択UIを統合</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面の🧹アイコンをadmin権限のみ表示に変更</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面の⭐アイコンを削除（ポイント表は個人ページに移動）</li>
+    <li><span class="tag tag-fix">fix</span> 個人ページの入金/出金UIを削除（入金はお手伝いポイント経由に統一）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.6</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 端末権限をadmin/userで切り替え可能に（管理者ページから設定）</li>
+    <li><span class="tag tag-fix">fix</span> パスワード無効化トグルをadmin/userボタンに置き換え</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.5</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「パスワード無効化（この端末のみ）」トグル追加</li>
+    <li><span class="tag tag-feat">feat</span> ONにするとアカウントPW・お手伝いPWの入力をスキップ（管理者ログインは除外）</li>
+    <li><span class="tag tag-fix">fix</span> バイパス時はTOP画面の🔒アイコン非表示＋残高表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.4</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに家事マスタ管理セクション追加（家事名・ポイント数の編集、追加、削除）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.3</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよゲームのぷよサイズを約15%拡大（盤面の高さはそのまま）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.2</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ポイント表のマスに日付を表示（⭐マークから変更）</li>
+    <li><span class="tag tag-feat">feat</span> マスをタップすると家事名をポップアップ表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.1</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 20ポイントごとにお小遣い自動入金（40円/300円/200円/400円）</li>
+    <li><span class="tag tag-feat">feat</span> いろはの場合は「いろは」と「いろはの借金」に半額ずつ自動振り分け</li>
+    <li><span class="tag tag-feat">feat</span> マイルストーンマス（20の倍数）をグリッドで視覚的に表示</li>
+    <li><span class="tag tag-feat">feat</span> お小遣い発生時にDiscord通知＋入金演出データ保存</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.9.0</span><span class="date">2026/05/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いポイント表ページ追加（⭐アイコンからTOP画面で遷移）</li>
+    <li><span class="tag tag-feat">feat</span> アカウント別20×20マス（400ポイント）のポイント表</li>
+    <li><span class="tag tag-feat">feat</span> 家事選択→ポイント調整（±ボタン）→追加のUI</li>
+    <li><span class="tag tag-feat">feat</span> ポイント追加時にDiscord通知</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.8.4</span><span class="date">2026/04/30</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> カウントダウン中にNEXTぷよ・操作ペア・ゲームUIを背景に表示（操作は無効）</li>

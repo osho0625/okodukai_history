@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/04/30 v1.8.4
+最終更新: 2026/05/01 v1.17.2
 
 ## プロジェクト概要
 
@@ -15,152 +15,143 @@
 
 ```
 /
-├── index.html          # TOPページ（ルート必須）
+├── index.html          # TOPページ（アカウント一覧、admin用🧹⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v3)
+├── sw.js               # Service Worker (v5)
 ├── CONTEXT.md          # この引継ぎドキュメント
 ├── pages/
-│   ├── child.html      # 個別アカウントページ（残高・履歴・追加/使用）
-│   ├── settings.html   # アカウント設定（残高表示ON/OFF、パスワード、表示順）
-│   ├── admin.html      # 管理者ページ（アカウント管理・履歴編集・バックアップ・イタズラ設定）
-│   ├── allowance.html  # お手伝いポイントページ（ワンタップ入金）
+│   ├── child.html      # 個別アカウントページ（残高・承認・ポイント表・家事選択・入出金・履歴）
+│   ├── settings.html   # アカウント設定（残高表示ON/OFF、パスワード）
+│   ├── admin.html      # 管理者ページ
+│   ├── allowance.html  # お小遣い入出金ページ（admin専用）
 │   ├── game.html       # ぷよぷよ風パズルゲーム
 │   ├── ranking.html    # ゲームスコアランキングTOP10
 │   └── release-notes.html # リリースノート
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
-│   └── puyo_1〜5.avif  # ぷよ画像（ゲーム＋畑演出用）
+│   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
+│   └── puyo_1〜5.avif  # ぷよ画像
 ├── js/
-│   ├── roach.js        # ゴキブリ演出（管理者PW5回ミスで発動）
-│   └── garden.js       # ぷよ畑演出（植木鉢アイコンで発動）
+│   ├── roach.js        # ゴキブリ演出
+│   └── garden.js       # ぷよ畑演出
 ├── backups/            # 自動バックアップJSON
 └── .github/workflows/
-    └── backup.yml      # 毎日AM3:00 JST自動バックアップ + Discord通知
+    └── backup.yml      # 毎日AM3:00 JST自動バックアップ
 ```
 
 ## Supabaseテーブル構成
 
 ### children（アカウント）
-- id: UUID (PK)
-- name: TEXT
-- balance: INT
+- id: UUID (PK), name: TEXT, balance: INT
 - show_balance_on_top: BOOLEAN (default true)
-- require_password: BOOLEAN (default false)
-- password: TEXT (nullable)
+- require_password: BOOLEAN (default false), password: TEXT (nullable)
 - sort_order: INT (default 0)
 
 ### transactions（入出金履歴）
-- id: UUID (PK)
-- child_id: UUID (FK → children.id)
-- type: TEXT ('add' or 'use')
-- amount: INT
-- memo: TEXT
-- created_at: TIMESTAMPTZ
+- id: UUID (PK), child_id: UUID (FK), type: TEXT ('add'/'use'), amount: INT, memo: TEXT, created_at: TIMESTAMPTZ
 
-### puyo_counts（ぷよ引き抜きカウント）
-- id: INT (PK, 1-5)
-- name: TEXT ('puyo_1'〜'puyo_5')
-- count: INT
+### chore_types（家事マスタ）
+- id: SERIAL (PK), name: TEXT, default_points: INT, sort_order: INT (default 0)
 
-### roach_counts（ゴキブリ退治カウント）
-- id: INT (PK, 1)
-- count: INT
+### chore_points（ポイント履歴）
+- id: UUID (PK), child_id: UUID (FK), chore_name: TEXT, points: INT, status: TEXT ('approved'/'pending'), created_at: TIMESTAMPTZ
 
-### activity_log（アクティビティログ）
-- id: UUID (PK)
-- type: TEXT ('puyo' or 'roach')
-- name: TEXT
-- created_at: TIMESTAMPTZ
+### puyo_counts / roach_counts / activity_log / game_rankings
+- 既存テーブル（変更なし）
 
-### game_rankings（ゲームランキング）
-- id: UUID (PK)
-- name: TEXT
-- score: INT
-- created_at: TIMESTAMPTZ
+### game_settings（各種設定、id=1の1行）
+- night_password: TEXT, night_limit_enabled: BOOLEAN
+- allowance_password: TEXT, admin_password: TEXT
 
-### game_settings（ゲーム設定）
-- id: INT (PK, 1)
-- night_password: TEXT (default '299792458')
-- night_limit_enabled: BOOLEAN
+### pending_effects（演出待ちデータ）
+- id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
+
+## 端末権限（deviceRole）
+
+localStorageに`deviceRole`を保存。管理者ページから設定。
+- `admin`: パスワードスキップ、🧹⚙️アイコン表示、入金UI表示、承認可能、演出スキップ
+- `user`（デフォルト）: 通常動作、ポイント申請は承認待ち、演出あり
+- 管理者ページへのログインは常にパスワード必要
 
 ## 主要機能
 
-### お小遣い管理
-- TOPページにアカウント一覧（sort_order順）
-- パスワード付きアカウントは残高非表示（****円）、🔒アイコン表示
-- パスワード認証はTOP画面のモーダルUI（prompt()は使わない）
-- 個別ページで追加/使用 → Discord通知
-- 設定ページで残高表示ON/OFF、パスワード設定、表示順
+### TOP画面（index.html）
+- アカウント一覧（sort_order順）、ポイント数・次のお小遣い情報表示
+- 完了枚数に応じてぷよアイコン（5つでオリマーに変換）
+- 未読入金: 🔔アイコン＋入金前残高表示
+- 承認待ち: ✅アイコン（全ユーザーに表示）
+- admin用: 🧹（入出金ページ）、⚙️（設定モーダル＝表示順変更）
+- 🪴（ぷよ畑）、💴（ぷよゲーム）、🔧（管理者認証）
 
-### お手伝いポイント（allowance.html）
-- TOPの🧹アイコンから遷移
-- アカウント選択 → 40/100/200/300/400円のボタンでワンタップ入金
-- メモは自動で「お手伝いポイント」
+### 個別アカウントページ（child.html）
+- 残高表示＋入金演出（フルスクリーンオーバーレイ＋カウントアップ＋紙吹雪）
+- ✅ ポイント承認（admin権限のみ、承認待ちがあればデフォルト開）
+- ⭐ お手伝いポイント表（20×20=400マス、複数枚対応、○枚目表示）
+  - マスに日付表示、タップで家事名ポップアップ
+  - マイルストーン行の右に金額ラベル、達成済みにぷよシール
+  - 20ptごとにお小遣い自動入金（40円/300円/200円/400円）
+  - 返済用アカウント（「〇〇が返すお金」）には半額振り分け
+- 🧹 家事選択→ポイント追加（admin=即承認、user=承認待ち）
+- 💰 入出金（出金=全ユーザー、入金=adminのみ）
+- 📋 履歴
+- 演出: ポイント追加スタンプアニメーション→お金演出の連続再生（userのみ）
+- 🎉 リプレイ（残高5回タップで出現、ポイント演出→お金演出の順で再生）
+- 返済用アカウントではポイント表・家事選択・承認UIを非表示
+
+### お小遣い入出金（allowance.html）
+- admin専用、アカウント選択→金額＋メモ→入金/出金
+- 返済用アカウントへの半額振り分け対応
 
 ### 管理者ページ（admin.html）
-- 管理者PW: mgmlv（TOPの🔧アイコンから認証）
-- アカウント一覧・残高（全員分、PW付き含む）
-- アカウント追加/削除、PW解除
-- 履歴管理（ボタンでアカウント選択 → 編集/削除、残高自動再計算）
-- バックアップ（手動DL + GitHub自動バックアップからの復元 + ファイル復元）
-- イタズラ設定（トグルスイッチUI、ON=緑/OFF=灰）
-  - ぷよコケやすさ10倍
-  - 夜間ゲーム制限ON/OFF（localStorage、リロードで戻る）
-  - 夜間制限解除パスワード変更（Supabase保存）
-  - カウントリセット（ぷよ/ゴキブリ/ランキング）
-- アクティビティログ（ぷよ/ゴキブリのフィルタ付き）
+- 管理者PW: Supabase game_settings.admin_password
+- 👤 アカウント一覧（残高・PW表示・PW解除・削除・追加）
+- 📋 おこづかい履歴個別管理（編集/削除、残高自動再計算）
+- 🧹 家事マスタ管理（追加/編集/削除/▲▼並べ替え）
+- ⭐ ポイント直接設定（お小遣い発生なし、合計ポイント指定、枚数表示）
+- 🔓 端末権限設定（admin/user切り替え）
+- 🔑 パスワード設定（管理者PW、夜間制限PW）
+- 😈 イタズラ設定（コケやすさ10倍=sessionStorage、夜間制限ON/OFF、カウントリセット）
+- 📊 アクティビティログ
+- 💾 バックアップ（手動DL/GitHub復元/ファイル復元）
 
-### ゴキブリ演出（js/roach.js）
-- 管理者PW5回ミスで15匹出現（normal/shy/big/huge/fast）
-- 画面操作ロック、クリック/タップで退治
-- 30秒後にスプレー🧴出現 → 全滅演出（ミスト+もがき）
-- shy個体はマウス/指から逃げる
-- 退治数をSupabaseに記録 + activity_log
+### ぷよゲーム（game.html）
+- タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始/ランキング）
+- 3秒カウントダウン後にゲーム開始
+- 本家風スコア計算、ランキングTOP10
+- 夜間制限（日〜木21時、金土22時〜4時）
 
-### ぷよ畑演出（js/garden.js）
-- TOP画面の🪴アイコンで発動（クリック=5個追加、長押し=全引き抜き）
-- 🌱の芽をタップ → 土煙 → ぷよが飛び出して着地 → 画面端まで歩いて退場
-- 種類別の歩行速度: puyo_1(80), puyo_2(60), puyo_3(110), puyo_4(80), puyo_5(70)
-- コケる処理: 距離×速度×種類補正で確率計算、puyo_5(白)は8倍コケやすい
-- コケモーション: バタン(0.12s) → もぞもぞ → 起き上がり → 駆け足退場
-- 引き抜きカウントをSupabaseに記録 + activity_log + リアルタイム表示
+## localStorage使用一覧
 
-### ぷよぷよ風ゲーム（game.html）
-- 2個1組で落下、同色4つ以上つながると消える、連鎖対応
-- 本家風スコア計算（連鎖ボーナス+連結ボーナス+色数ボーナス）
-- ぷよ画像（puyo_1〜5.avif）を使用
-- 着地後の回転猶予（回転操作中のみ最大2秒、回転なしは0.3秒）
-- スコアランキングTOP10（Supabase保存、名前登録モーダル）
-- 夜間制限: 日〜木21時、金土22時〜4時（段階的お叱り、10回で完全ロック）
-- 錠前アイコンでパスワード解除可能（PW5回ミスでロック+Discord通知）
-- 夜間制限発動時にDiscord通知
+| キー | 用途 | 永続性 |
+|------|------|--------|
+| deviceRole | 端末権限(admin/user) | 永続 |
+| pending_deposit_{childId} | 未読入金演出データ | 消化で削除 |
+| last_deposit_{childId} | 直前の入金演出（リプレイ用） | 永続 |
+| pending_points_{childId} | 未読ポイント演出データ | 消化で削除 |
+| last_points_{childId} | 直前のポイント演出（リプレイ用） | 永続 |
+| nightLimitOff | 夜間制限OFF | 永続 |
+| nightUnlocked | 夜間制限解除済み | 永続 |
 
-### その他
-- PWA対応（manifest.json + sw.js）
-- GitHub Actions自動バックアップ（毎日AM3:00 JST、14日保持、Discord通知）
-- 隠しボタン（TOP左上、2秒以内に5回タップでゴキブリ退治数表示）
-- バージョン表示（TOP右下、タップでリリースノートへ）
+## sessionStorage使用
 
-## 外部サービス
-
-- Supabase: データベース + リアルタイム（puyo_countsテーブル）
-- Discord Webhook: 各種通知
-  - URL: https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG
-- GitHub Pages: ホスティング
-- GitHub Actions: 自動バックアップ（Secrets: SUPABASE_URL, SUPABASE_KEY, DISCORD_WEBHOOK）
+| キー | 用途 |
+|------|------|
+| tripBoost | コケやすさ10倍（タブ閉じでリセット） |
 
 ## 開発ルール
 
-- バージョニング: x.y.z（大機能=y、小修正=z、節目=x）
-- 現在: v1.8.4
-- 修正のたびにindex.htmlのバージョン表示とpages/release-notes.htmlを更新
+- バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
+- 現在: v1.17.2
+- 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
-- index.htmlの絵文字はHTMLエンティティ（&#x...;）で記述（文字化け防止）
-- strReplaceで絵文字を含む行を操作する場合はPowerShellの行番号置換を使う
+- index.htmlの絵文字はHTMLエンティティで記述
+- パスワード類はすべてSupabase game_settingsに保存（ソースにハードコードしない）
+- 返済用アカウントは名前が「が返すお金」で終わるもの（汎用パターン）
 
 ## 既知の注意点
 
-- Supabaseの全テーブルはRLS無効化済み（DISABLE ROW LEVEL SECURITY）
-- SW v3でPOSTリクエストはキャッシュしない（GETのみ）
-- puyo_countsのリアルタイム更新には `ALTER PUBLICATION supabase_realtime ADD TABLE puyo_counts;` が必要
-- ゲームのSupabaseクライアントは `sbClient`（index.htmlの `client` とは別名）
+- Supabaseの全テーブルはRLS無効化済み
+- SW v5、ネットワーク優先＋PWA起動時に自動更新チェック＋リロード
+- ゲームのSupabaseクライアントは `sbClient`（他ページの `client` とは別名）
+- コケやすさ10倍はsessionStorage（タブ閉じでリセット）
+- chore_typesのsort_orderカラムがない場合はidでフォールバック
