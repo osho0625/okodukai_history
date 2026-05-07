@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>💥 ブロックブラスト</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; touch-action: none; overflow: hidden;
+}
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 400px; padding: 10px 8px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
+.score { font-size: 1.1em; font-weight: 700; }
+.board {
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  gap: 2px; padding: 4px; background: rgba(255,255,255,0.05);
+  border-radius: 12px; border: 2px solid #333;
+  width: var(--board-size); height: var(--board-size);
+}
+.cell {
+  border-radius: 4px; background: rgba(255,255,255,0.03);
+  aspect-ratio: 1; transition: background 0.15s;
+}
+.cell.filled { box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.15); }
+.cell.preview { opacity: 0.5; }
+.cell.invalid { background: rgba(255,0,0,0.3) !important; }
+.pieces-area {
+  display: flex; gap: 16px; justify-content: center; align-items: center;
+  margin-top: 16px; min-height: 80px; flex-wrap: wrap;
+}
+.piece-container {
+  display: grid; gap: 1px; padding: 6px;
+  background: rgba(255,255,255,0.04); border-radius: 8px;
+  cursor: grab; touch-action: none;
+  transition: transform 0.1s, opacity 0.1s;
+}
+.piece-container:active { transform: scale(1.1); }
+.piece-container.selected { box-shadow: 0 0 12px rgba(255,215,0,0.4); transform: scale(1.05); }
+.piece-container.used { opacity: 0.2; pointer-events: none; }
+.piece-cell {
+  width: 18px; height: 18px; border-radius: 3px;
+}
+.piece-cell.filled { box-shadow: inset 0 -1px 2px rgba(0,0,0,0.3); }
+.game-over-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); z-index: 100;
+  justify-content: center; align-items: center;
+}
+.game-over-overlay.active { display: flex; }
+.game-over-box {
+  background: #222; border-radius: 16px; padding: 24px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.game-over-box h2 { margin-bottom: 8px; }
+.game-over-box .final { font-size: 1.8em; color: #ff6; margin-bottom: 16px; }
+.game-over-box button {
+  padding: 12px 28px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-size: 1em; font-weight: 600;
+  cursor: pointer; margin: 4px;
+}
+.game-over-box .btn-back { background: #555; }
+.combo-msg {
+  position: fixed; top: 30%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 2em; font-weight: 900; color: #ffd700; pointer-events: none;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+  animation: comboFade 1s ease-out forwards; z-index: 50;
+}
+@keyframes comboFade {
+  0% { opacity: 1; transform: translate(-50%,-50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8) translateY(-30px); }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" href="arcade.html">←</a>
+  <div class="score">Score: <span id="score">0</span></div>
+</div>
+<div class="board" id="board"></div>
+<div class="pieces-area" id="pieces"></div>
+
+<div class="game-over-overlay" id="gameOver">
+  <div class="game-over-box">
+    <h2>GAME OVER</h2>
+    <div class="final" id="finalScore">0</div>
+    <button onclick="startGame()">もう一回</button>
+    <button class="btn-back" onclick="location.href='arcade.html'">←</button>
+  </div>
+</div>
+
+<script>
+const GRID = 8;
+const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da'];
+
+// ブロックピースの形状定義
+const PIECE_SHAPES = [
+  [[1]],
+  [[1,1]],
+  [[1],[1]],
+  [[1,1,1]],
+  [[1],[1],[1]],
+  [[1,1],[1,0]],
+  [[1,1],[0,1]],
+  [[0,1],[1,1]],
+  [[1,0],[1,1]],
+  [[1,1,1],[1,0,0]],
+  [[1,1,1],[0,0,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  [[1,1],[1,1]],
+  [[1,1,1,1]],
+  [[1],[1],[1],[1]],
+  [[1,1,1],[0,1,0]],
+  [[1,1,1],[1,1,1],[1,1,1]],
+];
+
+let grid, score, pieces, selectedIdx;
+let boardSize;
+
+function init() {
+  const maxW = Math.min(360, window.innerWidth - 24);
+  const maxH = window.innerHeight - 200;
+  boardSize = Math.min(maxW, maxH);
+  document.documentElement.style.setProperty('--board-size', boardSize + 'px');
+}
+
+function startGame() {
+  grid = Array.from({length: GRID}, () => new Array(GRID).fill(null));
+  score = 0; selectedIdx = -1;
+  document.getElementById('score').textContent = '0';
+  document.getElementById('gameOver').classList.remove('active');
+  generatePieces();
+  renderBoard();
+}
+
+function generatePieces() {
+  pieces = [];
+  for (let i = 0; i < 3; i++) {
+    const idx = Math.floor(Math.random() * PIECE_SHAPES.length);
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    pieces.push({ shape: PIECE_SHAPES[idx], color, used: false });
+  }
+  renderPieces();
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let y = 0; y < GRID; y++)
+    for (let x = 0; x < GRID; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (grid[y][x] ? ' filled' : '');
+      if (grid[y][x]) cell.style.background = grid[y][x];
+      cell.dataset.x = x; cell.dataset.y = y;
+      cell.addEventListener('click', () => placePiece(x, y));
+      board.appendChild(cell);
+    }
+}
+
+function renderPieces() {
+  const area = document.getElementById('pieces');
+  area.innerHTML = '';
+  pieces.forEach((p, i) => {
+    const container = document.createElement('div');
+    container.className = 'piece-container' + (p.used ? ' used' : '') + (i === selectedIdx ? ' selected' : '');
+    container.style.gridTemplateColumns = `repeat(${p.shape[0].length}, 18px)`;
+    p.shape.forEach(row => row.forEach(v => {
+      const cell = document.createElement('div');
+      cell.className = 'piece-cell' + (v ? ' filled' : '');
+      if (v) cell.style.background = p.color;
+      container.appendChild(cell);
+    }));
+    container.addEventListener('click', () => {
+      if (p.used) return;
+      selectedIdx = (selectedIdx === i) ? -1 : i;
+      renderPieces();
+    });
+    area.appendChild(container);
+  });
+}
+
+function canPlace(shape, px, py) {
+  for (let y = 0; y < shape.length; y++)
+    for (let x = 0; x < shape[y].length; x++)
+      if (shape[y][x]) {
+        const nx = px + x, ny = py + y;
+        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return false;
+        if (grid[ny][nx] !== null) return false;
+      }
+  return true;
+}
+
+function placePiece(px, py) {
+  if (selectedIdx < 0 || selectedIdx >= pieces.length) return;
+  const p = pieces[selectedIdx];
+  if (p.used) return;
+  if (!canPlace(p.shape, px, py)) return;
+
+  // 配置
+  for (let y = 0; y < p.shape.length; y++)
+    for (let x = 0; x < p.shape[y].length; x++)
+      if (p.shape[y][x]) grid[py + y][px + x] = p.color;
+
+  p.used = true;
+  selectedIdx = -1;
+
+  // ブロック数をスコアに加算
+  let blockCount = 0;
+  p.shape.forEach(r => r.forEach(v => { if (v) blockCount++; }));
+  score += blockCount;
+
+  // ライン消去チェック
+  const cleared = clearLines();
+  if (cleared > 0) {
+    score += cleared * GRID * (cleared > 1 ? cleared : 1);
+    if (cleared > 1) showCombo(cleared);
+  }
+
+  document.getElementById('score').textContent = score;
+  renderBoard();
+  renderPieces();
+
+  // 全ピース使い切ったら新しいセットを生成
+  if (pieces.every(pp => pp.used)) {
+    generatePieces();
+  }
+
+  // ゲームオーバーチェック
+  checkGameOver();
+}
+
+function clearLines() {
+  let cleared = 0;
+  // 行チェック
+  for (let y = 0; y < GRID; y++) {
+    if (grid[y].every(c => c !== null)) {
+      grid[y].fill(null);
+      cleared++;
+    }
+  }
+  // 列チェック
+  for (let x = 0; x < GRID; x++) {
+    if (grid.every(row => row[x] !== null)) {
+      for (let y = 0; y < GRID; y++) grid[y][x] = null;
+      cleared++;
+    }
+  }
+  return cleared;
+}
+
+function showCombo(n) {
+  const el = document.createElement('div');
+  el.className = 'combo-msg';
+  el.textContent = n + 'ライン!';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function checkGameOver() {
+  const remaining = pieces.filter(p => !p.used);
+  if (remaining.length === 0) return;
+  const canAnyFit = remaining.some(p => {
+    for (let y = 0; y < GRID; y++)
+      for (let x = 0; x < GRID; x++)
+        if (canPlace(p.shape, x, y)) return true;
+    return false;
+  });
+  if (!canAnyFit) {
+    setTimeout(() => {
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('gameOver').classList.add('active');
+    }, 300);
+  }
+}
+
+init();
+startGame();
+</script>
+</body>
+</html>
