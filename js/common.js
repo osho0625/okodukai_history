@@ -31,3 +31,17 @@ async function savePendingDeposit(cid, oldBalance, newBalance, amount) {
     await client.from('pending_effects').insert({ child_id: cid, type: 'deposit', data: { oldBalance, newBalance, totalAmount: amount } });
   }
 }
+
+// --- 夜間ゲーム制限（共通） ---
+function getNightStartHour() {
+  const day = new Date().getDay();
+  return (day === 5 || day === 6) ? 22 : 21; // 金土は22時、日〜木は21時
+}
+
+function isNightTime() {
+  if (localStorage.getItem('deviceRole') === 'admin') return false;
+  if (localStorage.getItem('nightLimitOff') === 'true') return false;
+  if (localStorage.getItem('nightUnlocked') === 'true') return false;
+  const h = new Date().getHours();
+  return h >= getNightStartHour() || h < 4;
+}

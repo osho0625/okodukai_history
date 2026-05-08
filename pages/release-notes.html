@@ -31,8 +31,157 @@ h1 { margin-bottom: 24px; color: #333; }
 </style>
 </head>
 <body>
-<a class="back" href="../index.html">&#x2190;</a>
+<a class="back" onclick="history.back()" style="cursor:pointer;">&#x2190;</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
 <h1>&#x1F4CB; リリースノート</h1>
+
+<div class="release">
+  <div><span class="ver">v1.37.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：敵遭遇時の選択肢を手持ちで動的変更 — 石を持っていれば「石を投げて気を引く」、持っていなければ「そーっと近づく」（ばれて死ぬ）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.37.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト ランキング：「ブロックブラスト」→「ピクミンブラスト」に修正</li>
+    <li><span class="tag tag-fix">fix</span> テトミン ランキング・ゲームTOP画面：「テトリス」→「テトミン」に修正</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムシステム変更 — 選択肢の出現/非表示ではなく、同じ選択肢でも手持ちによってテキスト・展開が変わる方式に</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：洞窟は常に「奥に進む」選択肢あり、石を持っていなければ暗くて進めないテキスト</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：崖は常に「降りる」選択肢あり、ロープなしだと滑り落ちそうになるテキスト</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敵に「何か投げる」選択肢を常時表示、石を持っていなければ失敗テキスト</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.36.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムスロットUI追加（テキストウィンドウ上部に表示、タップで手に持つ/離す）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：手に持っている時だけ対応する選択肢が出現する仕組みに変更</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：光る石を投げて敵の気を引く選択肢を追加（石を消費して敵を撃退）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテム合成基盤を追加（将来のレシピ追加に対応）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：「はじめから」押下時にセーブデータ削除の2段階確認を追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.2</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：初回訪問時に2回目のテキストが表示されるバグを修正（text評価をonEnterより前に移動）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：タイトル画面から実績ボタンを押しても実績画面が表示されないバグを修正（z-index問題）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：謎解き追加 — 光る石で洞窟を照らしロープ入手→崖を降りてピクミンへ</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敵（チャッピー）追加 — ピクミンなしで近づくと敗北、這い上がる/諦めるの選択</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敗北時ペナルティ（HP/スタミナ半減、非キーアイテムランダムロスト）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムにkey属性追加（キーアイテムは敗北時に絶対落とさない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.34.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：テキスト2行ごとのタップ送り方式に変更（テキスト表示中は選択肢非表示）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：全テキストにふりがな（ruby）を追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.33.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：詰み判定を強化 — 3つのピースを順番に全部置ける配置が存在するかを全探索（6順列×仮想盤面シミュレーション、計算量上限5000ステップ）</li>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：詰み検出時は最大3回まで自動配り直し（プレイヤーには見えない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.3</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：ピース配布時に全ピースが置けない場合、最大3回まで自動配り直し（プレイヤーには見えない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.2</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：手動セーブを廃止し、ノード遷移ごとの自動セーブに変更（S&amp;L防止）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：アイテム取得済み・ピクミン加入済みの場所を再訪時に「もう何もない」テキストに変更</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：池の回復も2回目以降は効果なしテキストに変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：全面リデザイン — セリフ・心理描写を廃止し状況説明のみに</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：各シーンにCanvas水彩風背景を追加</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：セーブ機能追加（端末ごと1スロット、localStorage）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：TOP画面に「はじめから」「続きから」「実績」ボタン追加</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：実績システム追加（6種、端末ごと管理）</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：ピクミンを一度抜いたら選択肢が消えるよう修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.31.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページ：ゲーム公開/非公開設定を追加（デフォルト非公開、管理者が公開に変更で全ユーザーに表示）</li>
+    <li><span class="tag tag-feat">feat</span> テトミン・ピクミンブラスト・オリマーの冒険（仮）に夜間ゲーム制限を追加（ゲームごとに制限）</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）に改名</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.30.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：方向キーパッド削除、選択肢のみで進行するゲームブック形式に統一</li>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト：1〜3セルピースの出現率を大幅低下、大ピース（L字・5セル・長方形）の重みを強化</li>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト：初期配置を20セル固定に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.29.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険：Ruina風ゲームブック形式にリデザイン（テキスト＋選択肢で物語進行）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険：スマホ向けUI（方向キーパッド＋アクションボタン＋アイコンメニュー）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.28.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 「ピクミンの冒険」を削除（オリマーの冒険に統合）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.28.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 新ゲーム「オリマーの冒険」追加（探索RPG、不時着→ピクミン発見まで）</li>
+    <li><span class="tag tag-feat">feat</span> 全画面：←ボタンを「一つ前の画面に戻る」に統一（history.back）</li>
+    <li><span class="tag tag-feat">feat</span> 全画面：右上に🏠ホームアイコン追加（アプリホームに直帰）</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく：難易度選択画面でぷよと地面が表示される問題を修正</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく：難易度選択・カスタムモードの「タイトルに戻る」ボタンを削除</li>
+  </ul>
+</div>
 
 <div class="release">
   <div><span class="ver">v1.27.0</span><span class="date">2026/05/08</span></div>

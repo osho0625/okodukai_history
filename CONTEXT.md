@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/07 v1.25.5
+最終更新: 2026/05/08 v1.37.1
 
 ## プロジェクト概要
 
@@ -28,6 +28,7 @@
 │   ├── game.html       # ぷよぷよ風パズルゲーム（難易度選択対応）
 │   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
+│   ├── olimar.html     # オリマーの冒険（探索RPG）
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
@@ -75,6 +76,7 @@
 ### game_settings（各種設定、id=1の1行）
 - night_password: TEXT, night_limit_enabled: BOOLEAN
 - allowance_password: TEXT, admin_password: TEXT
+- game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,...})
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
@@ -147,7 +149,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラストの3ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険の4ゲームをカード形式で表示
 
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）
@@ -192,15 +194,27 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.25.5
+- 現在: v1.37.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
 - パスワード類はすべてSupabase game_settingsに保存（ソースにハードコードしない）
 - 返済用アカウントは名前が「が返すお金」で終わるもの（汎用パターン）
 
+### 🔴 毎回必ずやること（絶対に忘れないこと）
+
+**コードに変更を加えたら、作業の最後に以下3つを必ず更新すること：**
+
+1. **`pages/release-notes.html`** — 変更内容をリリースノートの先頭に追記（バージョン番号を上げる）
+2. **`sw.js`** — `CACHE_NAME` のバージョン番号を +1 する（例: `okozukai-v7` → `okozukai-v8`）
+3. **`index.html`** — 末尾のバージョン表示テキストを新バージョンに更新
+
+**これを忘れると本番反映時にキャッシュが更新されず、ユーザーに変更が届かない。**
+
 ## 既知の注意点
 
+- 全画面の←ボタンはhistory.back()（一つ前の画面に戻る）、🏠は右上でホーム（index.html）に直帰
+- ぴくぴくの難易度選択画面・カスタムモード画面に「タイトルに戻る」ボタンはない（←で戻る）
 - Supabaseの全テーブルはRLS無効化済み（game_rankings, tetris_rankings, blast_rankingsはRLS有効＋Allow all policy）
 - SW v5、ネットワーク優先＋PWA起動時に自動更新チェック＋リロード
 - ゲームのSupabaseクライアントは `sbClient`（他ページの `client` とは別名）

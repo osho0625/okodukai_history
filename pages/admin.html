@@ -140,7 +140,8 @@ h2 .toggle.open { transform: rotate(90deg); }
 </head>
 <body>
 
-<a class="back" href="../index.html">←</a>
+<a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
 <h1>🔧 管理者ページ</h1>
 
 <!-- アカウント一覧 -->
@@ -295,6 +296,15 @@ h2 .toggle.open { transform: rotate(90deg); }
     <div id="monthColorList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
     <button class="btn-add" onclick="saveMonthColors()" style="width:100%; margin-top:12px;">色を保存</button>
     <div class="msg" id="monthColorMsg">&#x2713; 保存しました</div>
+  </div>
+</div>
+
+<!-- ゲーム公開設定 -->
+<h2 onclick="toggleSection('gamePublishSection', this)"><span class="toggle">&#x25B6;</span> &#x1F3AE; ゲーム公開設定</h2>
+<div class="section-body" id="gamePublishSection">
+  <div class="card">
+    <div style="font-size:0.85em; color:#999; margin-bottom:12px;">ONにすると全ユーザーが遊べます（デフォルト非公開）</div>
+    <div id="gamePublishToggles"></div>
   </div>
 </div>
 
@@ -912,6 +922,7 @@ async function resetRanking() {
   }
   updateRoleUI();
   loadNightPw();
+  loadGamePublishSettings();
 })();
 
 function setDeviceRole(role) {
@@ -1201,6 +1212,50 @@ setTimeout(() => {
   loadPointsChildren();
   loadPtsHistChildren();
 }, 500);
+
+// --- ゲーム公開設定 ---
+const GAME_LIST = [
+  { key: 'game_pikupiku', label: '💴ぴくぴく' },
+  { key: 'game_tetris', label: '🧱 テトミン' },
+  { key: 'game_blast', label: '💥 ピクミンブラスト' },
+  { key: 'game_olimar', label: '🚀 オリマーの冒険（仮）' },
+];
+
+async function loadGamePublishSettings() {
+  const container = document.getElementById('gamePublishToggles');
+  if (!container) return;
+  let settings = {};
+  try {
+    const { data } = await client.from('game_settings').select('game_publish').eq('id', 1).maybeSingle();
+    if (data && data.game_publish) settings = data.game_publish;
+  } catch(e) {}
+
+  container.innerHTML = '';
+  GAME_LIST.forEach(g => {
+    const isPublic = settings[g.key] === true;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0;';
+    row.innerHTML = `
+      <span>${g.label}</span>
+      <label class="toggle-switch">
+        <input type="checkbox" ${isPublic ? 'checked' : ''} onchange="toggleGamePublish('${g.key}', this.checked)">
+        <div class="toggle-track"></div>
+        <div class="toggle-knob"></div>
+      </label>
+    `;
+    container.appendChild(row);
+  });
+}
+
+async function toggleGamePublish(key, isPublic) {
+  let settings = {};
+  try {
+    const { data } = await client.from('game_settings').select('game_publish').eq('id', 1).maybeSingle();
+    if (data && data.game_publish) settings = data.game_publish;
+  } catch(e) {}
+  settings[key] = isPublic;
+  await client.from('game_settings').update({ game_publish: settings }).eq('id', 1);
+}
 </script>
 </body>
 </html>

@@ -16,7 +16,8 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   width: 100%; max-width: 400px; padding: 10px 8px;
 }
-.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.home { color: #eee; text-decoration: none; font-size: 1.4em; padding: 4px 8px; }
 .score-area { text-align: right; }
 .score { font-size: 1.1em; font-weight: 700; }
 .chain { font-size: 0.9em; color: #ff6; height: 1.2em; }
@@ -159,13 +160,14 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </head>
 <body>
 <div class="header">
-  <a class="back" href="arcade.html">←</a>
+  <a class="back" onclick="history.back()">←</a>
   <div class="score-area">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="chain" id="chain"></div>
   </div>
   <a href="ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
   <span id="settingsBtn" style="cursor:pointer; font-size:1.3em; padding:4px 8px; opacity:0.7;">&#x2699;&#xFE0F;</span>
+  <a class="home" href="../index.html">🏠</a>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
@@ -199,7 +201,6 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;justify-content:center;">
-        <button onclick="hideDifficultySelect()" style="padding:8px 20px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.9em;cursor:pointer;">タイトルに戻る</button>
         <span id="diffInfoBtnGame" onclick="showDiffInfo()" style="cursor:pointer;font-size:1.2em;opacity:0.7;display:none;">ℹ️</span>
         <span id="debugUnlockBtn" onclick="enableDebugUnlock()" style="cursor:pointer;font-size:1em;opacity:0.5;display:none;">🧪</span>
       </div>
@@ -211,7 +212,6 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
       <button onclick="showCustomSettings()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">⚙️ 設定</button><br>
       <button onclick="showSavePreset()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#9c27b0;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">💾 設定を保存</button><br>
       <button onclick="showPresetList()" style="width:180px;padding:12px;border:none;border-radius:10px;background:#ff9800;color:#fff;font-size:1em;font-weight:700;cursor:pointer;margin-bottom:10px;">📋 みんなの設定で遊ぶ</button><br>
-      <button onclick="hideCustomMode()" style="padding:8px 20px;border:none;border-radius:8px;background:#555;color:#fff;font-size:0.9em;cursor:pointer;">タイトルに戻る</button>
     </div>
     <!-- 地面＋ぷよ -->
     <div id="titleGround" style="position:absolute;bottom:0;left:0;width:100%;height:50px;border-radius:0 0 8px 8px;overflow:visible;">
@@ -235,7 +235,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
       <button onclick="submitRanking()" style="width:100%; padding:10px; border:none; border-radius:8px; background:#ffd700; color:#333; font-weight:700; font-size:1em; cursor:pointer;">ランキングに登録</button>
     </div>
     <button onclick="startGame()">もう一回</button>
-    <button class="btn-back" onclick="location.href='arcade.html'">←</button>
+    <button class="btn-back" onclick="history.back()">←</button>
   </div>
 </div>
 <div class="controls" id="gameControls" style="display:none;"></div>
@@ -689,6 +689,11 @@ function updateDifficultyButtons() {
 function showDifficultySelect() {
   document.getElementById('titleMain').style.display = 'none';
   document.getElementById('difficultySelect').style.display = 'block';
+  // 難易度選択画面では地面とぷよを非表示
+  document.getElementById('titleGround').style.display = 'none';
+  document.getElementById('titlePuyo').style.display = 'none';
+  var sprout = document.getElementById('titleSprout');
+  if (sprout) sprout.style.display = 'none';
 
   // pending演出があるか先にチェック
   const hardPending = localStorage.getItem('puyo_hard_unlock_pending') === 'true';
@@ -721,6 +726,9 @@ function showDifficultySelect() {
 function hideDifficultySelect() {
   document.getElementById('difficultySelect').style.display = 'none';
   document.getElementById('titleMain').style.display = 'block';
+  // タイトルに戻る時は地面とぷよを再表示
+  document.getElementById('titleGround').style.display = '';
+  document.getElementById('titlePuyo').style.display = '';
 }
 
 // 隠し再ロック機能（左上10回タップ）

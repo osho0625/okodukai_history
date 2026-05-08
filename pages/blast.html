@@ -153,9 +153,10 @@ body {
 </head>
 <body>
 <div class="header">
-  <a class="back" href="arcade.html">←</a>
+  <a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
   <div class="score">Score: <span id="score">0</span></div>
   <a href="blast-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
+  <a href="../index.html" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;">🏠</a>
 </div>
 <div class="board-container" id="boardContainer">
   <div class="board" id="board"></div>
@@ -184,6 +185,7 @@ body {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <script src="../js/puyo-escape.js"></script>
 <script>
 const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
@@ -199,62 +201,62 @@ const PUYO_IMGS = [
 // 本家Block Blast準拠のピース定義（重み付き）
 // 大ピース（よく出る）、中ピース（普通）、小ピース（たまに出る）
 const PIECE_DEFS = [
-  // 1セル（weight: 1 — たまに）
+  // 1セル（weight: 1 — ごくまれ）
   { shape: [[1]], weight: 1 },
-  // 2セル横・縦（weight: 2 — たまに）
-  { shape: [[1,1]], weight: 2 },
-  { shape: [[1],[1]], weight: 2 },
-  // 2セル斜め（weight: 2）
-  { shape: [[1,0],[0,1]], weight: 2 },
-  { shape: [[0,1],[1,0]], weight: 2 },
-  // 3セル横・縦（weight: 4）
-  { shape: [[1,1,1]], weight: 4 },
-  { shape: [[1],[1],[1]], weight: 4 },
-  // 3セル斜め（weight: 2）
-  { shape: [[1,0,0],[0,1,0],[0,0,1]], weight: 2 },
-  { shape: [[0,0,1],[0,1,0],[1,0,0]], weight: 2 },
-  // L字2x2（weight: 5）
-  { shape: [[1,1],[1,0]], weight: 5 },
-  { shape: [[1,1],[0,1]], weight: 5 },
-  { shape: [[0,1],[1,1]], weight: 5 },
-  { shape: [[1,0],[1,1]], weight: 5 },
-  // L字3x2（weight: 6 — よく出る）
-  { shape: [[1,1,1],[1,0,0]], weight: 6 },
-  { shape: [[1,1,1],[0,0,1]], weight: 6 },
-  { shape: [[1,0,0],[1,1,1]], weight: 6 },
-  { shape: [[0,0,1],[1,1,1]], weight: 6 },
-  { shape: [[1,1],[0,1],[0,1]], weight: 6 },
-  { shape: [[1,1],[1,0],[1,0]], weight: 6 },
-  { shape: [[1,0],[1,0],[1,1]], weight: 6 },
-  { shape: [[0,1],[0,1],[1,1]], weight: 6 },
-  // 2x2正方形（weight: 5）
-  { shape: [[1,1],[1,1]], weight: 5 },
-  // 4セル横・縦（weight: 4）
-  { shape: [[1,1,1,1]], weight: 4 },
-  { shape: [[1],[1],[1],[1]], weight: 4 },
-  // T字（weight: 4）
-  { shape: [[1,1,1],[0,1,0]], weight: 4 },
-  { shape: [[0,1,0],[1,1,1]], weight: 4 },
-  { shape: [[1,0],[1,1],[1,0]], weight: 4 },
-  { shape: [[0,1],[1,1],[0,1]], weight: 4 },
-  // S/Z字（weight: 4）
-  { shape: [[0,1,1],[1,1,0]], weight: 4 },
-  { shape: [[1,1,0],[0,1,1]], weight: 4 },
-  { shape: [[1,0],[1,1],[0,1]], weight: 4 },
-  { shape: [[0,1],[1,1],[1,0]], weight: 4 },
-  // 5セル横・縦（weight: 5 — よく出る）
-  { shape: [[1,1,1,1,1]], weight: 5 },
-  { shape: [[1],[1],[1],[1],[1]], weight: 5 },
-  // 5セルL字（weight: 5 — よく出る）
-  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 5 },
-  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 5 },
-  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 5 },
-  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 5 },
-  // 3x3正方形（weight: 4 — よく出る）
-  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 4 },
-  // 2x3 / 3x2 長方形（weight: 5 — よく出る）
-  { shape: [[1,1,1],[1,1,1]], weight: 5 },
-  { shape: [[1,1],[1,1],[1,1]], weight: 5 },
+  // 2セル横・縦（weight: 1 — ごくまれ）
+  { shape: [[1,1]], weight: 1 },
+  { shape: [[1],[1]], weight: 1 },
+  // 2セル斜め（weight: 1）
+  { shape: [[1,0],[0,1]], weight: 1 },
+  { shape: [[0,1],[1,0]], weight: 1 },
+  // 3セル横・縦（weight: 2 — たまに）
+  { shape: [[1,1,1]], weight: 2 },
+  { shape: [[1],[1],[1]], weight: 2 },
+  // 3セル斜め（weight: 1）
+  { shape: [[1,0,0],[0,1,0],[0,0,1]], weight: 1 },
+  { shape: [[0,0,1],[0,1,0],[1,0,0]], weight: 1 },
+  // L字2x2（weight: 6）
+  { shape: [[1,1],[1,0]], weight: 6 },
+  { shape: [[1,1],[0,1]], weight: 6 },
+  { shape: [[0,1],[1,1]], weight: 6 },
+  { shape: [[1,0],[1,1]], weight: 6 },
+  // L字3x2（weight: 8 — よく出る）
+  { shape: [[1,1,1],[1,0,0]], weight: 8 },
+  { shape: [[1,1,1],[0,0,1]], weight: 8 },
+  { shape: [[1,0,0],[1,1,1]], weight: 8 },
+  { shape: [[0,0,1],[1,1,1]], weight: 8 },
+  { shape: [[1,1],[0,1],[0,1]], weight: 8 },
+  { shape: [[1,1],[1,0],[1,0]], weight: 8 },
+  { shape: [[1,0],[1,0],[1,1]], weight: 8 },
+  { shape: [[0,1],[0,1],[1,1]], weight: 8 },
+  // 2x2正方形（weight: 7）
+  { shape: [[1,1],[1,1]], weight: 7 },
+  // 4セル横・縦（weight: 6）
+  { shape: [[1,1,1,1]], weight: 6 },
+  { shape: [[1],[1],[1],[1]], weight: 6 },
+  // T字（weight: 6）
+  { shape: [[1,1,1],[0,1,0]], weight: 6 },
+  { shape: [[0,1,0],[1,1,1]], weight: 6 },
+  { shape: [[1,0],[1,1],[1,0]], weight: 6 },
+  { shape: [[0,1],[1,1],[0,1]], weight: 6 },
+  // S/Z字（weight: 5）
+  { shape: [[0,1,1],[1,1,0]], weight: 5 },
+  { shape: [[1,1,0],[0,1,1]], weight: 5 },
+  { shape: [[1,0],[1,1],[0,1]], weight: 5 },
+  { shape: [[0,1],[1,1],[1,0]], weight: 5 },
+  // 5セル横・縦（weight: 7 — よく出る）
+  { shape: [[1,1,1,1,1]], weight: 7 },
+  { shape: [[1],[1],[1],[1],[1]], weight: 7 },
+  // 5セルL字（weight: 7 — よく出る）
+  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 7 },
+  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 7 },
+  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 7 },
+  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 7 },
+  // 3x3正方形（weight: 5）
+  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 5 },
+  // 2x3 / 3x2 長方形（weight: 7 — よく出る）
+  { shape: [[1,1,1],[1,1,1]], weight: 7 },
+  { shape: [[1,1],[1,1],[1,1]], weight: 7 },
 ];
 
 // 重み付きランダム選択
@@ -286,8 +288,8 @@ function init() {
 function generateInitialBoard() {
   grid = Array.from({length: GRID}, () => new Array(GRID).fill(null));
   const maxColors = getUnlockedPuyoColorCount();
-  // 盤面全体に10〜18個程度のブロックをランダム配置
-  const blockCount = 10 + Math.floor(Math.random() * 9);
+  // 盤面全体に20個のブロックをランダム配置
+  const blockCount = 20;
   let placed = 0;
   while (placed < blockCount) {
     const x = Math.floor(Math.random() * GRID);
@@ -329,6 +331,7 @@ function canFitAnywhere(shape) {
 }
 
 function startGame() {
+  if (isNightTime()) { alert('もう夜だよ！早く寝なさい！'); return; }
   dismissTitle();
   generateInitialBoard();
   score = 0; selectedIdx = -1;
@@ -357,14 +360,80 @@ function generatePiecesGuaranteed() {
 }
 
 function generatePieces() {
-  pieces = [];
   const maxColors = getUnlockedPuyoColorCount();
-  for (let i = 0; i < 3; i++) {
-    const shape = pickRandomPiece();
-    const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
-    pieces.push({ shape, puyoMap, used: false });
-  }
+  let attempts = 0;
+  do {
+    pieces = [];
+    for (let i = 0; i < 3; i++) {
+      const shape = pickRandomPiece();
+      const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
+      pieces.push({ shape, puyoMap, used: false });
+    }
+    attempts++;
+    if (canPlaceAllThree(pieces)) break;
+  } while (attempts < 3);
   renderPieces();
+}
+
+// 3つのピースのうち、何らかの順番で全部置ける配置が存在するかチェック
+function canPlaceAllThree(pcs) {
+  const shapes = pcs.map(p => p.shape);
+  // 6通りの順列を試す
+  const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+  for (const perm of perms) {
+    if (canPlaceInOrder(shapes, perm, grid)) return true;
+  }
+  return false;
+}
+
+// 指定順でピースを置けるか（1つ目を置いた仮想盤面で2つ目、さらに3つ目）
+// 計算量制限: 探索ステップ上限を設けて超えたら「置ける」と判定（楽観）
+function canPlaceInOrder(shapes, order, baseGrid) {
+  const s0 = shapes[order[0]];
+  let steps = 0;
+  const MAX_STEPS = 5000;
+  for (let y0 = 0; y0 < GRID; y0++) {
+    for (let x0 = 0; x0 < GRID; x0++) {
+      if (!canPlaceOnGrid(s0, x0, y0, baseGrid)) continue;
+      const grid1 = placeOnGrid(s0, x0, y0, baseGrid);
+      const s1 = shapes[order[1]];
+      for (let y1 = 0; y1 < GRID; y1++) {
+        for (let x1 = 0; x1 < GRID; x1++) {
+          if (++steps > MAX_STEPS) return true; // 探索打ち切り→楽観判定
+          if (!canPlaceOnGrid(s1, x1, y1, grid1)) continue;
+          const grid2 = placeOnGrid(s1, x1, y1, grid1);
+          if (canFitOnGrid(shapes[order[2]], grid2)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function canPlaceOnGrid(shape, px, py, g) {
+  for (let y = 0; y < shape.length; y++)
+    for (let x = 0; x < shape[y].length; x++)
+      if (shape[y][x]) {
+        const nx = px + x, ny = py + y;
+        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return false;
+        if (g[ny][nx] !== null) return false;
+      }
+  return true;
+}
+
+function placeOnGrid(shape, px, py, g) {
+  const newGrid = g.map(row => [...row]);
+  for (let y = 0; y < shape.length; y++)
+    for (let x = 0; x < shape[y].length; x++)
+      if (shape[y][x]) newGrid[py + y][px + x] = '#';
+  return newGrid;
+}
+
+function canFitOnGrid(shape, g) {
+  for (let y = 0; y < GRID; y++)
+    for (let x = 0; x < GRID; x++)
+      if (canPlaceOnGrid(shape, x, y, g)) return true;
+  return false;
 }
 
 function renderBoard() {

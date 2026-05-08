@@ -80,13 +80,14 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </head>
 <body>
 <div class="header">
-  <a class="back" href="arcade.html">←</a>
+  <a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
   <div class="score-area">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="lines">Lines: <span id="lines">0</span></div>
   </div>
   <a href="tetris-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
   <span id="settingsBtn" style="cursor:pointer; font-size:1.3em; padding:4px 8px; opacity:0.7;">&#x2699;&#xFE0F;</span>
+  <a href="../index.html" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;">🏠</a>
 </div>
 <div class="game-wrap">
   <canvas id="game"></canvas>
@@ -139,6 +140,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <script src="../js/puyo-escape.js"></script>
 <script>
 const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
@@ -413,6 +415,7 @@ async function submitRanking() {
 }
 
 function startGame() {
+  if (isNightTime()) { alert('もう夜だよ！早く寝なさい！'); return; }
   dismissTitle();
   grid = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
   score = 0; linesCleared = 0; dropInterval = 800; dropTimer = 0; lockTimer = 0;
