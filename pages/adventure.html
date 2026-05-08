@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>⚔️ ピクミンの冒険</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; overflow: hidden;
+}
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 400px; padding: 10px 8px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
+.stats { font-size: 0.85em; display: flex; gap: 12px; }
+.stats span { opacity: 0.9; }
+.game-area {
+  width: 100%; max-width: 400px; flex: 1;
+  display: flex; flex-direction: column;
+  padding: 8px;
+}
+.scene {
+  flex: 1; background: rgba(255,255,255,0.03);
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+  padding: 16px; display: flex; flex-direction: column;
+  justify-content: space-between; min-height: 300px;
+}
+.scene-top { text-align: center; }
+.enemy-area {
+  text-align: center; margin: 12px 0;
+}
+.enemy-sprite { font-size: 3.5em; animation: enemyBob 2s ease-in-out infinite; }
+@keyframes enemyBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.enemy-name { font-size: 1em; font-weight: 600; margin-top: 4px; }
+.enemy-hp-bar {
+  width: 80%; max-width: 200px; height: 8px; background: #333;
+  border-radius: 4px; margin: 6px auto 0; overflow: hidden;
+}
+.enemy-hp-fill { height: 100%; background: #e53935; border-radius: 4px; transition: width 0.3s; }
+.message-box {
+  background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 12px;
+  font-size: 0.9em; min-height: 48px; margin: 8px 0;
+  line-height: 1.5;
+}
+.party-area {
+  display: flex; justify-content: center; gap: 8px; margin: 8px 0;
+}
+.pikmin-member {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.pikmin-member img {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.pikmin-member.dead img { opacity: 0.3; filter: grayscale(1); }
+.pikmin-hp { font-size: 0.65em; color: #aaa; }
+.actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+}
+.action-btn {
+  padding: 12px 8px; border: none; border-radius: 10px;
+  font-size: 0.9em; font-weight: 600; cursor: pointer;
+  color: #fff; transition: transform 0.1s, opacity 0.1s;
+}
+.action-btn:active { transform: scale(0.95); }
+.action-btn:disabled { opacity: 0.4; cursor: default; }
+.btn-attack { background: #e53935; }
+.btn-skill { background: #1976d2; }
+.btn-heal { background: #43a047; }
+.btn-run { background: #555; }
+.title-screen {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,26,46,0.97); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 20; gap: 12px;
+}
+.title-screen h2 { font-size: 1.5em; margin-bottom: 8px; }
+.title-btn {
+  width: 200px; padding: 14px; border: none; border-radius: 12px;
+  color: #fff; font-size: 1.1em; font-weight: 700; cursor: pointer;
+}
+.floor-info {
+  font-size: 0.8em; color: #aaa; text-align: center; margin-bottom: 4px;
+}
+.reward-popup {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(10,10,40,0.95); border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 16px; padding: 24px; text-align: center; z-index: 30;
+  display: none;
+}
+.reward-popup h3 { color: #ffd700; margin-bottom: 8px; }
+.reward-popup button {
+  margin-top: 12px; padding: 10px 24px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-weight: 600; cursor: pointer;
+}
+.shake { animation: shake 0.3s ease-in-out; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.flash { animation: flash 0.2s; }
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" href="arcade.html">←</a>
+  <div class="stats">
+    <span>⚔️ <span id="floor">1</span>F</span>
+    <span>💰 <span id="gold">0</span></span>
+  </div>
+</div>
+<div class="game-area">
+  <div class="scene" id="scene">
+    <div class="scene-top">
+      <div class="floor-info" id="floorInfo">1F - 草原</div>
+      <div class="enemy-area" id="enemyArea">
+        <div class="enemy-sprite" id="enemySprite">🐛</div>
+        <div class="enemy-name" id="enemyName">イモムシ</div>
+        <div class="enemy-hp-bar"><div class="enemy-hp-fill" id="enemyHpFill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="message-box" id="message">ピクミンたちが冒険に出発した！</div>
+    <div class="party-area" id="party"></div>
+    <div class="actions" id="actions">
+      <button class="action-btn btn-attack" onclick="doAttack()">⚔️ たたかう</button>
+      <button class="action-btn btn-skill" onclick="doSkill()">✨ とくぎ</button>
+      <button class="action-btn btn-heal" onclick="doHeal()">💚 かいふく</button>
+      <button class="action-btn btn-run" onclick="doRun()">🏃 にげる</button>
+    </div>
+  </div>
+  <!-- タイトル画面 -->
+  <div class="title-screen" id="titleScreen">
+    <div style="font-size:3em;">⚔️</div>
+    <h2>ピクミンの冒険</h2>
+    <button class="title-btn" style="background:#4caf50;" onclick="startAdventure()">冒険に出発！</button>
+    <button class="title-btn" style="background:#555;" onclick="location.href='arcade.html'">← もどる</button>
+  </div>
+</div>
+<div class="reward-popup" id="rewardPopup">
+  <h3 id="rewardTitle">🎉 勝利！</h3>
+  <div id="rewardText"></div>
+  <button onclick="nextFloor()">次へ進む →</button>
+</div>
+
+<script>
+const PUYO_IMGS = [
+  '../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif',
+  '../images/puyo_4.avif','../images/puyo_5.avif','../images/puyo_6.avif'
+];
+
+const ENEMIES = [
+  { name: 'イモムシ', sprite: '🐛', hp: 20, atk: 3, gold: 5 },
+  { name: 'テントウムシ', sprite: '🐞', hp: 30, atk: 5, gold: 8 },
+  { name: 'クモ', sprite: '🕷️', hp: 40, atk: 7, gold: 12 },
+  { name: 'カエル', sprite: '🐸', hp: 55, atk: 9, gold: 15 },
+  { name: 'ヘビ', sprite: '🐍', hp: 70, atk: 12, gold: 20 },
+  { name: 'サソリ', sprite: '🦂', hp: 90, atk: 15, gold: 25 },
+  { name: 'オオカミ', sprite: '🐺', hp: 120, atk: 18, gold: 35 },
+  { name: 'ドラゴン', sprite: '🐉', hp: 160, atk: 22, gold: 50 },
+  { name: 'ダークキング', sprite: '👹', hp: 200, atk: 28, gold: 80 },
+];
+
+const AREAS = ['草原','森','洞窟','沼地','火山','魔王城'];
+
+let floor, gold, party, enemy, enemyMaxHp, busy;
+
+function startAdventure() {
+  document.getElementById('titleScreen').style.display = 'none';
+  floor = 1; gold = 0; busy = false;
+  party = [
+    { name: '赤ピクミン', img: PUYO_IMGS[0], hp: 30, maxHp: 30, atk: 8 },
+    { name: '青ピクミン', img: PUYO_IMGS[1], hp: 25, maxHp: 25, atk: 6 },
+    { name: '黄ピクミン', img: PUYO_IMGS[2], hp: 28, maxHp: 28, atk: 7 },
+  ];
+  updateUI();
+  spawnEnemy();
+  setMessage('ピクミンたちが冒険に出発した！');
+}
+
+function spawnEnemy() {
+  const idx = Math.min(Math.floor((floor - 1) / 2), ENEMIES.length - 1);
+  const base = ENEMIES[idx];
+  const scale = 1 + (floor - 1) * 0.15;
+  enemy = {
+    name: base.name,
+    sprite: base.sprite,
+    hp: Math.floor(base.hp * scale),
+    atk: Math.floor(base.atk * scale),
+    gold: Math.floor(base.gold * scale),
+  };
+  enemyMaxHp = enemy.hp;
+  updateEnemyUI();
+}
+
+function updateUI() {
+  document.getElementById('floor').textContent = floor;
+  document.getElementById('gold').textContent = gold;
+  const area = AREAS[Math.min(Math.floor((floor-1)/3), AREAS.length-1)];
+  document.getElementById('floorInfo').textContent = floor + 'F - ' + area;
+  renderParty();
+}
+
+function renderParty() {
+  const el = document.getElementById('party');
+  el.innerHTML = '';
+  party.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'pikmin-member' + (p.hp <= 0 ? ' dead' : '');
+    div.innerHTML = '<img src="' + p.img + '"><div class="pikmin-hp">' + Math.max(0,p.hp) + '/' + p.maxHp + '</div>';
+    el.appendChild(div);
+  });
+}
+
+function updateEnemyUI() {
+  document.getElementById('enemySprite').textContent = enemy.sprite;
+  document.getElementById('enemyName').textContent = enemy.name;
+  const pct = Math.max(0, enemy.hp / enemyMaxHp * 100);
+  document.getElementById('enemyHpFill').style.width = pct + '%';
+}
+
+function setMessage(msg) {
+  document.getElementById('message').textContent = msg;
+}
+
+function aliveParty() { return party.filter(p => p.hp > 0); }
+
+function setButtonsEnabled(enabled) {
+  document.querySelectorAll('.action-btn').forEach(b => b.disabled = !enabled);
+}
+
+async function doAttack() {
+  if (busy) return;
+  busy = true; setButtonsEnabled(false);
+  const alive = aliveParty();
+  let totalDmg = 0;
+  for (const p of alive) {
+    const dmg = Math.floor(p.atk * (0.8 + Math.random() * 0.4));
+    totalDmg += dmg;
+  }
+  enemy.hp -= totalDmg;
+  setMessage('ピクミンたちの攻撃！ ' + totalDmg + ' ダメージ！');
+  shakeEnemy();
+  updateEnemyUI();
+  await wait(600);
+  if (enemy.hp <= 0) { await victory(); return; }
+  await enemyTurn();
+}
+
+async function doSkill() {
+  if (busy) return;
+  busy = true; setButtonsEnabled(false);
+  const alive = aliveParty();
+  const dmg = Math.floor(alive.reduce((s,p) => s + p.atk, 0) * 1.8);
+  enemy.hp -= dmg;
+  setMessage('✨ 全員とっしん！ ' + dmg + ' の大ダメージ！');
+  shakeEnemy();
+  updateEnemyUI();
+  await wait(600);
+  // スキル使用後、反撃ダメージ1.5倍
+  if (enemy.hp <= 0) { await victory(); return; }
+  await enemyTurn(1.5);
+}
+
+async function doHeal() {
+  if (busy) return;
+  busy = true; setButtonsEnabled(false);
+  const alive = aliveParty();
+  let healed = 0;
+  party.forEach(p => {
+    if (p.hp > 0) {
+      const heal = Math.floor(p.maxHp * 0.4);
+      const actual = Math.min(heal, p.maxHp - p.hp);
+      p.hp += actual;
+      healed += actual;
+    }
+  });
+  setMessage('💚 みんなを回復！ HP +' + healed);
+  renderParty();
+  await wait(600);
+  await enemyTurn();
+}
+
+async function doRun() {
+  if (busy) return;
+  busy = true; setButtonsEnabled(false);
+  if (Math.random() < 0.5) {
+    setMessage('うまく逃げられた！');
+    await wait(800);
+    floor++;
+    spawnEnemy();
+    updateUI();
+    setMessage(enemy.name + 'が現れた！');
+  } else {
+    setMessage('逃げられなかった！');
+    await wait(600);
+    await enemyTurn();
+    return;
+  }
+  busy = false; setButtonsEnabled(true);
+}
+
+async function enemyTurn(multiplier) {
+  const mult = multiplier || 1;
+  const alive = aliveParty();
+  if (alive.length === 0) { await gameOver(); return; }
+  const target = alive[Math.floor(Math.random() * alive.length)];
+  const dmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4) * mult);
+  target.hp -= dmg;
+  setMessage(enemy.name + 'の攻撃！ ' + target.name + 'に ' + dmg + ' ダメージ！');
+  flashParty();
+  renderParty();
+  await wait(600);
+  if (aliveParty().length === 0) { await gameOver(); return; }
+  busy = false; setButtonsEnabled(true);
+}
+
+async function victory() {
+  gold += enemy.gold;
+  // レベルアップ（HP・攻撃力微増）
+  party.forEach(p => {
+    p.maxHp += 2;
+    p.atk += 1;
+    if (p.hp > 0) p.hp = Math.min(p.hp + 5, p.maxHp);
+  });
+  updateUI();
+  document.getElementById('rewardTitle').textContent = '🎉 ' + enemy.name + 'を倒した！';
+  document.getElementById('rewardText').innerHTML = '💰 +' + enemy.gold + ' ゴールド<br>ピクミンたちが少し強くなった！';
+  document.getElementById('rewardPopup').style.display = 'block';
+}
+
+function nextFloor() {
+  document.getElementById('rewardPopup').style.display = 'none';
+  floor++;
+  spawnEnemy();
+  updateUI();
+  setMessage(enemy.name + 'が現れた！');
+  busy = false; setButtonsEnabled(true);
+}
+
+async function gameOver() {
+  setMessage('ピクミンたちは全滅した… ' + floor + 'Fまで到達、' + gold + 'ゴールド獲得');
+  await wait(1500);
+  document.getElementById('titleScreen').style.display = 'flex';
+}
+
+function shakeEnemy() {
+  const el = document.getElementById('enemyArea');
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 300);
+}
+
+function flashParty() {
+  const el = document.getElementById('party');
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 200);
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
