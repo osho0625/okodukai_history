@@ -153,10 +153,10 @@ body {
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
+  <a class="back" onclick="blastNavGuard('前の画面', function(){history.back()})" style="cursor:pointer;">←</a>
   <div class="score">Score: <span id="score">0</span></div>
-  <a href="blast-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
-  <a href="../index.html" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;">🏠</a>
+  <a onclick="blastNavGuard('ランキング', function(){location.href='blast-ranking.html'})" style="text-decoration:none; font-size:1.4em; padding:4px 8px; cursor:pointer;">&#x1F3C6;</a>
+  <a onclick="blastNavGuard('ホーム', function(){location.href='../index.html'})" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;cursor:pointer;">🏠</a>
 </div>
 <div class="board-container" id="boardContainer">
   <div class="board" id="board"></div>
@@ -869,6 +869,14 @@ function dismissTitle() {
 
 init();
 window.addEventListener('resize', () => { init(); renderBoard(); });
+
+function blastNavGuard(dest, action) {
+  const title = document.getElementById('titleMenu');
+  const over = document.getElementById('gameOver');
+  const isPlaying = (!title || title.style.display === 'none') && (!over || !over.classList.contains('active'));
+  if (!isPlaying) { action(); return; }
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？')) { action(); }
+}
 </script>
 </body>
 </html>

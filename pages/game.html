@@ -160,14 +160,14 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" onclick="gameNavGuard('前の画面', function(){history.back()})">←</a>
   <div class="score-area">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="chain" id="chain"></div>
   </div>
-  <a href="ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
+  <a onclick="gameNavGuard('ランキング', function(){location.href='ranking.html'})" style="text-decoration:none; font-size:1.4em; padding:4px 8px; cursor:pointer;">&#x1F3C6;</a>
   <span id="settingsBtn" style="cursor:pointer; font-size:1.3em; padding:4px 8px; opacity:0.7;">&#x2699;&#xFE0F;</span>
-  <a class="home" href="../index.html">🏠</a>
+  <a class="home" onclick="gameNavGuard('ホーム', function(){location.href='../index.html'})" style="cursor:pointer;">🏠</a>
 </div>
 <div style="position:relative;">
   <canvas id="game"></canvas>
@@ -2151,5 +2151,13 @@ function getUnlockedPuyoCount() {
 
 state = 'menu';
 requestAnimationFrame(gameLoop);
+
+function gameNavGuard(dest, action) {
+  if (state !== 'play' && state !== 'paused' && state !== 'countdown') { action(); return; }
+  const prevState = state;
+  state = 'paused';
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？')) { action(); }
+  else { state = prevState; }
+}
 </script>
 </html>

@@ -124,12 +124,12 @@ rt { font-size: 0.55em; color: #aaa; }
 <body>
 
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" onclick="olimarNavGuard('前の画面', function(){history.back()})">←</a>
   <div class="header-icons">
     <button class="icon-btn" onclick="openStatus()" title="ステータス">📊</button>
     <button class="icon-btn" onclick="openItems()" title="アイテム">🎒</button>
     <button class="icon-btn" onclick="openParty()" title="仲間">🌿</button>
-    <a class="home-link" href="../index.html" title="ホーム">🏠</a>
+    <a class="home-link" onclick="olimarNavGuard('ホーム', function(){location.href='../index.html'})" style="cursor:pointer;" title="ホーム">🏠</a>
   </div>
 </div>
 
@@ -840,6 +840,12 @@ function openAchievements() {
   document.getElementById('achieveOverlay').style.zIndex = '200';
 }
 function closeOv(id) { document.getElementById(id).style.display = 'none'; }
+
+function olimarNavGuard(dest, action) {
+  const title = document.getElementById('titleScreen');
+  if (title && title.style.display !== 'none') { action(); return; }
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？\n（自動セーブ済み）')) { action(); }
+}
 </script>
 </body>
 </html>

@@ -45,3 +45,16 @@ function isNightTime() {
   const h = new Date().getHours();
   return h >= getNightStartHour() || h < 4;
 }
+
+// --- ゲーム中断確認（共通） ---
+// isPlayingFn: ゲーム進行中かを返す関数
+// pauseFn: ポーズ処理（任意）
+// dest: 遷移先の説明テキスト
+// action: 確認後に実行する関数
+function confirmLeaveGame(isPlayingFn, pauseFn, dest, action) {
+  if (!isPlayingFn()) { action(); return; }
+  if (pauseFn) pauseFn();
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？')) {
+    action();
+  }
+}
