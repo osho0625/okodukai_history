@@ -483,6 +483,7 @@ function renderPieces() {
       if (dragging) return;
       if (p.used) return;
       selectedIdx = (selectedIdx === i) ? -1 : i;
+      clearPreview();
       renderPieces();
     });
     // ドラッグ開始
@@ -607,10 +608,17 @@ function clearPreview() {
 }
 
 function endDrag(e) {
-  // タッチ開始したが閾値未満で離した場合 → タップ扱い（clickで処理）
+  // タッチ開始したが閾値未満で離した場合 → タップ扱い（選択切り替え）
   if (touchStartPos && !dragStarted) {
+    const idx = touchStartIdx;
     touchStartPos = null;
     touchStartIdx = -1;
+    // ピースの選択切り替えを直接実行（clickイベントはpreventDefaultで抑制されるため）
+    if (idx >= 0 && idx < pieces.length && !pieces[idx].used) {
+      selectedIdx = (selectedIdx === idx) ? -1 : idx;
+      clearPreview();
+      renderPieces();
+    }
     return;
   }
   if (!dragging) return;
@@ -693,7 +701,26 @@ function handleCellClick(x, y) {
   clearPreview();
   if (canPlace(p.shape, ox, oy)) {
     doPlace(selectedIdx, ox, oy);
+  } else {
+    // 配置不可でもプレビューを一瞬表示して消す（フィードバック）
+    showTapPreview(p, ox, oy);
+    setTimeout(clearPreview, 400);
   }
+}
+
+// タップ時のプレビュー表示（配置不可の場合のフィードバック用）
+function showTapPreview(p, ox, oy) {
+  for (let y = 0; y < p.shape.length; y++)
+    for (let x = 0; x < p.shape[y].length; x++)
+      if (p.shape[y][x]) {
+        const nx = ox + x, ny = oy + y;
+        if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+          const el = document.getElementById('c_' + nx + '_' + ny);
+          if (el && !grid[ny][nx]) {
+            el.classList.add('invalid-preview');
+          }
+        }
+      }
 }
 
 // --- 配置ロジック ---

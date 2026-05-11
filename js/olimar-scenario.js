@@ -1,6 +1,11 @@
 // オリマーの冒険 - シナリオデータ
 // olimar.html本体のメインscript内で定義された SCENARIO オブジェクトに全ノードを追加する
+
 Object.assign(SCENARIO, {
+
+  // ===== 第1章：不時着 =====
+
+  // イントロ：墜落直後
   intro1: {
     scene: 'crash',
     text: [
@@ -11,6 +16,7 @@ Object.assign(SCENARIO, {
     choices: [{ text: '<ruby>周囲<rt>しゅうい</rt></ruby>を<ruby>見渡<rt>みわた</rt></ruby>す', next: 'crash_site' }],
     onEnter() { unlockAchievement('first_step'); }
   },
+  // 不時着地点：メインハブ
   crash_site: {
     scene: 'crash',
     text: [
@@ -31,6 +37,7 @@ Object.assign(SCENARIO, {
       return c;
     }
   },
+  // ロケット調査：応急キット入手→耐火服→探検キット
   check_rocket: {
     scene: 'crash',
     text() {
@@ -69,6 +76,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 赤ピクミンを炎に送る→耐火服入手
   send_pikmin_fire: {
     scene: 'crash',
     text: [
@@ -85,6 +93,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 探検キット入手（マップ解放）
   get_explore_kit: {
     scene: 'crash',
     text: [
@@ -103,6 +112,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 大きな岩：光る石入手
   big_rock: {
     scene: 'rock',
     text() {
@@ -115,6 +125,7 @@ Object.assign(SCENARIO, {
     choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' }],
     onEnter() { if (!G.flags.gotStone) { G.items.push({ name: '光る石', icon: '💎', desc: '不思議な輝きを放つ石', key: true }); G.flags.gotStone = true; unlockAchievement('got_stone'); addText('system', '💎 <ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>い</rt></ruby>れた。'); } }
   },
+  // 森の小道：池・崖への分岐
   forest_path: {
     scene: 'forest',
     text() {
@@ -139,6 +150,7 @@ Object.assign(SCENARIO, {
     },
     onEnter() { if (!G.flags.seenSprout) { G.flags.seenSprout = true; unlockAchievement('found_pikmin'); } }
   },
+  // 池：HP回復
   pond: {
     scene: 'pond',
     text() {
@@ -151,6 +163,7 @@ Object.assign(SCENARIO, {
     choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'forest_path' }],
     onEnter() { if (!G.flags.pondUsed) { G.player.hp = Math.min(G.player.maxHp, G.player.hp + 15); G.player.stamina = Math.min(G.player.maxStamina, G.player.stamina + 10); G.flags.pondUsed = true; unlockAchievement('healed'); addText('system', '❤️ HP+15 ⚡ スタミナ+10 <ruby>回復<rt>かいふく</rt></ruby>した。'); } }
   },
+  // 洞窟入口
   cave_entrance: {
     scene: 'cave',
     text: [
@@ -162,6 +175,7 @@ Object.assign(SCENARIO, {
       { text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' },
     ]
   },
+  // 洞窟の奥：光る石を手に持って入るとロープ入手
   cave_inside: {
     scene: 'cave',
     text() {
@@ -178,6 +192,7 @@ Object.assign(SCENARIO, {
     choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'cave_entrance' }],
     onEnter() { if (isHolding('光る石') && !G.flags.gotRope) { G.items.push({ name: 'ロープ', icon: '🪢', desc: '丈夫な植物のツル', key: true }); G.flags.gotRope = true; addText('system', '🪢 ロープを<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>い</rt></ruby>れた。'); } }
   },
+  // 崖の上：ロープで降りる
   cliff_top: {
     scene: 'forest',
     text: [
@@ -188,6 +203,7 @@ Object.assign(SCENARIO, {
       { text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'forest_path' },
     ]
   },
+  // 崖を降りる判定
   cliff_descend: {
     scene: 'forest',
     text() {
@@ -204,6 +220,7 @@ Object.assign(SCENARIO, {
       return [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'cliff_top' }];
     }
   },
+  // 崖の下：敵がいる→光る石で気を引く or 敗北
   cliff_bottom: {
     scene: 'sprout',
     text() {
@@ -227,6 +244,7 @@ Object.assign(SCENARIO, {
       return c;
     }
   },
+  // 敵に近づく：光る石で撃退 or 敗北
   approach_enemy: {
     scene: 'sprout',
     text() {
@@ -258,6 +276,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 敗北後の復活
   revive: {
     scene: 'crash',
     text() {
@@ -272,6 +291,7 @@ Object.assign(SCENARIO, {
     },
     choices: [{ text: '…<ruby>立<rt>た</rt></ruby>ち<ruby>上<rt>あ</rt></ruby>がる', next: 'crash_site' }],
   },
+  // 諦め確認
   give_up_confirm: {
     scene: 'cave',
     text: ['<ruby>本当<rt>ほんとう</rt></ruby>に<ruby>諦<rt>あきら</rt></ruby>めますか？'],
@@ -280,6 +300,7 @@ Object.assign(SCENARIO, {
       { text: 'いいえ（<ruby>這<rt>は</rt></ruby>い<ruby>上<rt>あ</rt></ruby>がる）', next: 'revive' },
     ]
   },
+  // ピクミンの芽発見
   sprout_found: {
     scene: 'sprout',
     text: [
@@ -291,6 +312,7 @@ Object.assign(SCENARIO, {
       { text: 'そのままにする', next: 'forest_path' },
     ]
   },
+  // 赤ピクミン入手
   pull_pikmin: {
     scene: 'sprout',
     text: [
@@ -309,6 +331,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 第1章完了
   after_pikmin: {
     scene: 'forest',
     text: [
@@ -320,6 +343,8 @@ Object.assign(SCENARIO, {
   },
 
   // ===== 第2章：水辺の谷 =====
+
+  // 水辺の谷入口
   river_entrance: {
     scene: 'river',
     text: [
@@ -341,6 +366,7 @@ Object.assign(SCENARIO, {
       return c;
     }
   },
+  // 川岸：青い芽が見える
   riverbank: {
     scene: 'river',
     text() {
@@ -360,6 +386,7 @@ Object.assign(SCENARIO, {
       { text: '◀ <ruby>谷<rt>たに</rt></ruby>の<ruby>入口<rt>いりぐち</rt></ruby>に<ruby>戻<rt>もど</rt></ruby>る', next: 'river_entrance' },
     ]
   },
+  // 滝の手前：浅瀬と滝裏への分岐
   waterfall_approach: {
     scene: 'river',
     text: [
@@ -376,6 +403,7 @@ Object.assign(SCENARIO, {
       return c;
     }
   },
+  // 浅瀬：青ピクミン入手
   shallow_water: {
     scene: 'river',
     text() {
@@ -395,6 +423,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 青ピクミン入手
   pull_blue_pikmin: {
     scene: 'river',
     text: [
@@ -412,6 +441,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 第2章開始テキスト
   after_blue_pikmin: {
     scene: 'river',
     text: [
@@ -422,6 +452,7 @@ Object.assign(SCENARIO, {
     choices: [{ text: '▶ <ruby>探索<rt>たんさく</rt></ruby>を<ruby>続<rt>つづ</rt></ruby>ける', next: 'waterfall_approach' }],
     onEnter() { addText('chapter', '― <ruby>第<rt>だい</rt></ruby>2<ruby>章<rt>しょう</rt></ruby>「<ruby>水辺<rt>みずべ</rt></ruby>の<ruby>谷<rt>たに</rt></ruby>」 <ruby>開始<rt>かいし</rt></ruby> ―'); }
   },
+  // 滝の裏：防水マント入手
   waterfall_behind: {
     scene: 'cave',
     text() {
@@ -445,6 +476,8 @@ Object.assign(SCENARIO, {
   },
 
   // ===== 第3章：雷鳴の丘（黄ピクミン入手） =====
+
+  // 雷鳴の丘入口
   hill_entrance: {
     scene: 'hill',
     text: [
@@ -458,6 +491,7 @@ Object.assign(SCENARIO, {
       { text: '◀ <ruby>谷<rt>たに</rt></ruby>に<ruby>戻<rt>もど</rt></ruby>る', next: 'river_entrance' },
     ]
   },
+  // 雷の木：黄ピクミン入手
   thunder_tree: {
     scene: 'hill',
     text() {
@@ -482,6 +516,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 黄ピクミン入手
   pull_yellow_pikmin: {
     scene: 'hill',
     text: [
@@ -500,6 +535,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 電気柵：黄ピクミンで解除
   electric_fence: {
     scene: 'hill',
     text() {
@@ -535,6 +571,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 丘の頂上：絶縁グローブ入手
   hill_top: {
     scene: 'hill',
     text() {
@@ -569,6 +606,8 @@ Object.assign(SCENARIO, {
   },
 
   // ===== 第4章：毒の沼地（白ピクミン入手） =====
+
+  // 毒の沼地入口
   swamp_entrance: {
     scene: 'swamp',
     text: [
@@ -582,6 +621,7 @@ Object.assign(SCENARIO, {
       { text: '◀ <ruby>丘<rt>おか</rt></ruby>の<ruby>頂上<rt>ちょうじょう</rt></ruby>へ<ruby>戻<rt>もど</rt></ruby>る', next: 'hill_top' },
     ]
   },
+  // 毒霧エリア：白ピクミン入手
   poison_fog: {
     scene: 'swamp',
     text() {
@@ -606,6 +646,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 白ピクミン入手
   pull_white_pikmin: {
     scene: 'swamp',
     text: [
@@ -624,6 +665,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 沈んだ遺跡：白ピクミンで穴に入る
   sunken_ruins: {
     scene: 'swamp',
     text() {
@@ -662,6 +704,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 遺跡内部：古代の鍵入手
   ruins_inside: {
     scene: 'cave',
     text() {
@@ -690,6 +733,8 @@ Object.assign(SCENARIO, {
   },
 
   // ===== 第5章：凍てつく洞窟（紫ピクミン＋氷ピクミン入手＋仲間救出） =====
+
+  // 凍てつく洞窟入口
   ice_cave_entrance: {
     scene: 'ice',
     text: [
@@ -710,6 +755,7 @@ Object.assign(SCENARIO, {
     },
     onEnter() { addText('chapter', '― <ruby>第<rt>だい</rt></ruby>5<ruby>章<rt>しょう</rt></ruby>「<ruby>凍<rt>い</rt></ruby>てつく<ruby>洞窟<rt>どうくつ</rt></ruby>」 <ruby>開始<rt>かいし</rt></ruby> ―'); }
   },
+  // 氷の通路：紫ピクミン入手
   ice_corridor: {
     scene: 'ice',
     text() {
@@ -734,6 +780,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 紫ピクミン入手
   pull_purple_pikmin: {
     scene: 'ice',
     text: [
@@ -751,6 +798,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 氷の壁：紫ピクミンで押す
   ice_wall: {
     scene: 'ice',
     text() {
@@ -786,6 +834,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 凍った湖：赤ピクミンで氷を溶かして氷ピクミン入手
   frozen_lake: {
     scene: 'ice',
     text() {
@@ -814,6 +863,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 氷ピクミン入手
   pull_ice_pikmin: {
     scene: 'ice',
     text: [
@@ -832,6 +882,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 結晶の間：氷ピクミンでエンジニア救出
   crystal_room: {
     scene: 'ice',
     text() {
@@ -862,6 +913,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // エンジニア救出（第5章完了）
   rescue_engineer: {
     scene: 'ice',
     text: [
@@ -875,11 +927,14 @@ Object.assign(SCENARIO, {
       if (!G.flags.engineerRescued) {
         G.flags.engineerRescued = true;
         addText('system', '👤 エンジニアを<ruby>救出<rt>きゅうしゅつ</rt></ruby>した！');
+        unlockAchievement('chapter5');
         addText('chapter', '― <ruby>第<rt>だい</rt></ruby>5<ruby>章<rt>しょう</rt></ruby>「<ruby>凍<rt>い</rt></ruby>てつく<ruby>洞窟<rt>どうくつ</rt></ruby>」 <ruby>完<rt>かん</rt></ruby> ―');
       }
     }
   },
-  // ===== 第6章: 岩山の砦（岩ピクミン入手＋パイロット救出） =====
+  // ===== 第6章：岩山の砦（岩ピクミン入手＋パイロット救出） =====
+
+  // 岩山の砦入口：岩ピクミン入手
   rock_fortress_entrance: {
     scene: 'rock',
     text: [
@@ -900,6 +955,7 @@ Object.assign(SCENARIO, {
     },
     onEnter() { addText('chapter', '― <ruby>第<rt>だい</rt></ruby>6<ruby>章<rt>しょう</rt></ruby>「<ruby>岩山<rt>いわやま</rt></ruby>の<ruby>砦<rt>とりで</rt></ruby>」 <ruby>開始<rt>かいし</rt></ruby> ―'); }
   },
+  // 岩ピクミン入手
   pull_rock_pikmin: {
     scene: 'rock',
     text: [
@@ -917,6 +973,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 崩れた壁：岩ピクミンで破壊
   rock_wall: {
     scene: 'rock',
     text() {
@@ -951,6 +1008,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 砦内部：パイロット救出
   fortress_inside: {
     scene: 'rock',
     text() {
@@ -980,6 +1038,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // パイロット救出（第6章完了）
   rescue_pilot: {
     scene: 'rock',
     text: [
@@ -993,11 +1052,14 @@ Object.assign(SCENARIO, {
       if (!G.flags.pilotRescued) {
         G.flags.pilotRescued = true;
         addText('system', '👤 パイロットを<ruby>救出<rt>きゅうしゅつ</rt></ruby>した！');
+        unlockAchievement('chapter6');
         addText('chapter', '― <ruby>第<rt>だい</rt></ruby>6<ruby>章<rt>しょう</rt></ruby>「<ruby>岩山<rt>いわやま</rt></ruby>の<ruby>砦<rt>とりで</rt></ruby>」 <ruby>完<rt>かん</rt></ruby> ―');
       }
     }
   },
-  // ===== 第7章: 天空の庭（羽ピクミン＋光ピクミン入手） =====
+  // ===== 第7章：天空の庭（羽ピクミン＋光ピクミン入手） =====
+
+  // 天空の庭入口：羽ピクミン入手
   sky_garden_entrance: {
     scene: 'sky',
     text: [
@@ -1018,6 +1080,7 @@ Object.assign(SCENARIO, {
     },
     onEnter() { addText('chapter', '― <ruby>第<rt>だい</rt></ruby>7<ruby>章<rt>しょう</rt></ruby>「<ruby>天空<rt>てんくう</rt></ruby>の<ruby>庭<rt>にわ</rt></ruby>」 <ruby>開始<rt>かいし</rt></ruby> ―'); }
   },
+  // 羽ピクミン入手
   pull_wing_pikmin: {
     scene: 'sky',
     text: [
@@ -1035,6 +1098,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 浮島：羽ピクミンで渡る
   floating_island: {
     scene: 'sky',
     text() {
@@ -1058,6 +1122,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 暗い通路：光ピクミン入手
   dark_passage: {
     scene: 'cave',
     text() {
@@ -1083,6 +1148,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // 光ピクミン入手
   pull_light_pikmin: {
     scene: 'cave',
     text: [
@@ -1100,6 +1166,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 古代の祠：光ピクミンで照らす→ロケット墜落地点へ（第7章完了）
   ancient_shrine: {
     scene: 'sky',
     text() {
@@ -1125,11 +1192,14 @@ Object.assign(SCENARIO, {
     },
     onEnter() {
       if (isUsingPikmin('光ピクミン')) {
+        unlockAchievement('chapter7');
         addText('chapter', '― <ruby>第<rt>だい</rt></ruby>7<ruby>章<rt>しょう</rt></ruby>「<ruby>天空<rt>てんくう</rt></ruby>の<ruby>庭<rt>にわ</rt></ruby>」 <ruby>完<rt>かん</rt></ruby> ―');
       }
     }
   },
-  // ===== 脱出パート =====
+  // ===== 脱出パート（パーツ集め＋エンディング） =====
+
+  // ロケット墜落地点：修理パーツ集め開始
   rocket_crash_site: {
     scene: 'sky',
     text: [
@@ -1151,6 +1221,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // 修理状況確認
   repair_rocket: {
     scene: 'sky',
     text() {
@@ -1182,6 +1253,7 @@ Object.assign(SCENARIO, {
       ];
     }
   },
+  // パーツ回収：通信モジュール（不時着地点、赤ピクミン）
   get_comm_module: {
     scene: 'crash',
     text: [
@@ -1196,6 +1268,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // パーツ回収：推進コイル（水辺の谷、青ピクミン）
   get_propulsion_coil: {
     scene: 'river',
     text: [
@@ -1210,6 +1283,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // パーツ回収：耐熱シールド（凍てつく洞窟、岩ピクミン）
   get_heat_shield: {
     scene: 'ice',
     text: [
@@ -1224,6 +1298,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // パーツ回収：エネルギーセル（雷鳴の丘、黄ピクミン）
   get_energy_cell: {
     scene: 'hill',
     text: [
@@ -1238,6 +1313,7 @@ Object.assign(SCENARIO, {
       }
     }
   },
+  // エンディング：脱出成功
   ending: {
     scene: 'sky',
     text: [
