@@ -669,7 +669,12 @@ class SuikaGame {
     // Player movement
     const dir = this.input.getDirection();
     if (dir !== DIR.NONE) {
-      this.field.movePlayer(dir);
+      const moved = this.field.movePlayer(dir);
+      // Footstep SE (every 4 steps)
+      if (moved) {
+        this.stepCount = (this.stepCount || 0) + 1;
+        if (this.stepCount % 4 === 0) this.audio.play(2);
+      }
       // Random encounter check
       this.checkEncounter();
     }
@@ -737,6 +742,11 @@ class SuikaGame {
     this.battleEngine = new BattleEngine(this.paramAll);
     this.battleUI = new BattleUI(this.ctx, this.input, this.renderer, this.models, this.paramAll);
 
+    // Set battle background color from current area
+    if (this.field.area) {
+      this.battleUI.bgColor = this.field.area.backColor;
+    }
+
     // Set enemy model patterns from party data
     const party = this.paramAll.getParty(partyIndex);
     if (party) {
@@ -803,7 +813,6 @@ class SuikaGame {
 
     this.battleEngine.onDamage = (target, dmg) => {
       if (this.battleUI) {
-        // Position damage number near the target
         const idx = target.index;
         const total = target.isPlayer ? this.playerParams.length : this.battleEngine.enemies.length;
         const spacing = target.isPlayer ? 85 : 70;
@@ -812,6 +821,17 @@ class SuikaGame {
         const y = target.isPlayer ? 260 : 90;
         this.battleUI.effect.addDamageNum(String(dmg), x, y, target.isPlayer ? '#f44' : '#ff0');
       }
+    };
+    this.battleEngine.onAttackHit = (isCrit) => {
+      this.audio.play(isCrit ? 4 : 1); // SE: critical or normal hit
+    };
+    this.battleEngine.onMiss = () => {
+      this.audio.play(6); // SE: miss
+    };
+    this.battleEngine.onSkillUse = (kind) => {
+      // 0=attack magic, 1=heal, 2=buff, 3=debuff, 4=status
+      const seMap = [3, 10, 8, 7, 7];
+      this.audio.play(seMap[kind] || 3);
     };
 
     this.battleEngine.start(partyIndex, this.playerParams);
@@ -1089,9 +1109,11 @@ class SuikaGame {
 
     if (this.input.isUp()) {
       this.menuCursor = (this.menuCursor - 1 + items.length) % items.length;
+      this.audio.play(5);
     }
     if (this.input.isDown()) {
       this.menuCursor = (this.menuCursor + 1) % items.length;
+      this.audio.play(5);
     }
     if (this.input.isOK()) {
       switch (this.menuCursor) {

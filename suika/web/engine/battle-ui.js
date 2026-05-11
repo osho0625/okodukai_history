@@ -314,11 +314,14 @@ export class BattleUI {
     ctx.save();
     ctx.translate(this.effect.shakeX, 0);
 
-    // Background gradient (dark blue battle field)
+    // Background gradient (uses area back color if set)
     const grad = ctx.createLinearGradient(0, 0, 0, 320);
-    grad.addColorStop(0, '#0a0a2a');
-    grad.addColorStop(0.5, '#1a1a3e');
-    grad.addColorStop(1, '#0d0d1a');
+    const bgR = this.bgColor ? this.bgColor.r : 10;
+    const bgG = this.bgColor ? this.bgColor.g : 10;
+    const bgB = this.bgColor ? this.bgColor.b : 42;
+    grad.addColorStop(0, `rgb(${bgR},${bgG},${bgB})`);
+    grad.addColorStop(0.5, `rgb(${Math.min(255, bgR + 16)},${Math.min(255, bgG + 16)},${Math.min(255, bgB + 20)})`);
+    grad.addColorStop(1, `rgb(${Math.floor(bgR * 0.5)},${Math.floor(bgG * 0.5)},${Math.floor(bgB * 0.5)})`);
     ctx.fillStyle = grad;
     ctx.fillRect(-10, 0, 420, 320);
 

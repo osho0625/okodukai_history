@@ -267,6 +267,7 @@ export class BattleEngine {
 
     if (!isHit(attacker, defender)) {
       this.addLog(`${attacker.name}の攻撃！ ミス！`);
+      if (this.onMiss) this.onMiss();
       return;
     }
 
@@ -278,6 +279,7 @@ export class BattleEngine {
     if (isCrit) dmg = Math.floor(dmg * 1.5);
 
     defender.takeDamage(dmg);
+    if (this.onAttackHit) this.onAttackHit(isCrit);
     const critText = isCrit ? '会心の一撃！ ' : '';
     this.addLog(`${attacker.name}の攻撃！ ${critText}${defender.name}に${dmg}ダメージ！`);
     if (this.onDamage) this.onDamage(defender, dmg);
@@ -307,6 +309,7 @@ export class BattleEngine {
 
     const targets = this.getSkillTargets(user, skill, targetIndex);
     this.addLog(`${user.name}は${skill.name}を唱えた！`);
+    if (this.onSkillUse) this.onSkillUse(skill.kind);
 
     for (const target of targets) {
       if (!target.isAlive() && skill.kind !== SKILL_KIND.HEAL) continue;
