@@ -453,10 +453,11 @@ function renderBoard() {
       }
       cell.dataset.x = x; cell.dataset.y = y;
       cell.addEventListener('click', () => handleCellClick(x, y));
-      // スマホ用: touch-action:noneでclickが発火しない場合の対策
+      // スマホ用: ドラッグ中はイベントを上位に伝播させる
       cell.addEventListener('touchend', (e) => {
-        if (touchDragStarted || dragging) return;
+        if (touchDragStarted || dragging) return; // ドラッグ中は何もしない（documentのtouchendに任せる）
         e.preventDefault();
+        e.stopPropagation(); // documentのtouchendが二重発火しないように
         handleCellClick(x, y);
       });
       board.appendChild(cell);
@@ -514,16 +515,28 @@ function startTouch(e, idx) {
   touchStartPos = { x: pos.x, y: pos.y };
   touchStartIdx = idx;
   touchDragStarted = false;
+  // タッチIDを記録して追跡する
+  if (e.touches.length > 0) {
+    activeTouchId = e.touches[0].identifier;
+  }
 }
+
+// タッチIDを追跡（途中でtouchcancelされないように）
+let activeTouchId = null;
+// ドラッグ中の最終位置を記録（touchendではtouchesが空になるため）
+let lastTouchPos = null;
 
 document.addEventListener('touchmove', (e) => {
   if (touchStartPos === null) return;
+  // 常にpreventDefaultを呼んでブラウザのスクロール/ジェスチャーを抑止
+  // これによりtouchcancelの発火を防ぐ
+  e.preventDefault();
   const pos = getEventPos(e);
+  lastTouchPos = { x: pos.x, y: pos.y };
   if (!touchDragStarted) {
     const dx = pos.x - touchStartPos.x, dy = pos.y - touchStartPos.y;
     if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
     // 閾値超え → ドラッグ開始
-    e.preventDefault();
     touchDragStarted = true;
     dragging = true;
     dragPieceIdx = touchStartIdx;
@@ -532,7 +545,6 @@ document.addEventListener('touchmove', (e) => {
     createDragGhost(touchStartIdx);
   }
   if (touchDragStarted) {
-    e.preventDefault();
     moveDragGhost(pos.x, pos.y);
     updatePreview(pos.x, pos.y);
   }
@@ -540,11 +552,14 @@ document.addEventListener('touchmove', (e) => {
 
 document.addEventListener('touchend', (e) => {
   if (touchStartPos === null && !touchDragStarted) return;
+  e.preventDefault();
   if (!touchDragStarted) {
     // タップ扱い → ピース選択切り替え
     const idx = touchStartIdx;
     touchStartPos = null;
     touchStartIdx = -1;
+    activeTouchId = null;
+    lastTouchPos = null;
     if (idx >= 0 && idx < pieces.length && !pieces[idx].used) {
       selectedIdx = (selectedIdx === idx) ? -1 : idx;
       clearPreview();
@@ -553,14 +568,23 @@ document.addEventListener('touchend', (e) => {
     return;
   }
   // ドラッグ終了 → 配置試行
+  // changedTouchesから位置を取得、取れなければ最終記録位置を使用
+  let pos;
+  if (e.changedTouches && e.changedTouches.length > 0) {
+    pos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  } else {
+    pos = lastTouchPos || touchStartPos || { x: 0, y: 0 };
+  }
+
   touchStartPos = null;
   touchStartIdx = -1;
   touchDragStarted = false;
   dragging = false;
+  activeTouchId = null;
+  lastTouchPos = null;
   clearPreview();
   if (dragGhost) { dragGhost.remove(); dragGhost = null; }
 
-  const pos = getEventPos(e);
   if (dragPieceIdx >= 0) {
     const p = pieces[dragPieceIdx];
     const cell = getBoardCell(pos.x, pos.y - 40);
@@ -573,13 +597,36 @@ document.addEventListener('touchend', (e) => {
   dragPieceIdx = -1;
 });
 
-document.addEventListener('touchcancel', () => {
+document.addEventListener('touchcancel', (e) => {
+  // touchcancelが発火してもドラッグ中なら最終位置で配置を試みる
+  if (touchDragStarted && dragPieceIdx >= 0 && lastTouchPos) {
+    const pos = lastTouchPos;
+    const p = pieces[dragPieceIdx];
+    const cell = getBoardCell(pos.x, pos.y - 40);
+    const ox = cell.x - Math.floor(p.shape[0].length / 2);
+    const oy = cell.y - Math.floor(p.shape.length / 2);
+    clearPreview();
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    if (canPlace(p.shape, ox, oy)) {
+      dragging = false;
+      touchStartPos = null;
+      touchStartIdx = -1;
+      touchDragStarted = false;
+      activeTouchId = null;
+      lastTouchPos = null;
+      doPlace(dragPieceIdx, ox, oy);
+      dragPieceIdx = -1;
+      return;
+    }
+  }
   clearPreview();
   if (dragGhost) { dragGhost.remove(); dragGhost = null; }
   dragging = false;
   touchStartPos = null;
   touchStartIdx = -1;
   touchDragStarted = false;
+  activeTouchId = null;
+  lastTouchPos = null;
   dragPieceIdx = -1;
 });
 
@@ -592,6 +639,8 @@ document.addEventListener('visibilitychange', () => {
     touchDragStarted = false;
     mouseDragging = false;
     touchStartPos = null;
+    activeTouchId = null;
+    lastTouchPos = null;
   }
 });
 
