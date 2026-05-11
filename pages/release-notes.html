@@ -31,8 +31,448 @@ h1 { margin-bottom: 24px; color: #333; }
 </style>
 </head>
 <body>
-<a class="back" href="../index.html">&#x2190;</a>
+<a class="back" onclick="history.back()" style="cursor:pointer;">&#x2190;</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
 <h1>&#x1F4CB; リリースノート</h1>
+
+<div class="release">
+  <div><span class="ver">v1.37.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：敵遭遇時の選択肢を手持ちで動的変更 — 石を持っていれば「石を投げて気を引く」、持っていなければ「そーっと近づく」（ばれて死ぬ）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.37.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト ランキング：「ブロックブラスト」→「ピクミンブラスト」に修正</li>
+    <li><span class="tag tag-fix">fix</span> テトミン ランキング・ゲームTOP画面：「テトリス」→「テトミン」に修正</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムシステム変更 — 選択肢の出現/非表示ではなく、同じ選択肢でも手持ちによってテキスト・展開が変わる方式に</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：洞窟は常に「奥に進む」選択肢あり、石を持っていなければ暗くて進めないテキスト</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：崖は常に「降りる」選択肢あり、ロープなしだと滑り落ちそうになるテキスト</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敵に「何か投げる」選択肢を常時表示、石を持っていなければ失敗テキスト</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.36.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムスロットUI追加（テキストウィンドウ上部に表示、タップで手に持つ/離す）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：手に持っている時だけ対応する選択肢が出現する仕組みに変更</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：光る石を投げて敵の気を引く選択肢を追加（石を消費して敵を撃退）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテム合成基盤を追加（将来のレシピ追加に対応）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：「はじめから」押下時にセーブデータ削除の2段階確認を追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.2</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：初回訪問時に2回目のテキストが表示されるバグを修正（text評価をonEnterより前に移動）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：タイトル画面から実績ボタンを押しても実績画面が表示されないバグを修正（z-index問題）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.35.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：謎解き追加 — 光る石で洞窟を照らしロープ入手→崖を降りてピクミンへ</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敵（チャッピー）追加 — ピクミンなしで近づくと敗北、這い上がる/諦めるの選択</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：敗北時ペナルティ（HP/スタミナ半減、非キーアイテムランダムロスト）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：アイテムにkey属性追加（キーアイテムは敗北時に絶対落とさない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.34.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：テキスト2行ごとのタップ送り方式に変更（テキスト表示中は選択肢非表示）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：全テキストにふりがな（ruby）を追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.33.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：詰み判定を強化 — 3つのピースを順番に全部置ける配置が存在するかを全探索（6順列×仮想盤面シミュレーション、計算量上限5000ステップ）</li>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：詰み検出時は最大3回まで自動配り直し（プレイヤーには見えない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.3</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ピクミンブラスト：ピース配布時に全ピースが置けない場合、最大3回まで自動配り直し（プレイヤーには見えない）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.2</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：手動セーブを廃止し、ノード遷移ごとの自動セーブに変更（S&amp;L防止）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：アイテム取得済み・ピクミン加入済みの場所を再訪時に「もう何もない」テキストに変更</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：池の回復も2回目以降は効果なしテキストに変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.32.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：全面リデザイン — セリフ・心理描写を廃止し状況説明のみに</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：各シーンにCanvas水彩風背景を追加</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：セーブ機能追加（端末ごと1スロット、localStorage）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：TOP画面に「はじめから」「続きから」「実績」ボタン追加</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：実績システム追加（6種、端末ごと管理）</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）：ピクミンを一度抜いたら選択肢が消えるよう修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.31.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページ：ゲーム公開/非公開設定を追加（デフォルト非公開、管理者が公開に変更で全ユーザーに表示）</li>
+    <li><span class="tag tag-feat">feat</span> テトミン・ピクミンブラスト・オリマーの冒険（仮）に夜間ゲーム制限を追加（ゲームごとに制限）</li>
+    <li><span class="tag tag-fix">fix</span> オリマーの冒険（仮）に改名</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.30.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険（仮）：方向キーパッド削除、選択肢のみで進行するゲームブック形式に統一</li>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト：1〜3セルピースの出現率を大幅低下、大ピース（L字・5セル・長方形）の重みを強化</li>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト：初期配置を20セル固定に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.29.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険：Ruina風ゲームブック形式にリデザイン（テキスト＋選択肢で物語進行）</li>
+    <li><span class="tag tag-feat">feat</span> オリマーの冒険：スマホ向けUI（方向キーパッド＋アクションボタン＋アイコンメニュー）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.28.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 「ピクミンの冒険」を削除（オリマーの冒険に統合）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.28.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 新ゲーム「オリマーの冒険」追加（探索RPG、不時着→ピクミン発見まで）</li>
+    <li><span class="tag tag-feat">feat</span> 全画面：←ボタンを「一つ前の画面に戻る」に統一（history.back）</li>
+    <li><span class="tag tag-feat">feat</span> 全画面：右上に🏠ホームアイコン追加（アプリホームに直帰）</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく：難易度選択画面でぷよと地面が表示される問題を修正</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく：難易度選択・カスタムモードの「タイトルに戻る」ボタンを削除</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.27.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲーム名変更：ぷよ→ぴくぴく、テトリス→テトミン、ブロックブラスト→ピクミンブラスト</li>
+    <li><span class="tag tag-feat">feat</span> 新ゲーム「ピクミンの冒険」追加（ターン制RPG、フロア制ダンジョン、パーティ3体）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.5</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：5セルL字ピース（4方向）を追加</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：上から下にドラッグ時のプレビュー追従が遅い問題を修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.4</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：ピース重みを本家準拠に調整（大ピース・L字がよく出る、1セル・2セルはたまに）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：2×3/3×2長方形ピースを追加</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：初期配置を盤面全体に散らばるよう変更（下3行固定→全体ランダム）</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：初期ブロック数を削減（10〜18個に調整）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.3</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：ピース内の各セルが異なるランダムなぷよで構成されるように変更</li>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：斜め2セル・3セルのピースを追加（本家準拠）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.2</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：初期盤面にランダムブロックを配置（本家準拠、下3行に40%密度）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：初回配布ピースは詰みなし保証（全ピースが配置可能か検証）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト：ピース種類を本家準拠に拡充（L字回転4方向、T字、S/Z字追加、重み付き抽選）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.1</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：配置後のぷよがセル内でずれるバグを修正（中央配置に変更）</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：ドラッグ中のプレビューも色ブロックからぷよ画像に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.26.0</span><span class="date">2026/05/08</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ブロックブラスト：ドラッグ中のゴーストをブロック色からぷよ画像に変更</li>
+    <li><span class="tag tag-fix">fix</span> テトリス：ぷよ描画サイズをぷよゲームと同じ比率に拡大（セル全体を使う大きさに）</li>
+    <li><span class="tag tag-fix">fix</span> テトリス：逃走ぷよのサイズもセルサイズに比例して拡大</li>
+    <li><span class="tag tag-fun">fun</span> テトリス：列削除時に落下アニメーション追加（ぷよ逃走→上のブロックがスムーズに落下）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.5</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ぷよゲームTOP画面のピクミンにpuyo_8（飛行）・puyo_9（ふよふよ）の特殊逃走モーション追加</li>
+    <li><span class="tag tag-fix">fix</span> みんなの設定で遊ぶ：カード背景を元の暗色に戻し、削除ボタンに赤背景を追加して視認性改善</li>
+    <li><span class="tag tag-fix">fix</span> テトリスの割り当て設定UIをミニブロック表示に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.4</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> テトリスに着地猶予0.5秒を追加（着地後も回転・移動可能、0.5秒で強制ロック）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.3</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テトリスの設定に「ぷよ割り当て」追加（7ピースそれぞれにどのぷよを使うかタップで変更可能）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよ割り当ては端末ごとにlocalStorage保存</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.2</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> テトリス・ブロックブラストのぷよ色数をぷよゲームの解放状況に連動</li>
+    <li><span class="tag tag-fun">fun</span> テトリス・ブロックブラストの消去アニメーションを4段階に統一（弾ける→散らばる→起き上がる→逃げる）</li>
+    <li><span class="tag tag-infra">infra</span> ぷよ逃走アニメーションをjs/puyo-escape.jsに共通化</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.1</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> 全ゲームでぷよ8消去時に飛行モーション（浮いて飛んでいく）</li>
+    <li><span class="tag tag-fun">fun</span> 全ゲームでぷよ9消去時にふよふよモーション（浮遊しながら消える）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.25.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> テトリスのブロックをぷよ画像に変更（丸くてかわいい見た目に）</li>
+    <li><span class="tag tag-fun">fun</span> ブロックブラストのブロックをぷよ画像に変更</li>
+    <li><span class="tag tag-fun">fun</span> テトリスのライン消去時にぷよ逃走アニメーション追加</li>
+    <li><span class="tag tag-fun">fun</span> ブロックブラストのライン消去時にぷよ逃走アニメーション追加</li>
+    <li><span class="tag tag-feat">feat</span> ぷよゲーム中に設定を開くとポーズするように</li>
+    <li><span class="tag tag-feat">feat</span> テトリスゲーム中に設定を開くとポーズするように</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.24.4</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ランキングページのカスタムタブをカスタムモード未解放時は非表示に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.24.3</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぷよTOP画面が表示されないバグを修正（renderControls内のconst重複宣言）</li>
+    <li><span class="tag tag-fix">fix</span> 「みんなの設定」→「みんなの設定で遊ぶ」にリネーム</li>
+    <li><span class="tag tag-fix">fix</span> プリセット一覧の背景を白に変更、削除アイコンを大きく</li>
+    <li><span class="tag tag-fix">fix</span> 「戻る」→「タイトルに戻る」に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.24.2</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ランキングページでadmin権限時に各エントリの個別削除ボタン（🗑）を表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.24.1</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよ・ゴキブリカウントをDB合計にも引き続き記録（端末ローカル表示＋DB合計保持）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「🌱 ぷよ合計カウント」セクション追加（全端末合計を表示）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.24.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよ・ゴキブリカウントを端末ごと（localStorage）に変更、カウント全リセット</li>
+    <li><span class="tag tag-feat">feat</span> カスタムモードのHOLDボタン位置を設定から変更可能に</li>
+    <li><span class="tag tag-feat">feat</span> admin限定「カスタム強制解放」ボタン追加</li>
+    <li><span class="tag tag-infra">infra</span> Supabaseリアルタイムカウント更新を廃止（ローカル管理に移行）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.23.2</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> ぷよ畑のpuyo_8に飛行モーション追加（浮いてから飛んでいく）</li>
+    <li><span class="tag tag-fun">fun</span> ぷよ畑のpuyo_9にユーレイモーション追加（ふよふよ揺れながら半透明で消える）</li>
+    <li><span class="tag tag-fix">fix</span> puyo_8/9は絶対にコケないように設定</li>
+    <li><span class="tag tag-fix">fix</span> puyo_9を最遅（45px/s）に調整</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.23.1</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> カスタムプリセットの保存上限30個、admin/製作者のみ削除可能（ランキングも連動削除）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよTOP画面のぷよが解放状況に応じた色数で出現（Normal=5色、Hard=6色、Special=9色）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよ畑（🪴）も解放状況に応じて6〜9種類のぷよが生えるように</li>
+    <li><span class="tag tag-feat">feat</span> ぷよカウント表示を解放状況に応じてフィルタリング（未解放の色は非表示）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.23.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> カスタムモードにホールド機能追加（ON時に💾ボタン表示、操作ボタン設定対応）</li>
+    <li><span class="tag tag-feat">feat</span> カスタムモードの設定を名前付きで保存・共有可能に（Supabase custom_presets）</li>
+    <li><span class="tag tag-feat">feat</span> 「みんなの設定」から他の人の保存設定を選んでプレイ可能</li>
+    <li><span class="tag tag-feat">feat</span> 保存済み設定でプレイ時のみランキングをDB保存（custom_rankings）</li>
+    <li><span class="tag tag-feat">feat</span> ランキングページに「ノーマル」「カスタム」モード切り替えタブ追加</li>
+    <li><span class="tag tag-feat">feat</span> カスタム設定に加速間隔パラメータ追加（加速量と加速間隔を個別設定）</li>
+    <li><span class="tag tag-fix">fix</span> 「好きな設定で遊ぶ」→「カスタムモード」にリネーム</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.22.2</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> カスタムモード設定にスライダードラッグ/タップ操作を追加</li>
+    <li><span class="tag tag-feat">feat</span> カスタムモードに加速間隔設定を追加（加速量と加速間隔を個別に設定可能）</li>
+    <li><span class="tag tag-fix">fix</span> 「最速」を「速度上限」に名称変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.22.1</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> カスタムモード解放時に鍵揺れ→壊れ→解放演出を追加</li>
+    <li><span class="tag tag-fix">fix</span> フレーバーテキストから句点を削除、「求む」→「求ム」に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.22.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよカスタムモード追加（Specialで3万点達成で解放、色数/盤面/速度/ホールド等を自由に設定）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよ全消しボーナス追加（+3600点、✨演出付き）</li>
+    <li><span class="tag tag-fix">fix</span> 全難易度の初期スピードを800msに統一</li>
+    <li><span class="tag tag-fix">fix</span> Special解放時にフレーバーテキストが表示されないバグを修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.21.2</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> テトリスでゲーム開始してもブロックが落ちてこないバグを修正（grid未初期化）</li>
+    <li><span class="tag tag-fix">fix</span> テトリスのタイトル画面でHOLD/NEXTボックスが表示されるバグを修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.21.1</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> テトリス・ブロックブラストでタイトル画面を飛ばしてゲームが自動開始するバグを修正</li>
+    <li><span class="tag tag-feat">feat</span> テトリス・ブロックブラストのヘッダーに🏆ランキングアイコン追加</li>
+    <li><span class="tag tag-fix">fix</span> ぷよ難易度選択でロック中のフレーバーテキストを非表示に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.21.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよ難易度ロック解除演出を改善（鍵が揺れて壊れる→解放テキスト表示）</li>
+    <li><span class="tag tag-feat">feat</span> ロック解除演出を難易度選択画面を開いた時に再生するよう変更</li>
+    <li><span class="tag tag-feat">feat</span> 再ロック機能を「難易度を選択」テキスト10回タップに変更</li>
+    <li><span class="tag tag-feat">feat</span> admin限定デバッグモード（🧪）追加（ロック解除閾値を10点に一時変更）</li>
+    <li><span class="tag tag-fix">fix</span> Hard最速を150ms、Special最速を100msに変更</li>
+    <li><span class="tag tag-fix">fix</span> 2段階加速導入（150msまで通常ペース、以降は緩やかに50000点で最速到達）</li>
+    <li><span class="tag tag-fix">fix</span> テトリスのホールドブロックに常に色を表示（使用済みは半透明）</li>
+    <li><span class="tag tag-fix">fix</span> テトリスのホールドが空なのにブロックが表示されるバグを修正</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面のベルマーク🔔がadmin端末で残るバグを修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.20.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよ難易度選択にロック機能追加（localStorage管理、実装後に3万点達成で解除）</li>
+    <li><span class="tag tag-feat">feat</span> ロック解除演出（🔓✨ポップアップ）追加</li>
+    <li><span class="tag tag-feat">feat</span> ロック中の難易度タップで解除条件モーダル表示</li>
+    <li><span class="tag tag-feat">feat</span> 難易度選択画面にフレーバーテキスト表示（各難易度の説明）</li>
+    <li><span class="tag tag-feat">feat</span> 難易度比較表をランキングページに移設（admin限定表示）</li>
+    <li><span class="tag tag-fix">fix</span> Hard/Specialの加速をNormalと同じに統一（初期速度のみ差別化）</li>
+    <li><span class="tag tag-fix">fix</span> Specialの初期速度をHardと同じ（500ms）に変更</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.19.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぷよ難易度Hardを6色（puyo_1〜6）に変更</li>
+    <li><span class="tag tag-feat">feat</span> ぷよ難易度Special追加（9色、8×16の広い盤面）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよ画像puyo_6〜9を追加</li>
+    <li><span class="tag tag-feat">feat</span> ランキングページにSpecialタブ追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.18.0</span><span class="date">2026/05/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲームセンター（🕹️）追加 — TOP画面からアクセス、ゲームをまとめて管理</li>
+    <li><span class="tag tag-feat">feat</span> テトリス風ゲーム追加（ゴースト表示、NEXT、Hold機能、ランキング対応）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックブラスト風ゲーム追加（ドラッグ＆タップ配置、ライン消去演出、ランキング対応）</li>
+    <li><span class="tag tag-feat">feat</span> ぷよゲームに難易度選択（Easy/Normal/Hard）追加、ランキングも難易度別に保存</li>
+    <li><span class="tag tag-feat">feat</span> テトリス・ぷよに操作ボタン配置カスタマイズ機能追加（タップ入れ替え方式、localStorage保存）</li>
+    <li><span class="tag tag-feat">feat</span> テトリスにボタン表示/非表示設定追加</li>
+    <li><span class="tag tag-feat">feat</span> テトリスにHold機能追加（💾ボタン、1ターン1回）</li>
+    <li><span class="tag tag-feat">feat</span> テトリスにソフトドロップ（↓）とハードドロップ（⏬）を分離</li>
+    <li><span class="tag tag-feat">feat</span> テトリス・ブロックブラストにタイトル画面追加（ゲーム開始/ランキング/設定）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに未読通知（🔔）全消去ボタン追加</li>
+    <li><span class="tag tag-fix">fix</span> ぷよNEXTぷよの表示と実際の落下向きが逆だった問題を修正</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラストのライン消去が時間差で残る問題を修正</li>
+    <li><span class="tag tag-fix">fix</span> ブロックブラストのドラッグプレビューが不安定だった問題を修正</li>
+    <li><span class="tag tag-fun">fun</span> 個人ページのパスワード5回間違いでゴキブリ発生</li>
+  </ul>
+</div>
 
 <div class="release">
 <div class="release">

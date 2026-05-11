@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>🕹️ ゲームセンター</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; padding: 20px;
+  color: #eee;
+}
+.header {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 480px; margin: 0 auto 24px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
+.home { color: #eee; text-decoration: none; font-size: 1.4em; line-height: 1; margin-left: auto; }
+h1 { font-size: 1.4em; font-weight: 700; }
+.games-grid {
+  max-width: 480px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.game-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 20px 16px;
+  text-align: center; text-decoration: none; color: #eee;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  background: rgba(255,255,255,0.1);
+}
+.game-card:active { transform: scale(0.97); }
+.game-icon {
+  width: 64px; height: 64px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2em;
+  background: rgba(255,255,255,0.08);
+}
+.game-icon img {
+  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+}
+.game-title { font-size: 1em; font-weight: 600; }
+.game-desc { font-size: 0.75em; color: #aaa; }
+@media (max-width: 360px) {
+  .games-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">←</a>
+  <h1>🕹️ ゲームセンター</h1>
+  <a class="home" href="../index.html">🏠</a>
+</div>
+
+<div class="games-grid" id="gamesGrid">
+  <a class="game-card" href="game.html" data-game="game_pikupiku">
+    <div class="game-icon"><img src="../images/puyo_1.avif" alt="ぴくぴく"></div>
+    <div class="game-title">💴ぴくぴく</div>
+    <div class="game-desc">ぷよぷよ風パズル</div>
+  </a>
+  <a class="game-card" href="tetris.html" data-game="game_tetris">
+    <div class="game-icon">🧱</div>
+    <div class="game-title">テトミン</div>
+    <div class="game-desc">ピクミン落としパズル</div>
+  </a>
+  <a class="game-card" href="blast.html" data-game="game_blast">
+    <div class="game-icon">💥</div>
+    <div class="game-title">ピクミンブラスト</div>
+    <div class="game-desc">ピクミン配置パズル</div>
+  </a>
+  <a class="game-card" href="olimar.html" data-game="game_olimar">
+    <div class="game-icon">🚀</div>
+    <div class="game-title">オリマーの冒険（仮）</div>
+    <div class="game-desc">探索RPG</div>
+  </a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script>
+(async function() {
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  if (isAdmin) return; // 管理者は全部見える
+  try {
+    const { data } = await client.from('game_settings').select('game_publish').eq('id', 1).maybeSingle();
+    const pub = (data && data.game_publish) || {};
+    document.querySelectorAll('.game-card[data-game]').forEach(card => {
+      const key = card.getAttribute('data-game');
+      if (pub[key] !== true) card.style.display = 'none';
+    });
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
