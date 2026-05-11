@@ -93,16 +93,17 @@ class SuikaGame {
       try {
         const paramBuf = await this.loader.fetchBinary('data/param._da');
         this.paramAll.load(paramBuf);
-        // Setup default player party (first 3 character params)
-        if (this.paramAll.chrParams.length >= 3) {
-          this.playerParams = [
-            this.paramAll.chrParams[0].clone(),
-            this.paramAll.chrParams[1].clone(),
-            this.paramAll.chrParams[2].clone(),
-          ];
-          // Mark as player
-          this.playerParams.forEach(p => { p.isPlayer = true; });
+        // Setup initial player party (only protagonist at start, matching original)
+        if (this.paramAll.chrParams.length >= 1) {
+          const p0 = this.paramAll.chrParams[0].clone();
+          p0.isPlayer = true;
+          p0.equip = [-1, -1, -1, -1, -1];
+          this.playerParams = [p0];
         }
+        // Initial gold (matching original: 1000G)
+        this.gold = 1000;
+        // Initial items: 3x item[1] (healing herb)
+        this.eventManager.inventory = [1, 1, 1];
       } catch (e) {
         console.warn('Param data load failed:', e.message);
       }
@@ -323,47 +324,20 @@ class SuikaGame {
       };
 
       if (this.stageManager.stages.length > 0) {
-        // Log areas with encounters for debugging
-        for (let i = 0; i < this.stageManager.stages.length; i++) {
-          const s = this.stageManager.stages[i];
-          if (s.enemies && s.enemies.length > 0) {
-            console.log(`Area ${i}: ${s.map.xNum}x${s.map.zNum}, enemies:${s.enemies.length}, npcs:${s.npcs.length}`);
-          }
-          if (s.wallEvents && s.wallEvents.length > 0) {
-            for (const we of s.wallEvents) {
-              console.log(`  WallEvent: pos(${we.xPos},${we.zPos}) vect:${we.vect} event:${we.event}`);
-            }
-          }
-        }
-
-        // Start at area 1 (first playable area)
-        let areaIdx = 1;
-        if (areaIdx >= this.stageManager.stages.length) areaIdx = 0;
+        // Start at area 0, position (16, 35) — matching original CInitGame
+        let areaIdx = 0;
         const area = this.stageManager.stages[areaIdx];
         this.field.setArea(area);
         this.currentArea = areaIdx;
-
-        // Find a walkable starting position
-        let placed = false;
-        for (let z = 1; z < area.map.zNum - 1 && !placed; z++) {
-          for (let x = 1; x < area.map.xNum - 1 && !placed; x++) {
-            const idx = area.map.getPtr(x, z);
-            if (area.map.hit[idx] === 0 && area.map.ground[idx] !== 0) {
-              this.field.playerPos.x = MapData.getXPos(x);
-              this.field.playerPos.z = MapData.getZPos(z);
-              placed = true;
-            }
-          }
-        }
-        if (!placed) {
-          this.field.playerPos.x = MapData.getXPos(Math.floor(area.map.xNum / 2));
-          this.field.playerPos.z = MapData.getZPos(Math.floor(area.map.zNum / 2));
-        }
-        console.log(`Area ${areaIdx}: ${area.map.xNum}x${area.map.zNum}, player at ${this.field.playerPos.x}, ${this.field.playerPos.z}`);
+        this.field.playerPos.x = MapData.getXPos(16);
+        this.field.playerPos.z = MapData.getZPos(35);
+        this.field.playerVect = 0; // facing north
       }
 
       this.showLoadingScreen('読み込み完了！');
       this.state = 'title';
+      // Default to "続きから" if save data exists
+      this.titleCursor = localStorage.getItem('suika_save') ? 1 : 0;
     } catch (e) {
       console.error('Load error:', e);
       this.showLoadingScreen('読込エラー: ' + e.message);
@@ -429,6 +403,8 @@ class SuikaGame {
     if (this.input.isOK()) {
       this.audio.resume();
       if (this.titleCursor === 0) {
+        // New game — reset to initial state
+        this.resetNewGame();
         this.state = 'game';
       } else if (this.titleCursor === 1) {
         if (this.loadGame()) {
@@ -596,11 +572,6 @@ class SuikaGame {
       this.menuCursor = 0;
       this.state = 'menu';
       return;
-    }
-
-    // Debug: B key to start test battle
-    if (this.input.isKeyDown('b') && this.paramAll.parties.length > 0) {
-      this.startBattle(0);
     }
   }
 
@@ -809,14 +780,6 @@ class SuikaGame {
       this.ctx.fillText(`${p.name} Lv${p.lv}`, 6, 12);
       this.ctx.fillText(`HP:${p.hp}/${p.maxHP} MP:${p.mp}/${p.maxMP}`, 6, 23);
       this.ctx.fillText(`G:${this.gold || 0}`, 6, 34);
-    }
-    if (!this.messageWindow.visible) {
-      this.ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      this.ctx.fillRect(2, 306, 396, 14);
-      this.ctx.fillStyle = '#aaa';
-      this.ctx.font = '9px monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('矢印:移動 A/S:カメラ Enter:話す B:戦闘テスト', 200, 316);
     }
   }
 
@@ -1183,6 +1146,35 @@ class SuikaGame {
   }
 
   // --- Save / Load ---
+
+  resetNewGame() {
+    // Reset to initial game state (matching original CInitGame)
+    if (this.paramAll.chrParams.length >= 1) {
+      const p0 = this.paramAll.chrParams[0].clone();
+      p0.isPlayer = true;
+      p0.equip = [-1, -1, -1, -1, -1];
+      this.playerParams = [p0];
+    }
+    this.gold = 1000;
+    this.eventManager.flags = new Set();
+    this.eventManager.inventory = [1, 1, 1]; // 3x healing herb
+    this.eventManager.gold = 1000;
+    this.field.eventFlags = this.eventManager.flags;
+
+    // Start at area 0, position (16, 35)
+    if (this.stageManager.stages.length > 0) {
+      const area = this.stageManager.stages[0];
+      this.field.setArea(area);
+      this.currentArea = 0;
+      this.field.playerPos.x = MapData.getXPos(16);
+      this.field.playerPos.z = MapData.getZPos(35);
+      this.field.playerVect = 0;
+      this.field.cameraVect = Math.PI;
+    }
+    this.battleResult = null;
+    this.fadeAlpha = 0;
+  }
+
   saveGame(silent = false) {
     const data = {
       playerParams: this.playerParams.map(p => ({
