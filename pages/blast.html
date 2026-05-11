@@ -370,8 +370,9 @@ function generatePieces() {
       pieces.push({ shape, puyoMap, used: false });
     }
     attempts++;
-    if (canPlaceAllThree(pieces)) break;
-  } while (attempts < 3);
+    // 少なくとも1つのピースが盤面のどこかに置ければOK
+    if (pieces.some(p => canFitAnywhere(p.shape))) break;
+  } while (attempts < 20);
   renderPieces();
 }
 
