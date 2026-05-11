@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>すいかが食べたい - CheerpJ</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: sans-serif;
+      color: #fff;
+    }
+    h1 { margin-bottom: 8px; font-size: 1.2rem; }
+    .info { margin-top: 8px; font-size: 0.8rem; color: #888; }
+  </style>
+  <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+</head>
+<body>
+  <h1>すいかが食べたい</h1>
+
+  <applet
+    archive="arpg.jar"
+    code="ARpg.class"
+    width="400"
+    height="320">
+    <param name="Mode" value="0">
+    <param name="Safe" value="0">
+  </applet>
+
+  <p class="info">CheerpJ 4.3 で Java Applet を実行中…</p>
+
+  <script>
+    cheerpjInit();
+  </script>
+</body>
+</html>
