@@ -19,6 +19,8 @@ export class Field {
     this.frameCount = 0;
     // NPC animation state
     this.npcAnimOffsets = {}; // npc index → { bobY, bobPhase }
+    // NPC movement animations
+    this.npcMoveAnims = []; // { npcIdx, startX, startZ, endX, endZ, t, duration }
   }
 
   setArea(area) {
@@ -223,6 +225,51 @@ export class Field {
     this.cameraVect += Math.PI / 4;
   }
 
+  // Start NPC movement animation
+  startNpcMove(npcIdx, targetX, targetZ, speed) {
+    if (!this.area || npcIdx >= this.area.npcs.length) return;
+    const npc = this.area.npcs[npcIdx];
+    const startX = MapData.getXPos(npc.xPos);
+    const startZ = MapData.getZPos(npc.zPos);
+    const endX = MapData.getXPos(targetX);
+    const endZ = MapData.getZPos(targetZ);
+    const dist = Math.sqrt((endX - startX) ** 2 + (endZ - startZ) ** 2);
+    const duration = Math.max(5, Math.floor(dist / (speed * 10 + 20)));
+    this.npcMoveAnims.push({ npcIdx, startX, startZ, endX, endZ, t: 0, duration });
+  }
+
+  // Update NPC movement animations
+  updateNpcMoves() {
+    for (let i = this.npcMoveAnims.length - 1; i >= 0; i--) {
+      const anim = this.npcMoveAnims[i];
+      anim.t++;
+      const progress = Math.min(1, anim.t / anim.duration);
+      // Update NPC position
+      if (this.area && anim.npcIdx < this.area.npcs.length) {
+        const npc = this.area.npcs[anim.npcIdx];
+        const curX = anim.startX + (anim.endX - anim.startX) * progress;
+        const curZ = anim.startZ + (anim.endZ - anim.startZ) * progress;
+        npc.xPos = MapData.getXBlock(curX);
+        npc.zPos = MapData.getZBlock(curZ);
+        // Store sub-cell position for smooth rendering
+        npc._renderX = curX;
+        npc._renderZ = curZ;
+        // Face movement direction
+        if (progress < 1) {
+          npc._moving = true;
+        }
+      }
+      if (progress >= 1) {
+        if (this.area && anim.npcIdx < this.area.npcs.length) {
+          this.area.npcs[anim.npcIdx]._moving = false;
+          this.area.npcs[anim.npcIdx]._renderX = undefined;
+          this.area.npcs[anim.npcIdx]._renderZ = undefined;
+        }
+        this.npcMoveAnims.splice(i, 1);
+      }
+    }
+  }
+
   drawGround() {
     if (!this.area) return;
     const map = this.area.map;
@@ -332,9 +379,9 @@ export class Field {
       if (!model || model.vertices.length === 0) continue;
 
       const pos = new Vec3(
-        MapData.getXPos(npc.xPos),
+        npc._renderX !== undefined ? npc._renderX : MapData.getXPos(npc.xPos),
         0,
-        MapData.getZPos(npc.zPos)
+        npc._renderZ !== undefined ? npc._renderZ : MapData.getZPos(npc.zPos)
       );
 
       // Frustum culling
@@ -355,6 +402,7 @@ export class Field {
 
   draw() {
     this.frameCount++;
+    this.updateNpcMoves();
     this.setCamera();
     this.renderer.clear();
     this.drawGround();

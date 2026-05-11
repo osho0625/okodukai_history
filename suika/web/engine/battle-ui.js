@@ -107,14 +107,36 @@ export class BattleUI {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
       }
+      if (newMsg.includes('会心')) {
+        this.effect.triggerFlash('#ff0', 8);
+        this.effect.triggerShake(8);
+        this.effect.spawnParticles(200, 150, 20, '#ff4');
+      }
       if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
         this.effect.triggerFlash('#ff0', 6);
+        this.effect.spawnParticles(200, 120, 15, '#f80');
       }
       if (newMsg.includes('魔法') || newMsg.includes('唱えた')) {
         this.effect.spawnParticles(200, 100, 12, '#8af');
       }
       if (newMsg.includes('回復')) {
-        this.effect.spawnParticles(200, 250, 8, '#4f8');
+        this.effect.spawnParticles(250, 260, 10, '#4f8');
+      }
+      if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('全能力')) {
+        this.effect.spawnParticles(250, 250, 8, '#ff8');
+      }
+      if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった')) {
+        this.effect.spawnParticles(200, 100, 8, '#a4f');
+      }
+      if (newMsg.includes('毒を受けた')) {
+        this.effect.spawnParticles(200, 100, 10, '#8f0');
+      }
+      if (newMsg.includes('麻痺') || newMsg.includes('石になった')) {
+        this.effect.triggerFlash('#ff0', 4);
+        this.effect.spawnParticles(200, 100, 12, '#cc0');
+      }
+      if (newMsg.includes('混乱')) {
+        this.effect.spawnParticles(200, 100, 8, '#f0f');
       }
       this.lastLogLen = battleState.log.length;
     }

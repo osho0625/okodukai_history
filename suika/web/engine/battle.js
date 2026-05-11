@@ -252,14 +252,36 @@ export class BattleEngine {
   }
 
   doAttack(attacker, defender) {
+    // Confusion check: confused units may hit allies
+    if (attacker.confuse > 0) {
+      attacker.confuse--;
+      if (rand(100) < 30) {
+        this.addLog(`${attacker.name}は混乱している！`);
+        // Hit random ally instead
+        const allies = attacker.isPlayer ? this.players.filter(p => p.isAlive()) : this.enemies.filter(e => e.isAlive());
+        if (allies.length > 0) {
+          defender = allies[rand(allies.length)];
+        }
+      }
+    }
+
     if (!isHit(attacker, defender)) {
       this.addLog(`${attacker.name}の攻撃！ ミス！`);
       return;
     }
-    const dmg = calcWeaponDamage(attacker, defender, 100, 0, false);
+
+    // Critical hit check (DEX-based, ~10% base)
+    const critChance = 5 + Math.floor(attacker.dex / 5);
+    const isCrit = rand(100) < critChance;
+
+    let dmg = calcWeaponDamage(attacker, defender, 100, 0, false);
+    if (isCrit) dmg = Math.floor(dmg * 1.5);
+
     defender.takeDamage(dmg);
-    this.addLog(`${attacker.name}の攻撃！ ${defender.name}に${dmg}ダメージ！`);
+    const critText = isCrit ? '会心の一撃！ ' : '';
+    this.addLog(`${attacker.name}の攻撃！ ${critText}${defender.name}に${dmg}ダメージ！`);
     if (this.onDamage) this.onDamage(defender, dmg);
+    if (isCrit && this.onCritical) this.onCritical(defender);
     if (!defender.isAlive()) {
       this.addLog(`${defender.name}を倒した！`);
       if (!defender.isPlayer) {
@@ -319,6 +341,9 @@ export class BattleEngine {
   }
 
   applySkillEffect(user, target, skill) {
+    // Notify UI of skill type for animation
+    if (this.onSkillEffect) this.onSkillEffect(user, target, skill);
+
     switch (skill.kind) {
       case SKILL_KIND.ATTACK: {
         // Magic attack: INT-based damage (ported from MagicAttack)
@@ -328,11 +353,13 @@ export class BattleEngine {
         let defPow = intT * Math.floor(intT / 3) + intT * 4;
         const power = skill.workNo || 100;
         atkPow *= power;
-        atkPow += 100 * 100; // bonus
+        atkPow += 100 * 100;
         defPow *= 100;
         let dmg = Math.floor((atkPow * 2 - defPow) * (rand(50) + 150) / 100000);
         if (dmg < 0) dmg = 0;
         if (target.defending) dmg = Math.floor(dmg / 2);
+        // Element weakness (simplified: workNo > 100 = strong spell)
+        if (power > 100) dmg = Math.floor(dmg * 1.2);
         target.takeDamage(dmg);
         this.addLog(`${target.name}に${dmg}ダメージ！`);
         if (this.onDamage) this.onDamage(target, dmg);
@@ -358,26 +385,86 @@ export class BattleEngine {
         break;
       }
       case SKILL_KIND.BUFF: {
-        // Simple buff: boost DEF or AGI temporarily
-        this.addLog(`${target.name}の防御力が上がった！`);
-        target.def = Math.floor(target.def * 1.3);
+        // Buff based on workNo: 0=DEF, 1=STR, 2=AGI, 3=all
+        const buffType = (skill.workNo || 0) % 4;
+        switch (buffType) {
+          case 0:
+            target.def = Math.floor(target.def * 1.3);
+            this.addLog(`${target.name}の防御力が上がった！`);
+            break;
+          case 1:
+            target.str = Math.floor(target.str * 1.3);
+            this.addLog(`${target.name}の攻撃力が上がった！`);
+            break;
+          case 2:
+            target.agi = Math.floor(target.agi * 1.3);
+            this.addLog(`${target.name}の素早さが上がった！`);
+            break;
+          case 3:
+            target.def = Math.floor(target.def * 1.2);
+            target.str = Math.floor(target.str * 1.2);
+            target.agi = Math.floor(target.agi * 1.2);
+            this.addLog(`${target.name}の全能力が上がった！`);
+            break;
+        }
         break;
       }
       case SKILL_KIND.DEBUFF: {
-        // Debuff: lower target stats
-        if (rand(100) < 60) {
-          target.def = Math.max(1, Math.floor(target.def * 0.7));
-          this.addLog(`${target.name}の防御力が下がった！`);
+        // Debuff based on workNo
+        const debuffType = (skill.workNo || 0) % 3;
+        const successRate = 50 + user.int_ - target.int_;
+        if (rand(100) < Math.max(20, Math.min(80, successRate))) {
+          switch (debuffType) {
+            case 0:
+              target.def = Math.max(1, Math.floor(target.def * 0.7));
+              this.addLog(`${target.name}の防御力が下がった！`);
+              break;
+            case 1:
+              target.str = Math.max(1, Math.floor(target.str * 0.7));
+              this.addLog(`${target.name}の攻撃力が下がった！`);
+              break;
+            case 2:
+              target.agi = Math.max(1, Math.floor(target.agi * 0.7));
+              this.addLog(`${target.name}の素早さが下がった！`);
+              break;
+          }
         } else {
           this.addLog(`しかし効かなかった！`);
         }
         break;
       }
       case SKILL_KIND.STATUS: {
-        // Status effects: poison, etc.
-        if (rand(100) < 50) {
-          target.poison = true;
-          this.addLog(`${target.name}は毒を受けた！`);
+        // Status effects based on workNo: 0=poison, 1=paralysis, 2=blind, 3=stone, 4=confuse
+        const statusType = (skill.workNo || 0) % 5;
+        const successRate = 40 + user.int_ - target.int_;
+        if (rand(100) < Math.max(15, Math.min(75, successRate))) {
+          switch (statusType) {
+            case 0:
+              target.poison = true;
+              this.addLog(`${target.name}は毒を受けた！`);
+              break;
+            case 1:
+              target.agi = Math.max(1, Math.floor(target.agi * 0.3));
+              this.addLog(`${target.name}は麻痺した！`);
+              break;
+            case 2:
+              target.blind = 3;
+              target.dex = Math.max(1, Math.floor(target.dex * 0.5));
+              this.addLog(`${target.name}は目がくらんだ！`);
+              break;
+            case 3:
+              if (!target.isPlayer || rand(100) < 20) {
+                target.takeDamage(target.hp);
+                this.addLog(`${target.name}は石になった！`);
+              } else {
+                this.addLog(`しかし効かなかった！`);
+              }
+              break;
+            case 4:
+              target.confuse = 3;
+              this.addLog(`${target.name}は混乱した！`);
+              break;
+          }
         } else {
           this.addLog(`しかし効かなかった！`);
         }

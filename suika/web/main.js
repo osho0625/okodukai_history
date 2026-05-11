@@ -192,6 +192,33 @@ class SuikaGame {
           if (z !== 255) this.field.playerPos.z = MapData.getZPos(z);
         }
       };
+      this.eventManager.moveCallback = (chr, speed, algo, move) => {
+        if (chr > 0 && chr < 99 && this.field.area) {
+          const npcIdx = chr - 3; // NPC indices start at 3 in original
+          if (npcIdx >= 0 && npcIdx < this.field.area.npcs.length) {
+            const npc = this.field.area.npcs[npcIdx];
+            let tx = npc.xPos, tz = npc.zPos;
+            const dist = move || 1;
+            switch (algo) {
+              case 0: tz -= dist; break;
+              case 1: tx += dist; break;
+              case 2: tz += dist; break;
+              case 3: tx -= dist; break;
+              case 4: {
+                const px = MapData.getXBlock(this.field.playerPos.x);
+                const pz = MapData.getZBlock(this.field.playerPos.z);
+                if (Math.abs(px - npc.xPos) > Math.abs(pz - npc.zPos)) {
+                  tx += px > npc.xPos ? dist : -dist;
+                } else {
+                  tz += pz > npc.zPos ? dist : -dist;
+                }
+                break;
+              }
+            }
+            this.field.startNpcMove(npcIdx, tx, tz, speed);
+          }
+        }
+      };
       this.eventManager.vectCallback = (chr, vect) => {
         if (chr === 0 || chr === 98) {
           this.field.playerVect = vect * (Math.PI / 2);
