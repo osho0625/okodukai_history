@@ -1323,4 +1323,5 @@ class SuikaGame {
 }
 
 const game = new SuikaGame();
+window._suikaGame = game; // Expose for navigation guard
 game.init();

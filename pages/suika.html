@@ -45,7 +45,6 @@ canvas {
   margin-top: 4px; font-size: 0.65rem; color: #555; text-align: center;
 }
 
-/* On touch devices, shrink canvas to leave room for controls */
 @media (pointer: coarse) {
   .game-wrap {
     justify-content: flex-start;
@@ -60,9 +59,9 @@ canvas {
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" onclick="suikaNavGuard('前の画面', function(){history.back()})">←</a>
   <h1>🍉 すいかが食べたい</h1>
-  <a class="home-link" href="arcade.html">🕹️</a>
+  <a class="home-link" onclick="suikaNavGuard('ゲームセンター', function(){location.href='arcade.html'})">🕹️</a>
 </div>
 
 <div class="game-wrap">
@@ -70,6 +69,30 @@ canvas {
   <p class="info">矢印:移動 / Enter:決定 / X:キャンセル / Z:メニュー / A/S:カメラ</p>
 </div>
 
+<script>
+// Navigation guard — confirm before leaving during gameplay
+function suikaNavGuard(dest, action) {
+  // Auto-save before leaving
+  if (window._suikaGame && window._suikaGame.state === 'game') {
+    window._suikaGame.saveGame(true);
+  }
+  // If on title screen, just leave
+  if (!window._suikaGame || window._suikaGame.state === 'title' || window._suikaGame.state === 'loading') {
+    action();
+    return;
+  }
+  if (confirm('ゲームを中断して' + dest + 'に移動しますか？\n（自動セーブ済み）')) {
+    action();
+  }
+}
+
+// Also handle browser back/close
+window.addEventListener('beforeunload', function(e) {
+  if (window._suikaGame && window._suikaGame.state === 'game') {
+    window._suikaGame.saveGame(true);
+  }
+});
+</script>
 <script type="module" src="../suika/web/main.js"></script>
 </body>
 </html>
