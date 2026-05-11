@@ -580,9 +580,16 @@ function clearPreview() {
   document.querySelectorAll('.cell.preview, .cell.invalid-preview').forEach(el => {
     el.classList.remove('preview', 'invalid-preview');
     const x = parseInt(el.dataset.x), y = parseInt(el.dataset.y);
-    if (!grid[y][x]) {
+    // gridに実データがなければ表示をクリア
+    if (!grid[y] || !grid[y][x]) {
       el.style.background = '';
       el.innerHTML = '';
+    } else {
+      // gridにデータがある場合は正しい表示に戻す
+      const puyoIdx = COLORS.indexOf(grid[y][x]);
+      const imgSrc = PUYO_IMGS[(puyoIdx >= 0 ? puyoIdx : 0) % PUYO_IMGS.length];
+      el.style.background = 'none';
+      el.innerHTML = '<img src="' + imgSrc + '">';
     }
   });
 }
@@ -620,6 +627,7 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 document.addEventListener('mouseup', endDrag);
 document.addEventListener('touchend', endDrag);
+document.addEventListener('touchcancel', endDrag);
 
 // --- タップ配置 ---
 function handleCellClick(x, y) {
@@ -647,6 +655,7 @@ function canPlace(shape, px, py) {
 }
 
 function doPlace(pieceIdx, px, py) {
+  clearPreview();
   const p = pieces[pieceIdx];
 
   // 配置
