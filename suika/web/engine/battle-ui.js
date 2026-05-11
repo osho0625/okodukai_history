@@ -611,12 +611,16 @@ export class BattleUI {
         ctx.fillText('▶', px - 10, py + 10);
       }
 
+      // Name + status icons
       ctx.fillStyle = p.alive ? '#fff' : '#666';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(p.name, px, py + 10);
+      let nameStr = p.name;
+      if (p.poison) nameStr += '☠';
+      if (p.defending) nameStr += '🛡';
+      ctx.fillText(nameStr, px, py + 10);
 
-      // HP
+      // HP with gradient bar
       ctx.fillStyle = '#aaa';
       ctx.font = '10px monospace';
       ctx.fillText(`HP`, px, py + 24);
@@ -625,25 +629,46 @@ export class BattleUI {
       ctx.fillText(`${p.hp}/${p.maxHP}`, px + 75, py + 24);
       ctx.textAlign = 'left';
 
-      // HP bar
       const hpRatio = p.hp / p.maxHP;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(px, py + 27, 75, 4);
-      ctx.fillStyle = hpRatio > 0.3 ? '#4c4' : '#c44';
-      ctx.fillRect(px, py + 27, 75 * hpRatio, 4);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(px, py + 27, 75, 5);
+      // Gradient HP bar
+      const hpGrad = ctx.createLinearGradient(px, 0, px + 75 * hpRatio, 0);
+      if (hpRatio > 0.5) {
+        hpGrad.addColorStop(0, '#4c4'); hpGrad.addColorStop(1, '#6e6');
+      } else if (hpRatio > 0.25) {
+        hpGrad.addColorStop(0, '#cc4'); hpGrad.addColorStop(1, '#ea6');
+      } else {
+        hpGrad.addColorStop(0, '#c44'); hpGrad.addColorStop(1, '#e66');
+      }
+      ctx.fillStyle = hpGrad;
+      ctx.fillRect(px, py + 27, 75 * hpRatio, 5);
 
       // MP
       ctx.fillStyle = '#aaa';
-      ctx.fillText(`MP`, px, py + 42);
+      ctx.fillText(`MP`, px, py + 44);
       ctx.fillStyle = '#ccf';
       ctx.textAlign = 'right';
-      ctx.fillText(`${p.mp}/${p.maxMP}`, px + 75, py + 42);
+      ctx.fillText(`${p.mp}/${p.maxMP}`, px + 75, py + 44);
       ctx.textAlign = 'left';
 
-      ctx.fillStyle = '#333';
-      ctx.fillRect(px, py + 45, 75, 3);
-      ctx.fillStyle = '#48f';
-      ctx.fillRect(px, py + 45, 75 * (p.mp / Math.max(1, p.maxMP)), 3);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(px, py + 47, 75, 4);
+      const mpGrad = ctx.createLinearGradient(px, 0, px + 75 * (p.mp / Math.max(1, p.maxMP)), 0);
+      mpGrad.addColorStop(0, '#38c'); mpGrad.addColorStop(1, '#6af');
+      ctx.fillStyle = mpGrad;
+      ctx.fillRect(px, py + 47, 75 * (p.mp / Math.max(1, p.maxMP)), 4);
+
+      // Dead indicator
+      if (!p.alive) {
+        ctx.fillStyle = 'rgba(255,0,0,0.3)';
+        ctx.fillRect(px - 2, py, 80, 55);
+        ctx.fillStyle = '#f44';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('戦闘不能', px + 37, py + 60);
+        ctx.textAlign = 'left';
+      }
     }
   }
 
@@ -785,14 +810,26 @@ export class BattleUI {
     const logs = state.log;
     if (logs.length === 0) return;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 205, 400, 25);
+    // Battle log background
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 203, 400, 27);
 
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#eee';
-    // Show latest message
-    ctx.fillText(logs[logs.length - 1], 200, 221);
+    // Show latest message (truncate if too long)
+    let msg = logs[logs.length - 1];
+    if (msg.length > 35) msg = msg.slice(0, 35) + '...';
+    ctx.fillText(msg, 200, 220);
+
+    // Turn indicator at top
+    if (state.currentUnit) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(140, 0, 120, 16);
+      ctx.fillStyle = state.currentUnit.isPlayer ? '#8f8' : '#f88';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`${state.currentUnit.name}のターン`, 200, 12);
+    }
   }
 
   reset() {

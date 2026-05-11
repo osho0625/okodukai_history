@@ -153,7 +153,8 @@ export class EventManager {
           const charCount = evt.data[ptr++] & 0xFF;
           let text = evt.getString(ptr, charCount);
           ptr += charCount * 2;
-          // Strip all control codes: @S(wait) @P(pause) @E(end) @C(clear) @R(newline) @w(white) @y(yellow) etc.
+          // Process control codes: @R=newline, @C=clear, others=strip
+          text = text.replace(/@R/g, '\n');
           text = text.replace(/@[A-Za-z]/g, '').replace(/\0/g, '').trim();
           if (text && this.messageCallback) {
             await this.messageCallback(text);

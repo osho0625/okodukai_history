@@ -934,12 +934,68 @@ class SuikaGame {
       this.ctx.fillText(`${p.name} Lv${p.lv}`, 6, 12);
       this.ctx.fillText(`HP:${p.hp}/${p.maxHP} MP:${p.mp}/${p.maxMP}`, 6, 23);
       this.ctx.fillText(`G:${this.gold || 0}`, 6, 34);
+
+      // Mini-map (top-right corner)
+      this.drawMiniMap();
     }
 
     // End screen shake
     if (shaking) {
       this.ctx.restore();
     }
+  }
+
+  // Mini-map display (top-right corner)
+  drawMiniMap() {
+    if (!this.field.area) return;
+    const ctx = this.ctx;
+    const map = this.field.area.map;
+    const mapSize = 50;
+    const mx = 395 - mapSize;
+    const my = 4;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(mx - 2, my - 2, mapSize + 4, mapSize + 4);
+
+    const cellW = mapSize / map.xNum;
+    const cellH = mapSize / map.zNum;
+    const px = MapData.getXBlock(this.field.playerPos.x);
+    const pz = MapData.getZBlock(this.field.playerPos.z);
+
+    // Draw visible range around player
+    const viewRange = Math.floor(mapSize / (2 * Math.max(cellW, cellH)));
+    for (let z = 0; z < map.zNum; z++) {
+      for (let x = 0; x < map.xNum; x++) {
+        const idx = map.getPtr(x, z);
+        const ground = map.ground[idx];
+        const hit = map.hit[idx];
+        if (ground === 0 && hit === 0) continue;
+
+        let color;
+        if (hit >= 3) color = '#444'; // wall
+        else if (ground > 0) color = '#2a4a2a'; // walkable
+        else color = '#1a1a1a';
+
+        ctx.fillStyle = color;
+        ctx.fillRect(mx + x * cellW, my + z * cellH, Math.max(1, cellW), Math.max(1, cellH));
+      }
+    }
+
+    // Draw NPCs as dots
+    if (this.field.area.npcs) {
+      ctx.fillStyle = '#88f';
+      for (const npc of this.field.area.npcs) {
+        ctx.fillRect(mx + npc.xPos * cellW, my + npc.zPos * cellH, Math.max(1, cellW + 1), Math.max(1, cellH + 1));
+      }
+    }
+
+    // Draw player (blinking)
+    if ((this.frameCount >> 2) & 1) {
+      ctx.fillStyle = '#f44';
+    } else {
+      ctx.fillStyle = '#ff0';
+    }
+    ctx.fillRect(mx + px * cellW - 1, my + pz * cellH - 1, Math.max(2, cellW + 1), Math.max(2, cellH + 1));
   }
 
   // Level-up system (uses prmUps data from param._da)
