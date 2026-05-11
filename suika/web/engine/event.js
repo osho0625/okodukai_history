@@ -1,29 +1,40 @@
-// event.js — Event system (ported from CEventManage)
-// Simplified: handles message display and basic commands
+// event.js — Event script interpreter (ported from CEventManage)
+// Handles NPC dialogue, flags, area transitions, shops, battles, items, etc.
 
 import { BinaryReader } from './loader.js';
 
-// Event commands
+// Event commands (from Java CEventManage analysis)
 const E = {
   END: 0, SETEF: 1, RESETEF: 2, SETCF: 3, RESETCF: 4,
   VECT: 5, VECT2: 6, LOOK: 7, OPENW: 8, CLOSEW: 9,
   MESS: 10, MOVE: 11, POS: 12, SE: 13, JUMP: 14,
-  IF: 15, IFN: 16, YESNO: 17, FRAME: 22,
-  FADEIN: 23, FADEOUT: 24, CALL: 57, RETURN: 58,
-  AREA: 56,
+  IF: 15, IFN: 16, YESNO: 17, TSHOP: 18, WSHOP: 19,
+  GSHOP: 20, IN: 21, FRAME: 22, FADEIN: 23, FADEOUT: 24,
+  WHITEIN: 25, WHITEOUT: 26, HEAL: 27, ADDGOLD: 28, SUBGOLD: 29,
+  MAPM: 30, MAPH: 31, CHRALGO: 32, PASSW: 33, CMPI: 34,
+  PARTY: 35, BATTLE: 36, INRESET: 37, COIN: 38, PARTYM: 39,
+  PAT: 40, CMPP: 41, CAMINIT: 42, SCALE: 43, CAMCHR: 44,
+  ITEM: 45, RESETFL: 46, EFFECT: 47, DISPGOLD: 48, CMPH: 49,
+  MAPG: 50, SSHOP: 51, QUIZ: 52, BATTLE2: 53, CHRMODE: 54,
+  EXCL: 55, AREA: 56, CALL: 57, RETURN: 58, POSADD: 59,
+  IFCALL: 60, IFNCALL: 61, POSCOPY: 62, POSY: 63, QUAKE: 64,
+  CHRPRM: 65, ADDITEM: 66, IFRET: 67, IFNRET: 68, CHRMENU: 69,
+  GETABI: 70, SETABI: 71, CSHOP: 72, AMBIENT: 73, LIGHT: 74,
+  NUMBER: 75,
 };
 
 class EventData {
   constructor() {
     this.data = null; // Uint8Array
   }
-
   get(ptr) { return this.data[ptr]; }
-
   getWord(ptr) {
     return ((this.data[ptr] & 0xFF) << 8) | (this.data[ptr + 1] & 0xFF);
   }
-
+  getSignedWord(ptr) {
+    const v = this.getWord(ptr);
+    return v >= 32768 ? v - 65536 : v;
+  }
   getString(ptr, charCount) {
     let str = '';
     for (let i = 0; i < charCount; i++) {
@@ -36,27 +47,32 @@ class EventData {
 
 export class EventManager {
   constructor() {
-    this.events = [];  // EventData[]
-    this.messageCallback = null; // (text) => Promise<void>
-    this.choiceCallback = null;
-    this.battleCallback = null;  // (partyIndex) => Promise<void>
-    this.areaCallback = null;    // (area, x, z, rot) => void
-    this.flags = new Set(); // event flags
+    this.events = [];
+    this.flags = new Set();
+    this.gold = 0;
+    this.inventory = []; // item indices
+
+    // Callbacks (set by main.js)
+    this.messageCallback = null;   // (text) => Promise<void>
+    this.choiceCallback = null;    // (opt1, opt2) => Promise<number>
+    this.battleCallback = null;    // (partyIndex) => Promise<void>
+    this.areaCallback = null;      // (area, x, z, rot) => void
+    this.healCallback = null;      // () => void
+    this.goldCallback = null;      // (amount) => void
+    this.fadeCallback = null;      // (type, speed) => Promise<void>
+    this.seCallback = null;        // (seNo) => void
+    this.itemCallback = null;      // (itemIdx, add) => void
+    this.mapChangeCallback = null; // (type, x, z, val) => void
+    this.quakeCallback = null;     // (strength) => void
   }
 
   load(buffer) {
-    // event.sui is NOT compressed (uses CFile, not CFileJip)
-    // Format: [int: eventCount] [int[eventCount+1]: offsets] [raw byte data...]
-    // Offsets are relative to start of data section (after offset table)
     const reader = new BinaryReader(buffer);
-
     const eventCount = reader.readInt();
     const offsets = [];
     for (let i = 0; i < eventCount + 1; i++) {
       offsets.push(reader.readInt());
     }
-
-    // Data section starts here
     const dataStart = reader.offset;
     const allData = new Uint8Array(buffer, dataStart);
 
@@ -72,21 +88,26 @@ export class EventManager {
       }
       this.events.push(evt);
     }
-    console.log(`Events loaded: ${this.events.length}, data size: ${allData.length}`);
+    console.log(`Events loaded: ${this.events.length}`);
   }
 
   setFlag(n) { this.flags.add(n); }
   resetFlag(n) { this.flags.delete(n); }
   getFlag(n) { return this.flags.has(n); }
 
-  // Run an event script (simplified — only handles messages for now)
+  hasItem(itemIdx) { return this.inventory.includes(itemIdx); }
+  addItem(itemIdx) { this.inventory.push(itemIdx); }
+  removeItem(itemIdx) {
+    const i = this.inventory.indexOf(itemIdx);
+    if (i >= 0) this.inventory.splice(i, 1);
+  }
+
   async run(eventNo) {
     if (eventNo < 0 || eventNo >= this.events.length) return;
     const evt = this.events[eventNo];
     if (!evt || !evt.data || evt.data.length === 0) return;
 
     let ptr = 0;
-    const stack = [];
 
     while (ptr < evt.data.length) {
       const cmd = evt.data[ptr++];
@@ -95,20 +116,17 @@ export class EventManager {
         case E.END:
           return;
 
-        case E.OPENW: {
-          ptr++; // position byte (0=top, 1=bottom)
+        case E.OPENW:
+          ptr += 1; // position byte
           break;
-        }
 
-        case E.CLOSEW: {
+        case E.CLOSEW:
           break;
-        }
 
         case E.MESS: {
           const charCount = evt.data[ptr++] & 0xFF;
           let text = evt.getString(ptr, charCount);
           ptr += charCount * 2;
-          // Strip control codes: @S (wait), @P (pause), @E (end), etc.
           text = text.replace(/@[A-Z]/g, '').replace(/\0/g, '').trim();
           if (text && this.messageCallback) {
             await this.messageCallback(text);
@@ -117,114 +135,121 @@ export class EventManager {
         }
 
         case E.SETEF: {
-          const flag = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
+          const flag = evt.getWord(ptr); ptr += 2;
           this.setFlag(flag);
           break;
         }
 
         case E.RESETEF: {
-          const flag = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
+          const flag = evt.getWord(ptr); ptr += 2;
           this.resetFlag(flag);
           break;
         }
 
-        case E.SETCF: {
-          ptr += 3; // chr(1) + flag_word(2)
+        case E.SETCF:
+          ptr += 3;
           break;
-        }
 
-        case E.RESETCF: {
-          ptr += 3; // chr(1) + flag_word(2)
+        case E.RESETCF:
+          ptr += 3;
           break;
-        }
 
-        case E.VECT: {
-          ptr += 2; // chr, vect
-          break;
-        }
-
-        case E.VECT2: {
+        case E.VECT:
+        case E.VECT2:
+        case E.LOOK:
           ptr += 2;
           break;
-        }
-
-        case E.LOOK: {
-          ptr += 2;
-          break;
-        }
 
         case E.SE: {
-          ptr += 1;
+          const seNo = evt.data[ptr++] & 0xFF;
+          if (this.seCallback) this.seCallback(seNo);
           break;
         }
 
-        case E.FRAME: {
-          ptr += 2; // word
+        case E.FRAME:
+          ptr += 2;
+          // Small delay to simulate frame wait
+          await new Promise(r => setTimeout(r, 50));
           break;
-        }
 
         case E.JUMP: {
-          // Jump changes to a different event entirely
-          const target = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
-          // Run the target event instead
+          const target = evt.getWord(ptr); ptr += 2;
           return this.run(target);
         }
 
-        case 17: { // E_YESNO — show はい/いいえ choice
+        case E.YESNO: {
           if (this.choiceCallback) {
             const choice = await this.choiceCallback('はい', 'いいえ');
-            if (choice === 0) {
-              this.setFlag(300);
-            } else {
-              this.resetFlag(300);
-            }
+            if (choice === 0) this.setFlag(300);
+            else this.resetFlag(300);
           } else {
-            // Default: choose "はい"
             this.setFlag(300);
           }
           break;
         }
 
         case E.IF: {
-          const flag = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
-          const targetEvt = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
-          if (this.getFlag(flag)) {
-            return this.run(targetEvt);
-          }
+          const flag = evt.getWord(ptr); ptr += 2;
+          const target = evt.getWord(ptr); ptr += 2;
+          if (this.getFlag(flag)) return this.run(target);
           break;
         }
 
         case E.IFN: {
-          const flag = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
+          const flag = evt.getWord(ptr); ptr += 2;
+          const target = evt.getWord(ptr); ptr += 2;
+          if (!this.getFlag(flag)) return this.run(target);
+          break;
+        }
+
+        case E.IFCALL: {
+          const flag = evt.getWord(ptr); ptr += 2;
+          const target = evt.getWord(ptr); ptr += 2;
+          if (this.getFlag(flag)) await this.run(target);
+          break;
+        }
+
+        case E.IFNCALL: {
+          const flag = evt.getWord(ptr); ptr += 2;
+          const target = evt.getWord(ptr); ptr += 2;
+          if (!this.getFlag(flag)) await this.run(target);
+          break;
+        }
+
+        case E.IFRET: {
+          const flag = evt.getWord(ptr); ptr += 2;
+          ptr += 2; // unused word
+          if (this.getFlag(flag)) return;
+          break;
+        }
+
+        case E.IFNRET: {
+          const flag = evt.getWord(ptr); ptr += 2;
           ptr += 2;
-          const targetEvt = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
-          if (!this.getFlag(flag)) {
-            return this.run(targetEvt);
-          }
+          if (!this.getFlag(flag)) return;
           break;
         }
 
         case E.CALL: {
-          const target = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-          ptr += 2;
-          // Run sub-event then continue
+          const target = evt.getWord(ptr); ptr += 2;
           await this.run(target);
           break;
         }
 
-        case E.RETURN: {
+        case E.RETURN:
           return;
-        }
 
         case E.FADEIN:
-        case E.FADEOUT: {
-          ptr += 1;
+        case E.WHITEIN: {
+          const speed = evt.data[ptr++] & 0xFF;
+          if (this.fadeCallback) await this.fadeCallback('in', speed);
+          break;
+        }
+
+        case E.FADEOUT:
+        case E.WHITEOUT: {
+          const speed = evt.data[ptr++] & 0xFF;
+          if (this.fadeCallback) await this.fadeCallback('out', speed);
           break;
         }
 
@@ -233,123 +258,126 @@ export class EventManager {
           const ax = evt.data[ptr++] & 0xFF;
           const az = evt.data[ptr++] & 0xFF;
           const arot = evt.data[ptr++] & 0xFF;
-          if (this.areaCallback) {
-            this.areaCallback(area, ax, az, arot);
-          }
+          if (this.areaCallback) this.areaCallback(area, ax, az, arot);
           break;
         }
 
-        // Skip unknown commands with known operand sizes
-        default: {
-          // Handle battle command specially
-          if (cmd === 36) { // E_BATTLE
-            const partyIdx = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-            ptr += 2;
-            if (this.battleCallback) {
-              await this.battleCallback(partyIdx);
-            }
-            break;
-          }
-          if (cmd === 53) { // E_BATTLE2
-            const partyIdx = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-            ptr += 2;
-            if (this.battleCallback) {
-              await this.battleCallback(partyIdx);
-            }
-            break;
-          }
-          if (cmd === 27) { // E_HEAL — full HP/MP recovery
-            ptr += 1; // chr byte (ignored — heal all)
-            if (this.healCallback) this.healCallback();
-            break;
-          }
-          if (cmd === 28) { // E_ADDGOLD
-            const gold = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-            ptr += 2;
-            if (this.goldCallback) this.goldCallback(gold);
-            break;
-          }
-          if (cmd === 29) { // E_SUBGOLD
-            const gold = ((evt.data[ptr] & 0xFF) << 8) | (evt.data[ptr + 1] & 0xFF);
-            ptr += 2;
-            if (this.goldCallback) this.goldCallback(-gold);
-            break;
-          }
-
-          // Operand sizes for all commands (from Java source analysis)
-          const cmdSizes = {
-            11: 4,  // E_MOVE: chr(1) + speed(1) + algo(1) + move(1)
-            12: 3,  // E_POS: chr(1) + x(1) + z(1)
-            13: 1,  // E_SE: se_no(1)
-            17: 0,  // E_YESNO: handled above (no operands)
-            18: 12, // E_TSHOP: 12 bytes
-            19: 12, // E_WSHOP
-            20: 12, // E_GSHOP
-            21: 0,  // E_IN
-            22: 2,  // E_FRAME: word(2)
-            23: 1,  // E_FADEIN: speed(1)
-            24: 1,  // E_FADEOUT: speed(1)
-            25: 1,  // E_WHITEIN
-            26: 1,  // E_WHITEOUT
-            27: 1,  // E_HEAL: chr(1)
-            28: 2,  // E_ADDGOLD: word(2)
-            29: 2,  // E_SUBGOLD: word(2)
-            30: 3,  // E_MAPM: x(1) + z(1) + model(1)
-            31: 3,  // E_MAPH: x(1) + z(1) + hit(1)
-            32: 2,  // E_CHRALGO: chr(1) + algo(1)
-            33: 0,  // E_PASSW
-            34: 3,  // E_CMPI: item(2) + count(1)
-            35: 2,  // E_PARTY: chr(1) + flag(1)
-            36: 2,  // E_BATTLE: word(2)
-            37: 0,  // E_INRESET
-            38: 0,  // E_COIN
-            39: 2,  // E_PARTYM: chr(1) + flag(1)
-            40: 2,  // E_PAT: chr(1) + pat(1)
-            41: 3,  // E_CMPP: chr(1) + axis(1) + val(1)
-            42: 1,  // E_CAMINIT: vect(1)
-            43: 2,  // E_SCALE: chr(1) + scale(1)
-            44: 1,  // E_CAMCHR: chr(1)
-            45: 2,  // E_ITEM: item(2)
-            46: 2,  // E_RESETFL: word(2)
-            47: 2,  // E_EFFECT: type(1) + param(1)
-            48: 1,  // E_DISPGOLD: flag(1)
-            49: 3,  // E_CMPH: chr(1) + val(1) + ???(1)
-            50: 3,  // E_MAPG: x(1) + z(1) + ground(1)
-            51: 12, // E_SSHOP
-            52: 0,  // E_QUIZ
-            53: 2,  // E_BATTLE2: word(2)
-            54: 2,  // E_CHRMODE: chr(1) + mode(1)
-            55: 1,  // E_EXCL: chr(1)
-            56: 4,  // E_AREA: area(1) + x(1) + z(1) + rot(1)
-            57: 2,  // E_CALL: word(2)
-            58: 0,  // E_RETURN
-            59: 5,  // E_POSADD: chr(1) + dx_word(2) + dz_word(2)
-            60: 4,  // E_IFCALL: flag(2) + target(2)
-            61: 4,  // E_IFNCALL: flag(2) + target(2)
-            62: 2,  // E_POSCOPY: src(1) + dst(1)
-            63: 3,  // E_POSY: chr(1) + y_word(2)
-            64: 1,  // E_QUAKE: strength(1)
-            65: 3,  // E_CHRPRM: chr(1) + prm(1) + val(1)
-            66: 2,  // E_ADDITEM: item(2)
-            67: 4,  // E_IFRET: flag(2) + ???(2)
-            68: 4,  // E_IFNRET: flag(2) + ???(2)
-            69: 0,  // E_CHRMENU
-            70: 2,  // E_GETABI
-            71: 2,  // E_SETABI
-            72: 0,  // E_CSHOP
-            73: 3,  // E_AMBIENT: r(1) + g(1) + b(1)
-            74: 3,  // E_LIGHT
-            75: 2,  // E_NUMBER: word(2)
-          };
-
-          const skip = cmdSizes[cmd];
-          if (skip !== undefined) {
-            ptr += skip;
-          } else {
-            console.warn(`Unknown event cmd ${cmd} at ptr ${ptr - 1} in event ${eventNo}, stopping`);
-            return;
-          }
+        case E.HEAL: {
+          ptr += 1; // chr byte
+          if (this.healCallback) this.healCallback();
           break;
+        }
+
+        case E.ADDGOLD: {
+          const amount = evt.getWord(ptr); ptr += 2;
+          this.gold += amount;
+          if (this.goldCallback) this.goldCallback(amount);
+          break;
+        }
+
+        case E.SUBGOLD: {
+          const amount = evt.getWord(ptr); ptr += 2;
+          this.gold -= amount;
+          if (this.goldCallback) this.goldCallback(-amount);
+          break;
+        }
+
+        case E.BATTLE:
+        case E.BATTLE2: {
+          const partyIdx = evt.getWord(ptr); ptr += 2;
+          if (this.battleCallback) await this.battleCallback(partyIdx);
+          break;
+        }
+
+        case E.ITEM: {
+          const itemIdx = evt.getWord(ptr); ptr += 2;
+          this.addItem(itemIdx);
+          if (this.itemCallback) this.itemCallback(itemIdx, true);
+          break;
+        }
+
+        case E.ADDITEM: {
+          const itemIdx = evt.getWord(ptr); ptr += 2;
+          this.addItem(itemIdx);
+          if (this.itemCallback) this.itemCallback(itemIdx, true);
+          break;
+        }
+
+        case E.CMPI: {
+          // Compare item: if player has item, set flag 300
+          const itemIdx = evt.getWord(ptr); ptr += 2;
+          ptr += 1; // count
+          if (this.hasItem(itemIdx)) this.setFlag(300);
+          else this.resetFlag(300);
+          break;
+        }
+
+        case E.MAPM: {
+          const x = evt.data[ptr++] & 0xFF;
+          const z = evt.data[ptr++] & 0xFF;
+          const model = evt.data[ptr++] & 0xFF;
+          if (this.mapChangeCallback) this.mapChangeCallback('model', x, z, model);
+          break;
+        }
+
+        case E.MAPH: {
+          const x = evt.data[ptr++] & 0xFF;
+          const z = evt.data[ptr++] & 0xFF;
+          const hit = evt.data[ptr++] & 0xFF;
+          if (this.mapChangeCallback) this.mapChangeCallback('hit', x, z, hit);
+          break;
+        }
+
+        case E.MAPG: {
+          const x = evt.data[ptr++] & 0xFF;
+          const z = evt.data[ptr++] & 0xFF;
+          const ground = evt.data[ptr++] & 0xFF;
+          if (this.mapChangeCallback) this.mapChangeCallback('ground', x, z, ground);
+          break;
+        }
+
+        case E.QUAKE: {
+          const strength = evt.data[ptr++] & 0xFF;
+          if (this.quakeCallback) this.quakeCallback(strength);
+          break;
+        }
+
+        case E.RESETFL: {
+          // Reset a range of flags
+          const flag = evt.getWord(ptr); ptr += 2;
+          this.resetFlag(flag);
+          break;
+        }
+
+        // Commands we skip with known sizes
+        case E.MOVE: ptr += 4; break;
+        case E.POS: ptr += 3; break;
+        case E.TSHOP: case E.WSHOP: case E.GSHOP: case E.SSHOP: ptr += 12; break;
+        case E.IN: case E.INRESET: case E.COIN: case E.PASSW:
+        case E.QUIZ: case E.CHRMENU: case E.CSHOP: break; // 0 operands
+        case E.CHRALGO: ptr += 2; break;
+        case E.PARTY: case E.PARTYM: ptr += 2; break;
+        case E.PAT: ptr += 2; break;
+        case E.CMPP: ptr += 3; break;
+        case E.CAMINIT: ptr += 1; break;
+        case E.SCALE: ptr += 2; break;
+        case E.CAMCHR: ptr += 1; break;
+        case E.EFFECT: ptr += 2; break;
+        case E.DISPGOLD: ptr += 1; break;
+        case E.CMPH: ptr += 3; break;
+        case E.CHRMODE: ptr += 2; break;
+        case E.EXCL: ptr += 1; break;
+        case E.POSADD: ptr += 5; break;
+        case E.POSCOPY: ptr += 2; break;
+        case E.POSY: ptr += 3; break;
+        case E.CHRPRM: ptr += 3; break;
+        case E.GETABI: case E.SETABI: ptr += 2; break;
+        case E.AMBIENT: case E.LIGHT: ptr += 3; break;
+        case E.NUMBER: ptr += 2; break;
+
+        default: {
+          console.warn(`Unknown event cmd ${cmd} at ptr ${ptr - 1} in event ${eventNo}`);
+          return;
         }
       }
     }

@@ -41,6 +41,7 @@ class SuikaGame {
     this.battleEngine = null;
     this.battleUI = null;
     this.playerParams = []; // player party params for battle
+    this.fadeAlpha = 0; // 0=no fade, 1=fully black
   }
 
   async init() {
@@ -118,8 +119,39 @@ class SuikaGame {
         }
       };
       this.eventManager.goldCallback = (amount) => {
-        // Track gold (simplified)
         this.gold = (this.gold || 0) + amount;
+      };
+      this.eventManager.fadeCallback = async (type, speed) => {
+        // Fade in/out effect
+        const duration = Math.max(200, speed * 50);
+        const start = performance.now();
+        const fadeOut = (type === 'out');
+        return new Promise(resolve => {
+          const animate = () => {
+            const elapsed = performance.now() - start;
+            const t = Math.min(1, elapsed / duration);
+            this.fadeAlpha = fadeOut ? t : (1 - t);
+            if (t < 1) requestAnimationFrame(animate);
+            else resolve();
+          };
+          animate();
+        });
+      };
+      this.eventManager.mapChangeCallback = (type, x, z, val) => {
+        if (!this.field.area) return;
+        const map = this.field.area.map;
+        if (x >= map.xNum || z >= map.zNum) return;
+        const idx = map.getPtr(x, z);
+        if (type === 'model') map.mapModel[idx] = val;
+        else if (type === 'hit') map.hit[idx] = val;
+        else if (type === 'ground') map.ground[idx] = val;
+      };
+      this.eventManager.itemCallback = (itemIdx, add) => {
+        // Show item get message
+        const item = this.paramAll.getItem(itemIdx);
+        if (item && this.messageWindow) {
+          this.messageWindow.show(`${item.name}を手に入れた！`);
+        }
       };
 
       // Setup field with first area
@@ -349,15 +381,14 @@ class SuikaGame {
           this.playerParams[i].mp = bUnit.mp;
         }
       }
-      // Apply EXP (simplified: just add to first alive player)
+      // Apply EXP and check level-up
       if (result === BATTLE_RESULT.WIN && exp > 0) {
+        this.gold = (this.gold || 0) + gold;
         for (const p of this.playerParams) {
           if (p.hp > 0) {
-            p.exp = (p.exp || 0) + exp;
-            break;
+            this.applyExp(p, exp);
           }
         }
-        this.gold = (this.gold || 0) + gold;
       }
       // Return to field after a short delay
       setTimeout(() => {
@@ -410,17 +441,78 @@ class SuikaGame {
     this.messageWindow.draw();
     this.choiceWindow.draw();
 
+    // Fade overlay
+    if (this.fadeAlpha > 0.01) {
+      this.ctx.fillStyle = `rgba(0,0,0,${this.fadeAlpha})`;
+      this.ctx.fillRect(0, 0, 400, 320);
+    }
+
     // HUD overlay
     this.ctx.fillStyle = '#fff';
     this.ctx.font = '10px monospace';
     this.ctx.textAlign = 'left';
-    const map = this.field.area ? this.field.area.map : null;
-    const bx = map ? MapData.getXBlock(this.field.playerPos.x) : 0;
-    const bz = map ? MapData.getZBlock(this.field.playerPos.z) : 0;
-    const hit = map ? map.hit[map.getPtr(Math.max(0,Math.min(bx,map.xNum-1)), Math.max(0,Math.min(bz,map.zNum-1)))] : '?';
-    this.ctx.fillText(`Area:${this.currentArea} Pos:${bx},${bz} Hit:${hit}`, 4, 12);
+    // Player status mini-HUD
+    if (this.playerParams.length > 0 && !this.messageWindow.visible) {
+      const p = this.playerParams[0];
+      this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      this.ctx.fillRect(2, 2, 130, 36);
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = '9px monospace';
+      this.ctx.fillText(`${p.name} Lv${p.lv}`, 6, 12);
+      this.ctx.fillText(`HP:${p.hp}/${p.maxHP} MP:${p.mp}/${p.maxMP}`, 6, 23);
+      this.ctx.fillText(`G:${this.gold || 0}`, 6, 34);
+    }
     if (!this.messageWindow.visible) {
-      this.ctx.fillText('矢印:移動 A/S:カメラ Enter:話す B:戦闘テスト', 4, 310);
+      this.ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      this.ctx.fillRect(2, 306, 396, 14);
+      this.ctx.fillStyle = '#aaa';
+      this.ctx.font = '9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('矢印:移動 A/S:カメラ Enter:話す B:戦闘テスト', 200, 316);
+    }
+  }
+
+  // Level-up system (uses prmUps data from param._da)
+  applyExp(player, exp) {
+    const prevLv = player.lv;
+    player.exp = (player.exp || 0) + exp;
+
+    // EXP thresholds: simplified curve (100 * lv^1.5)
+    while (true) {
+      const nextLvExp = Math.floor(100 * Math.pow(player.lv, 1.5));
+      if (player.exp < nextLvExp) break;
+      if (player.lv >= 99) break;
+
+      player.exp -= nextLvExp;
+      player.lv++;
+
+      // Apply stat growth from prmUps table
+      const upIdx = Math.min(player.lv - 2, this.paramAll.prmUps.length - 1);
+      if (upIdx >= 0 && upIdx < this.paramAll.prmUps.length) {
+        const up = this.paramAll.prmUps[upIdx];
+        player.maxHP += up.hp + Math.floor(Math.random() * (up.hps + 1));
+        player.maxMP += up.mp;
+        player.str += up.str;
+        player.int_ += up.int_;
+        player.def += up.def;
+        player.agi += up.agi;
+        player.dex += up.dex;
+      } else {
+        // Fallback growth
+        player.maxHP += 5 + Math.floor(Math.random() * 5);
+        player.maxMP += 2;
+        player.str += 1;
+        player.def += 1;
+        player.agi += 1;
+      }
+
+      // Full heal on level up
+      player.hp = player.maxHP;
+      player.mp = player.maxMP;
+    }
+
+    if (player.lv > prevLv) {
+      console.log(`${player.name} Lv${prevLv}→${player.lv}!`);
     }
   }
 }

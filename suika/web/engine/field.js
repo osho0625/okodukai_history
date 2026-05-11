@@ -353,5 +353,20 @@ export class Field {
     this.drawGround();
     this.drawMapObjects();
     this.drawPlayer();
+
+    // Draw player shadow
+    this.renderer.drawShadow(this.playerPos, 40, this.cameraVect);
+
+    // Draw NPC shadows
+    if (this.area && this.area.npcs) {
+      for (const npc of this.area.npcs) {
+        const pos = new Vec3(MapData.getXPos(npc.xPos), 0, MapData.getZPos(npc.zPos));
+        const dx = pos.x - this.playerPos.x;
+        const dz = pos.z - this.playerPos.z;
+        if (dx * dx + dz * dz < 3000 * 3000) {
+          this.renderer.drawShadow(pos, 35, this.cameraVect);
+        }
+      }
+    }
   }
 }

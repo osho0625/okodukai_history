@@ -128,7 +128,15 @@ export class ChoiceWindow {
     if (input.isKeyDown('arrowdown') || input.isKeyDown('arrowright')) {
       this.selected = 1;
     }
-    if (input.isKeyDown('enter') || input.isKeyDown(' ')) {
+    if (input.isOK()) {
+      this.visible = false;
+      if (this.resolve) {
+        this.resolve(this.selected);
+        this.resolve = null;
+      }
+    }
+    if (input.isCancel()) {
+      this.selected = 1; // Cancel = "いいえ"
       this.visible = false;
       if (this.resolve) {
         this.resolve(this.selected);
