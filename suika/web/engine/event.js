@@ -406,22 +406,31 @@ export class EventManager {
           break;
         }
         case E.TSHOP: case E.WSHOP: case E.GSHOP: case E.SSHOP: {
-          // Shop: 12 bytes = shopName(0) + 6 item indices (2 bytes each)
+          // Shop: 12 bytes = 12 item indices (1 byte each, 0=empty)
           const items = [];
-          for (let i = 0; i < 6; i++) {
-            const itemIdx = evt.getWord(ptr + i * 2);
-            if (itemIdx > 0 && itemIdx < 65535) items.push(itemIdx);
+          for (let i = 0; i < 12; i++) {
+            const itemIdx = evt.data[ptr + i] & 0xFF;
+            if (itemIdx > 0) items.push(itemIdx);
           }
           ptr += 12;
+          const shopNames = { [E.TSHOP]: '道具屋', [E.WSHOP]: '武器屋', [E.GSHOP]: '勾玉屋', [E.SSHOP]: '土産屋' };
           if (this.shopCallback && items.length > 0) {
-            await this.shopCallback(items);
+            await this.shopCallback(items, shopNames[cmd] || 'お店');
           }
           break;
         }
         case E.IN: {
-          // Inn: heal all for gold (simplified — free heal for now)
-          if (this.healCallback) this.healCallback();
-          if (this.messageCallback) await this.messageCallback('ゆっくり休んだ。HPとMPが回復した！');
+          // Inn: costs gold, heals all HP/MP
+          const innPrice = evt.getWord(ptr); ptr += 2;
+          const cost = innPrice * 10; // Original multiplies by 10
+          if (this.gold < cost) {
+            if (this.messageCallback) await this.messageCallback('お金が足りません...');
+          } else {
+            this.gold -= cost;
+            if (this.goldCallback) this.goldCallback(-cost);
+            if (this.healCallback) this.healCallback();
+            if (this.messageCallback) await this.messageCallback('ゆっくり休んだ。HPとMPが回復した！');
+          }
           break;
         }
         case E.QUIZ: {

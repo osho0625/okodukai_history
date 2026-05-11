@@ -180,9 +180,9 @@ class SuikaGame {
       this.eventManager.seCallback = (seNo) => {
         this.audio.play(seNo);
       };
-      this.eventManager.shopCallback = async (itemIndices) => {
+      this.eventManager.shopCallback = async (itemIndices, shopName) => {
         this.shopUI = new ShopUI(this.ctx, this.input, this.paramAll);
-        const result = await this.shopUI.open('お店', itemIndices, this.gold || 0, this.eventManager.inventory);
+        const result = await this.shopUI.open(shopName || 'お店', itemIndices, this.gold || 0, this.eventManager.inventory);
         this.gold = result.gold;
         this.eventManager.inventory = result.inventory;
         this.eventManager.gold = this.gold;
