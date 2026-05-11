@@ -539,7 +539,7 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchend', (e) => {
-  if (touchStartPos === null) return;
+  if (touchStartPos === null && !touchDragStarted) return;
   if (!touchDragStarted) {
     // タップ扱い → ピース選択切り替え
     const idx = touchStartIdx;
@@ -574,15 +574,25 @@ document.addEventListener('touchend', (e) => {
 });
 
 document.addEventListener('touchcancel', () => {
-  if (touchDragStarted) {
-    clearPreview();
-    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
-    dragging = false;
-  }
+  clearPreview();
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+  dragging = false;
   touchStartPos = null;
   touchStartIdx = -1;
   touchDragStarted = false;
   dragPieceIdx = -1;
+});
+
+// 安全策: ページ復帰時やフォーカス時にプレビュー残留をクリーンアップ
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    clearPreview();
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    dragging = false;
+    touchDragStarted = false;
+    mouseDragging = false;
+    touchStartPos = null;
+  }
 });
 
 // --- マウス操作（PC専用） ---
@@ -678,6 +688,10 @@ function updatePreview(px, py) {
   const p = pieces[dragPieceIdx];
   // ゴーストは指の40px上に表示されるので、ボード座標もそれに合わせる
   const adjustedY = py - 40;
+  // ボード外判定: 指がボードの外にある場合はプレビューを表示しない
+  const rect = document.getElementById('board').getBoundingClientRect();
+  if (px < rect.left || px > rect.right || adjustedY < rect.top || adjustedY > rect.bottom) return;
+
   const cell = getBoardCell(px, adjustedY);
   const ox = cell.x - Math.floor(p.shape[0].length / 2);
   const oy = cell.y - Math.floor(p.shape.length / 2);
