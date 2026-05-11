@@ -181,6 +181,55 @@ class SuikaGame {
         this.eventManager.gold = this.gold;
         this.shopUI = null;
       };
+      this.eventManager.posCallback = (chr, x, z) => {
+        if (chr === 0 || chr === 98) {
+          // Player teleport
+          if (x !== 255) this.field.playerPos.x = MapData.getXPos(x);
+          if (z !== 255) this.field.playerPos.z = MapData.getZPos(z);
+        }
+      };
+      this.eventManager.vectCallback = (chr, vect) => {
+        if (chr === 0 || chr === 98) {
+          this.field.playerVect = vect * (Math.PI / 2);
+        }
+      };
+      this.eventManager.creditsCallback = async () => {
+        this.credits.start();
+        // Wait for credits to finish
+        await new Promise(resolve => {
+          const check = setInterval(() => {
+            if (!this.credits.active) { clearInterval(check); resolve(); }
+          }, 100);
+        });
+      };
+      this.eventManager.gameOverCallback = () => {
+        this.gameOverTimer = 0;
+        this.state = 'gameover';
+      };
+      this.eventManager.partyCallback = (chr, join) => {
+        // Add/remove party member (simplified)
+        if (join && chr < this.paramAll.chrParams.length && this.playerParams.length < 3) {
+          const exists = this.playerParams.find(p => p.index === chr);
+          if (!exists) {
+            const p = this.paramAll.chrParams[chr].clone();
+            p.isPlayer = true;
+            this.playerParams.push(p);
+          }
+        }
+      };
+      this.eventManager.posQueryCallback = (chr, axis) => {
+        // Return block position of character
+        if (chr === 0 || chr === 98) {
+          return axis === 0 ? MapData.getXBlock(this.field.playerPos.x) : MapData.getZBlock(this.field.playerPos.z);
+        }
+        return 0;
+      };
+      this.eventManager.hitCheckCallback = (x, z) => {
+        if (!this.field.area) return false;
+        const map = this.field.area.map;
+        if (x >= map.xNum || z >= map.zNum) return false;
+        return map.hit[map.getPtr(x, z)] > 0;
+      };
 
       // Setup field with first area
       this.field = new Field(this.renderer, this.models);

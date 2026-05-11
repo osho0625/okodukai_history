@@ -65,6 +65,15 @@ export class EventManager {
     this.mapChangeCallback = null; // (type, x, z, val) => void
     this.quakeCallback = null;     // (strength) => void
     this.shopCallback = null;      // (itemIndices[]) => Promise<void>
+    this.moveCallback = null;      // (chr, speed, algo, move) => void
+    this.posCallback = null;       // (chr, x, z) => void
+    this.vectCallback = null;      // (chr, vect) => void
+    this.lookCallback = null;      // (chr, target) => void
+    this.creditsCallback = null;   // () => Promise<void>
+    this.gameOverCallback = null;  // () => void
+    this.partyCallback = null;     // (chr, join) => void
+    this.posQueryCallback = null;  // (chr, axis) => number
+    this.hitCheckCallback = null;  // (x, z) => boolean
   }
 
   load(buffer) {
@@ -155,11 +164,25 @@ export class EventManager {
           ptr += 3;
           break;
 
-        case E.VECT:
-        case E.VECT2:
-        case E.LOOK:
-          ptr += 2;
+        case E.VECT: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const vect = evt.data[ptr++] & 0xFF;
+          if (this.vectCallback) this.vectCallback(chr, vect);
           break;
+        }
+        case E.VECT2: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const vect = evt.data[ptr++] & 0xFF;
+          if (this.vectCallback) this.vectCallback(chr, vect);
+          break;
+        }
+        case E.LOOK: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const target = evt.data[ptr++] & 0xFF;
+          // Look at target (simplified: just set facing)
+          if (this.lookCallback) this.lookCallback(chr, target);
+          break;
+        }
 
         case E.SE: {
           const seNo = evt.data[ptr++] & 0xFF;
@@ -278,8 +301,14 @@ export class EventManager {
 
         case E.SUBGOLD: {
           const amount = evt.getWord(ptr); ptr += 2;
-          this.gold -= amount;
-          if (this.goldCallback) this.goldCallback(-amount);
+          const cost = amount * 10; // Original multiplies by 10
+          this.resetFlag(303);
+          if (cost > this.gold) {
+            this.setFlag(303); // Not enough gold
+          } else {
+            this.gold -= cost;
+            if (this.goldCallback) this.goldCallback(-cost);
+          }
           break;
         }
 
@@ -350,9 +379,26 @@ export class EventManager {
           break;
         }
 
-        // Commands we skip with known sizes
-        case E.MOVE: ptr += 4; break;
-        case E.POS: ptr += 3; break;
+        // Commands we now handle with actual logic
+        case E.MOVE: {
+          // NPC movement: chr(1) + speed(1) + algo(1) + move(1)
+          const chr = evt.data[ptr++] & 0xFF;
+          const speed = evt.data[ptr++] & 0xFF;
+          const algo = evt.data[ptr++] & 0xFF;
+          const move = evt.data[ptr++] & 0xFF;
+          if (this.moveCallback) this.moveCallback(chr, speed, algo, move);
+          // Small delay to simulate movement
+          await new Promise(r => setTimeout(r, Math.max(50, move * 30)));
+          break;
+        }
+        case E.POS: {
+          // Teleport character: chr(1) + x(1) + z(1)
+          const chr = evt.data[ptr++] & 0xFF;
+          const x = evt.data[ptr++] & 0xFF;
+          const z = evt.data[ptr++] & 0xFF;
+          if (this.posCallback) this.posCallback(chr, x, z);
+          break;
+        }
         case E.TSHOP: case E.WSHOP: case E.GSHOP: case E.SSHOP: {
           // Shop: 12 bytes = shopName(0) + 6 item indices (2 bytes each)
           const items = [];
@@ -375,17 +421,73 @@ export class EventManager {
         case E.INRESET: case E.COIN: case E.PASSW:
         case E.QUIZ: case E.CHRMENU: case E.CSHOP: break; // 0 operands
         case E.CHRALGO: ptr += 2; break;
-        case E.PARTY: case E.PARTYM: ptr += 2; break;
+        case E.PARTY: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const flag = evt.data[ptr++] & 0xFF;
+          if (this.partyCallback) this.partyCallback(chr, true);
+          // Set flag for party member joined
+          this.setFlag(chr);
+          break;
+        }
+        case E.PARTYM: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const flag = evt.data[ptr++] & 0xFF;
+          if (this.partyCallback) this.partyCallback(chr, false);
+          break;
+        }
         case E.PAT: ptr += 2; break;
-        case E.CMPP: ptr += 3; break;
+        case E.CMPP: {
+          const chr = evt.data[ptr++] & 0xFF;
+          const axis = evt.data[ptr++] & 0xFF;
+          const val = evt.data[ptr++] & 0xFF;
+          let pos = 0;
+          if (this.posQueryCallback) pos = this.posQueryCallback(chr, axis);
+          const diff = pos - val;
+          this.resetFlag(304); this.resetFlag(305); this.resetFlag(306);
+          if (diff === 0) this.setFlag(304);
+          if (diff < 0) this.setFlag(305);
+          if (diff >= 0) this.setFlag(306);
+          break;
+        }
         case E.CAMINIT: ptr += 1; break;
         case E.SCALE: ptr += 2; break;
         case E.CAMCHR: ptr += 1; break;
         case E.EFFECT: ptr += 2; break;
         case E.DISPGOLD: ptr += 1; break;
-        case E.CMPH: ptr += 3; break;
+        case E.CMPH: {
+          const x = evt.data[ptr++] & 0xFF;
+          const z = evt.data[ptr++] & 0xFF;
+          ptr += 1;
+          this.resetFlag(307);
+          if (this.hitCheckCallback) {
+            if (this.hitCheckCallback(x, z)) this.setFlag(307);
+          }
+          break;
+        }
         case E.CHRMODE: ptr += 2; break;
-        case E.EXCL: ptr += 1; break;
+        case E.EXCL: {
+          const exclType = evt.data[ptr++] & 0xFF;
+          // Special events
+          if (exclType === 3 || exclType === 6) {
+            // Staff roll
+            if (this.creditsCallback) await this.creditsCallback();
+          } else if (exclType === 7) {
+            // Force game over
+            if (this.gameOverCallback) this.gameOverCallback();
+            return;
+          }
+          // Types 0,2,4,5 = chapter end text scenes (simplified: show message)
+          if (exclType === 0) {
+            if (this.messageCallback) await this.messageCallback('第１部完');
+          } else if (exclType === 2) {
+            if (this.messageCallback) await this.messageCallback('第２部 やっぱりすいかが食べたい');
+          } else if (exclType === 4) {
+            if (this.messageCallback) await this.messageCallback('第２部完');
+          } else if (exclType === 5) {
+            if (this.messageCallback) await this.messageCallback('第３部 メロンが食べたい');
+          }
+          break;
+        }
         case E.POSADD: ptr += 5; break;
         case E.POSCOPY: ptr += 2; break;
         case E.POSY: ptr += 3; break;
