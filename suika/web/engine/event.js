@@ -79,6 +79,7 @@ export class EventManager {
     this.ambientCallback = null;   // (r, g, b) => void
     this.lightCallback = null;     // (r, g, b) => void
     this.compShopCallback = null;  // () => Promise<void>
+    this.saveCallback = null;      // () => Promise<void>
   }
 
   load(buffer) {
@@ -467,7 +468,14 @@ export class EventManager {
           if (this.compShopCallback) await this.compShopCallback();
           break;
         }
-        case E.INRESET: case E.COIN: case E.PASSW: break;
+        case E.INRESET: case E.COIN: break;
+        case E.PASSW: {
+          // Save point: reads word + word + byte (5 bytes) in original
+          // In HTML5 version, auto-save and show message
+          ptr += 5;
+          if (this.saveCallback) await this.saveCallback();
+          break;
+        }
         case E.CHRALGO: ptr += 2; break;
         case E.PARTY: {
           const chr = evt.data[ptr++] & 0xFF;

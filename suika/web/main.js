@@ -1,4 +1,4 @@
-// main.js  EEntry point for the HTML5 port of "すいかが食べたい"
+// main.js — Entry point for the HTML5 port of "すいかが食べたい"
 
 import { Renderer } from './engine/renderer.js';
 import { Input, DIR } from './engine/input.js';
@@ -62,6 +62,7 @@ class SuikaGame {
     this.composeShop = null;
     this.openingFrame = 0;
     this._titleDirHeld = false;
+    this.quakeFrames = 0;
   }
 
   async init() {
@@ -73,10 +74,10 @@ class SuikaGame {
       this.images = await this.loader.loadAllImages(32);
 
       this.models = await this.loader.loadAllModels(204, (i, total) => {
-        this.showLoadingScreen(`モチE��読込中... ${i}/${total}`);
+        this.showLoadingScreen(`モデル読込中... ${i}/${total}`);
       });
 
-      this.showLoadingScreen('スチE�EジチE�Eタ読込中...');
+      this.showLoadingScreen('ステージデータ読込中...');
       const stageBuf = await this.loader.fetchBinary('data/stage._su');
       const stageData = decompressJip(stageBuf);
       const stageReader = new BinaryReader(stageData);
@@ -174,7 +175,7 @@ class SuikaGame {
       this.eventManager.itemCallback = (itemIdx, add) => {
         const item = this.paramAll.getItem(itemIdx);
         if (item && this.messageWindow) {
-          this.messageWindow.show(`${item.name}を手に入れた�E�`);
+          this.messageWindow.show(`${item.name}を手に入れた！`);
         }
       };
       this.eventManager.seCallback = (seNo) => {
@@ -182,7 +183,7 @@ class SuikaGame {
       };
       this.eventManager.shopCallback = async (itemIndices, shopName) => {
         this.shopUI = new ShopUI(this.ctx, this.input, this.paramAll);
-        const result = await this.shopUI.open(shopName || 'お庁E, itemIndices, this.gold || 0, this.eventManager.inventory);
+        const result = await this.shopUI.open(shopName || 'お店', itemIndices, this.gold || 0, this.eventManager.inventory);
         this.gold = result.gold;
         this.eventManager.inventory = result.inventory;
         this.eventManager.gold = this.gold;
@@ -275,7 +276,7 @@ class SuikaGame {
         }
       };
       this.eventManager.numberCallback = async (start) => {
-        // Number selection  Euse choice callback with numbers
+        // Number selection — use choice callback with numbers
         if (this.choiceCallback) {
           // Simplified: show as yes/no with the number
           return 0;
@@ -297,6 +298,12 @@ class SuikaGame {
         this.gold = result.gold;
         this.eventManager.inventory = result.inventory;
         this.composeShop = null;
+      };
+      this.eventManager.saveCallback = async () => {
+        this.saveGame(false);
+      };
+      this.eventManager.quakeCallback = (strength) => {
+        this.quakeFrames = strength * 3;
       };
 
       // Setup field with first area
@@ -326,7 +333,7 @@ class SuikaGame {
       };
 
       if (this.stageManager.stages.length > 0) {
-        // Start at area 0, position (16, 35)  Ematching original CInitGame
+        // Start at area 0, position (16, 35) — matching original CInitGame
         let areaIdx = 0;
         const area = this.stageManager.stages[areaIdx];
         this.field.setArea(area);
@@ -336,7 +343,7 @@ class SuikaGame {
         this.field.playerVect = 0; // facing north
       }
 
-      this.showLoadingScreen('読み込み完亁E��E);
+      this.showLoadingScreen('読み込み完了！');
       this.state = 'title';
       // Default to "続きから" if save data exists
       this.titleCursor = localStorage.getItem('suika_save') ? 1 : 0;
@@ -417,8 +424,12 @@ class SuikaGame {
     if (this.input.isOK()) {
       this.audio.resume();
       if (this.titleCursor === 0) {
-        // New game  Eplay opening then start
+        // New game — ask for name then play opening
+        const name = prompt('主人公の名前を入力してください:', 'うな');
         this.resetNewGame();
+        if (name && name.trim()) {
+          this.playerParams[0].name = name.trim().slice(0, 6);
+        }
         this.state = 'opening';
         this.openingFrame = 0;
       } else if (this.titleCursor === 1) {
@@ -427,14 +438,14 @@ class SuikaGame {
         }
       } else if (this.titleCursor === 2) {
         // Password input
-        const pw = prompt('復活の呪斁E��入力してください:');
+        const pw = prompt('復活の呪文を入力してください:');
         if (pw) {
           const data = this.passwordSystem.load(pw);
           if (data) {
             this.loadFromPassword(data);
             this.state = 'game';
           } else {
-            alert('復活の呪斁E��違いまぁE);
+            alert('復活の呪文が違います');
           }
         }
       }
@@ -495,7 +506,7 @@ class SuikaGame {
 
     // Menu
     const menuY = 170;
-    const items = ['初めから', '続きから', '復活の呪斁E];
+    const items = ['初めから', '続きから', '復活の呪文'];
     ctx.font = '16px sans-serif';
     for (let i = 0; i < items.length; i++) {
       ctx.fillStyle = i === this.titleCursor ? '#ff0' : '#fff';
@@ -513,18 +524,18 @@ class SuikaGame {
     // Credits
     ctx.font = '11px sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText('2002-2008 製作�E著佁Eくろすけ', 200, 295);
+    ctx.fillText('2002-2008 製作・著作 くろすけ', 200, 295);
 
     // Touch hint (only on touch devices)
     ctx.font = '10px sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('スチE��チE��↑�Eで選抁E/ Aで決宁E, 200, 312);
+    ctx.fillText('スティック↑↓で選択 / Aで決定', 200, 312);
   }
 
   // --- Opening sequence (matching original CTitle.Opening) ---
   updateOpening() {
     this.openingFrame++;
-    // Total duration: ~180 frames (4 size stages ÁE36 brightness cycles + fade)
+    // Total duration: ~180 frames (4 size stages × 36 brightness cycles + fade)
     // Skip on OK press
     if (this.openingFrame > 30 && this.input.isOK()) {
       this.state = 'game';
@@ -543,7 +554,7 @@ class SuikaGame {
     ctx.fillRect(0, 0, 400, 320);
 
     if (f < 20) {
-      // Initial pause  Eblack screen
+      // Initial pause — black screen
       return;
     }
 
@@ -559,9 +570,9 @@ class SuikaGame {
     else if (stage === 1) fontSize = 24;
     else if (stage === 2) fontSize = 36;
     else if (stage === 3) fontSize = 52;
-    else fontSize = 80 + stageProgress * 60; // 80ↁE40px, overflows screen
+    else fontSize = 80 + stageProgress * 60; // 80→140px, overflows screen
 
-    // Brightness pulse (0ↁE55ↁE per stage)
+    // Brightness pulse (0→255→0 per stage)
     let brightness;
     if (stage < 4) {
       const pulseT = stageProgress;
@@ -589,7 +600,7 @@ class SuikaGame {
     if (f > 40 && f < 190) {
       ctx.fillStyle = 'rgba(100,100,100,0.4)';
       ctx.font = '10px sans-serif';
-      ctx.fillText('Enter / A でスキチE�E', 200, 305);
+      ctx.fillText('Enter / A でスキップ', 200, 305);
     }
   }
 
@@ -796,6 +807,16 @@ class SuikaGame {
   }
 
   drawGame() {
+    // Screen shake
+    const shaking = this.quakeFrames > 0;
+    if (shaking) {
+      this.quakeFrames--;
+      const shakeX = (Math.random() - 0.5) * this.quakeFrames * 0.8;
+      const shakeY = (Math.random() - 0.5) * this.quakeFrames * 0.5;
+      this.ctx.save();
+      this.ctx.translate(shakeX, shakeY);
+    }
+
     this.field.draw();
 
     // Compose shop overlay
@@ -829,7 +850,7 @@ class SuikaGame {
       this.ctx.fillStyle = '#ff0';
       this.ctx.font = 'bold 16px sans-serif';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText('勝利�E�E, 200, 90);
+      this.ctx.fillText('勝利！', 200, 90);
 
       this.ctx.fillStyle = '#fff';
       this.ctx.font = '13px sans-serif';
@@ -838,7 +859,7 @@ class SuikaGame {
       let y = 145;
       for (const lu of this.battleResult.levelUps) {
         this.ctx.fillStyle = '#8f8';
-        this.ctx.fillText(`${lu.name} Lv${lu.prevLv}ↁE{lu.newLv}!`, 200, y);
+        this.ctx.fillText(`${lu.name} Lv${lu.prevLv}→${lu.newLv}!`, 200, y);
         y += 20;
       }
 
@@ -872,6 +893,11 @@ class SuikaGame {
       this.ctx.fillText(`${p.name} Lv${p.lv}`, 6, 12);
       this.ctx.fillText(`HP:${p.hp}/${p.maxHP} MP:${p.mp}/${p.maxMP}`, 6, 23);
       this.ctx.fillText(`G:${this.gold || 0}`, 6, 34);
+    }
+
+    // End screen shake
+    if (shaking) {
+      this.ctx.restore();
     }
   }
 
@@ -915,13 +941,13 @@ class SuikaGame {
     }
 
     if (player.lv > prevLv) {
-      console.log(`${player.name} Lv${prevLv}ↁE{player.lv}!`);
+      console.log(`${player.name} Lv${prevLv}→${player.lv}!`);
     }
   }
 
   // --- System Menu ---
   updateMenu() {
-    const items = ['スチE�Eタス', '裁E��', 'マッチE, 'セーチE, 'タイトルへ', '閉じめE];
+    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
 
     // Equipment sub-menu
     if (this.equipMenu) {
@@ -960,7 +986,7 @@ class SuikaGame {
       if (this.input.isCancel()) { this.equipMenu = null; }
     } else if (eq.phase === 'slot') {
       // Select equipment slot (weapon/armor/shield/acc1/acc2)
-      const slots = ['武器', '防具', '盾', '裁E��1', '裁E��2'];
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
       if (this.input.isUp()) eq.slot = (eq.slot - 1 + slots.length) % slots.length;
       if (this.input.isDown()) eq.slot = (eq.slot + 1) % slots.length;
       if (this.input.isOK()) { eq.phase = 'item'; eq.itemCursor = 0; }
@@ -1037,7 +1063,7 @@ class SuikaGame {
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, mw, mh);
 
-    const items = ['スチE�Eタス', '裁E��', 'マッチE, 'セーチE, 'タイトルへ', '閉じめE];
+    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     for (let i = 0; i < items.length; i++) {
@@ -1092,7 +1118,7 @@ class SuikaGame {
       ctx.font = '11px sans-serif';
     }
     ctx.fillStyle = '#fd0';
-    ctx.fillText(`所持E��: ${this.gold || 0} G`, sx + 10, py + 5);
+    ctx.fillText(`所持金: ${this.gold || 0} G`, sx + 10, py + 5);
   }
 
   drawEquipMenu(ctx) {
@@ -1109,7 +1135,7 @@ class SuikaGame {
 
     if (eq.phase === 'chr') {
       ctx.fillStyle = '#adf';
-      ctx.fillText('裁E��するキャラを選抁E', sx + 10, sy + 20);
+      ctx.fillText('装備するキャラを選択:', sx + 10, sy + 20);
       for (let i = 0; i < this.playerParams.length; i++) {
         ctx.fillStyle = i === eq.chrIdx ? '#ff0' : '#fff';
         ctx.fillText((i === eq.chrIdx ? '▶' : '  ') + this.playerParams[i].name, sx + 10, sy + 42 + i * 22);
@@ -1117,12 +1143,12 @@ class SuikaGame {
     } else if (eq.phase === 'slot') {
       const p = this.playerParams[eq.chrIdx];
       ctx.fillStyle = '#ff0';
-      ctx.fillText(`${p.name} の裁E��:`, sx + 10, sy + 20);
-      const slots = ['武器', '防具', '盾', '裁E��1', '裁E��2'];
+      ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
       for (let i = 0; i < slots.length; i++) {
         ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
         const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
-        const eqName = equipped ? equipped.name.trim() : 'なぁE;
+        const eqName = equipped ? equipped.name.trim() : 'なし';
         ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 42 + i * 22);
       }
     } else if (eq.phase === 'item') {
@@ -1133,7 +1159,7 @@ class SuikaGame {
       equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
 
       ctx.fillStyle = '#adf';
-      ctx.fillText('裁E��するアイチE��:', sx + 10, sy + 20);
+      ctx.fillText('装備するアイテム:', sx + 10, sy + 20);
       const maxShow = 10;
       const startIdx = Math.max(0, (eq.itemCursor || 0) - maxShow + 1);
       for (let i = 0; i < maxShow && startIdx + i < equippable.length; i++) {
@@ -1180,7 +1206,7 @@ class SuikaGame {
     ctx.fillStyle = `rgba(255,255,255,${textAlpha})`;
     ctx.font = 'bold 36px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('�E��E��E��E�　�E��E��E��E�', 200, 160);
+    ctx.fillText('ＧＡＭＥ　ＯＶＥＲ', 200, 160);
 
     if (this.gameOverTimer > 90) {
       ctx.fillStyle = '#aaa';
@@ -1234,7 +1260,7 @@ class SuikaGame {
     ctx.fillStyle = '#fff';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ワールド�EチE�E (Enter/Xで閉じめE', 200, 11);
+    ctx.fillText('ワールドマップ (Enter/Xで閉じる)', 200, 11);
   }
 
   // --- Save / Load ---
