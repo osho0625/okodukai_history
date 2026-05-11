@@ -530,7 +530,7 @@ class SuikaGame {
     if (this.openingFrame > 30 && this.input.isOK()) {
       this.state = 'game';
     }
-    if (this.openingFrame > 200) {
+    if (this.openingFrame > 220) {
       this.state = 'game';
     }
   }
@@ -550,39 +550,47 @@ class SuikaGame {
 
     const phase = f - 20;
 
-    // Title text grows in 4 stages (16px → 24px → 32px → 40px)
-    // Each stage has a brightness pulse cycle
-    const stage = Math.min(3, Math.floor(phase / 40));
-    const stageProgress = (phase % 40) / 40;
-    const fontSize = 16 + stage * 8;
+    // Title text grows in 5 stages, final stage goes huge (overflows screen)
+    // Stage 0: 16px, 1: 24px, 2: 36px, 3: 52px, 4: 80-140px (overflow!)
+    const stage = Math.min(4, Math.floor(phase / 36));
+    const stageProgress = (phase % 36) / 36;
 
-    // Brightness pulse (matching original anColor table: 0→255→0)
-    const pulseT = stageProgress;
+    let fontSize;
+    if (stage === 0) fontSize = 16;
+    else if (stage === 1) fontSize = 24;
+    else if (stage === 2) fontSize = 36;
+    else if (stage === 3) fontSize = 52;
+    else fontSize = 80 + stageProgress * 60; // 80→140px, overflows screen
+
+    // Brightness pulse (0→255→0 per stage)
     let brightness;
-    if (pulseT < 0.5) {
-      brightness = pulseT * 2; // 0→1
+    if (stage < 4) {
+      const pulseT = stageProgress;
+      if (pulseT < 0.5) brightness = pulseT * 2;
+      else brightness = (1 - pulseT) * 2;
     } else {
-      brightness = (1 - pulseT) * 2; // 1→0
+      // Final stage: hold full brightness then fade
+      brightness = 1;
     }
-    // On final stage, hold brightness
-    if (stage >= 3 && stageProgress > 0.5) brightness = 1;
 
     // Fade out at end
-    if (f > 170) {
-      brightness *= Math.max(0, (200 - f) / 30);
+    if (f > 185) {
+      brightness *= Math.max(0, (210 - f) / 25);
     }
 
-    const c = Math.floor(brightness * 255);
+    const c = Math.floor(Math.min(255, brightness * 255));
     ctx.fillStyle = `rgb(${c},${c},${c})`;
-    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.font = `bold ${Math.floor(fontSize)}px sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('すいかが食べたい', 200, (320 - fontSize) / 2 + fontSize);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('すいかが食べたい', 200, 160);
+    ctx.textBaseline = 'alphabetic';
 
     // Skip hint after a moment
-    if (f > 50) {
-      ctx.fillStyle = 'rgba(100,100,100,0.5)';
+    if (f > 40 && f < 190) {
+      ctx.fillStyle = 'rgba(100,100,100,0.4)';
       ctx.font = '10px sans-serif';
-      ctx.fillText('Enter / A でスキップ', 200, 300);
+      ctx.fillText('Enter / A でスキップ', 200, 305);
     }
   }
 
