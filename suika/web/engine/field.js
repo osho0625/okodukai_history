@@ -21,6 +21,9 @@ export class Field {
     this.npcAnimOffsets = {}; // npc index → { bobY, bobPhase }
     // NPC movement animations
     this.npcMoveAnims = []; // { npcIdx, startX, startZ, endX, endZ, t, duration }
+    // Party following trail
+    this.partyTrail = []; // array of {x, z, vect} positions
+    this.partyModels = []; // model indices for party members (set externally)
   }
 
   setArea(area) {
@@ -344,8 +347,36 @@ export class Field {
     // Draw NPCs first
     this._drawNpcs();
 
-    // GetModel() = m_nChrH + m_nChrL + 55
-    // Player (CChrPrm[0]): m_nChrH=0, m_nChrL=0 → model 55
+    // Update party trail (store player positions for followers)
+    if (this.partyTrail.length === 0 || 
+        Math.abs(this.partyTrail[0].x - this.playerPos.x) > 20 ||
+        Math.abs(this.partyTrail[0].z - this.playerPos.z) > 20) {
+      this.partyTrail.unshift({ x: this.playerPos.x, z: this.playerPos.z, vect: this.playerVect });
+      if (this.partyTrail.length > 20) this.partyTrail.pop();
+    }
+
+    // Draw party members (following behind player)
+    if (this.partyModels.length > 0) {
+      for (let pi = 0; pi < this.partyModels.length; pi++) {
+        const trailIdx = Math.min((pi + 1) * 4, this.partyTrail.length - 1);
+        if (trailIdx < 0) continue;
+        const trail = this.partyTrail[trailIdx];
+        const modelIdx = this.partyModels[pi];
+        if (modelIdx < 0 || modelIdx >= this.models.length) continue;
+        const model = this.models[modelIdx];
+        if (!model || model.vertices.length === 0) continue;
+
+        const pos = new Vec3(trail.x, 0, trail.z);
+        const rot = new Vec3(0, trail.vect, 0);
+        const scl = new Vec3(1, 1, 1);
+        const wvp = this.renderer.calcModel(model, pos, rot, scl);
+        this.renderer.drawModel(model, wvp, this.renderer.getTransform(3), 0, 0);
+        // Shadow
+        this.renderer.drawShadow(pos, 35, this.cameraVect);
+      }
+    }
+
+    // Draw main player
     const playerModelIdx = 55;
     if (playerModelIdx >= this.models.length) return;
     const model = this.models[playerModelIdx];

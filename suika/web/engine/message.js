@@ -5,10 +5,11 @@ export class MessageWindow {
     this.ctx = ctx;
     this.visible = false;
     this.text = '';
-    this.resolve = null; // Promise resolve for waiting
+    this.resolve = null;
     this.displayedChars = 0;
-    this.charSpeed = 2; // chars per frame
+    this.charSpeed = 2;
     this.frameCount = 0;
+    this.onAdvance = null; // callback when text advances (for SE)
   }
 
   // Show message and return a promise that resolves when player presses OK
@@ -29,7 +30,12 @@ export class MessageWindow {
 
     // Advance text display
     if (this.displayedChars < this.text.length) {
+      const prevChars = this.displayedChars;
       this.displayedChars = Math.min(this.text.length, this.displayedChars + this.charSpeed);
+      // Play text advance SE every few characters
+      if (this.onAdvance && Math.floor(this.displayedChars / 4) > Math.floor(prevChars / 4)) {
+        this.onAdvance();
+      }
       // If player presses OK, show all text immediately
       if (inputOK) {
         this.displayedChars = this.text.length;

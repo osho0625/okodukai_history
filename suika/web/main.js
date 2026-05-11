@@ -37,6 +37,7 @@ class SuikaGame {
     this.eventManager = new EventManager();
     this.paramAll = new ParamAll();
     this.messageWindow = new MessageWindow(this.ctx);
+    this.messageWindow.onAdvance = () => { this.audio.play(5); }; // text tick SE
     this.choiceWindow = new ChoiceWindow(this.ctx);
     this.field = null;
     this.currentArea = 0;
@@ -63,6 +64,7 @@ class SuikaGame {
     this.openingFrame = 0;
     this._titleDirHeld = false;
     this.quakeFrames = 0;
+    this.battleFlash = 0;
   }
 
   async init() {
@@ -242,7 +244,6 @@ class SuikaGame {
         this.state = 'gameover';
       };
       this.eventManager.partyCallback = (chr, join) => {
-        // Add/remove party member (simplified)
         if (join && chr < this.paramAll.chrParams.length && this.playerParams.length < 3) {
           const exists = this.playerParams.find(p => p.index === chr);
           if (!exists) {
@@ -251,6 +252,8 @@ class SuikaGame {
             this.playerParams.push(p);
           }
         }
+        // Update field party models for following display
+        this.updateFieldPartyModels();
       };
       this.eventManager.posQueryCallback = (chr, axis) => {
         // Return block position of character
@@ -726,6 +729,11 @@ class SuikaGame {
       console.warn('No player params for battle');
       return;
     }
+
+    // Battle start flash effect
+    this.battleFlash = 8;
+    this.audio.play(0); // SE: battle start
+
     this.battleEngine = new BattleEngine(this.paramAll);
     this.battleUI = new BattleUI(this.ctx, this.input, this.renderer, this.models, this.paramAll);
 
@@ -750,6 +758,10 @@ class SuikaGame {
     }
 
     this.battleEngine.onBattleEnd = (result, exp, gold) => {
+      // Play victory/defeat SE
+      if (result === BATTLE_RESULT.WIN) this.audio.play(10);
+      else if (result === BATTLE_RESULT.LOSE) this.audio.play(12);
+
       // Sync HP/MP back to playerParams after battle
       for (let i = 0; i < this.playerParams.length; i++) {
         const bUnit = this.battleEngine.players[i];
@@ -823,6 +835,14 @@ class SuikaGame {
     if (!this.battleEngine || !this.battleUI) return;
     const bState = this.battleEngine.getState();
     this.battleUI.draw(bState);
+
+    // Battle start flash overlay
+    if (this.battleFlash > 0) {
+      this.battleFlash--;
+      const alpha = this.battleFlash / 8;
+      this.ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      this.ctx.fillRect(0, 0, 400, 320);
+    }
   }
 
   drawGame() {
@@ -942,6 +962,21 @@ class SuikaGame {
     // End screen shake
     if (shaking) {
       this.ctx.restore();
+    }
+  }
+
+  // Update party member models on field (for following display)
+  updateFieldPartyModels() {
+    if (!this.field) return;
+    // CChrPrm model mapping: party member index → model index
+    // Original: model = CChrPrm[kind][0] + CChrPrm[kind][1] + 55
+    const CChrPrmModels = [55, 57, 58, 59, 60, 61, 62, 63]; // approximate model indices
+    this.field.partyModels = [];
+    for (let i = 1; i < this.playerParams.length; i++) {
+      const p = this.playerParams[i];
+      // Use pat field if available, otherwise use index-based lookup
+      const modelIdx = p.pat ? p.pat + 55 : CChrPrmModels[Math.min(i, CChrPrmModels.length - 1)];
+      this.field.partyModels.push(modelIdx);
     }
   }
 
@@ -1444,6 +1479,7 @@ class SuikaGame {
         if (data.pvect !== undefined) this.field.playerVect = data.pvect;
       }
       this.field.eventFlags = this.eventManager.flags;
+      this.updateFieldPartyModels();
       return true;
     } catch (e) {
       console.warn('Load failed:', e);
