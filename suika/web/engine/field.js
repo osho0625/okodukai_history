@@ -13,9 +13,12 @@ export class Field {
     this.cameraVect = Math.PI;
     this.moveSpeed = 40;
     this.playerHitSize = 30;
-    this.onAreaChange = null; // callback(areaIdx, x, z, rot)
-    this.onTalkNpc = null;   // callback(npc) — when player talks to NPC
-    this.onWallEvent = null; // callback(eventNo) — when player bumps into wall event
+    this.onAreaChange = null;
+    this.onTalkNpc = null;
+    this.onWallEvent = null;
+    this.frameCount = 0;
+    // NPC animation state
+    this.npcAnimOffsets = {}; // npc index → { bobY, bobPhase }
   }
 
   setArea(area) {
@@ -310,8 +313,6 @@ export class Field {
   _drawNpcs() {
     if (!this.area || !this.area.npcs) return;
 
-    // CChrPrm table: index → [m_nChrH, m_nChrL, anim, scale%, colorCode, hitSize, flags]
-    // Model = m_nChrH + m_nChrL + 55
     const CChrPrm = [
       [0,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[10,0],[11,0],
       [13,0],[15,0],[17,0],[19,0],[20,0],[2,0],[7,0],[35,0],[37,0],[39,0],
@@ -320,7 +321,8 @@ export class Field {
       [42,0],[56,0],[39,0],[57,0]
     ];
 
-    for (const npc of this.area.npcs) {
+    for (let ni = 0; ni < this.area.npcs.length; ni++) {
+      const npc = this.area.npcs[ni];
       const kind = npc.kind;
       if (kind >= CChrPrm.length) continue;
 
@@ -340,6 +342,10 @@ export class Field {
       const dz = pos.z - this.playerPos.z;
       if (dx * dx + dz * dz > 3000 * 3000) continue;
 
+      // Idle bob animation
+      const bobPhase = (this.frameCount * 0.08 + ni * 1.7) % (Math.PI * 2);
+      pos.y = Math.sin(bobPhase) * 3;
+
       const rot = new Vec3(0, npc.vect * (Math.PI / 2), 0);
       const scl = new Vec3(1, 1, 1);
       const wvp = this.renderer.calcModel(model, pos, rot, scl);
@@ -348,6 +354,7 @@ export class Field {
   }
 
   draw() {
+    this.frameCount++;
     this.setCamera();
     this.renderer.clear();
     this.drawGround();

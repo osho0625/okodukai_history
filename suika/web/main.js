@@ -17,6 +17,7 @@ import { AudioManager } from './engine/audio.js';
 import { ShopUI } from './engine/shop.js';
 import { Credits } from './engine/credits.js';
 import { PasswordSystem } from './engine/password.js';
+import { QuizUI } from './engine/quiz.js';
 
 class SuikaGame {
   constructor() {
@@ -56,6 +57,7 @@ class SuikaGame {
     this.gameOverTimer = 0;
     this.credits = new Credits(this.ctx);
     this.passwordSystem = new PasswordSystem();
+    this.quizUI = new QuizUI(this.ctx, this.input);
   }
 
   async init() {
@@ -229,6 +231,16 @@ class SuikaGame {
         const map = this.field.area.map;
         if (x >= map.xNum || z >= map.zNum) return false;
         return map.hit[map.getPtr(x, z)] > 0;
+      };
+      this.eventManager.quizCallback = async (difficulty) => {
+        const passed = await this.quizUI.start(difficulty);
+        if (passed) {
+          this.eventManager.resetFlag(303);
+          this.eventManager.setFlag(304);
+        } else {
+          this.eventManager.setFlag(303);
+          this.eventManager.resetFlag(304);
+        }
       };
 
       // Setup field with first area
@@ -461,6 +473,12 @@ class SuikaGame {
   }
 
   updateGame() {
+    // Quiz takes priority
+    if (this.quizUI.active) {
+      this.quizUI.update();
+      return;
+    }
+
     // Shop takes priority
     if (this.shopUI && this.shopUI.visible) {
       this.shopUI.update();
@@ -657,6 +675,12 @@ class SuikaGame {
 
   drawGame() {
     this.field.draw();
+
+    // Quiz overlay
+    if (this.quizUI.active) {
+      this.quizUI.draw();
+      return;
+    }
 
     // Shop overlay
     if (this.shopUI && this.shopUI.visible) {

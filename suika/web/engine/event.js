@@ -74,6 +74,7 @@ export class EventManager {
     this.partyCallback = null;     // (chr, join) => void
     this.posQueryCallback = null;  // (chr, axis) => number
     this.hitCheckCallback = null;  // (x, z) => boolean
+    this.quizCallback = null;      // (difficulty) => Promise<void>
   }
 
   load(buffer) {
@@ -418,8 +419,41 @@ export class EventManager {
           if (this.messageCallback) await this.messageCallback('ゆっくり休んだ。HPとMPが回復した！');
           break;
         }
-        case E.INRESET: case E.COIN: case E.PASSW:
-        case E.QUIZ: case E.CHRMENU: case E.CSHOP: break; // 0 operands
+        case E.QUIZ: {
+          // Quiz event: difficulty(1)
+          const difficulty = evt.data[ptr++] & 0xFF;
+          if (this.quizCallback) {
+            await this.quizCallback(difficulty);
+          } else {
+            // Default: fail quiz
+            this.setFlag(303);
+          }
+          break;
+        }
+        case E.CHRMENU: {
+          // Character select menu — set flags 312/313/314 based on selection
+          this.resetFlag(303); this.resetFlag(312); this.resetFlag(313); this.resetFlag(314);
+          if (this.choiceCallback) {
+            // Show character selection as a choice
+            const names = [];
+            for (let i = 0; i < 3; i++) {
+              if (this.getFlag(i + 1) || i === 0) names.push(i);
+            }
+            if (names.length > 0) {
+              // Simplified: just pick first character
+              this.setFlag(312);
+            }
+          } else {
+            this.setFlag(312);
+          }
+          break;
+        }
+        case E.CSHOP: {
+          // Composition shop (simplified: just show message)
+          if (this.messageCallback) await this.messageCallback('合成ショップは準備中です');
+          break;
+        }
+        case E.INRESET: case E.COIN: case E.PASSW: break;
         case E.CHRALGO: ptr += 2; break;
         case E.PARTY: {
           const chr = evt.data[ptr++] & 0xFF;
