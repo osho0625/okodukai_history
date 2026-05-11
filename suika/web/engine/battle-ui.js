@@ -311,17 +311,45 @@ export class BattleUI {
   }
 
   drawBattleGround(ctx) {
-    // Simple perspective ground
-    ctx.strokeStyle = 'rgba(60,60,120,0.3)';
+    // Draw a perspective ground plane with grid lines
+    // Simulates the original's 9x9 ground tile grid
+    ctx.save();
+    const horizon = 120;
+    const bottom = 200;
+
+    // Ground fill (gradient from dark to lighter)
+    const grd = ctx.createLinearGradient(0, horizon, 0, bottom);
+    grd.addColorStop(0, 'rgba(40,60,40,0.6)');
+    grd.addColorStop(1, 'rgba(60,80,50,0.8)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(0, horizon);
+    ctx.lineTo(400, horizon);
+    ctx.lineTo(400, bottom);
+    ctx.lineTo(0, bottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // Grid lines (horizontal)
+    ctx.strokeStyle = 'rgba(80,100,60,0.4)';
     ctx.lineWidth = 1;
-    for (let z = 0; z < 6; z++) {
-      const y = 130 + z * 12;
-      const spread = 50 + z * 30;
+    for (let z = 0; z < 8; z++) {
+      const t = z / 8;
+      const y = horizon + (bottom - horizon) * t;
+      const spread = 100 + t * 200;
       ctx.beginPath();
       ctx.moveTo(200 - spread, y);
       ctx.lineTo(200 + spread, y);
       ctx.stroke();
     }
+    // Grid lines (vertical, perspective)
+    for (let x = -3; x <= 3; x++) {
+      ctx.beginPath();
+      ctx.moveTo(200 + x * 15, horizon);
+      ctx.lineTo(200 + x * 55, bottom);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   drawEnemyModels(battleState) {

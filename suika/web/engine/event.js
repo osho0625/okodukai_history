@@ -64,6 +64,7 @@ export class EventManager {
     this.itemCallback = null;      // (itemIdx, add) => void
     this.mapChangeCallback = null; // (type, x, z, val) => void
     this.quakeCallback = null;     // (strength) => void
+    this.shopCallback = null;      // (itemIndices[]) => Promise<void>
   }
 
   load(buffer) {
@@ -352,8 +353,26 @@ export class EventManager {
         // Commands we skip with known sizes
         case E.MOVE: ptr += 4; break;
         case E.POS: ptr += 3; break;
-        case E.TSHOP: case E.WSHOP: case E.GSHOP: case E.SSHOP: ptr += 12; break;
-        case E.IN: case E.INRESET: case E.COIN: case E.PASSW:
+        case E.TSHOP: case E.WSHOP: case E.GSHOP: case E.SSHOP: {
+          // Shop: 12 bytes = shopName(0) + 6 item indices (2 bytes each)
+          const items = [];
+          for (let i = 0; i < 6; i++) {
+            const itemIdx = evt.getWord(ptr + i * 2);
+            if (itemIdx > 0 && itemIdx < 65535) items.push(itemIdx);
+          }
+          ptr += 12;
+          if (this.shopCallback && items.length > 0) {
+            await this.shopCallback(items);
+          }
+          break;
+        }
+        case E.IN: {
+          // Inn: heal all for gold (simplified — free heal for now)
+          if (this.healCallback) this.healCallback();
+          if (this.messageCallback) await this.messageCallback('ゆっくり休んだ。HPとMPが回復した！');
+          break;
+        }
+        case E.INRESET: case E.COIN: case E.PASSW:
         case E.QUIZ: case E.CHRMENU: case E.CSHOP: break; // 0 operands
         case E.CHRALGO: ptr += 2; break;
         case E.PARTY: case E.PARTYM: ptr += 2; break;

@@ -14,6 +14,7 @@ import { BattleEngine, BATTLE_RESULT, CMD } from './engine/battle.js';
 import { BattleUI } from './engine/battle-ui.js';
 import { TouchUI } from './engine/touch-ui.js';
 import { AudioManager } from './engine/audio.js';
+import { ShopUI } from './engine/shop.js';
 
 class SuikaGame {
   constructor() {
@@ -47,6 +48,8 @@ class SuikaGame {
     this.titleCursor = 0;
     this.menuCursor = 0;
     this.menuOpen = false;
+    this.shopUI = null;
+    this.battleResult = null; // { exp, gold, levelUps[] }
   }
 
   async init() {
@@ -163,6 +166,14 @@ class SuikaGame {
       };
       this.eventManager.seCallback = (seNo) => {
         this.audio.play(seNo);
+      };
+      this.eventManager.shopCallback = async (itemIndices) => {
+        this.shopUI = new ShopUI(this.ctx, this.input, this.paramAll);
+        const result = await this.shopUI.open('お店', itemIndices, this.gold || 0, this.eventManager.inventory);
+        this.gold = result.gold;
+        this.eventManager.inventory = result.inventory;
+        this.eventManager.gold = this.gold;
+        this.shopUI = null;
       };
 
       // Setup field with first area
@@ -337,6 +348,18 @@ class SuikaGame {
   }
 
   updateGame() {
+    // Shop takes priority
+    if (this.shopUI && this.shopUI.visible) {
+      this.shopUI.update();
+      return;
+    }
+
+    // Battle result display
+    if (this.battleResult) {
+      if (this.input.isOK()) this.battleResult = null;
+      return;
+    }
+
     // Choice window takes priority
     if (this.choiceWindow.visible) {
       this.choiceWindow.update(this.input);
@@ -453,20 +476,29 @@ class SuikaGame {
         }
       }
       // Apply EXP and check level-up
+      const levelUps = [];
       if (result === BATTLE_RESULT.WIN && exp > 0) {
         this.gold = (this.gold || 0) + gold;
         for (const p of this.playerParams) {
           if (p.hp > 0) {
+            const prevLv = p.lv;
             this.applyExp(p, exp);
+            if (p.lv > prevLv) {
+              levelUps.push({ name: p.name, prevLv, newLv: p.lv });
+            }
           }
         }
       }
-      // Return to field after a short delay
+      // Return to field
       setTimeout(() => {
         this.state = 'game';
         this.battleEngine = null;
         this.battleUI = null;
-      }, 1500);
+        // Show result screen for wins
+        if (result === BATTLE_RESULT.WIN) {
+          this.battleResult = { exp, gold, levelUps };
+        }
+      }, 800);
     };
 
     this.battleEngine.onDamage = (target, dmg) => {
@@ -507,6 +539,44 @@ class SuikaGame {
 
   drawGame() {
     this.field.draw();
+
+    // Shop overlay
+    if (this.shopUI && this.shopUI.visible) {
+      this.shopUI.draw();
+      return;
+    }
+
+    // Battle result overlay
+    if (this.battleResult) {
+      this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      this.ctx.fillRect(0, 0, 400, 320);
+      this.ctx.fillStyle = 'rgba(0,0,60,0.9)';
+      this.ctx.fillRect(60, 60, 280, 200);
+      this.ctx.strokeStyle = '#88f';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(60, 60, 280, 200);
+
+      this.ctx.fillStyle = '#ff0';
+      this.ctx.font = 'bold 16px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('勝利！', 200, 90);
+
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = '13px sans-serif';
+      this.ctx.fillText(`EXP: ${this.battleResult.exp}  Gold: ${this.battleResult.gold}`, 200, 120);
+
+      let y = 145;
+      for (const lu of this.battleResult.levelUps) {
+        this.ctx.fillStyle = '#8f8';
+        this.ctx.fillText(`${lu.name} Lv${lu.prevLv}→${lu.newLv}!`, 200, y);
+        y += 20;
+      }
+
+      this.ctx.fillStyle = '#aaa';
+      this.ctx.font = '11px sans-serif';
+      this.ctx.fillText('Press Enter', 200, 240);
+      return;
+    }
 
     // Message window (on top of everything)
     this.messageWindow.draw();
