@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/11 v1.44.0
+最終更新: 2026/05/11 v1.46.0
 
 ## プロジェクト概要
 
@@ -29,6 +29,7 @@
 │   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
+│   ├── suika.html      # すいかが食べたい（3D RPG HTML5移植）
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
@@ -44,6 +45,13 @@
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
 ├── backups/            # 自動バックアップJSON
+├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
+│   ├── web/            # HTML5版エンジン（main.js + engine/21モジュール）
+│   ├── data/           # ゲームデータ（モデル/ステージ/イベント/パラメータ）
+│   ├── image00-31.gif  # スプライト/UI画像
+│   ├── efc_00-29.au    # 効果音
+│   ├── decompiled/     # 逆コンパイル済みJavaソース（参考用）
+│   └── ANALYSIS.md     # 解析ドキュメント
 └── .github/workflows/
     └── backup.yml      # 毎日AM3:00 JST自動バックアップ
 ```
@@ -151,7 +159,20 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険の4ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたいの5ゲームをカード形式で表示
+
+### すいかが食べたい（pages/suika.html + suika/web/）
+- Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
+- ソフトウェア3Dレンダラ（Canvas 2D）、400×320px、約11FPS
+- game_settings.game_publish.game_suika で公開制御
+- セーブ: localStorage `suika_save`（オートセーブ+手動セーブ）
+- スマホ: タッチUI自動表示（アナログスティック+A/B/◀▶/≡ボタン）
+- 原作アセット: suika/ 配下（モデル204個、画像32枚、SE30個、ステージ/イベント/パラメータ）
+- エンジン構成: suika/web/engine/ に21モジュール
+- イベントスクリプト75コマンド完全対応
+- 戦闘: ターン制、スキル5種、状態異常5種、敵AI5カテゴリ、クリティカル
+- ショップ: 道具屋/武器屋/勾玉屋/土産屋/合成屋（14レシピ）
+- 初期状態: area 0, pos(16,35), 主人公1人, 1000G, 回復草×3（原作CInitGame準拠）
 
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）
@@ -223,6 +244,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | olimar_device_id | オリマーの冒険端末ID | 永続 |
 | olimar_save_{deviceId} | オリマーの冒険セーブデータ | 永続 |
 | olimar_achievements | オリマーの冒険実績 | 永続 |
+| suika_save | すいかが食べたいセーブデータ（JSON） | 永続 |
 
 ## sessionStorage使用
 
@@ -233,7 +255,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.44.0
+- 現在: v1.46.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
