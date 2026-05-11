@@ -1,4 +1,4 @@
-// shop.js — Shop system (ported from CToolShop/CInShop)
+// shop.js  EShop system (ported from CToolShop/CInShop)
 // Provides buy/sell UI for items, weapons, armor
 
 export class ShopUI {
@@ -26,7 +26,7 @@ export class ShopUI {
     this.shopName = shopName;
     this.gold = playerGold;
     this.inventory = playerInventory;
-    this.message = `${shopName}「いらっしゃいませ」`;
+    this.message = `${shopName}「いらっしゃぁE��せ」`;
     this.messageTimer = 0;
 
     this.itemList = [];
@@ -51,9 +51,9 @@ export class ShopUI {
     if (this.messageTimer > 0) { this.messageTimer--; return; }
 
     if (this.mode === 'main') {
-      const items = ['買う', '売る', 'やめる'];
-      if (this.input.isKeyDown('arrowup')) this.cursor = (this.cursor - 1 + items.length) % items.length;
-      if (this.input.isKeyDown('arrowdown')) this.cursor = (this.cursor + 1) % items.length;
+      const items = ['買ぁE, '売めE, 'めE��めE];
+      if (this.input.isUp()) this.cursor = (this.cursor - 1 + items.length) % items.length;
+      if (this.input.isDown()) this.cursor = (this.cursor + 1) % items.length;
       if (this.input.isOK()) {
         if (this.cursor === 0) { this.mode = 'buy'; this.cursor = 0; }
         else if (this.cursor === 1) { this.mode = 'sell'; this.cursor = 0; }
@@ -62,8 +62,8 @@ export class ShopUI {
       if (this.input.isCancel()) this.close();
     } else if (this.mode === 'buy') {
       if (this.itemList.length === 0) { this.mode = 'main'; this.cursor = 0; return; }
-      if (this.input.isKeyDown('arrowup')) this.cursor = (this.cursor - 1 + this.itemList.length) % this.itemList.length;
-      if (this.input.isKeyDown('arrowdown')) this.cursor = (this.cursor + 1) % this.itemList.length;
+      if (this.input.isUp()) this.cursor = (this.cursor - 1 + this.itemList.length) % this.itemList.length;
+      if (this.input.isDown()) this.cursor = (this.cursor + 1) % this.itemList.length;
       if (this.input.isOK()) {
         const item = this.itemList[this.cursor];
         if (this.gold >= item.gold) {
@@ -72,7 +72,7 @@ export class ShopUI {
           this.message = `${item.name}を買った！`;
           this.messageTimer = 30;
         } else {
-          this.message = 'お金が足りない！';
+          this.message = 'お��が足りなぁE��E;
           this.messageTimer = 30;
         }
       }
@@ -82,15 +82,15 @@ export class ShopUI {
         const item = this.paramAll.getItem(idx);
         return item ? { invIdx: i, index: idx, name: item.name.trim(), gold: Math.floor(item.gold / 2) } : null;
       }).filter(Boolean);
-      if (sellable.length === 0) { this.message = '売れるものがない'; this.messageTimer = 30; this.mode = 'main'; this.cursor = 0; return; }
+      if (sellable.length === 0) { this.message = '売れるも�EがなぁE; this.messageTimer = 30; this.mode = 'main'; this.cursor = 0; return; }
       if (this.cursor >= sellable.length) this.cursor = sellable.length - 1;
-      if (this.input.isKeyDown('arrowup')) this.cursor = (this.cursor - 1 + sellable.length) % sellable.length;
-      if (this.input.isKeyDown('arrowdown')) this.cursor = (this.cursor + 1) % sellable.length;
+      if (this.input.isUp()) this.cursor = (this.cursor - 1 + sellable.length) % sellable.length;
+      if (this.input.isDown()) this.cursor = (this.cursor + 1) % sellable.length;
       if (this.input.isOK()) {
         const s = sellable[this.cursor];
         this.gold += s.gold;
         this.inventory.splice(s.invIdx, 1);
-        this.message = `${s.name}を${s.gold}Gで売った`;
+        this.message = `${s.name}めE{s.gold}Gで売った`;
         this.messageTimer = 30;
         if (this.cursor > 0) this.cursor--;
       }
@@ -121,7 +121,7 @@ export class ShopUI {
     ctx.fillStyle = '#fd0';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`所持金: ${this.gold} G`, 380, 58);
+    ctx.fillText(`所持E��: ${this.gold} G`, 380, 58);
 
     if (this.mode === 'main') {
       this._drawMainMenu(ctx);
@@ -133,7 +133,7 @@ export class ShopUI {
   }
 
   _drawMainMenu(ctx) {
-    const items = ['買う', '売る', 'やめる'];
+    const items = ['買ぁE, '売めE, 'めE��めE];
     const x = 150, y = 100;
     ctx.fillStyle = 'rgba(0,0,60,0.9)';
     ctx.fillRect(x, y, 100, 80);

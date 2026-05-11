@@ -1,4 +1,4 @@
-// battle-ui.js — Battle screen UI renderer with 3D model display
+// battle-ui.js  EBattle screen UI renderer with 3D model display
 
 import { CMD, BATTLE_RESULT } from './battle.js';
 import { Vec3, Color, Mat4 } from './math.js';
@@ -78,9 +78,9 @@ export class BattleUI {
     this.phase = 'command'; // command, target, skill, item, skillTarget, itemTarget
     this.commands = [
       { label: 'こうげき', cmd: CMD.ATTACK },
-      { label: 'まほう', cmd: CMD.SKILL },
-      { label: 'アイテム', cmd: CMD.ITEM },
-      { label: 'ぼうぎょ', cmd: CMD.DEFEND },
+      { label: 'まほぁE, cmd: CMD.SKILL },
+      { label: 'アイチE��', cmd: CMD.ITEM },
+      { label: 'ぼぁE��めE, cmd: CMD.DEFEND },
       { label: 'にげる', cmd: CMD.RUN },
     ];
     this.effect = new BattleEffect();
@@ -107,31 +107,31 @@ export class BattleUI {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
       }
-      if (newMsg.includes('会心')) {
+      if (newMsg.includes('会忁E)) {
         this.effect.triggerFlash('#ff0', 8);
         this.effect.triggerShake(8);
         this.effect.spawnParticles(200, 150, 20, '#ff4');
       }
-      if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
+      if (newMsg.includes('倒しぁE) || newMsg.includes('倒れぁE)) {
         this.effect.triggerFlash('#ff0', 6);
         this.effect.spawnParticles(200, 120, 15, '#f80');
       }
-      if (newMsg.includes('魔法') || newMsg.includes('唱えた')) {
+      if (newMsg.includes('魔況E) || newMsg.includes('唱えた')) {
         this.effect.spawnParticles(200, 100, 12, '#8af');
       }
       if (newMsg.includes('回復')) {
         this.effect.spawnParticles(250, 260, 10, '#4f8');
       }
-      if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('全能力')) {
+      if (newMsg.includes('防御力が上がっぁE) || newMsg.includes('攻撁E��が上がっぁE) || newMsg.includes('全能劁E)) {
         this.effect.spawnParticles(250, 250, 8, '#ff8');
       }
-      if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった')) {
+      if (newMsg.includes('防御力が下がっぁE) || newMsg.includes('攻撁E��が下がっぁE)) {
         this.effect.spawnParticles(200, 100, 8, '#a4f');
       }
-      if (newMsg.includes('毒を受けた')) {
+      if (newMsg.includes('毒を受けぁE)) {
         this.effect.spawnParticles(200, 100, 10, '#8f0');
       }
-      if (newMsg.includes('麻痺') || newMsg.includes('石になった')) {
+      if (newMsg.includes('麻痺') || newMsg.includes('石になっぁE)) {
         this.effect.triggerFlash('#ff0', 4);
         this.effect.spawnParticles(200, 100, 12, '#cc0');
       }
@@ -144,10 +144,10 @@ export class BattleUI {
     if (battleState.state !== 'playerTurn') return null;
 
     if (this.phase === 'command') {
-      if (this.input.isKeyDown('arrowup')) {
+      if (this.input.isUp()) {
         this.cursor = (this.cursor - 1 + this.commands.length) % this.commands.length;
       }
-      if (this.input.isKeyDown('arrowdown')) {
+      if (this.input.isDown()) {
         this.cursor = (this.cursor + 1) % this.commands.length;
       }
       if (this.input.isOK()) {
@@ -177,10 +177,10 @@ export class BattleUI {
         this.phase = 'command';
         return null;
       }
-      if (this.input.isKeyDown('arrowleft') || this.input.isKeyDown('arrowup')) {
+      if (this.input.isLeft() || this.input.isUp()) {
         this.targetCursor = (this.targetCursor - 1 + aliveEnemies.length) % aliveEnemies.length;
       }
-      if (this.input.isKeyDown('arrowright') || this.input.isKeyDown('arrowdown')) {
+      if (this.input.isRight() || this.input.isDown()) {
         this.targetCursor = (this.targetCursor + 1) % aliveEnemies.length;
       }
       if (this.input.isOK()) {
@@ -196,10 +196,10 @@ export class BattleUI {
         this.phase = 'command';
         return null;
       }
-      if (this.input.isKeyDown('arrowup')) {
+      if (this.input.isUp()) {
         this.subCursor = (this.subCursor - 1 + this.playerSkills.length) % this.playerSkills.length;
       }
-      if (this.input.isKeyDown('arrowdown')) {
+      if (this.input.isDown()) {
         this.subCursor = (this.subCursor + 1) % this.playerSkills.length;
       }
       if (this.input.isOK()) {
@@ -213,7 +213,7 @@ export class BattleUI {
           this.phase = 'skillAllyTarget';
           this.targetCursor = 0;
         } else {
-          // All targets or self — execute immediately
+          // All targets or self  Eexecute immediately
           this.phase = 'command';
           return { cmd: CMD.SKILL, target: 0, extra: skill.index };
         }
@@ -225,10 +225,10 @@ export class BattleUI {
     } else if (this.phase === 'skillTarget') {
       const aliveEnemies = battleState.enemies.filter(e => e.alive);
       if (aliveEnemies.length === 0) { this.phase = 'skill'; return null; }
-      if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
+      if (this.input.isUp() || this.input.isLeft()) {
         this.targetCursor = (this.targetCursor - 1 + aliveEnemies.length) % aliveEnemies.length;
       }
-      if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
+      if (this.input.isDown() || this.input.isRight()) {
         this.targetCursor = (this.targetCursor + 1) % aliveEnemies.length;
       }
       if (this.input.isOK()) {
@@ -240,10 +240,10 @@ export class BattleUI {
     } else if (this.phase === 'skillAllyTarget') {
       const alivePlayers = battleState.players.filter(p => p.alive);
       if (alivePlayers.length === 0) { this.phase = 'skill'; return null; }
-      if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
+      if (this.input.isUp() || this.input.isLeft()) {
         this.targetCursor = (this.targetCursor - 1 + alivePlayers.length) % alivePlayers.length;
       }
-      if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
+      if (this.input.isDown() || this.input.isRight()) {
         this.targetCursor = (this.targetCursor + 1) % alivePlayers.length;
       }
       if (this.input.isOK()) {
@@ -257,10 +257,10 @@ export class BattleUI {
         this.phase = 'command';
         return null;
       }
-      if (this.input.isKeyDown('arrowup')) {
+      if (this.input.isUp()) {
         this.subCursor = (this.subCursor - 1 + this.inventory.length) % this.inventory.length;
       }
-      if (this.input.isKeyDown('arrowdown')) {
+      if (this.input.isDown()) {
         this.subCursor = (this.subCursor + 1) % this.inventory.length;
       }
       if (this.input.isOK()) {
@@ -276,10 +276,10 @@ export class BattleUI {
       }
     } else if (this.phase === 'itemTarget') {
       const players = battleState.players;
-      if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
+      if (this.input.isUp() || this.input.isLeft()) {
         this.targetCursor = (this.targetCursor - 1 + players.length) % players.length;
       }
-      if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
+      if (this.input.isDown() || this.input.isRight()) {
         this.targetCursor = (this.targetCursor + 1) % players.length;
       }
       if (this.input.isOK()) {
@@ -661,7 +661,7 @@ export class BattleUI {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#adf';
     ctx.textAlign = 'left';
-    ctx.fillText('まほう (X:もどる)', x + 8, y + 12);
+    ctx.fillText('まほぁE(X:もどめE', x + 8, y + 12);
 
     const startIdx = Math.max(0, this.subCursor - maxShow + 1);
     for (let i = 0; i < maxShow && startIdx + i < this.playerSkills.length; i++) {
@@ -691,7 +691,7 @@ export class BattleUI {
       ctx.font = '11px sans-serif';
       ctx.fillStyle = '#aaa';
       ctx.textAlign = 'left';
-      ctx.fillText('アイテムがない', x + 8, y + 22);
+      ctx.fillText('アイチE��がなぁE, x + 8, y + 22);
       return;
     }
     const h = 18 + Math.min(items.length, maxShow) * 16;
@@ -704,7 +704,7 @@ export class BattleUI {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#afc';
     ctx.textAlign = 'left';
-    ctx.fillText('アイテム (X:もどる)', x + 8, y + 12);
+    ctx.fillText('アイチE�� (X:もどめE', x + 8, y + 12);
 
     const startIdx = Math.max(0, this.subCursor - maxShow + 1);
     for (let i = 0; i < maxShow && startIdx + i < items.length; i++) {
@@ -730,7 +730,7 @@ export class BattleUI {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#cfc';
     ctx.textAlign = 'left';
-    ctx.fillText('だれに？', x + 8, y + 12);
+    ctx.fillText('だれに�E�E, x + 8, y + 12);
 
     for (let i = 0; i < players.length; i++) {
       ctx.fillStyle = i === this.targetCursor ? '#ff0' : (players[i].alive ? '#ddd' : '#666');
@@ -752,7 +752,7 @@ export class BattleUI {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#fcc';
     ctx.textAlign = 'left';
-    ctx.fillText('ターゲット:', x + 8, y + 14);
+    ctx.fillText('ターゲチE��:', x + 8, y + 14);
 
     for (let i = 0; i < aliveEnemies.length && i < 3; i++) {
       ctx.fillStyle = i === this.targetCursor ? '#ff0' : '#ddd';

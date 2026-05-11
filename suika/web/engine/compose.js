@@ -1,4 +1,4 @@
-// compose.js — Composition/crafting shop (ported from CComposition/CCompTable)
+// compose.js  EComposition/crafting shop (ported from CComposition/CCompTable)
 
 // Composition recipes: [resultItemIdx, gold, mat1Idx, mat1Num, mat2Idx, mat2Num, mat3Idx, mat3Num]
 // -1 = no material needed for that slot
@@ -38,7 +38,7 @@ export class ComposeShop {
     this.cursor = 0;
     this.gold = playerGold;
     this.inventory = playerInventory;
-    this.message = '合成屋「いらっしゃいませ」';
+    this.message = '合�E屋「いらっしゃぁE��せ、E;
     this.messageTimer = 0;
     return new Promise(resolve => { this.resolve = resolve; });
   }
@@ -78,8 +78,8 @@ export class ComposeShop {
     if (!this.visible) return;
     if (this.messageTimer > 0) { this.messageTimer--; return; }
 
-    if (this.input.isKeyDown('arrowup')) this.cursor = (this.cursor - 1 + COMP_TABLE.length) % COMP_TABLE.length;
-    if (this.input.isKeyDown('arrowdown')) this.cursor = (this.cursor + 1) % COMP_TABLE.length;
+    if (this.input.isUp()) this.cursor = (this.cursor - 1 + COMP_TABLE.length) % COMP_TABLE.length;
+    if (this.input.isDown()) this.cursor = (this.cursor + 1) % COMP_TABLE.length;
 
     if (this.input.isOK()) {
       const r = COMP_TABLE[this.cursor];
@@ -96,7 +96,7 @@ export class ComposeShop {
         this.message = `${item ? item.name.trim() : '???'}を合成した！`;
         this.messageTimer = 40;
       } else if (this.gold < r[1]) {
-        this.message = 'お金が足りません';
+        this.message = 'お��が足りません';
         this.messageTimer = 30;
       } else {
         this.message = '素材が足りません';
@@ -123,13 +123,13 @@ export class ComposeShop {
     ctx.fillStyle = '#fff';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(this.message || '合成屋 (X:閉じる)', 200, 26);
+    ctx.fillText(this.message || '合�E屁E(X:閉じめE', 200, 26);
 
     // Gold
     ctx.fillStyle = '#fd0';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`所持金: ${this.gold}G`, 385, 50);
+    ctx.fillText(`所持E��: ${this.gold}G`, 385, 50);
 
     // Recipe list
     const x = 10, y = 55, w = 380, maxShow = 7;

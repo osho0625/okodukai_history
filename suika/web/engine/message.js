@@ -122,10 +122,10 @@ export class ChoiceWindow {
 
   update(input) {
     if (!this.visible) return;
-    if (input.isKeyDown('arrowup') || input.isKeyDown('arrowleft')) {
+    if (input.isUp() || input.isLeft()) {
       this.selected = 0;
     }
-    if (input.isKeyDown('arrowdown') || input.isKeyDown('arrowright')) {
+    if (input.isDown() || input.isRight()) {
       this.selected = 1;
     }
     if (input.isOK()) {
@@ -136,7 +136,7 @@ export class ChoiceWindow {
       }
     }
     if (input.isCancel()) {
-      this.selected = 1; // Cancel = "いいえ"
+      this.selected = 1;
       this.visible = false;
       if (this.resolve) {
         this.resolve(this.selected);

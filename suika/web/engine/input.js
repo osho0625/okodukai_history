@@ -109,10 +109,17 @@ export class Input {
       }
     }
 
+    // Touch direction edge detection (fires once when stick moves to a new direction)
+    this._touchDirDown = DIR.NONE;
+    if (this.touchDir !== DIR.NONE && this.touchDir !== this._prevTouchDir) {
+      this._touchDirDown = this.touchDir;
+    }
+
     this.prevKeys = { ...this.keys };
     this._prevMouseLeft = this.mouseLeft;
     this._prevMouseRight = this.mouseRight;
     this._prevTouchButtons = { ...this.touchButtons };
+    this._prevTouchDir = this.touchDir;
   }
 
   isKey(key) { return !!this.keys[key.toLowerCase()]; }
@@ -124,6 +131,20 @@ export class Input {
 
   isCancel() {
     return this.isKeyDown('x') || this.isKeyDown('escape') || this.mouseRightDown || !!this.touchButtonDown['cancel'];
+  }
+
+  // Direction edge-triggered (works with both keyboard and touch stick)
+  isUp() {
+    return this.isKeyDown('arrowup') || this._touchDirDown === DIR.UP || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.UP_RIGHT;
+  }
+  isDown() {
+    return this.isKeyDown('arrowdown') || this._touchDirDown === DIR.DOWN || this._touchDirDown === DIR.DOWN_LEFT || this._touchDirDown === DIR.DOWN_RIGHT;
+  }
+  isLeft() {
+    return this.isKeyDown('arrowleft') || this._touchDirDown === DIR.LEFT || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.DOWN_LEFT;
+  }
+  isRight() {
+    return this.isKeyDown('arrowright') || this._touchDirDown === DIR.RIGHT || this._touchDirDown === DIR.UP_RIGHT || this._touchDirDown === DIR.DOWN_RIGHT;
   }
 
   // Get 8-direction from arrow keys or virtual stick
