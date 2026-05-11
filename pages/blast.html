@@ -493,10 +493,23 @@ function renderPieces() {
 }
 
 // --- ドラッグ操作 ---
+let touchStartPos = null;
+let touchStartIdx = -1;
+let dragStarted = false;
+const DRAG_THRESHOLD = 10; // px移動でドラッグ開始
+
 function startDrag(e, idx) {
   if (pieces[idx].used) return;
   e.preventDefault();
+  const pos = getEventPos(e);
+  touchStartPos = { x: pos.x, y: pos.y };
+  touchStartIdx = idx;
+  dragStarted = false;
+}
+
+function actuallyStartDrag(idx, pos) {
   dragging = true;
+  dragStarted = true;
   dragPieceIdx = idx;
   selectedIdx = idx;
   renderPieces();
@@ -520,7 +533,6 @@ function startDrag(e, idx) {
   }));
   document.body.appendChild(dragGhost);
 
-  const pos = getEventPos(e);
   moveDragGhost(pos.x, pos.y);
   updatePreview(pos.x, pos.y);
 }
@@ -595,8 +607,17 @@ function clearPreview() {
 }
 
 function endDrag(e) {
+  // タッチ開始したが閾値未満で離した場合 → タップ扱い（clickで処理）
+  if (touchStartPos && !dragStarted) {
+    touchStartPos = null;
+    touchStartIdx = -1;
+    return;
+  }
   if (!dragging) return;
   dragging = false;
+  dragStarted = false;
+  touchStartPos = null;
+  touchStartIdx = -1;
   clearPreview();
   if (dragGhost) { dragGhost.remove(); dragGhost = null; }
 
@@ -613,12 +634,29 @@ function endDrag(e) {
 }
 
 document.addEventListener('mousemove', (e) => {
+  if (touchStartPos && !dragStarted) {
+    const pos = getEventPos(e);
+    const dx = pos.x - touchStartPos.x, dy = pos.y - touchStartPos.y;
+    if (Math.sqrt(dx*dx + dy*dy) >= DRAG_THRESHOLD) {
+      actuallyStartDrag(touchStartIdx, pos);
+    }
+    return;
+  }
   if (!dragging) return;
   const pos = getEventPos(e);
   moveDragGhost(pos.x, pos.y);
   updatePreview(pos.x, pos.y);
 });
 document.addEventListener('touchmove', (e) => {
+  if (touchStartPos && !dragStarted) {
+    const pos = getEventPos(e);
+    const dx = pos.x - touchStartPos.x, dy = pos.y - touchStartPos.y;
+    if (Math.sqrt(dx*dx + dy*dy) >= DRAG_THRESHOLD) {
+      e.preventDefault();
+      actuallyStartDrag(touchStartIdx, pos);
+    }
+    return;
+  }
   if (!dragging) return;
   e.preventDefault();
   const pos = getEventPos(e);
@@ -626,17 +664,33 @@ document.addEventListener('touchmove', (e) => {
   updatePreview(pos.x, pos.y);
 }, { passive: false });
 document.addEventListener('mouseup', endDrag);
-document.addEventListener('touchend', endDrag);
-document.addEventListener('touchcancel', endDrag);
+document.addEventListener('touchend', (e) => {
+  endDrag(e);
+  touchStartPos = null;
+  touchStartIdx = -1;
+});
+document.addEventListener('touchcancel', (e) => {
+  // ドラッグ中ならキャンセル
+  if (dragging) {
+    dragging = false;
+    dragStarted = false;
+    clearPreview();
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    dragPieceIdx = -1;
+  }
+  touchStartPos = null;
+  touchStartIdx = -1;
+});
 
 // --- タップ配置 ---
 function handleCellClick(x, y) {
-  if (dragging) return;
+  if (dragging || dragStarted) return;
   if (selectedIdx < 0 || selectedIdx >= pieces.length) return;
   const p = pieces[selectedIdx];
   if (p.used) return;
   const ox = x - Math.floor(p.shape[0].length / 2);
   const oy = y - Math.floor(p.shape.length / 2);
+  clearPreview();
   if (canPlace(p.shape, ox, oy)) {
     doPlace(selectedIdx, ox, oy);
   }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -75,6 +75,20 @@ rt { font-size: 0.55em; color: #aaa; }
 .item-slot:active { background: rgba(255,255,255,0.1); }
 .item-slot.held { border-color: #ffd54f; background: rgba(255,215,0,0.12); box-shadow: 0 0 8px rgba(255,215,0,0.3); }
 .hand-label { font-size: 0.7em; color: #ffd54f; padding: 2px 6px; }
+
+/* ピクミン選択スロット */
+.pikmin-slots {
+  display: flex; gap: 6px; padding: 4px 0; align-items: center; flex-wrap: wrap;
+}
+.pikmin-slot {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04); cursor: pointer; overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pikmin-slot img { width: 100%; height: 100%; object-fit: cover; }
+.pikmin-slot:active { opacity: 0.7; }
+.pikmin-slot.selected { border-color: #81c784; box-shadow: 0 0 8px rgba(129,199,132,0.4); }
+.pikmin-label { font-size: 0.7em; color: #81c784; padding: 2px 6px; }
 .choice-btn {
   width: 100%; padding: 11px 14px; border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px; background: rgba(255,255,255,0.04);
@@ -119,6 +133,17 @@ rt { font-size: 0.55em; color: #aaa; }
 .close-btn { width: 100%; margin-top: 14px; padding: 11px; border: none; border-radius: 8px; background: #37474f; color: #fff; font-size: 0.9em; cursor: pointer; }
 .party-member { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .party-member img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+
+/* マップ */
+.map-node {
+  width: 70px; height: 70px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer; font-size: 0.7em;
+  text-align: center; padding: 4px; transition: background 0.15s, border-color 0.15s;
+}
+.map-node:active { background: rgba(255,255,255,0.12); }
+.map-node.current { border-color: #81c784; background: rgba(129,199,132,0.1); }
+.map-node .map-icon { font-size: 1.6em; margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -126,6 +151,7 @@ rt { font-size: 0.55em; color: #aaa; }
 <div class="header">
   <a class="back" onclick="olimarNavGuard('前の画面', function(){history.back()})">←</a>
   <div class="header-icons">
+    <button class="icon-btn" id="mapBtn" onclick="openMap()" title="マップ" style="display:none;">🗺️</button>
     <button class="icon-btn" onclick="openStatus()" title="ステータス">📊</button>
     <button class="icon-btn" onclick="openItems()" title="アイテム">🎒</button>
     <button class="icon-btn" onclick="openParty()" title="仲間">🌿</button>
@@ -135,6 +161,7 @@ rt { font-size: 0.55em; color: #aaa; }
 
 <div class="game-wrap">
   <div class="scene-img"><canvas id="sceneCanvas" width="420" height="160"></canvas></div>
+  <div class="pikmin-slots" id="pikminSlots"></div>
   <div class="item-slots" id="itemSlots"></div>
   <div class="text-window" id="textWindow"></div>
   <div class="choices" id="choices"></div>
@@ -151,6 +178,8 @@ rt { font-size: 0.55em; color: #aaa; }
   <button class="title-btn" style="background:#37474f;" onclick="history.back()">← もどる</button>
 </div>
 
+<!-- マップ -->
+<div class="overlay" id="mapOverlay"><div class="overlay-panel" style="max-width:400px;"><h3>🗺️ マップ</h3><div id="mapObjective" style="font-size:0.82em;color:#ffd54f;text-align:center;margin-bottom:10px;padding:6px;background:rgba(255,215,0,0.06);border-radius:8px;"></div><div id="mapContent" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div><div id="mapHint" style="font-size:0.8em;color:#aaa;text-align:center;margin-top:10px;padding:8px;min-height:40px;"></div><button class="close-btn" onclick="closeOv('mapOverlay')">閉じる</button></div></div>
 <!-- ステータス -->
 <div class="overlay" id="statusOverlay"><div class="overlay-panel"><h3>📊 ステータス</h3><div id="statusContent"></div><button class="close-btn" onclick="closeOv('statusOverlay')">閉じる</button></div></div>
 <!-- アイテム -->
@@ -164,7 +193,8 @@ rt { font-size: 0.55em; color: #aaa; }
 <script src="../js/common.js"></script>
 <script>
 // ===== 定数 =====
-const PUYO_IMGS = ['../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif','../images/puyo_4.avif','../images/puyo_5.avif','../images/puyo_6.avif'];
+const PUYO_IMGS = ['../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif','../images/puyo_4.avif','../images/puyo_5.avif','../images/puyo_6.avif','../images/puyo_7.avif','../images/puyo_8.avif','../images/puyo_9.avif'];
+const PIKMIN_NAMES = ['紫ピクミン','赤ピクミン','青ピクミン','黄ピクミン','白ピクミン','氷ピクミン','岩ピクミン','羽ピクミン','光ピクミン'];
 const DEVICE_ID = getDeviceId();
 function getDeviceId() {
   let id = localStorage.getItem('olimar_device_id');
@@ -180,6 +210,7 @@ let G = {
   items: [],
   flags: {},
   heldItem: null, // 手に持っているアイテム名
+  selectedPikmin: null, // 選択中のピクミン名
 };
 
 // ===== 実績定義 =====
@@ -221,16 +252,20 @@ function drawScene(sceneId) {
   sctx.clearRect(0, 0, w, h);
   const scenes = {
     crash: () => {
-      // 薄紫の空 + 壊れたロケット + 煙
+      // 薄紫の空 + 壊れたロケット + 炎
       gradient(0, 0, w, h, '#4a148c', '#1a237e', '#263238');
       softCircle(w*0.7, h*0.3, 60, 'rgba(255,183,77,0.15)');
       ground('#33691e', '#1b5e20', h*0.7);
       // ロケット残骸
       sctx.fillStyle = '#546e7a'; sctx.fillRect(w*0.15, h*0.45, 50, 30);
       sctx.fillStyle = '#37474f'; sctx.fillRect(w*0.18, h*0.4, 15, 35);
+      // 炎
+      softCircle(w*0.22, h*0.38, 18, 'rgba(255,87,34,0.5)');
+      softCircle(w*0.18, h*0.42, 14, 'rgba(255,152,0,0.4)');
+      softCircle(w*0.25, h*0.35, 12, 'rgba(255,235,59,0.3)');
       // 煙
-      softCircle(w*0.2, h*0.35, 20, 'rgba(200,200,200,0.2)');
-      softCircle(w*0.25, h*0.28, 15, 'rgba(200,200,200,0.15)');
+      softCircle(w*0.2, h*0.28, 20, 'rgba(200,200,200,0.2)');
+      softCircle(w*0.25, h*0.22, 15, 'rgba(200,200,200,0.15)');
       scatter('#2e7d32', '#81c784', 20);
     },
     forest: () => {
@@ -286,6 +321,69 @@ function drawScene(sceneId) {
       sctx.beginPath(); sctx.ellipse(w*0.5, h*0.6, 35, 28, 0, 0, Math.PI*2); sctx.fill();
       scatter('#455a64', '#37474f', 6);
     },
+    river: () => {
+      // 水辺の谷：青い空＋川＋緑の岸
+      gradient(0, 0, w, h, '#1565c0', '#0d47a1', '#1b5e20');
+      ground('#2e7d32', '#1b5e20', h*0.6);
+      // 川
+      sctx.fillStyle = 'rgba(33,150,243,0.4)';
+      sctx.fillRect(0, h*0.55, w, h*0.2);
+      sctx.fillStyle = 'rgba(100,181,246,0.2)';
+      sctx.fillRect(0, h*0.6, w, h*0.08);
+      // 水面の光
+      softCircle(w*0.3, h*0.62, 8, 'rgba(255,255,255,0.3)');
+      softCircle(w*0.6, h*0.58, 6, 'rgba(255,255,255,0.25)');
+      softCircle(w*0.8, h*0.63, 5, 'rgba(255,255,255,0.2)');
+      // 岸の植物
+      scatter('#a5d6a7', '#66bb6a', 12);
+      scatter('#81d4fa', '#4fc3f7', 5);
+    },
+    hill: () => {
+      gradient(0, 0, w, h, '#f9a825', '#f57f17', '#33691e');
+      ground('#33691e', '#1b5e20', h*0.65);
+      // 雷の木
+      sctx.fillStyle = '#4e342e'; sctx.fillRect(w*0.5, h*0.2, 14, h*0.45);
+      softCircle(w*0.55, h*0.15, 30, 'rgba(255,235,59,0.4)');
+      // 電気エフェクト
+      softCircle(w*0.3, h*0.3, 10, 'rgba(255,235,59,0.3)');
+      softCircle(w*0.7, h*0.25, 8, 'rgba(255,235,59,0.25)');
+      scatter('#ffee58', '#fdd835', 10);
+    },
+    swamp: () => {
+      gradient(0, 0, w, h, '#4a148c', '#6a1b9a', '#1b5e20');
+      ground('#2e7d32', '#1b5e20', h*0.7);
+      // 毒霧
+      softCircle(w*0.3, h*0.5, 50, 'rgba(156,39,176,0.2)');
+      softCircle(w*0.7, h*0.45, 40, 'rgba(186,104,200,0.15)');
+      // 沼
+      sctx.fillStyle = 'rgba(76,175,80,0.3)';
+      sctx.beginPath(); sctx.ellipse(w*0.5, h*0.75, 90, 20, 0, 0, Math.PI*2); sctx.fill();
+      scatter('#ce93d8', '#e1bee7', 8);
+    },
+    ice: () => {
+      gradient(0, 0, w, h, '#e3f2fd', '#90caf9', '#42a5f5');
+      ground('#bbdefb', '#90caf9', h*0.65);
+      // 氷の結晶
+      softCircle(w*0.3, h*0.4, 25, 'rgba(255,255,255,0.4)');
+      softCircle(w*0.7, h*0.35, 20, 'rgba(255,255,255,0.3)');
+      softCircle(w*0.5, h*0.5, 30, 'rgba(227,242,253,0.5)');
+      scatter('#e3f2fd', '#ffffff', 15);
+    },
+    sky: () => {
+      gradient(0, 0, w, h, '#e3f2fd', '#bbdefb', '#90caf9');
+      // 浮島
+      sctx.fillStyle = '#4caf50';
+      sctx.beginPath(); sctx.ellipse(w*0.3, h*0.5, 40, 15, 0, 0, Math.PI*2); sctx.fill();
+      sctx.fillStyle = '#388e3c';
+      sctx.beginPath(); sctx.ellipse(w*0.7, h*0.4, 35, 12, 0, 0, Math.PI*2); sctx.fill();
+      // 雲
+      softCircle(w*0.2, h*0.2, 30, 'rgba(255,255,255,0.5)');
+      softCircle(w*0.8, h*0.15, 25, 'rgba(255,255,255,0.4)');
+      softCircle(w*0.5, h*0.1, 20, 'rgba(255,255,255,0.3)');
+      // 光の柱
+      softCircle(w*0.5, h*0.6, 15, 'rgba(255,235,59,0.4)');
+      scatter('#e1f5fe', '#b3e5fc', 10);
+    },
   };
   (scenes[sceneId] || scenes.crash)();
 }
@@ -319,6 +417,44 @@ function scatter(c1, c2, count) {
 function hasItem(name) { return G.items.some(it => it.name === name); }
 function removeItem(name) { G.items = G.items.filter(it => it.name !== name); if (G.heldItem === name) G.heldItem = null; renderItemSlots(); }
 function isHolding(name) { return G.heldItem === name; }
+
+// ピクミンスロット描画
+function renderPikminSlots() {
+  const el = document.getElementById('pikminSlots');
+  if (!el) return;
+  el.innerHTML = '';
+  if (G.party.length === 0) return;
+  G.party.forEach(p => {
+    const slot = document.createElement('div');
+    slot.className = 'pikmin-slot' + (G.selectedPikmin === p.name ? ' selected' : '');
+    slot.innerHTML = '<img src="' + p.img + '" alt="' + p.name + '">';
+    slot.title = p.name;
+    slot.onclick = () => togglePikmin(p.name);
+    el.appendChild(slot);
+  });
+  if (G.selectedPikmin) {
+    const label = document.createElement('span');
+    label.className = 'pikmin-label';
+    label.textContent = '🌿 ' + G.selectedPikmin;
+    el.appendChild(label);
+  }
+}
+
+function togglePikmin(name) {
+  if (G.selectedPikmin === name) G.selectedPikmin = null;
+  else G.selectedPikmin = name;
+  renderPikminSlots();
+  // 選択肢を再評価
+  if (G.node && SCENARIO[G.node]) {
+    const node = SCENARIO[G.node];
+    const choices = typeof node.choices === 'function' ? node.choices() : node.choices;
+    if (textPage * LINES_PER_PAGE >= textQueue.length) showChoices(choices);
+  }
+  autoSave();
+}
+
+function isUsingPikmin(name) { return G.selectedPikmin === name; }
+function hasAnyPikmin() { return G.party.length > 0; }
 
 // アイテムスロット描画
 function renderItemSlots() {
@@ -376,7 +512,7 @@ function combineItems(heldName, targetName) {
 // 敗北処理
 function handleDefeat(returnNode) {
   // キーアイテム以外をランダムロスト
-  const KEY_ITEMS = ['光る石', 'ロープ'];
+  const KEY_ITEMS = ['光る石', 'ロープ', '耐火服', '探検キット', '防水マント', '絶縁グローブ', '古代の鍵'];
   const lostItems = [];
   G.items = G.items.filter(it => {
     if (KEY_ITEMS.includes(it.name)) return true;
@@ -390,264 +526,8 @@ function handleDefeat(returnNode) {
   else G.flags.lostItemNames = '';
 }
 
-const SCENARIO = {
-  intro1: {
-    scene: 'crash',
-    text: [
-      '<ruby>激<rt>はげ</rt></ruby>しい<ruby>衝撃<rt>しょうげき</rt></ruby>。<ruby>金属<rt>きんぞく</rt></ruby>がひしゃげる<ruby>音<rt>おと</rt></ruby>。',
-      '<ruby>気<rt>き</rt></ruby>がつくと、<ruby>見知<rt>みし</rt></ruby>らぬ<ruby>惑星<rt>わくせい</rt></ruby>の<ruby>地表<rt>ちひょう</rt></ruby>に<ruby>投<rt>な</rt></ruby>げ<ruby>出<rt>だ</rt></ruby>されていた。',
-      '<ruby>宇宙船<rt>うちゅうせん</rt></ruby>は<ruby>大破<rt>たいは</rt></ruby>し、エンジンから<ruby>黒煙<rt>こくえん</rt></ruby>が<ruby>上<rt>あ</rt></ruby>がっている。<ruby>空<rt>そら</rt></ruby>は<ruby>薄紫色<rt>うすむらさきいろ</rt></ruby>。<ruby>見<rt>み</rt></ruby>たことのない<ruby>植物<rt>しょくぶつ</rt></ruby>が<ruby>辺<rt>あた</rt></ruby>りを<ruby>覆<rt>おお</rt></ruby>っている。',
-    ],
-    choices: [{ text: '<ruby>周囲<rt>しゅうい</rt></ruby>を<ruby>見渡<rt>みわた</rt></ruby>す', next: 'crash_site' }],
-    onEnter() { unlockAchievement('first_step'); }
-  },
-  crash_site: {
-    scene: 'crash',
-    text: [
-      '【<ruby>不時着地点<rt>ふじちゃくちてん</rt></ruby>】',
-      '<ruby>壊<rt>こわ</rt></ruby>れたロケットの<ruby>残骸<rt>ざんがい</rt></ruby>が<ruby>煙<rt>けむり</rt></ruby>を<ruby>上<rt>あ</rt></ruby>げている。',
-      '<ruby>東<rt>ひがし</rt></ruby>に<ruby>森<rt>もり</rt></ruby>への<ruby>小道<rt>こみち</rt></ruby>、<ruby>西<rt>にし</rt></ruby>に<ruby>大<rt>おお</rt></ruby>きな<ruby>岩<rt>いわ</rt></ruby>、<ruby>北<rt>きた</rt></ruby>に<ruby>暗<rt>くら</rt></ruby>い<ruby>洞窟<rt>どうくつ</rt></ruby>の<ruby>入口<rt>いりぐち</rt></ruby>が<ruby>見<rt>み</rt></ruby>える。',
-    ],
-    choices() {
-      return [
-        { text: '▶ <ruby>東<rt>ひがし</rt></ruby>の<ruby>森<rt>もり</rt></ruby>へ', next: 'forest_path' },
-        { text: '🪨 <ruby>大<rt>おお</rt></ruby>きな<ruby>岩<rt>いわ</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べる', next: 'big_rock' },
-        { text: '🚀 ロケットを<ruby>調<rt>しら</rt></ruby>べる', next: 'check_rocket' },
-        { text: '🕳️ <ruby>洞窟<rt>どうくつ</rt></ruby>に<ruby>入<rt>はい</rt></ruby>る', next: 'cave_entrance' },
-      ];
-    }
-  },
-  check_rocket: {
-    scene: 'crash',
-    text() {
-      if (G.flags.gotKit) return ['ロケットのコックピット。<ruby>計器類<rt>けいきるい</rt></ruby>が<ruby>微<rt>かす</rt></ruby>かに<ruby>光<rt>ひか</rt></ruby>っている。めぼしいものはもう<ruby>残<rt>のこ</rt></ruby>っていない。'];
-      return [
-        'コックピットの<ruby>計器類<rt>けいきるい</rt></ruby>はまだ<ruby>動<rt>うご</rt></ruby>いている。<ruby>大気<rt>たいき</rt></ruby>は<ruby>呼吸<rt>こきゅう</rt></ruby>できる。しかしエンジンは<ruby>完全<rt>かんぜん</rt></ruby>に<ruby>壊<rt>こわ</rt></ruby>れている。',
-        '<ruby>座席<rt>ざせき</rt></ruby>の<ruby>下<rt>した</rt></ruby>に<ruby>応急<rt>おうきゅう</rt></ruby>キットが<ruby>転<rt>ころ</rt></ruby>がっている。',
-      ];
-    },
-    choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' }],
-    onEnter() { if (!G.flags.gotKit) { G.items.push({ name: '応急キット', icon: '🩹', desc: 'HP20回復' }); G.flags.gotKit = true; addText('system', '🩹 <ruby>応急<rt>おうきゅう</rt></ruby>キットを<ruby>発見<rt>はっけん</rt></ruby>した。'); } }
-  },
-  big_rock: {
-    scene: 'rock',
-    text() {
-      if (G.flags.gotStone) return ['<ruby>大<rt>おお</rt></ruby>きな<ruby>岩<rt>いわ</rt></ruby>。<ruby>表面<rt>ひょうめん</rt></ruby>の<ruby>模様<rt>もよう</rt></ruby>をもう<ruby>一度<rt>いちど</rt></ruby><ruby>眺<rt>なが</rt></ruby>める。<ruby>裏側<rt>うらがわ</rt></ruby>には<ruby>何<rt>なに</rt></ruby>も<ruby>残<rt>のこ</rt></ruby>っていない。'];
-      return [
-        '<ruby>人<rt>ひと</rt></ruby>の<ruby>背丈<rt>せたけ</rt></ruby>ほどの<ruby>岩<rt>いわ</rt></ruby>。<ruby>表面<rt>ひょうめん</rt></ruby>に<ruby>不思議<rt>ふしぎ</rt></ruby>な<ruby>模様<rt>もよう</rt></ruby>が<ruby>刻<rt>きざ</rt></ruby>まれている。',
-        '<ruby>裏側<rt>うらがわ</rt></ruby>に<ruby>回<rt>まわ</rt></ruby>ると、<ruby>地面<rt>じめん</rt></ruby>に<ruby>何<rt>なに</rt></ruby>か<ruby>光<rt>ひか</rt></ruby>るものが<ruby>落<rt>お</rt></ruby>ちている。',
-      ];
-    },
-    choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' }],
-    onEnter() { if (!G.flags.gotStone) { G.items.push({ name: '光る石', icon: '💎', desc: '不思議な輝きを放つ石', key: true }); G.flags.gotStone = true; unlockAchievement('got_stone'); addText('system', '💎 <ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>い</rt></ruby>れた。'); } }
-  },
-  forest_path: {
-    scene: 'forest',
-    text() {
-      if (G.flags.pikminJoined) return [
-        '【<ruby>森<rt>もり</rt></ruby>の<ruby>小道<rt>こみち</rt></ruby>】',
-        '<ruby>穏<rt>おだ</rt></ruby>やかな<ruby>森<rt>もり</rt></ruby>。ピクミンが<ruby>後<rt>うし</rt></ruby>ろを<ruby>付<rt>つ</rt></ruby>いてくる。',
-      ];
-      return [
-        '【<ruby>森<rt>もり</rt></ruby>の<ruby>小道<rt>こみち</rt></ruby>】',
-        '<ruby>木々<rt>きぎ</rt></ruby>の<ruby>間<rt>あいだ</rt></ruby>を<ruby>縫<rt>ぬ</rt></ruby>うように<ruby>小道<rt>こみち</rt></ruby>が<ruby>続<rt>つづ</rt></ruby>いている。<ruby>葉<rt>は</rt></ruby>が<ruby>七色<rt>なないろ</rt></ruby>に<ruby>光<rt>ひか</rt></ruby>り、<ruby>甘<rt>あま</rt></ruby>い<ruby>香<rt>かお</rt></ruby>りが<ruby>漂<rt>ただよ</rt></ruby>う。',
-        '<ruby>道<rt>みち</rt></ruby>の<ruby>先<rt>さき</rt></ruby>に<ruby>池<rt>いけ</rt></ruby>が<ruby>見<rt>み</rt></ruby>える。<ruby>南<rt>みなみ</rt></ruby>には<ruby>崖<rt>がけ</rt></ruby>があり、<ruby>下<rt>した</rt></ruby>に<ruby>何<rt>なに</rt></ruby>か<ruby>見<rt>み</rt></ruby>える。',
-      ];
-    },
-    choices() {
-      const c = [
-        { text: '💧 <ruby>池<rt>いけ</rt></ruby>に<ruby>近<rt>ちか</rt></ruby>づく', next: 'pond' },
-        { text: '◀ <ruby>不時着地点<rt>ふじちゃくちてん</rt></ruby>に<ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' },
-      ];
-      if (!G.flags.pikminJoined) c.splice(1, 0, { text: '🧗 <ruby>崖<rt>がけ</rt></ruby>の<ruby>下<rt>した</rt></ruby>を<ruby>覗<rt>のぞ</rt></ruby>く', next: 'cliff_top' });
-      return c;
-    },
-    onEnter() { if (!G.flags.seenSprout) { G.flags.seenSprout = true; unlockAchievement('found_pikmin'); } }
-  },
-  pond: {
-    scene: 'pond',
-    text() {
-      if (G.flags.pondUsed) return ['<ruby>透<rt>す</rt></ruby>き<ruby>通<rt>とお</rt></ruby>った<ruby>水<rt>みず</rt></ruby>の<ruby>池<rt>いけ</rt></ruby>。<ruby>静<rt>しず</rt></ruby>かに<ruby>光<rt>ひかり</rt></ruby>が<ruby>揺<rt>ゆ</rt></ruby>れている。もう<ruby>一度<rt>いちど</rt></ruby><ruby>手<rt>て</rt></ruby>を<ruby>浸<rt>ひた</rt></ruby>してみるが、さっきのような<ruby>効果<rt>こうか</rt></ruby>は<ruby>感<rt>かん</rt></ruby>じられない。'];
-      return [
-        '<ruby>透<rt>す</rt></ruby>き<ruby>通<rt>とお</rt></ruby>った<ruby>水<rt>みず</rt></ruby>の<ruby>池<rt>いけ</rt></ruby>。<ruby>底<rt>そこ</rt></ruby>に<ruby>小<rt>ちい</rt></ruby>さな<ruby>光<rt>ひかり</rt></ruby>が<ruby>揺<rt>ゆ</rt></ruby>れている。',
-        '<ruby>水面<rt>みなも</rt></ruby>に<ruby>手<rt>て</rt></ruby>を<ruby>浸<rt>ひた</rt></ruby>すと、<ruby>不思議<rt>ふしぎ</rt></ruby>と<ruby>体<rt>からだ</rt></ruby>の<ruby>疲<rt>つか</rt></ruby>れが<ruby>和<rt>やわ</rt></ruby>らいでいく。',
-      ];
-    },
-    choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'forest_path' }],
-    onEnter() { if (!G.flags.pondUsed) { G.player.hp = Math.min(G.player.maxHp, G.player.hp + 15); G.player.stamina = Math.min(G.player.maxStamina, G.player.stamina + 10); G.flags.pondUsed = true; unlockAchievement('healed'); addText('system', '❤️ HP+15 ⚡ スタミナ+10 <ruby>回復<rt>かいふく</rt></ruby>した。'); } }
-  },
-  cave_entrance: {
-    scene: 'cave',
-    text: [
-      '【<ruby>洞窟<rt>どうくつ</rt></ruby>の<ruby>入口<rt>いりぐち</rt></ruby>】',
-      '<ruby>暗闇<rt>くらやみ</rt></ruby>が<ruby>口<rt>くち</rt></ruby>を<ruby>開<rt>あ</rt></ruby>けている。',
-    ],
-    choices: [
-      { text: '🕳️ <ruby>奥<rt>おく</rt></ruby>に<ruby>進<rt>すす</rt></ruby>む', next: 'cave_inside' },
-      { text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'crash_site' },
-    ]
-  },
-  cave_inside: {
-    scene: 'cave',
-    text() {
-      if (G.flags.gotRope) return ['<ruby>洞窟<rt>どうくつ</rt></ruby>の<ruby>奥<rt>おく</rt></ruby>。もう<ruby>何<rt>なに</rt></ruby>も<ruby>残<rt>のこ</rt></ruby>っていない。'];
-      if (!isHolding('光る石')) return [
-        '<ruby>中<rt>なか</rt></ruby>は<ruby>真<rt>ま</rt></ruby>っ<ruby>暗<rt>くら</rt></ruby>で<ruby>何<rt>なに</rt></ruby>も<ruby>見<rt>み</rt></ruby>えない。<ruby>手探<rt>てさぐ</rt></ruby>りで<ruby>進<rt>すす</rt></ruby>むのは<ruby>危険<rt>きけん</rt></ruby>だ。',
-        '<ruby>何<rt>なに</rt></ruby>か<ruby>辺<rt>あた</rt></ruby>りを<ruby>照<rt>て</rt></ruby>らせるものを<ruby>手<rt>て</rt></ruby>に<ruby>持<rt>も</rt></ruby>っていれば…。',
-      ];
-      return [
-        '<ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>掲<rt>かか</rt></ruby>げると、<ruby>洞窟<rt>どうくつ</rt></ruby>の<ruby>壁<rt>かべ</rt></ruby>が<ruby>青白<rt>あおじろ</rt></ruby>く<ruby>浮<rt>う</rt></ruby>かび<ruby>上<rt>あ</rt></ruby>がった。',
-        '<ruby>奥<rt>おく</rt></ruby>の<ruby>壁<rt>かべ</rt></ruby>に<ruby>丈夫<rt>じょうぶ</rt></ruby>そうなロープが<ruby>引<rt>ひ</rt></ruby>っかかっている。',
-      ];
-    },
-    choices: [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'cave_entrance' }],
-    onEnter() { if (isHolding('光る石') && !G.flags.gotRope) { G.items.push({ name: 'ロープ', icon: '🪢', desc: '丈夫な植物のツル', key: true }); G.flags.gotRope = true; addText('system', '🪢 ロープを<ruby>手<rt>て</rt></ruby>に<ruby>入<rt>い</rt></ruby>れた。'); } }
-  },
-  // --- 崖 ---
-  cliff_top: {
-    scene: 'forest',
-    text: [
-      '<ruby>崖<rt>がけ</rt></ruby>の<ruby>縁<rt>ふち</rt></ruby>。<ruby>下<rt>した</rt></ruby>は3メートルほど。<ruby>地面<rt>じめん</rt></ruby>から<ruby>小<rt>ちい</rt></ruby>さな<ruby>芽<rt>め</rt></ruby>のようなものが<ruby>見<rt>み</rt></ruby>える。',
-    ],
-    choices: [
-      { text: '🧗 <ruby>降<rt>お</rt></ruby>りる', next: 'cliff_descend' },
-      { text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'forest_path' },
-    ]
-  },
-  cliff_descend: {
-    scene: 'forest',
-    text() {
-      if (!isHolding('ロープ')) return [
-        '<ruby>素手<rt>すで</rt></ruby>で<ruby>降<rt>お</rt></ruby>りようとするが、<ruby>足場<rt>あしば</rt></ruby>が<ruby>崩<rt>くず</rt></ruby>れて<ruby>滑<rt>すべ</rt></ruby>り<ruby>落<rt>お</rt></ruby>ちそうになる。',
-        '<ruby>何<rt>なに</rt></ruby>かロープのようなものを<ruby>手<rt>て</rt></ruby>に<ruby>持<rt>も</rt></ruby>っていれば<ruby>安全<rt>あんぜん</rt></ruby>に<ruby>降<rt>お</rt></ruby>りられそうだ…。',
-      ];
-      return [
-        'ロープを<ruby>木<rt>き</rt></ruby>に<ruby>結<rt>むす</rt></ruby>び、<ruby>崖<rt>がけ</rt></ruby>を<ruby>降<rt>お</rt></ruby>りた。',
-      ];
-    },
-    choices() {
-      if (isHolding('ロープ')) return [{ text: '▶ <ruby>先<rt>さき</rt></ruby>へ', next: 'cliff_bottom' }];
-      return [{ text: '← <ruby>戻<rt>もど</rt></ruby>る', next: 'cliff_top' }];
-    }
-  },
-  // --- 崖の下（敵遭遇） ---
-  cliff_bottom: {
-    scene: 'sprout',
-    text() {
-      if (G.flags.enemyDefeated) return [
-        '<ruby>崖<rt>がけ</rt></ruby>の<ruby>下<rt>した</rt></ruby>。<ruby>敵<rt>てき</rt></ruby>はもういない。<ruby>芽<rt>め</rt></ruby>が<ruby>静<rt>しず</rt></ruby>かに<ruby>揺<rt>ゆ</rt></ruby>れている。',
-      ];
-      return [
-        'ロープを<ruby>木<rt>き</rt></ruby>に<ruby>結<rt>むす</rt></ruby>び、<ruby>崖<rt>がけ</rt></ruby>を<ruby>降<rt>お</rt></ruby>りた。',
-        '<ruby>目<rt>め</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>に<ruby>小<rt>ちい</rt></ruby>さな<ruby>芽<rt>め</rt></ruby>が<ruby>生<rt>は</rt></ruby>えている。しかし――',
-        '<ruby>芽<rt>め</rt></ruby>の<ruby>手前<rt>てまえ</rt></ruby>に、<ruby>大<rt>おお</rt></ruby>きな<ruby>赤<rt>あか</rt></ruby>い<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>が<ruby>眠<rt>ねむ</rt></ruby>っている。<ruby>丸<rt>まる</rt></ruby>い<ruby>体<rt>からだ</rt></ruby>に<ruby>巨大<rt>きょだい</rt></ruby>な<ruby>口<rt>くち</rt></ruby>。<ruby>近<rt>ちか</rt></ruby>づくのは<ruby>危険<rt>きけん</rt></ruby>そうだ。',
-      ];
-    },
-    choices() {
-      if (G.flags.enemyDefeated || G.flags.pikminJoined) return [{ text: '🌱 <ruby>芽<rt>め</rt></ruby>に<ruby>近<rt>ちか</rt></ruby>づく', next: 'sprout_found' }];
-      const c = [];
-      if (isHolding('光る石')) {
-        c.push({ text: '💎 <ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>投<rt>な</rt></ruby>げて<ruby>気<rt>き</rt></ruby>を<ruby>引<rt>ひ</rt></ruby>く', next: 'try_throw' });
-      } else {
-        c.push({ text: '🤫 そーっと<ruby>近<rt>ちか</rt></ruby>づく', next: 'enemy_attack' });
-      }
-      if (G.flags.pikminJoined) c.push({ text: '🌿 ピクミンを<ruby>向<rt>む</rt></ruby>かわせる', next: 'defeat_enemy' });
-      c.push({ text: '← <ruby>崖<rt>がけ</rt></ruby>を<ruby>登<rt>のぼ</rt></ruby>って<ruby>戻<rt>もど</rt></ruby>る', next: 'forest_path' });
-      return c;
-    }
-  },
-  // --- 敵に襲われる ---
-  enemy_attack: {
-    scene: 'cave',
-    text: [
-      '<ruby>近<rt>ちか</rt></ruby>づいた<ruby>瞬間<rt>しゅんかん</rt></ruby>、<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>が<ruby>目<rt>め</rt></ruby>を<ruby>覚<rt>さ</rt></ruby>ました。',
-      '<ruby>巨大<rt>きょだい</rt></ruby>な<ruby>口<rt>くち</rt></ruby>が<ruby>開<rt>ひら</rt></ruby>き、<ruby>突進<rt>とっしん</rt></ruby>してくる――！',
-      '<ruby>一人<rt>ひとり</rt></ruby>では<ruby>太刀打<rt>たちう</rt></ruby>ちできない。<ruby>意識<rt>いしき</rt></ruby>が<ruby>遠<rt>とお</rt></ruby>のいていく…。',
-    ],
-    choices: [
-      { text: '💪 <ruby>這<rt>は</rt></ruby>い<ruby>上<rt>あ</rt></ruby>がる', next: 'revive' },
-      { text: '😞 <ruby>諦<rt>あきら</rt></ruby>める…', next: 'give_up_confirm' },
-    ],
-    onEnter() { handleDefeat('forest_path'); }
-  },
-  revive: {
-    scene: 'crash',
-    text() {
-      const lost = G.flags.lostItemNames;
-      const lines = [
-        '…<ruby>気<rt>き</rt></ruby>がつくと、<ruby>不時着地点<rt>ふじちゃくちてん</rt></ruby>で<ruby>倒<rt>たお</rt></ruby>れていた。',
-        'どうやら<ruby>気<rt>き</rt></ruby>を<ruby>失<rt>うしな</rt></ruby>っていたようだ。<ruby>体<rt>からだ</rt></ruby>のあちこちが<ruby>痛<rt>いた</rt></ruby>む。',
-      ];
-      if (lost) lines.push('<ruby>持<rt>も</rt></ruby>っていたものがいくつか<ruby>無<rt>な</rt></ruby>くなっている<ruby>気<rt>き</rt></ruby>がする。（' + lost + '）');
-      else lines.push('<ruby>持<rt>も</rt></ruby>ち<ruby>物<rt>もの</rt></ruby>は<ruby>無事<rt>ぶじ</rt></ruby>のようだ。');
-      return lines;
-    },
-    choices: [{ text: '…<ruby>立<rt>た</rt></ruby>ち<ruby>上<rt>あ</rt></ruby>がる', next: 'crash_site' }],
-  },
-  give_up_confirm: {
-    scene: 'cave',
-    text: ['<ruby>本当<rt>ほんとう</rt></ruby>に<ruby>諦<rt>あきら</rt></ruby>めますか？'],
-    choices: [
-      { text: 'はい（タイトルに<ruby>戻<rt>もど</rt></ruby>る）', next: '_title' },
-      { text: 'いいえ（<ruby>這<rt>は</rt></ruby>い<ruby>上<rt>あ</rt></ruby>がる）', next: 'revive' },
-    ]
-  },
-  // --- 石を投げて敵の気を引く ---
-  try_throw: {
-    scene: 'sprout',
-    text: [
-      '<ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>遠<rt>とお</rt></ruby>くに<ruby>投<rt>な</rt></ruby>げた。<ruby>石<rt>いし</rt></ruby>が<ruby>地面<rt>じめん</rt></ruby>に<ruby>当<rt>あ</rt></ruby>たり、<ruby>光<rt>ひかり</rt></ruby>を<ruby>放<rt>はな</rt></ruby>つ。',
-      '<ruby>赤<rt>あか</rt></ruby>い<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>が<ruby>目<rt>め</rt></ruby>を<ruby>覚<rt>さ</rt></ruby>まし、<ruby>光<rt>ひかり</rt></ruby>を<ruby>追<rt>お</rt></ruby>いかけて<ruby>走<rt>はし</rt></ruby>り<ruby>去<rt>さ</rt></ruby>った。',
-      '<ruby>芽<rt>め</rt></ruby>への<ruby>道<rt>みち</rt></ruby>が<ruby>開<rt>ひら</rt></ruby>けた。',
-    ],
-    choices: [{ text: '🌱 <ruby>芽<rt>め</rt></ruby>に<ruby>近<rt>ちか</rt></ruby>づく', next: 'sprout_found' }],
-    onEnter() {
-      if (!G.flags.enemyDefeated) {
-        G.flags.enemyDefeated = true;
-        removeItem('光る石');
-        addText('system', '💎 <ruby>光<rt>ひか</rt></ruby>る<ruby>石<rt>いし</rt></ruby>を<ruby>失<rt>うしな</rt></ruby>った。');
-      }
-    }
-  },
-  sprout_found: {
-    scene: 'sprout',
-    text: [
-      '<ruby>地面<rt>じめん</rt></ruby>から<ruby>小<rt>ちい</rt></ruby>さな<ruby>芽<rt>め</rt></ruby>が<ruby>生<rt>は</rt></ruby>えている。よく<ruby>見<rt>み</rt></ruby>ると、<ruby>葉<rt>は</rt></ruby>の<ruby>先<rt>さき</rt></ruby>に<ruby>丸<rt>まる</rt></ruby>い<ruby>何<rt>なに</rt></ruby>かがついている。',
-      '<ruby>根元<rt>ねもと</rt></ruby>を<ruby>掴<rt>つか</rt></ruby>めば<ruby>引<rt>ひ</rt></ruby>き<ruby>抜<rt>ぬ</rt></ruby>けそうだ。',
-    ],
-    choices: [
-      { text: '🌱 <ruby>引<rt>ひ</rt></ruby>っこ<ruby>抜<rt>ぬ</rt></ruby>く', next: 'pull_pikmin' },
-      { text: 'そのままにする', next: 'forest_path' },
-    ]
-  },
-  pull_pikmin: {
-    scene: 'sprout',
-    text: [
-      '<ruby>根元<rt>ねもと</rt></ruby>を<ruby>掴<rt>つか</rt></ruby>み、<ruby>力<rt>ちから</rt></ruby>を<ruby>込<rt>こ</rt></ruby>めて<ruby>引<rt>ひ</rt></ruby>き<ruby>抜<rt>ぬ</rt></ruby>いた。',
-      '――ズボッ。',
-      '<ruby>地面<rt>じめん</rt></ruby>から<ruby>小<rt>ちい</rt></ruby>さな<ruby>赤<rt>あか</rt></ruby>い<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>が<ruby>飛<rt>と</rt></ruby>び<ruby>出<rt>だ</rt></ruby>した。<ruby>丸<rt>まる</rt></ruby>い<ruby>体<rt>からだ</rt></ruby>に<ruby>短<rt>みじか</rt></ruby>い<ruby>手足<rt>てあし</rt></ruby>。<ruby>頭<rt>あたま</rt></ruby>には<ruby>一枚<rt>いちまい</rt></ruby>の<ruby>葉<rt>は</rt></ruby>。',
-      'こちらを<ruby>見上<rt>みあ</rt></ruby>げている。<ruby>怯<rt>おび</rt></ruby>える<ruby>様子<rt>ようす</rt></ruby>はない。むしろ、ついてきたそうにしている。',
-    ],
-    choices: [{ text: '<ruby>続<rt>つづ</rt></ruby>き', next: 'after_pikmin' }],
-    onEnter() {
-      if (!G.flags.pikminJoined) {
-        G.party.push({ name: '赤ピクミン', img: PUYO_IMGS[0], hp: 20, maxHp: 20, atk: 5, def: 2, desc: '火に強い' });
-        G.flags.pikminJoined = true;
-        unlockAchievement('pull_pikmin');
-        addText('system', '🌿 <ruby>赤<rt>あか</rt></ruby>ピクミンが<ruby>仲間<rt>なかま</rt></ruby>になった。');
-      }
-    }
-  },
-  after_pikmin: {
-    scene: 'forest',
-    text: [
-      '<ruby>赤<rt>あか</rt></ruby>い<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>――ピクミンは、<ruby>後<rt>うし</rt></ruby>ろをちょこちょこと<ruby>付<rt>つ</rt></ruby>いてくる。',
-      'この<ruby>惑星<rt>わくせい</rt></ruby>には、まだ<ruby>何<rt>なに</rt></ruby>かがありそうだ。',
-    ],
-    choices: [{ text: '▶ <ruby>探索<rt>たんさく</rt></ruby>を<ruby>続<rt>つづ</rt></ruby>ける', next: 'forest_path' }],
-    onEnter() { unlockAchievement('chapter1'); addText('chapter', '― <ruby>第<rt>だい</rt></ruby>1<ruby>章<rt>しょう</rt></ruby>「<ruby>不時着<rt>ふじちゃく</rt></ruby>」 <ruby>完<rt>かん</rt></ruby> ―'); }
-  },
-};
+const SCENARIO = {};
+// (シナリオデータは olimar-scenario.js に分離)
 
 // ===== ゲーム制御 =====
 function newGame() {
@@ -657,9 +537,10 @@ function newGame() {
     if (!confirm('本当に消しますか？ 元には戻せません。')) return;
     localStorage.removeItem('olimar_save_' + DEVICE_ID);
   }
-  G = { node: null, player: { hp: 100, maxHp: 100, stamina: 50, maxStamina: 50, atk: 10, def: 5 }, party: [], items: [], flags: {}, heldItem: null };
+  G = { node: null, player: { hp: 100, maxHp: 100, stamina: 50, maxStamina: 50, atk: 10, def: 5 }, party: [], items: [], flags: {}, heldItem: null, selectedPikmin: null };
   document.getElementById('titleScreen').style.display = 'none';
   document.getElementById('textWindow').innerHTML = '';
+  renderPikminSlots();
   renderItemSlots();
   goToNode('intro1');
 }
@@ -670,9 +551,12 @@ function continueGame() {
   if (!save) return;
   G = save;
   if (!G.heldItem) G.heldItem = null; // 旧セーブ互換
+  if (!G.selectedPikmin) G.selectedPikmin = null; // 旧セーブ互換
   document.getElementById('titleScreen').style.display = 'none';
   document.getElementById('textWindow').innerHTML = '';
+  renderPikminSlots();
   renderItemSlots();
+  updateMapBtn();
   goToNode(G.node);
 }
 
@@ -680,6 +564,7 @@ function continueGame() {
 let textQueue = [];
 let textPage = 0;
 let pendingChoices = null;
+let pendingOnEnter = null;
 const LINES_PER_PAGE = 2;
 
 function goToNode(nodeId) {
@@ -688,14 +573,18 @@ function goToNode(nodeId) {
   if (!node) return;
   G.node = nodeId;
 
+  // 訪問記録
+  recordVisit(nodeId);
+  updateMapBtn();
+
   // シーン描画
   drawScene(node.scene || 'crash');
 
   // テキスト準備（onEnterより先に評価してフラグ変更前のテキストを取得）
   const textArr = typeof node.text === 'function' ? node.text() : node.text;
 
-  // onEnter（フラグセット・アイテム付与等）
-  if (node.onEnter) node.onEnter();
+  // onEnterは全テキスト表示後に実行するため保存
+  pendingOnEnter = node.onEnter || null;
 
   // テキスト表示（2行ずつページ送り）
   const tw = document.getElementById('textWindow');
@@ -713,9 +602,6 @@ function goToNode(nodeId) {
 
   // 最初のページを表示
   showNextPage();
-
-  // アイテムスロット更新
-  renderItemSlots();
 
   // 自動セーブ
   autoSave();
@@ -739,8 +625,14 @@ function showNextPage() {
     // まだ続きがある → タップ待ちインジケーター
     showTapIndicator();
   } else {
-    // 全テキスト表示完了 → 選択肢を表示
+    // 全テキスト表示完了 → onEnter実行 → 選択肢を表示
     removeTapIndicator();
+    if (pendingOnEnter) { pendingOnEnter(); pendingOnEnter = null; }
+    // onEnterで選択肢が変わる可能性があるので再評価
+    const node = SCENARIO[G.node];
+    if (node) pendingChoices = typeof node.choices === 'function' ? node.choices() : node.choices;
+    renderPikminSlots();
+    renderItemSlots();
     showChoices(pendingChoices);
   }
 }
@@ -841,11 +733,138 @@ function openAchievements() {
 }
 function closeOv(id) { document.getElementById(id).style.display = 'none'; }
 
+// ===== マップ機能 =====
+const MAP_NODES = {
+  crash_site: { icon: '🚀', name: '不時着地点', hint: 'ロケットの残骸がある。火に強い仲間がいれば中を調べられるかも' },
+  check_rocket: { icon: '🔥', name: 'ロケット残骸', hint: '炎が上がっている。赤ピクミンなら火の中に入れるかもしれない' },
+  big_rock: { icon: '🪨', name: '大きな岩', hint: '裏側に何か光るものがある' },
+  forest_path: { icon: '🌲', name: '森の小道', hint: '池と崖がある。崖の下に何か見える' },
+  pond: { icon: '💧', name: '池', hint: '不思議な水。体力が回復する' },
+  cave_entrance: { icon: '🕳️', name: '洞窟入口', hint: '暗い洞窟。何か照らせるものがあれば奥に進めそう' },
+  cave_inside: { icon: '🔦', name: '洞窟の奥', hint: '光る石で照らせば何か見つかるかも' },
+  cliff_top: { icon: '🧗', name: '崖の上', hint: '下に降りるにはロープが必要そうだ' },
+  cliff_bottom: { icon: '⚠️', name: '崖の下', hint: '危険な生き物がいる。何か気を引くものがあれば…' },
+  sprout_found: { icon: '🌱', name: 'ピクミンの芽', hint: '引っこ抜けば仲間になるかも' },
+  river_entrance: { icon: '🌊', name: '水辺の谷', hint: '幅広い川が流れている。上流に浅瀬があるかも' },
+  riverbank: { icon: '🏞️', name: '川岸', hint: '水底に青い芽が見える。渡れる場所を探そう' },
+  waterfall_approach: { icon: '💦', name: '滝の手前', hint: '滝の裏に空間がある。水中を進める仲間がいれば…' },
+  shallow_water: { icon: '🌱', name: '浅瀬', hint: '水中に青い芽がある' },
+  waterfall_behind: { icon: '🧥', name: '滝の裏', hint: '青ピクミンと一緒なら滝をくぐれる' },
+  hill_entrance: { icon: '⚡', name: '雷鳴の丘', hint: '電気柵が道を塞いでいる。電気に強い仲間がいれば…' },
+  thunder_tree: { icon: '🌳', name: '雷の木', hint: '黄色い芽が根元にある' },
+  electric_fence: { icon: '🔌', name: '電気柵', hint: '黄ピクミンなら電気を吸収できるかも' },
+  hill_top: { icon: '⛰️', name: '丘の頂上', hint: '遠くに沼地が見える' },
+  swamp_entrance: { icon: '🌫️', name: '毒の沼地', hint: '紫色の霧が漂う。毒に強い仲間がいれば…' },
+  poison_fog: { icon: '☠️', name: '毒霧エリア', hint: '白い芽がある。毒に耐えられる仲間が必要' },
+  sunken_ruins: { icon: '🏛️', name: '沈んだ遺跡', hint: '小さな穴がある。小さい仲間なら入れるかも' },
+  ruins_inside: { icon: '🗝️', name: '遺跡内部', hint: '古代の鍵がある' },
+  ice_cave_entrance: { icon: '❄️', name: '凍てつく洞窟', hint: '冷気が漂う。奥に何かがある' },
+  ice_corridor: { icon: '🧊', name: '氷の通路', hint: '重い氷塊が道を塞いでいる。力の強い仲間が必要' },
+  frozen_lake: { icon: '💠', name: '凍った湖', hint: '氷の中に芽が見える。火で溶かせるかも' },
+  crystal_room: { icon: '👤', name: '結晶の間', hint: '誰かが氷漬けになっている' },
+  rock_fortress_entrance: { icon: '🪨', name: '岩山の砦', hint: '崩れた壁が道を塞いでいる。硬い仲間がいれば…' },
+  fortress_inside: { icon: '⚔️', name: '砦内部', hint: '敵の巣。仲間が囲まれている' },
+  sky_garden_entrance: { icon: '☁️', name: '天空の庭', hint: '浮島がある。飛べる仲間がいれば渡れる' },
+  floating_island: { icon: '🏝️', name: '浮島', hint: '暗い通路がある。光る仲間がいれば…' },
+  dark_passage: { icon: '🌑', name: '暗い通路', hint: '闇を照らす仲間が必要' },
+  ancient_shrine: { icon: '🏛️', name: '古代の祠', hint: '光で照らすと道が見える' },
+  rocket_crash_site: { icon: '🛸', name: 'ロケット墜落地点', hint: '仲間のロケット。修理にはパーツが必要' },
+};
+
+function getObjectiveText() {
+  if (!G.flags.pikminJoined && !G.flags.enemyDefeated) {
+    if (!G.flags.gotKit) return '🎯 まずはロケットの周りを調べよう';
+    if (!G.flags.gotStone) return '🎯 周囲を探索して使えるものを集めよう';
+    if (!G.flags.gotRope) return '🎯 暗い場所を照らす方法を見つけよう';
+    if (!G.flags.seenSprout) return '🎯 森の奥を探索しよう';
+    return '🎯 崖の下の危険な生き物をどうにかしよう';
+  }
+  if (G.flags.pikminJoined && !G.flags.gotExploreKit) {
+    if (!G.flags.gotFiresuit) return '🎯 赤ピクミンの力を借りてロケットを調べよう';
+    return '🎯 耐火服を着てロケットの奥を調べよう';
+  }
+  if (G.flags.gotExploreKit && !G.flags.bluePikminJoined) {
+    return '🎯 森の奥に新しい道がある。探索を続けよう';
+  }
+  if (G.flags.bluePikminJoined && !G.flags.gotWaterfallItem) {
+    return '🎯 青ピクミンと一緒に水辺を探索しよう';
+  }
+  if (G.flags.engineerRescued && !G.flags.pilotRescued) {
+    return '🎯 岩山の砦で仲間を探そう';
+  }
+  if (G.flags.pilotRescued && !G.flags.wingPikminJoined) {
+    return '🎯 天空の庭へ向かおう';
+  }
+  if (G.flags.wingPikminJoined && !G.flags.lightPikminJoined) {
+    return '🎯 浮島の暗い通路を進む方法を探そう';
+  }
+  if (G.flags.lightPikminJoined && !G.flags.foundRocket) {
+    return '🎯 古代の祠の奥にロケットがあるはず';
+  }
+  if (G.flags.needParts) {
+    const count = [G.flags.gotCommModule, G.flags.gotPropulsionCoil, G.flags.gotHeatShield, G.flags.gotEnergyCell].filter(Boolean).length;
+    return '🎯 ロケット修理パーツを集めよう（' + count + '/4）';
+  }
+  if (G.flags.icePikminJoined && !G.flags.engineerRescued) {
+    return '🎯 結晶の間で凍っている仲間を助けよう';
+  }
+  if (G.flags.purplePikminJoined && !G.flags.icePikminJoined) {
+    return '🎯 凍った湖の氷を溶かす方法を探そう';
+  }
+  if (G.flags.whitePikminJoined && !G.flags.purplePikminJoined) {
+    return '🎯 遺跡の奥に冷たい洞窟がある';
+  }
+  if (G.flags.yellowPikminJoined && !G.flags.whitePikminJoined) {
+    return '🎯 丘を越えた先に何かがある';
+  }
+  if (G.flags.gotWaterfallItem) return '🎯 さらに奥へ進もう';
+  if (G.flags.gotExploreKit) return '🎯 探検キットを手に入れた。さらに奥へ進もう';
+  return '🎯 この惑星を探索しよう';
+}
+
+function openMap() {
+  if (!G.flags.gotExploreKit) return;
+  // 訪問済みノードを収集
+  const visited = G.flags.visitedNodes || [];
+  const el = document.getElementById('mapContent');
+  const hintEl = document.getElementById('mapHint');
+  const objEl = document.getElementById('mapObjective');
+  el.innerHTML = '';
+  hintEl.textContent = 'ノードをタップすると情報が見られます';
+  objEl.textContent = getObjectiveText();
+
+  visited.forEach(nodeId => {
+    const info = MAP_NODES[nodeId];
+    if (!info) return;
+    const div = document.createElement('div');
+    div.className = 'map-node' + (G.node === nodeId ? ' current' : '');
+    div.innerHTML = `<div class="map-icon">${info.icon}</div><div>${info.name}</div>`;
+    div.onclick = () => {
+      hintEl.textContent = '💡 ' + info.hint;
+    };
+    el.appendChild(div);
+  });
+
+  document.getElementById('mapOverlay').style.display = 'flex';
+}
+
+function updateMapBtn() {
+  const btn = document.getElementById('mapBtn');
+  if (btn) btn.style.display = G.flags.gotExploreKit ? 'flex' : 'none';
+}
+
+// 訪問記録
+function recordVisit(nodeId) {
+  if (!G.flags.visitedNodes) G.flags.visitedNodes = [];
+  if (!G.flags.visitedNodes.includes(nodeId)) G.flags.visitedNodes.push(nodeId);
+}
+
 function olimarNavGuard(dest, action) {
   const title = document.getElementById('titleScreen');
   if (title && title.style.display !== 'none') { action(); return; }
   if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？\n（自動セーブ済み）')) { action(); }
 }
 </script>
+<script src="../js/olimar-scenario.js"></script>
 </body>
 </html>
