@@ -36,6 +36,14 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.44.5</span><span class="date">2026/05/11</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ピクミンブラスト：スマホドラッグ操作を根本修正（タッチイベントをdocumentレベルで一元管理し、要素間移動によるtouchcancel発火を完全回避）</li>
+    <li><span class="tag tag-feat">feat</span> テトミン：落下ブロックのピクミン画像を少し大きく表示</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.44.4</span><span class="date">2026/05/11</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> ピクミンブラスト：スマホでドラッグ中にボード領域に入った瞬間にブロックを落としてしまうバグを修正（touchmoveで常にpreventDefaultを呼びブラウザのtouchcancel発火を抑止＋最終タッチ位置を記録してtouchcancel時も配置試行）</li>

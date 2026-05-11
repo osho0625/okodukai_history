@@ -485,7 +485,7 @@ function renderPieces() {
       }
       container.appendChild(cell);
     }));
-    // タップで選択
+    // タップで選択（マウスのみ）
     container.addEventListener('click', (e) => {
       if (dragging) return;
       if (p.used) return;
@@ -495,36 +495,47 @@ function renderPieces() {
     });
     // ドラッグ開始（マウスのみ）
     container.addEventListener('mousedown', (e) => startMouseDrag(e, i));
-    // タッチ開始
-    container.addEventListener('touchstart', (e) => startTouch(e, i), { passive: false });
     area.appendChild(container);
   });
 }
 
 // --- タッチ操作（スマホ専用） ---
+// 全てdocumentレベルで処理し、タッチターゲット移動によるtouchcancelを回避
 let touchStartPos = null;
 let touchStartIdx = -1;
 let touchDragStarted = false;
-const DRAG_THRESHOLD = 12; // px移動でドラッグ開始
+let activeTouchId = null;
+let lastTouchPos = null;
+const DRAG_THRESHOLD = 12;
 
-function startTouch(e, idx) {
+// ピースコンテナのヒットテスト
+function getPieceIdxAtPos(x, y) {
+  const containers = document.querySelectorAll('.piece-container:not(.used)');
+  for (const el of containers) {
+    const rect = el.getBoundingClientRect();
+    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      return parseInt(el.dataset.idx);
+    }
+  }
+  return -1;
+}
+
+document.addEventListener('touchstart', (e) => {
+  // ドラッグ中やゲームオーバー中は無視
+  if (dragging || touchDragStarted) return;
+  const pos = getEventPos(e);
+  const idx = getPieceIdxAtPos(pos.x, pos.y);
+  if (idx < 0) return;
   if (pieces[idx].used) return;
   e.preventDefault();
-  e.stopPropagation();
-  const pos = getEventPos(e);
   touchStartPos = { x: pos.x, y: pos.y };
   touchStartIdx = idx;
   touchDragStarted = false;
-  // タッチIDを記録して追跡する
+  lastTouchPos = { x: pos.x, y: pos.y };
   if (e.touches.length > 0) {
     activeTouchId = e.touches[0].identifier;
   }
-}
-
-// タッチIDを追跡（途中でtouchcancelされないように）
-let activeTouchId = null;
-// ドラッグ中の最終位置を記録（touchendではtouchesが空になるため）
-let lastTouchPos = null;
+}, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
   if (touchStartPos === null) return;

@@ -188,7 +188,7 @@ function drawPuyoCell(context, x, y, size, colorIdx, alpha) {
     context.beginPath();
     context.arc(cx, cy, r, 0, Math.PI * 2);
     context.clip();
-    const s = r * 2.2;
+    const s = r * 2.6;
     context.drawImage(img, cx - s/2, cy - s/2, s, s);
     context.restore();
   } else {
