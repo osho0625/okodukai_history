@@ -188,7 +188,7 @@ body {
 <script src="../js/common.js"></script>
 <script src="../js/puyo-escape.js"></script>
 <script>
-const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
+const sbClient = client; // common.jsのSupabaseクライアントを再利用
 
 const GRID = 8;
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da','#ec407a'];
