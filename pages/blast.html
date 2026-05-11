@@ -529,7 +529,6 @@ let lastTouchPos = null;
 document.addEventListener('touchmove', (e) => {
   if (touchStartPos === null) return;
   // 常にpreventDefaultを呼んでブラウザのスクロール/ジェスチャーを抑止
-  // これによりtouchcancelの発火を防ぐ
   e.preventDefault();
   const pos = getEventPos(e);
   lastTouchPos = { x: pos.x, y: pos.y };
@@ -541,7 +540,10 @@ document.addEventListener('touchmove', (e) => {
     dragging = true;
     dragPieceIdx = touchStartIdx;
     selectedIdx = touchStartIdx;
-    renderPieces();
+    // DOM再構築せずCSSクラスだけ更新（タッチターゲット消失を防ぐ）
+    document.querySelectorAll('.piece-container').forEach((el, idx) => {
+      el.classList.toggle('selected', idx === touchStartIdx);
+    });
     createDragGhost(touchStartIdx);
   }
   if (touchDragStarted) {
@@ -592,6 +594,10 @@ document.addEventListener('touchend', (e) => {
     const oy = cell.y - Math.floor(p.shape.length / 2);
     if (canPlace(p.shape, ox, oy)) {
       doPlace(dragPieceIdx, ox, oy);
+    } else {
+      // 配置失敗 → 選択状態をリセット
+      selectedIdx = -1;
+      renderPieces();
     }
   }
   dragPieceIdx = -1;
@@ -628,6 +634,8 @@ document.addEventListener('touchcancel', (e) => {
   activeTouchId = null;
   lastTouchPos = null;
   dragPieceIdx = -1;
+  selectedIdx = -1;
+  renderPieces();
 });
 
 // 安全策: ページ復帰時やフォーカス時にプレビュー残留をクリーンアップ
