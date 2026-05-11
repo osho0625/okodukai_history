@@ -80,6 +80,7 @@ export class EventManager {
     this.lightCallback = null;     // (r, g, b) => void
     this.compShopCallback = null;  // () => Promise<void>
     this.saveCallback = null;      // () => Promise<void>
+    this.effectCallback = null;    // (type, x, z, param) => void
   }
 
   load(buffer) {
@@ -116,6 +117,15 @@ export class EventManager {
   removeItem(itemIdx) {
     const i = this.inventory.indexOf(itemIdx);
     if (i >= 0) this.inventory.splice(i, 1);
+  }
+
+  getCoinCount() {
+    // Coin count stored in flags 95-99 as 5-bit binary
+    let count = 0;
+    for (let i = 0; i < 5; i++) {
+      if (this.getFlag(95 + i)) count += (1 << i);
+    }
+    return count;
   }
 
   async run(eventNo) {
@@ -468,7 +478,22 @@ export class EventManager {
           if (this.compShopCallback) await this.compShopCallback();
           break;
         }
-        case E.INRESET: case E.COIN: break;
+        case E.INRESET: break;
+        case E.COIN: {
+          // Coin King: collect coins and get rewards
+          // Simplified: show coin count and give reward if milestone reached
+          if (this.messageCallback) {
+            const coinCount = this.getCoinCount();
+            await this.messageCallback(`王様「よくぞ来た！コインは現在${coinCount}枚じゃ。`);
+            if (coinCount >= 18) {
+              await this.messageCallback('世界中のコインが揃って、ワシは大満足じゃ。');
+            } else {
+              const next = Math.ceil((coinCount + 1) / 3) * 3;
+              await this.messageCallback(`あと${next - coinCount}枚集めると褒美をやろう！`);
+            }
+          }
+          break;
+        }
         case E.PASSW: {
           // Save point: reads word + word + byte (5 bytes) in original
           // In HTML5 version, auto-save and show message
@@ -508,7 +533,15 @@ export class EventManager {
         case E.CAMINIT: ptr += 1; break;
         case E.SCALE: ptr += 2; break;
         case E.CAMCHR: ptr += 1; break;
-        case E.EFFECT: ptr += 2; break;
+        case E.EFFECT: {
+          // Effect: type(1) + x(1) + z(1) + param_word(2) = 5 bytes
+          const effectType = evt.data[ptr++] & 0xFF;
+          const ex = evt.data[ptr++] & 0xFF;
+          const ez = evt.data[ptr++] & 0xFF;
+          const eparam = evt.getWord(ptr); ptr += 2;
+          if (this.effectCallback) this.effectCallback(effectType, ex, ez, eparam);
+          break;
+        }
         case E.DISPGOLD: ptr += 1; break;
         case E.CMPH: {
           const x = evt.data[ptr++] & 0xFF;

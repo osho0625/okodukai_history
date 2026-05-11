@@ -95,6 +95,8 @@ export class BattleUI {
 
   setEnemyPats(pats) {
     this.enemyPats = pats;
+    this.enemyDeathTimers = new Array(pats.length).fill(0); // death fade timer per enemy
+    this._prevAlive = null;
   }
 
   update(battleState) {
@@ -427,7 +429,20 @@ export class BattleUI {
 
     for (let i = 0; i < totalEnemies; i++) {
       const e = enemies[i];
-      if (!e.alive) continue;
+
+      // Track death transitions
+      if (this._prevAlive && this._prevAlive[i] && !e.alive) {
+        this.enemyDeathTimers[i] = 20; // 20 frames fade
+      }
+      if (this.enemyDeathTimers[i] > 0) {
+        this.enemyDeathTimers[i]--;
+      }
+
+      // Skip fully dead enemies (after fade)
+      if (!e.alive && this.enemyDeathTimers[i] <= 0) continue;
+
+      // Death fade alpha
+      const deathAlpha = !e.alive ? this.enemyDeathTimers[i] / 20 : 1;
 
       // Get model index from pat
       const pat = this.enemyPats[i] || 0;
@@ -454,6 +469,7 @@ export class BattleUI {
 
       // Draw name below
       const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, -10, 0));
+      this.ctx.globalAlpha = deathAlpha;
       this.ctx.fillStyle = '#fff';
       this.ctx.font = '10px sans-serif';
       this.ctx.textAlign = 'center';
@@ -478,7 +494,10 @@ export class BattleUI {
           this.ctx.fillText('▼', screenPos.x, Math.min(screenPos.y - 30, 50));
         }
       }
+      this.ctx.globalAlpha = 1;
     }
+    // Track alive state for death detection
+    this._prevAlive = enemies.map(e => e.alive);
   }
 
   drawEnemyPlaceholder(index, total, enemy) {

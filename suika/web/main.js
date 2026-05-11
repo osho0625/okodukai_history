@@ -305,6 +305,25 @@ class SuikaGame {
       this.eventManager.quakeCallback = (strength) => {
         this.quakeFrames = strength * 3;
       };
+      this.eventManager.effectCallback = (type, x, z, param) => {
+        // Spawn visual particles on the field at the given position
+        if (!this.fieldEffects) this.fieldEffects = [];
+        const px = MapData.getXPos(x);
+        const pz = MapData.getZPos(z);
+        // Add particles based on effect type
+        const colors = { 31: '#f80', 36: '#4af', 48: '#fa0', 59: '#ff4', 60: '#f44', 106: '#8f8' };
+        const color = colors[type] || '#fff';
+        for (let i = 0; i < 8; i++) {
+          this.fieldEffects.push({
+            x: px + (Math.random() - 0.5) * 100,
+            z: pz + (Math.random() - 0.5) * 100,
+            y: Math.random() * 100,
+            vy: 2 + Math.random() * 3,
+            life: 30 + Math.floor(Math.random() * 20),
+            color
+          });
+        }
+      };
 
       // Setup field with first area
       this.field = new Field(this.renderer, this.models);
@@ -818,6 +837,28 @@ class SuikaGame {
     }
 
     this.field.draw();
+
+    // Field effects (particles from EFFECT command)
+    if (this.fieldEffects && this.fieldEffects.length > 0) {
+      for (let i = this.fieldEffects.length - 1; i >= 0; i--) {
+        const ef = this.fieldEffects[i];
+        ef.y += ef.vy;
+        ef.life--;
+        if (ef.life <= 0) { this.fieldEffects.splice(i, 1); continue; }
+        const dx = ef.x - this.field.playerPos.x;
+        const dz = ef.z - this.field.playerPos.z;
+        if (dx * dx + dz * dz > 4000000) continue;
+        const screenX = 200 + dx * 0.1;
+        const screenY = 160 - ef.y * 0.1 - dz * 0.05;
+        const alpha = Math.min(1, ef.life / 15);
+        this.ctx.globalAlpha = alpha;
+        this.ctx.fillStyle = ef.color;
+        this.ctx.beginPath();
+        this.ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      this.ctx.globalAlpha = 1;
+    }
 
     // Compose shop overlay
     if (this.composeShop && this.composeShop.visible) {
