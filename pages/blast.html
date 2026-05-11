@@ -361,18 +361,32 @@ function generatePiecesGuaranteed() {
 
 function generatePieces() {
   const maxColors = getUnlockedPuyoColorCount();
-  let attempts = 0;
-  do {
-    pieces = [];
+
+  function genSet() {
+    const ps = [];
     for (let i = 0; i < 3; i++) {
       const shape = pickRandomPiece();
       const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
-      pieces.push({ shape, puyoMap, used: false });
+      ps.push({ shape, puyoMap, used: false });
     }
-    attempts++;
-    // 少なくとも1つのピースが盤面のどこかに置ければOK
-    if (pieces.some(p => canFitAnywhere(p.shape))) break;
-  } while (attempts < 20);
+    return ps;
+  }
+
+  function countFittable(ps) {
+    return ps.filter(p => canFitAnywhere(p.shape)).length;
+  }
+
+  // 段階的に条件を緩和: 3つ全部→2つ以上→1つ以上
+  for (let threshold = 3; threshold >= 1; threshold--) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      pieces = genSet();
+      if (countFittable(pieces) >= threshold) {
+        renderPieces();
+        return;
+      }
+    }
+  }
+  // 全て失敗（ほぼありえないが安全策）
   renderPieces();
 }
 
