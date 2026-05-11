@@ -6,11 +6,12 @@ import { Vec3, Color, Mat4 } from './math.js';
 // Simple flash/shake effect state
 class BattleEffect {
   constructor() {
-    this.flash = 0;       // flash frames remaining
+    this.flash = 0;
     this.flashColor = '#fff';
-    this.shake = 0;       // shake frames remaining
+    this.shake = 0;
     this.shakeX = 0;
     this.damageNums = []; // { text, x, y, life, color }
+    this.particles = [];  // { x, y, vx, vy, life, color, size }
   }
 
   triggerFlash(color = '#fff', frames = 4) {
@@ -26,6 +27,21 @@ class BattleEffect {
     this.damageNums.push({ text, x, y, life: 30, color });
   }
 
+  // Spawn particles at position (for magic/heal effects)
+  spawnParticles(x, y, count, color, spread = 30) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * spread,
+        y: y + (Math.random() - 0.5) * spread,
+        vx: (Math.random() - 0.5) * 3,
+        vy: -Math.random() * 3 - 1,
+        life: 20 + Math.floor(Math.random() * 15),
+        color,
+        size: 2 + Math.random() * 3,
+      });
+    }
+  }
+
   update() {
     if (this.flash > 0) this.flash--;
     if (this.shake > 0) {
@@ -38,6 +54,13 @@ class BattleEffect {
       d.y -= 0.8;
       d.life--;
       return d.life > 0;
+    });
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.1; // gravity
+      p.life--;
+      return p.life > 0;
     });
   }
 }
@@ -86,6 +109,12 @@ export class BattleUI {
       }
       if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
         this.effect.triggerFlash('#ff0', 6);
+      }
+      if (newMsg.includes('魔法') || newMsg.includes('唱えた')) {
+        this.effect.spawnParticles(200, 100, 12, '#8af');
+      }
+      if (newMsg.includes('回復')) {
+        this.effect.spawnParticles(200, 250, 8, '#4f8');
       }
       this.lastLogLen = battleState.log.length;
     }
@@ -503,6 +532,14 @@ export class BattleUI {
       ctx.textAlign = 'center';
       ctx.globalAlpha = Math.min(1, d.life / 10);
       ctx.fillText(d.text, d.x, d.y);
+    }
+    // Draw particles
+    for (const p of this.effect.particles) {
+      ctx.globalAlpha = Math.min(1, p.life / 10);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.globalAlpha = 1;
   }

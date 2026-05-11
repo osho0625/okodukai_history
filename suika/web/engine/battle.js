@@ -463,36 +463,73 @@ export class BattleEngine {
   }
 
   doEnemyTurn(unit) {
-    // AI based on algo field (simplified)
     const targets = this.players.filter(p => p.isAlive());
     if (targets.length === 0) return;
 
-    // Enemies with MP and INT may use magic attacks
-    if (unit.mp > 0 && unit.int_ > unit.str && rand(100) < 40) {
-      // Try magic attack on random target
-      const target = targets[rand(targets.length)];
-      const intU = unit.int_;
-      const intT = target.int_;
-      let atkPow = intU * Math.floor(intU / 2) + intU * 2;
-      let defPow = intT * Math.floor(intT / 3) + intT * 4;
-      atkPow *= 80;
-      atkPow += 100 * 100;
-      defPow *= 100;
-      let dmg = Math.floor((atkPow * 2 - defPow) * (rand(50) + 150) / 100000);
-      if (dmg < 0) dmg = 0;
-      if (target.defending) dmg = Math.floor(dmg / 2);
-      const mpCost = Math.min(unit.mp, 5 + rand(5));
-      unit.mp -= mpCost;
-      target.takeDamage(dmg);
-      this.addLog(`${unit.name}の魔法攻撃！ ${target.name}に${dmg}ダメージ！`);
-      if (this.onDamage) this.onDamage(target, dmg);
-      if (!target.isAlive()) {
-        this.addLog(`${target.name}は倒れた...`);
+    // AI behavior based on algo field (simplified from 80+ original patterns)
+    const algo = unit.algo || 1;
+    const action = this.getEnemyAction(unit, algo, targets);
+
+    switch (action.type) {
+      case 'attack': {
+        const target = action.target || targets[rand(targets.length)];
+        this.doAttack(unit, target);
+        break;
       }
-    } else {
-      // Physical attack
-      const target = targets[rand(targets.length)];
-      this.doAttack(unit, target);
+      case 'magic': {
+        // Magic attack on target
+        const target = action.target || targets[rand(targets.length)];
+        const intU = unit.int_;
+        const intT = target.int_;
+        let atkPow = intU * Math.floor(intU / 2) + intU * 2;
+        let defPow = intT * Math.floor(intT / 3) + intT * 4;
+        const power = action.power || 80;
+        atkPow *= power;
+        atkPow += 100 * 100;
+        defPow *= 100;
+        let dmg = Math.floor((atkPow * 2 - defPow) * (rand(50) + 150) / 100000);
+        if (dmg < 0) dmg = 0;
+        if (target.defending) dmg = Math.floor(dmg / 2);
+        unit.mp = Math.max(0, unit.mp - 5);
+        target.takeDamage(dmg);
+        this.addLog(`${unit.name}の魔法攻撃！ ${target.name}に${dmg}ダメージ！`);
+        if (this.onDamage) this.onDamage(target, dmg);
+        if (!target.isAlive()) this.addLog(`${target.name}は倒れた...`);
+        break;
+      }
+      case 'magicAll': {
+        // Magic attack on all players
+        unit.mp = Math.max(0, unit.mp - 8);
+        this.addLog(`${unit.name}の全体魔法！`);
+        for (const t of targets) {
+          const intU = unit.int_;
+          const intT = t.int_;
+          let atkPow = intU * Math.floor(intU / 2) + intU * 2;
+          let defPow = intT * Math.floor(intT / 3) + intT * 4;
+          atkPow *= 60; atkPow += 80 * 100; defPow *= 100;
+          let dmg = Math.floor((atkPow * 2 - defPow) * (rand(50) + 150) / 100000);
+          if (dmg < 0) dmg = 0;
+          if (t.defending) dmg = Math.floor(dmg / 2);
+          t.takeDamage(dmg);
+          this.addLog(`${t.name}に${dmg}ダメージ！`);
+          if (this.onDamage) this.onDamage(t, dmg);
+        }
+        break;
+      }
+      case 'heal': {
+        // Heal self or ally
+        const healTarget = this.enemies.find(e => e.isAlive() && e.hp < e.maxHP * 0.5) || unit;
+        const healAmt = Math.floor((unit.int_ + 2) * (unit.int_ + 1) * (rand(30) + 70) / 100 * 0.6);
+        healTarget.heal(healAmt);
+        unit.mp = Math.max(0, unit.mp - 5);
+        this.addLog(`${unit.name}は回復魔法！ ${healTarget.name}のHP${healAmt}回復！`);
+        break;
+      }
+      case 'defend': {
+        unit.defending = true;
+        this.addLog(`${unit.name}は防御した`);
+        break;
+      }
     }
 
     // Poison damage
@@ -511,6 +548,54 @@ export class BattleEngine {
         }
       }, 300);
     }
+  }
+
+  getEnemyAction(unit, algo, targets) {
+    const r = rand(100);
+    const lowHP = unit.hp < unit.maxHP * 0.3;
+    const hasMP = unit.mp > 5;
+
+    // Algo categories (simplified from original 80+ patterns):
+    // 1-10: basic attackers (mostly physical)
+    // 11-20: magic users
+    // 21-30: balanced (attack + magic)
+    // 31-40: support (heal + buff)
+    // 41+: boss patterns
+
+    if (algo <= 5) {
+      // Pure physical attacker
+      return { type: 'attack', target: targets[rand(targets.length)] };
+    }
+    if (algo <= 10) {
+      // Physical with occasional strong attack
+      if (r < 20 && hasMP) return { type: 'magic', power: 120, target: targets[rand(targets.length)] };
+      return { type: 'attack', target: targets[rand(targets.length)] };
+    }
+    if (algo <= 20) {
+      // Magic user
+      if (!hasMP) return { type: 'attack', target: targets[rand(targets.length)] };
+      if (r < 30) return { type: 'magicAll' };
+      if (r < 70) return { type: 'magic', power: 100, target: targets[rand(targets.length)] };
+      return { type: 'attack', target: targets[rand(targets.length)] };
+    }
+    if (algo <= 30) {
+      // Balanced
+      if (hasMP && r < 40) return { type: 'magic', power: 80, target: targets[rand(targets.length)] };
+      return { type: 'attack', target: targets[rand(targets.length)] };
+    }
+    if (algo <= 40) {
+      // Support/healer
+      const wounded = this.enemies.find(e => e.isAlive() && e.hp < e.maxHP * 0.5);
+      if (wounded && hasMP && r < 50) return { type: 'heal' };
+      if (hasMP && r < 30) return { type: 'magic', power: 60, target: targets[rand(targets.length)] };
+      return { type: 'attack', target: targets[rand(targets.length)] };
+    }
+    // Boss patterns (41+)
+    if (lowHP && hasMP && r < 30) return { type: 'heal' };
+    if (hasMP && r < 25) return { type: 'magicAll' };
+    if (hasMP && r < 50) return { type: 'magic', power: 120, target: targets[rand(targets.length)] };
+    if (r < 10) return { type: 'defend' };
+    return { type: 'attack', target: targets[rand(targets.length)] };
   }
 
   getFirstAliveEnemy() {
