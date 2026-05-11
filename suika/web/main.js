@@ -18,6 +18,7 @@ import { ShopUI } from './engine/shop.js';
 import { Credits } from './engine/credits.js';
 import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
+import { ComposeShop } from './engine/compose.js';
 
 class SuikaGame {
   constructor() {
@@ -58,6 +59,7 @@ class SuikaGame {
     this.credits = new Credits(this.ctx);
     this.passwordSystem = new PasswordSystem();
     this.quizUI = new QuizUI(this.ctx, this.input);
+    this.composeShop = null;
   }
 
   async init() {
@@ -241,6 +243,30 @@ class SuikaGame {
           this.eventManager.setFlag(303);
           this.eventManager.resetFlag(304);
         }
+      };
+      this.eventManager.numberCallback = async (start) => {
+        // Number selection — use choice callback with numbers
+        if (this.choiceCallback) {
+          // Simplified: show as yes/no with the number
+          return 0;
+        }
+        return 0;
+      };
+      this.eventManager.ambientCallback = (r, g, b) => {
+        this.renderer.setAmbient({ r, g, b, limits() {} });
+        this.renderer.ambPowR = r / 255;
+        this.renderer.ambPowG = g / 255;
+        this.renderer.ambPowB = b / 255;
+      };
+      this.eventManager.lightCallback = (r, g, b) => {
+        this.renderer.setRenderState(10, { r, g, b, clone() { return { r, g, b }; }, limits() {} });
+      };
+      this.eventManager.compShopCallback = async () => {
+        this.composeShop = new ComposeShop(this.ctx, this.input, this.paramAll);
+        const result = await this.composeShop.open(this.gold || 0, this.eventManager.inventory);
+        this.gold = result.gold;
+        this.eventManager.inventory = result.inventory;
+        this.composeShop = null;
       };
 
       // Setup field with first area
@@ -473,6 +499,12 @@ class SuikaGame {
   }
 
   updateGame() {
+    // Compose shop takes priority
+    if (this.composeShop && this.composeShop.visible) {
+      this.composeShop.update();
+      return;
+    }
+
     // Quiz takes priority
     if (this.quizUI.active) {
       this.quizUI.update();
@@ -675,6 +707,12 @@ class SuikaGame {
 
   drawGame() {
     this.field.draw();
+
+    // Compose shop overlay
+    if (this.composeShop && this.composeShop.visible) {
+      this.composeShop.draw();
+      return;
+    }
 
     // Quiz overlay
     if (this.quizUI.active) {

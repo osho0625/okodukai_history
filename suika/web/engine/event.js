@@ -75,6 +75,10 @@ export class EventManager {
     this.posQueryCallback = null;  // (chr, axis) => number
     this.hitCheckCallback = null;  // (x, z) => boolean
     this.quizCallback = null;      // (difficulty) => Promise<void>
+    this.numberCallback = null;    // (start) => Promise<number>
+    this.ambientCallback = null;   // (r, g, b) => void
+    this.lightCallback = null;     // (r, g, b) => void
+    this.compShopCallback = null;  // () => Promise<void>
   }
 
   load(buffer) {
@@ -449,8 +453,8 @@ export class EventManager {
           break;
         }
         case E.CSHOP: {
-          // Composition shop (simplified: just show message)
-          if (this.messageCallback) await this.messageCallback('合成ショップは準備中です');
+          // Composition shop
+          if (this.compShopCallback) await this.compShopCallback();
           break;
         }
         case E.INRESET: case E.COIN: case E.PASSW: break;
@@ -527,8 +531,33 @@ export class EventManager {
         case E.POSY: ptr += 3; break;
         case E.CHRPRM: ptr += 3; break;
         case E.GETABI: case E.SETABI: ptr += 2; break;
-        case E.AMBIENT: case E.LIGHT: ptr += 3; break;
-        case E.NUMBER: ptr += 2; break;
+        case E.AMBIENT: {
+          const r = evt.data[ptr++] & 0xFF;
+          const g = evt.data[ptr++] & 0xFF;
+          const b = evt.data[ptr++] & 0xFF;
+          if (this.ambientCallback) this.ambientCallback(r, g, b);
+          break;
+        }
+        case E.LIGHT: {
+          const r = evt.data[ptr++] & 0xFF;
+          const g = evt.data[ptr++] & 0xFF;
+          const b = evt.data[ptr++] & 0xFF;
+          if (this.lightCallback) this.lightCallback(r, g, b);
+          break;
+        }
+        case E.NUMBER: {
+          // Number selection menu: sets flag 320+selected
+          const start = evt.getWord(ptr); ptr += 2;
+          // Reset flags 320-329
+          for (let i = 0; i < 10; i++) this.resetFlag(320 + i);
+          if (this.numberCallback) {
+            const selected = await this.numberCallback(start);
+            this.setFlag(320 + selected);
+          } else {
+            this.setFlag(320); // default: first option
+          }
+          break;
+        }
 
         default: {
           console.warn(`Unknown event cmd ${cmd} at ptr ${ptr - 1} in event ${eventNo}`);
