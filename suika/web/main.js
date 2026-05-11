@@ -50,6 +50,8 @@ class SuikaGame {
     this.menuOpen = false;
     this.shopUI = null;
     this.battleResult = null; // { exp, gold, levelUps[] }
+    this.equipMenu = null; // equipment sub-state
+    this.gameOverTimer = 0;
   }
 
   async init() {
@@ -282,6 +284,14 @@ class SuikaGame {
         this.updateMenu();
         this.drawMenu();
         break;
+      case 'gameover':
+        this.updateGameOver();
+        this.drawGameOver();
+        break;
+      case 'worldmap':
+        this.updateWorldMap();
+        this.drawWorldMap();
+        break;
     }
   }
 
@@ -498,6 +508,11 @@ class SuikaGame {
         if (result === BATTLE_RESULT.WIN) {
           this.battleResult = { exp, gold, levelUps };
         }
+        // Game over on loss
+        if (result === BATTLE_RESULT.LOSE) {
+          this.gameOverTimer = 0;
+          this.state = 'gameover';
+        }
       }, 800);
     };
 
@@ -659,7 +674,14 @@ class SuikaGame {
 
   // --- System Menu ---
   updateMenu() {
-    const items = ['ステータス', 'セーブ', 'タイトルへ', '閉じる'];
+    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+
+    // Equipment sub-menu
+    if (this.equipMenu) {
+      this.updateEquipMenu();
+      return;
+    }
+
     if (this.input.isKeyDown('arrowup')) {
       this.menuCursor = (this.menuCursor - 1 + items.length) % items.length;
     }
@@ -669,9 +691,11 @@ class SuikaGame {
     if (this.input.isOK()) {
       switch (this.menuCursor) {
         case 0: break; // Status shown in draw
-        case 1: this.saveGame(); this.state = 'game'; break;
-        case 2: this.state = 'title'; this.titleCursor = 0; break;
-        case 3: this.state = 'game'; break;
+        case 1: this.equipMenu = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
+        case 2: this.state = 'worldmap'; break;
+        case 3: this.saveGame(); this.state = 'game'; break;
+        case 4: this.state = 'title'; this.titleCursor = 0; break;
+        case 5: this.state = 'game'; break;
       }
     }
     if (this.input.isCancel() || this.input.isKeyDown('z')) {
@@ -679,34 +703,110 @@ class SuikaGame {
     }
   }
 
+  updateEquipMenu() {
+    const eq = this.equipMenu;
+    if (eq.phase === 'chr') {
+      // Select character
+      if (this.input.isKeyDown('arrowup')) eq.chrIdx = (eq.chrIdx - 1 + this.playerParams.length) % this.playerParams.length;
+      if (this.input.isKeyDown('arrowdown')) eq.chrIdx = (eq.chrIdx + 1) % this.playerParams.length;
+      if (this.input.isOK()) { eq.phase = 'slot'; eq.slot = 0; }
+      if (this.input.isCancel()) { this.equipMenu = null; }
+    } else if (eq.phase === 'slot') {
+      // Select equipment slot (weapon/armor/shield/acc1/acc2)
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
+      if (this.input.isKeyDown('arrowup')) eq.slot = (eq.slot - 1 + slots.length) % slots.length;
+      if (this.input.isKeyDown('arrowdown')) eq.slot = (eq.slot + 1) % slots.length;
+      if (this.input.isOK()) { eq.phase = 'item'; eq.itemCursor = 0; }
+      if (this.input.isCancel()) { eq.phase = 'chr'; }
+    } else if (eq.phase === 'item') {
+      // Select item to equip from inventory
+      const slotKind = eq.slot + 1; // kind: 1=weapon, 2=armor, 3=shield, 4=acc
+      const equippable = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.item.kind === slotKind);
+      equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 }); // unequip option
+
+      if (equippable.length === 0) { eq.phase = 'slot'; return; }
+      if (eq.itemCursor >= equippable.length) eq.itemCursor = equippable.length - 1;
+      if (this.input.isKeyDown('arrowup')) eq.itemCursor = (eq.itemCursor - 1 + equippable.length) % equippable.length;
+      if (this.input.isKeyDown('arrowdown')) eq.itemCursor = (eq.itemCursor + 1) % equippable.length;
+      if (this.input.isOK()) {
+        const selected = equippable[eq.itemCursor];
+        const p = this.playerParams[eq.chrIdx];
+        if (!p.equip) p.equip = [-1, -1, -1, -1, -1];
+        // Unequip current
+        const oldEquip = p.equip[eq.slot];
+        if (oldEquip >= 0) {
+          this.unapplyEquip(p, oldEquip);
+          this.eventManager.inventory.push(oldEquip);
+        }
+        // Equip new
+        if (selected.idx >= 0) {
+          p.equip[eq.slot] = selected.idx;
+          this.applyEquip(p, selected.idx);
+          // Remove from inventory
+          const invPos = this.eventManager.inventory.indexOf(selected.idx);
+          if (invPos >= 0) this.eventManager.inventory.splice(invPos, 1);
+        } else {
+          p.equip[eq.slot] = -1;
+        }
+        eq.phase = 'slot';
+      }
+      if (this.input.isCancel()) { eq.phase = 'slot'; }
+    }
+  }
+
+  applyEquip(player, itemIdx) {
+    const item = this.paramAll.getItem(itemIdx);
+    if (!item) return;
+    player.str += item.str;
+    player.int_ += item.int_;
+    player.def += item.def;
+    player.agi += item.agi;
+    player.dex += item.dex;
+  }
+
+  unapplyEquip(player, itemIdx) {
+    const item = this.paramAll.getItem(itemIdx);
+    if (!item) return;
+    player.str -= item.str;
+    player.int_ -= item.int_;
+    player.def -= item.def;
+    player.agi -= item.agi;
+    player.dex -= item.dex;
+  }
+
   drawMenu() {
     const ctx = this.ctx;
-    // Draw field behind
     this.field.draw();
-
-    // Darken
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, 400, 320);
 
     // Menu panel
-    const mx = 20, my = 20, mw = 140, mh = 120;
+    const mx = 10, my = 10, mw = 110, mh = 160;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = '#88f';
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, mw, mh);
 
-    const items = ['ステータス', 'セーブ', 'タイトルへ', '閉じる'];
-    ctx.font = '13px sans-serif';
+    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+    ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     for (let i = 0; i < items.length; i++) {
       ctx.fillStyle = i === this.menuCursor ? '#ff0' : '#fff';
       const prefix = i === this.menuCursor ? '▶' : '  ';
-      ctx.fillText(prefix + items[i], mx + 10, my + 24 + i * 24);
+      ctx.fillText(prefix + items[i], mx + 6, my + 20 + i * 22);
+    }
+
+    // Equipment sub-menu overlay
+    if (this.equipMenu) {
+      this.drawEquipMenu(ctx);
+      return;
     }
 
     // Status panel (right side)
-    const sx = 170, sy = 20, sw = 210, sh = 280;
+    const sx = 130, sy = 10, sw = 260, sh = 300;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(sx, sy, sw, sh);
     ctx.strokeStyle = '#88f';
@@ -719,7 +819,7 @@ class SuikaGame {
       const p = this.playerParams[i];
       ctx.fillStyle = '#ff0';
       ctx.fillText(`${p.name}  Lv${p.lv}`, sx + 10, py);
-      py += 16;
+      py += 15;
       ctx.fillStyle = '#fff';
       ctx.fillText(`HP:${p.hp}/${p.maxHP}  MP:${p.mp}/${p.maxMP}`, sx + 10, py);
       py += 14;
@@ -728,12 +828,166 @@ class SuikaGame {
       ctx.fillText(`STR:${p.str} INT:${p.int_} DEF:${p.def}`, sx + 10, py);
       py += 13;
       ctx.fillText(`AGI:${p.agi} DEX:${p.dex} EXP:${p.exp||0}`, sx + 10, py);
-      py += 20;
+      py += 13;
+      // Show equipment
+      if (p.equip) {
+        const slotNames = ['武', '防', '盾', '飾', '飾'];
+        let eqStr = '';
+        for (let s = 0; s < 5; s++) {
+          if (p.equip[s] >= 0) {
+            const it = this.paramAll.getItem(p.equip[s]);
+            eqStr += `${slotNames[s]}:${it ? it.name.trim().slice(0,4) : '?'} `;
+          }
+        }
+        if (eqStr) { ctx.fillStyle = '#8cf'; ctx.fillText(eqStr, sx + 10, py); py += 13; }
+      }
+      py += 10;
       ctx.font = '11px sans-serif';
     }
-    // Gold
     ctx.fillStyle = '#fd0';
     ctx.fillText(`所持金: ${this.gold || 0} G`, sx + 10, py + 5);
+  }
+
+  drawEquipMenu(ctx) {
+    const eq = this.equipMenu;
+    const sx = 130, sy = 10, sw = 260, sh = 300;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+
+    if (eq.phase === 'chr') {
+      ctx.fillStyle = '#adf';
+      ctx.fillText('装備するキャラを選択:', sx + 10, sy + 20);
+      for (let i = 0; i < this.playerParams.length; i++) {
+        ctx.fillStyle = i === eq.chrIdx ? '#ff0' : '#fff';
+        ctx.fillText((i === eq.chrIdx ? '▶' : '  ') + this.playerParams[i].name, sx + 10, sy + 42 + i * 22);
+      }
+    } else if (eq.phase === 'slot') {
+      const p = this.playerParams[eq.chrIdx];
+      ctx.fillStyle = '#ff0';
+      ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
+      for (let i = 0; i < slots.length; i++) {
+        ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
+        const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
+        const eqName = equipped ? equipped.name.trim() : 'なし';
+        ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 42 + i * 22);
+      }
+    } else if (eq.phase === 'item') {
+      const slotKind = eq.slot + 1;
+      const equippable = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.item.kind === slotKind);
+      equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+      ctx.fillStyle = '#adf';
+      ctx.fillText('装備するアイテム:', sx + 10, sy + 20);
+      const maxShow = 10;
+      const startIdx = Math.max(0, (eq.itemCursor || 0) - maxShow + 1);
+      for (let i = 0; i < maxShow && startIdx + i < equippable.length; i++) {
+        const idx = startIdx + i;
+        const e = equippable[idx];
+        ctx.fillStyle = idx === eq.itemCursor ? '#ff0' : '#fff';
+        ctx.fillText((idx === eq.itemCursor ? '▶' : '  ') + (e.item.name || '').trim(), sx + 10, sy + 42 + i * 20);
+      }
+    }
+  }
+
+  // --- Game Over ---
+  updateGameOver() {
+    this.gameOverTimer++;
+    if (this.gameOverTimer > 90 && this.input.isOK()) {
+      this.state = 'title';
+      this.titleCursor = 1; // default to "continue"
+    }
+  }
+
+  drawGameOver() {
+    const ctx = this.ctx;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 400, 320);
+
+    const t = Math.min(1, this.gameOverTimer / 32);
+    const alpha = Math.floor(t * 255);
+
+    // Animated lines (matching original)
+    ctx.strokeStyle = `rgba(255,255,255,${t})`;
+    ctx.lineWidth = 1;
+    const lineProgress = Math.min(1, this.gameOverTimer / 32);
+    ctx.beginPath();
+    ctx.moveTo(50, 128);
+    ctx.lineTo(50 + 300 * lineProgress, 128);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(350 - 300 * lineProgress, 176);
+    ctx.lineTo(350, 176);
+    ctx.stroke();
+
+    // GAME OVER text
+    const textAlpha = this.gameOverTimer < 32 ? t : (this.gameOverTimer > 96 ? Math.max(0, 1 - (this.gameOverTimer - 96) / 32) : 1);
+    ctx.fillStyle = `rgba(255,255,255,${textAlpha})`;
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ＧＡＭＥ　ＯＶＥＲ', 200, 160);
+
+    if (this.gameOverTimer > 90) {
+      ctx.fillStyle = '#aaa';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Press Enter', 200, 260);
+    }
+  }
+
+  // --- World Map ---
+  updateWorldMap() {
+    if (this.input.isOK() || this.input.isCancel()) {
+      this.state = 'menu';
+    }
+  }
+
+  drawWorldMap() {
+    const ctx = this.ctx;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 400, 320);
+
+    // Draw world map image (image31 is the map in original)
+    if (this.images[31]) {
+      ctx.drawImage(this.images[31], 44, 14);
+    } else {
+      // Fallback: draw a simple map representation
+      ctx.fillStyle = '#1a3a1a';
+      ctx.fillRect(44, 14, 312, 292);
+      ctx.strokeStyle = '#4a8a4a';
+      ctx.lineWidth = 1;
+      // Draw grid
+      for (let x = 0; x < 8; x++) {
+        for (let z = 0; z < 8; z++) {
+          ctx.strokeRect(44 + x * 39, 14 + z * 36, 39, 36);
+        }
+      }
+    }
+
+    // Draw player position (blinking red dot)
+    const area = this.field.area;
+    if (area && area.worldMapX !== 65535 && area.worldMapZ !== 65535) {
+      const blink = (this.frameCount & 4) ? 1 : 0;
+      ctx.fillStyle = blink ? '#f00' : '#fff';
+      const mapX = 60 + (area.worldMapX - 3) * 4;
+      const mapZ = 30 + (area.worldMapZ - 4) * 4;
+      ctx.fillRect(mapX, mapZ, 6, 6);
+    }
+
+    // Title
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, 400, 14);
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ワールドマップ (Enter/Xで閉じる)', 200, 11);
   }
 
   // --- Save / Load ---
@@ -743,18 +997,18 @@ class SuikaGame {
         index: p.index, name: p.name, lv: p.lv, hp: p.hp, maxHP: p.maxHP,
         mp: p.mp, maxMP: p.maxMP, str: p.str, int_: p.int_, def: p.def,
         agi: p.agi, dex: p.dex, exp: p.exp, pat: p.pat, algo: p.algo,
-        abi1: p.abi1, abi2: p.abi2,
+        abi1: p.abi1, abi2: p.abi2, equip: p.equip || [-1,-1,-1,-1,-1],
       })),
       gold: this.gold || 0,
       area: this.currentArea,
       px: this.field.playerPos.x,
       pz: this.field.playerPos.z,
-      pvect: this.playerVect,
+      pvect: this.field.playerVect,
       flags: [...this.eventManager.flags],
       inventory: this.eventManager.inventory,
     };
     localStorage.setItem('suika_save', JSON.stringify(data));
-    console.log('Game saved');
+    if (this.messageWindow) this.messageWindow.show('セーブしました');
   }
 
   loadGame() {
@@ -762,12 +1016,10 @@ class SuikaGame {
     if (!raw) return false;
     try {
       const data = JSON.parse(raw);
-      // Restore player params
       this.playerParams = data.playerParams.map(d => {
         const p = this.paramAll.chrParams[d.index] ? this.paramAll.chrParams[d.index].clone() : new (Object.getPrototypeOf(this.paramAll.chrParams[0]).constructor)(d.index);
         Object.assign(p, d);
         p.isPlayer = true;
-        // Restore getter methods
         p.getStr = () => Math.max(1, p.str);
         p.getDef = () => p.def;
         p.getInt = () => p.int_;
@@ -775,6 +1027,7 @@ class SuikaGame {
         p.getDex = () => p.dex;
         p.getMaxHP = () => p.maxHP;
         p.getMaxMP = () => p.maxMP;
+        if (!p.equip) p.equip = [-1,-1,-1,-1,-1];
         return p;
       });
       this.gold = data.gold || 0;
@@ -782,7 +1035,6 @@ class SuikaGame {
       this.eventManager.inventory = data.inventory || [];
       this.eventManager.gold = this.gold;
 
-      // Restore area
       if (data.area < this.stageManager.stages.length) {
         const area = this.stageManager.stages[data.area];
         this.field.setArea(area);
@@ -790,9 +1042,9 @@ class SuikaGame {
         this.currentArea = data.area;
         this.field.playerPos.x = data.px;
         this.field.playerPos.z = data.pz;
+        if (data.pvect !== undefined) this.field.playerVect = data.pvect;
       }
       this.field.eventFlags = this.eventManager.flags;
-      console.log('Game loaded');
       return true;
     } catch (e) {
       console.warn('Load failed:', e);
