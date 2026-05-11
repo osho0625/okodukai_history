@@ -15,6 +15,8 @@ import { BattleUI } from './engine/battle-ui.js';
 import { TouchUI } from './engine/touch-ui.js';
 import { AudioManager } from './engine/audio.js';
 import { ShopUI } from './engine/shop.js';
+import { Credits } from './engine/credits.js';
+import { PasswordSystem } from './engine/password.js';
 
 class SuikaGame {
   constructor() {
@@ -52,6 +54,8 @@ class SuikaGame {
     this.battleResult = null; // { exp, gold, levelUps[] }
     this.equipMenu = null; // equipment sub-state
     this.gameOverTimer = 0;
+    this.credits = new Credits(this.ctx);
+    this.passwordSystem = new PasswordSystem();
   }
 
   async init() {
@@ -186,7 +190,8 @@ class SuikaGame {
           const area = this.stageManager.stages[areaIdx];
           this.field.changeArea(area, x, z, rot);
           this.currentArea = areaIdx;
-          console.log(`Area changed to ${areaIdx}, pos ${x},${z}`);
+          // Auto-save on area change
+          this.saveGame(true);
         }
       };
       this.field.onTalkNpc = (npc) => {
@@ -292,25 +297,74 @@ class SuikaGame {
         this.updateWorldMap();
         this.drawWorldMap();
         break;
+      case 'credits':
+        this.credits.update(this.input);
+        this.credits.draw();
+        if (!this.credits.active) this.state = 'title';
+        break;
     }
   }
 
   updateTitle() {
     if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
-      this.titleCursor = 0;
+      this.titleCursor = (this.titleCursor - 1 + 3) % 3;
     }
     if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
-      this.titleCursor = 1;
+      this.titleCursor = (this.titleCursor + 1) % 3;
     }
     if (this.input.isOK()) {
       this.audio.resume();
       if (this.titleCursor === 0) {
         this.state = 'game';
-      } else {
+      } else if (this.titleCursor === 1) {
         if (this.loadGame()) {
           this.state = 'game';
         }
+      } else if (this.titleCursor === 2) {
+        // Password input
+        const pw = prompt('復活の呪文を入力してください:');
+        if (pw) {
+          const data = this.passwordSystem.load(pw);
+          if (data) {
+            this.loadFromPassword(data);
+            this.state = 'game';
+          } else {
+            alert('復活の呪文が違います');
+          }
+        }
       }
+    }
+  }
+
+  loadFromPassword(data) {
+    // Apply password data to game state
+    if (data.characters && data.characters.length >= 3) {
+      for (let i = 0; i < Math.min(3, data.characters.length); i++) {
+        const chr = data.characters[i];
+        const p = this.playerParams[i];
+        if (!p) continue;
+        p.lv = chr.lv || 1;
+        p.hp = chr.hp; p.maxHP = chr.maxHP;
+        p.mp = chr.mp; p.maxMP = chr.maxMP;
+        p.str = chr.str; p.int_ = chr.int_;
+        p.def = chr.def; p.agi = chr.agi; p.dex = chr.dex;
+        p.exp = chr.exp || 0;
+        p.equip = chr.equip || [-1,-1,-1,-1,-1];
+      }
+    }
+    if (data.playerName) this.playerParams[0].name = data.playerName;
+    this.gold = data.gold || 0;
+    this.eventManager.inventory = data.items || [];
+    this.eventManager.flags = new Set(data.flags || []);
+    this.field.eventFlags = this.eventManager.flags;
+
+    // Restore area
+    if (data.areaNo !== undefined && data.areaNo < this.stageManager.stages.length) {
+      const area = this.stageManager.stages[data.areaNo];
+      this.field.setArea(area);
+      this.currentArea = data.areaNo;
+      if (data.areaX !== undefined) this.field.playerPos.x = MapData.getXPos(data.areaX);
+      if (data.areaZ !== undefined) this.field.playerPos.z = MapData.getZPos(data.areaZ);
     }
   }
 
@@ -335,13 +389,13 @@ class SuikaGame {
     ctx.fillText('HTML5 Port', 200, 110);
 
     // Menu
-    const menuY = 180;
-    const items = ['初めから', '続きから'];
+    const menuY = 170;
+    const items = ['初めから', '続きから', '復活の呪文'];
     ctx.font = '16px sans-serif';
     for (let i = 0; i < items.length; i++) {
       ctx.fillStyle = i === this.titleCursor ? '#ff0' : '#fff';
       const prefix = i === this.titleCursor ? '▶ ' : '   ';
-      ctx.fillText(prefix + items[i], 200, menuY + i * 30);
+      ctx.fillText(prefix + items[i], 200, menuY + i * 28);
     }
 
     // Has save data indicator
@@ -991,7 +1045,7 @@ class SuikaGame {
   }
 
   // --- Save / Load ---
-  saveGame() {
+  saveGame(silent = false) {
     const data = {
       playerParams: this.playerParams.map(p => ({
         index: p.index, name: p.name, lv: p.lv, hp: p.hp, maxHP: p.maxHP,
@@ -1008,7 +1062,7 @@ class SuikaGame {
       inventory: this.eventManager.inventory,
     };
     localStorage.setItem('suika_save', JSON.stringify(data));
-    if (this.messageWindow) this.messageWindow.show('セーブしました');
+    if (!silent && this.messageWindow) this.messageWindow.show('セーブしました');
   }
 
   loadGame() {
