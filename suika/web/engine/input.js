@@ -1,4 +1,5 @@
 // input.js — Input handler (ported from CGameApp key/mouse handling)
+// Supports keyboard, mouse, and touch (virtual stick + buttons)
 
 export const KEY = {
   UP: 'ArrowUp',
@@ -39,6 +40,12 @@ export class Input {
     this.mouseLeftDown = false;  // single frame
     this.mouseRightDown = false;
 
+    // Touch virtual stick state
+    this.touchDir = DIR.NONE;
+    this.touchButtons = {};     // held state
+    this.touchButtonDown = {};  // edge-triggered (single frame)
+    this._prevTouchButtons = {};
+
     this._setupKeyboard();
     this._setupMouse(canvas);
   }
@@ -46,7 +53,6 @@ export class Input {
   _setupKeyboard() {
     window.addEventListener('keydown', (e) => {
       this.keys[e.key.toLowerCase()] = true;
-      // Prevent scrolling with arrow keys
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
       }
@@ -74,6 +80,16 @@ export class Input {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  // Called by external touch UI to set virtual stick direction
+  setTouchDirection(dir) {
+    this.touchDir = dir;
+  }
+
+  // Called by external touch UI for button press (edge-triggered)
+  setTouchButton(name, pressed) {
+    this.touchButtons[name] = pressed;
+  }
+
   // Call once per frame to update edge-triggered states
   update() {
     this.keyDown = {};
@@ -85,24 +101,36 @@ export class Input {
     this.mouseLeftDown = this.mouseLeft && !this._prevMouseLeft;
     this.mouseRightDown = this.mouseRight && !this._prevMouseRight;
 
+    // Touch button edge detection
+    this.touchButtonDown = {};
+    for (const btn in this.touchButtons) {
+      if (this.touchButtons[btn] && !this._prevTouchButtons[btn]) {
+        this.touchButtonDown[btn] = true;
+      }
+    }
+
     this.prevKeys = { ...this.keys };
     this._prevMouseLeft = this.mouseLeft;
     this._prevMouseRight = this.mouseRight;
+    this._prevTouchButtons = { ...this.touchButtons };
   }
 
   isKey(key) { return !!this.keys[key.toLowerCase()]; }
   isKeyDown(key) { return !!this.keyDown[key.toLowerCase()]; }
 
   isOK() {
-    return this.isKeyDown('enter') || this.isKeyDown(' ') || this.mouseLeftDown;
+    return this.isKeyDown('enter') || this.isKeyDown(' ') || this.mouseLeftDown || !!this.touchButtonDown['ok'];
   }
 
   isCancel() {
-    return this.isKeyDown('x') || this.isKeyDown('escape') || this.mouseRightDown;
+    return this.isKeyDown('x') || this.isKeyDown('escape') || this.mouseRightDown || !!this.touchButtonDown['cancel'];
   }
 
-  // Get 8-direction from arrow keys (matches Java GetKeybordVect)
+  // Get 8-direction from arrow keys or virtual stick
   getDirection() {
+    // Virtual stick takes priority if active
+    if (this.touchDir !== DIR.NONE) return this.touchDir;
+
     const u = this.isKey('arrowup');
     const d = this.isKey('arrowdown');
     const l = this.isKey('arrowleft');
@@ -125,5 +153,9 @@ export class Input {
     this.prevKeys = {};
     this.mouseLeft = false;
     this.mouseRight = false;
+    this.touchDir = DIR.NONE;
+    this.touchButtons = {};
+    this.touchButtonDown = {};
+    this._prevTouchButtons = {};
   }
 }

@@ -12,6 +12,7 @@ import { MessageWindow, ChoiceWindow } from './engine/message.js';
 import { ParamAll } from './engine/params.js';
 import { BattleEngine, BATTLE_RESULT, CMD } from './engine/battle.js';
 import { BattleUI } from './engine/battle-ui.js';
+import { TouchUI } from './engine/touch-ui.js';
 
 class SuikaGame {
   constructor() {
@@ -19,6 +20,7 @@ class SuikaGame {
     this.ctx = this.canvas.getContext('2d');
     this.renderer = new Renderer();
     this.input = new Input(this.canvas);
+    this.touchUI = new TouchUI(this.input);
     this.loop = new GameLoop(90);
     this.loader = new AssetLoader(new URL('../', import.meta.url).href);
 
@@ -262,8 +264,8 @@ class SuikaGame {
       this.checkEncounter();
     }
 
-    // Talk to NPC (Enter/Space)
-    if (this.input.isKeyDown('enter') || this.input.isKeyDown(' ')) {
+    // Talk to NPC (Enter/Space/Touch OK)
+    if (this.input.isOK()) {
       const result = this.field.tryTalk();
       if (result && result.event > 0 && result.event < 0xFFFF) {
         this.eventRunning = true;
@@ -276,9 +278,9 @@ class SuikaGame {
       }
     }
 
-    // Camera rotation (A/S keys)
-    if (this.input.isKeyDown('a')) this.field.rotateCameraLeft();
-    if (this.input.isKeyDown('s')) this.field.rotateCameraRight();
+    // Camera rotation (A/S keys or touch buttons)
+    if (this.input.isKeyDown('a') || this.input.touchButtons['camL']) this.field.rotateCameraLeft();
+    if (this.input.isKeyDown('s') || this.input.touchButtons['camR']) this.field.rotateCameraRight();
 
     // Debug: B key to start test battle
     if (this.input.isKeyDown('b') && this.paramAll.parties.length > 0) {
