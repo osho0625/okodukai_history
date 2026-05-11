@@ -60,6 +60,8 @@ class SuikaGame {
     this.passwordSystem = new PasswordSystem();
     this.quizUI = new QuizUI(this.ctx, this.input);
     this.composeShop = null;
+    this.openingFrame = 0;
+    this._titleDirHeld = false;
   }
 
   async init() {
@@ -390,22 +392,36 @@ class SuikaGame {
         this.credits.draw();
         if (!this.credits.active) this.state = 'title';
         break;
+      case 'opening':
+        this.updateOpening();
+        this.drawOpening();
+        break;
     }
   }
 
   updateTitle() {
-    if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
-      this.titleCursor = (this.titleCursor - 1 + 3) % 3;
-    }
-    if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
-      this.titleCursor = (this.titleCursor + 1) % 3;
+    // Keyboard or touch stick navigation
+    const dir = this.input.getDirection();
+    if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft') || dir === 0 || dir === 6) {
+      if (!this._titleDirHeld) {
+        this.titleCursor = (this.titleCursor - 1 + 3) % 3;
+        this._titleDirHeld = true;
+      }
+    } else if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright') || dir === 4 || dir === 2) {
+      if (!this._titleDirHeld) {
+        this.titleCursor = (this.titleCursor + 1) % 3;
+        this._titleDirHeld = true;
+      }
+    } else {
+      this._titleDirHeld = false;
     }
     if (this.input.isOK()) {
       this.audio.resume();
       if (this.titleCursor === 0) {
-        // New game — reset to initial state
+        // New game — play opening then start
         this.resetNewGame();
-        this.state = 'game';
+        this.state = 'opening';
+        this.openingFrame = 0;
       } else if (this.titleCursor === 1) {
         if (this.loadGame()) {
           this.state = 'game';
@@ -492,13 +508,82 @@ class SuikaGame {
     if (localStorage.getItem('suika_save')) {
       ctx.font = '10px sans-serif';
       ctx.fillStyle = '#8f8';
-      ctx.fillText('セーブデータあり', 200, 250);
+      ctx.fillText('セーブデータあり', 200, 258);
     }
 
     // Credits
     ctx.font = '11px sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fillText('2002-2008 製作・著作 くろすけ', 200, 295);
+
+    // Touch hint (only on touch devices)
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('スティック↑↓で選択 / Aで決定', 200, 312);
+  }
+
+  // --- Opening sequence (matching original CTitle.Opening) ---
+  updateOpening() {
+    this.openingFrame++;
+    // Total duration: ~180 frames (4 size stages × 36 brightness cycles + fade)
+    // Skip on OK press
+    if (this.openingFrame > 30 && this.input.isOK()) {
+      this.state = 'game';
+    }
+    if (this.openingFrame > 200) {
+      this.state = 'game';
+    }
+  }
+
+  drawOpening() {
+    const ctx = this.ctx;
+    const f = this.openingFrame;
+
+    // Black background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 400, 320);
+
+    if (f < 20) {
+      // Initial pause — black screen
+      return;
+    }
+
+    const phase = f - 20;
+
+    // Title text grows in 4 stages (16px → 24px → 32px → 40px)
+    // Each stage has a brightness pulse cycle
+    const stage = Math.min(3, Math.floor(phase / 40));
+    const stageProgress = (phase % 40) / 40;
+    const fontSize = 16 + stage * 8;
+
+    // Brightness pulse (matching original anColor table: 0→255→0)
+    const pulseT = stageProgress;
+    let brightness;
+    if (pulseT < 0.5) {
+      brightness = pulseT * 2; // 0→1
+    } else {
+      brightness = (1 - pulseT) * 2; // 1→0
+    }
+    // On final stage, hold brightness
+    if (stage >= 3 && stageProgress > 0.5) brightness = 1;
+
+    // Fade out at end
+    if (f > 170) {
+      brightness *= Math.max(0, (200 - f) / 30);
+    }
+
+    const c = Math.floor(brightness * 255);
+    ctx.fillStyle = `rgb(${c},${c},${c})`;
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('すいかが食べたい', 200, (320 - fontSize) / 2 + fontSize);
+
+    // Skip hint after a moment
+    if (f > 50) {
+      ctx.fillStyle = 'rgba(100,100,100,0.5)';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('Enter / A でスキップ', 200, 300);
+    }
   }
 
   updateGame() {
