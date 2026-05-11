@@ -41,6 +41,7 @@ export class TouchUI {
         <button class="touch-btn touch-btn-cancel" id="touchBtnCancel">B</button>
         <button class="touch-btn touch-btn-cam-l" id="touchBtnCamL">◀</button>
         <button class="touch-btn touch-btn-cam-r" id="touchBtnCamR">▶</button>
+        <button class="touch-btn touch-btn-menu" id="touchBtnMenu">≡</button>
       </div>
     `;
 
@@ -72,12 +73,12 @@ export class TouchUI {
       }
       .touch-btn-area {
         display: grid; grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: 8px; pointer-events: auto; touch-action: none;
-        width: 130px; height: 130px;
+        grid-template-rows: 1fr 1fr 1fr;
+        gap: 6px; pointer-events: auto; touch-action: none;
+        width: 130px; height: 170px;
       }
       .touch-btn {
-        width: 56px; height: 56px; border-radius: 50%;
+        width: 52px; height: 52px; border-radius: 50%;
         border: 2px solid rgba(255,255,255,0.3);
         background: rgba(255,255,255,0.1);
         color: #fff; font-size: 14px; font-weight: 700;
@@ -105,6 +106,13 @@ export class TouchUI {
       .touch-btn-cam-r {
         background: rgba(100,150,255,0.15); border-color: rgba(100,150,255,0.3);
         grid-column: 2; grid-row: 2; font-size: 18px;
+      }
+      .touch-btn-menu {
+        background: rgba(200,200,100,0.15); border-color: rgba(200,200,100,0.3);
+        grid-column: 1; grid-row: 3; font-size: 20px;
+        width: 110px; border-radius: 12px;
+        grid-column: 1 / 3;
+        justify-self: center;
       }
 
       /* Hide keyboard info on touch devices */
@@ -203,6 +211,7 @@ export class TouchUI {
     this._bindBtn(this.btnCancel, 'cancel');
     this._bindBtn(this.btnCamL, 'camL');
     this._bindBtn(this.btnCamR, 'camR');
+    this._bindBtn(document.getElementById('touchBtnMenu'), 'menu');
   }
 
   _bindBtn(el, name) {

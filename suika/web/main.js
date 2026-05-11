@@ -13,6 +13,7 @@ import { ParamAll } from './engine/params.js';
 import { BattleEngine, BATTLE_RESULT, CMD } from './engine/battle.js';
 import { BattleUI } from './engine/battle-ui.js';
 import { TouchUI } from './engine/touch-ui.js';
+import { AudioManager } from './engine/audio.js';
 
 class SuikaGame {
   constructor() {
@@ -26,6 +27,7 @@ class SuikaGame {
 
     this.images = [];
     this.models = [];
+    this.audio = new AudioManager();
     this.stageManager = new StageManager();
     this.eventManager = new EventManager();
     this.paramAll = new ParamAll();
@@ -42,6 +44,9 @@ class SuikaGame {
     this.battleUI = null;
     this.playerParams = []; // player party params for battle
     this.fadeAlpha = 0; // 0=no fade, 1=fully black
+    this.titleCursor = 0;
+    this.menuCursor = 0;
+    this.menuOpen = false;
   }
 
   async init() {
@@ -88,6 +93,10 @@ class SuikaGame {
       } catch (e) {
         console.warn('Param data load failed:', e.message);
       }
+
+      // Load audio (non-blocking, don't fail if unavailable)
+      this.audio.init();
+      this.audio.loadAll(this.loader.baseUrl, 30).catch(() => {});
 
       // Wire up message callback
       this.eventManager.messageCallback = (text) => this.messageWindow.show(text);
@@ -147,11 +156,13 @@ class SuikaGame {
         else if (type === 'ground') map.ground[idx] = val;
       };
       this.eventManager.itemCallback = (itemIdx, add) => {
-        // Show item get message
         const item = this.paramAll.getItem(itemIdx);
         if (item && this.messageWindow) {
           this.messageWindow.show(`${item.name}を手に入れた！`);
         }
+      };
+      this.eventManager.seCallback = (seNo) => {
+        this.audio.play(seNo);
       };
 
       // Setup field with first area
@@ -245,8 +256,8 @@ class SuikaGame {
 
     switch (this.state) {
       case 'title':
+        this.updateTitle();
         this.drawTitle();
-        if (this.input.isOK()) this.state = 'game';
         break;
       case 'game':
         this.updateGame();
@@ -256,20 +267,73 @@ class SuikaGame {
         this.updateBattle();
         this.drawBattle();
         break;
+      case 'menu':
+        this.updateMenu();
+        this.drawMenu();
+        break;
+    }
+  }
+
+  updateTitle() {
+    if (this.input.isKeyDown('arrowup') || this.input.isKeyDown('arrowleft')) {
+      this.titleCursor = 0;
+    }
+    if (this.input.isKeyDown('arrowdown') || this.input.isKeyDown('arrowright')) {
+      this.titleCursor = 1;
+    }
+    if (this.input.isOK()) {
+      this.audio.resume();
+      if (this.titleCursor === 0) {
+        this.state = 'game';
+      } else {
+        if (this.loadGame()) {
+          this.state = 'game';
+        }
+      }
     }
   }
 
   drawTitle() {
-    this.ctx.fillStyle = '#000';
-    this.ctx.fillRect(0, 0, 400, 320);
-    if (this.images[31]) this.ctx.drawImage(this.images[31], 0, 0);
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '20px sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('すいかが食べたい', 200, 140);
-    this.ctx.font = '12px sans-serif';
-    this.ctx.fillText('Press Enter to Start', 200, 200);
-    this.ctx.fillText('HTML5 Port', 200, 280);
+    const ctx = this.ctx;
+    // Blue gradient background (matching original CTitle.ClearSurface)
+    for (let i = 0; i < 80; i++) {
+      const c = i * 2 + 40;
+      ctx.fillStyle = `rgb(${c},${c},255)`;
+      ctx.fillRect(0, i * 4, 400, 4);
+    }
+
+    // Title text
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('すいかが食べたい', 200, 80);
+
+    // Subtitle
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#ddf';
+    ctx.fillText('HTML5 Port', 200, 110);
+
+    // Menu
+    const menuY = 180;
+    const items = ['初めから', '続きから'];
+    ctx.font = '16px sans-serif';
+    for (let i = 0; i < items.length; i++) {
+      ctx.fillStyle = i === this.titleCursor ? '#ff0' : '#fff';
+      const prefix = i === this.titleCursor ? '▶ ' : '   ';
+      ctx.fillText(prefix + items[i], 200, menuY + i * 30);
+    }
+
+    // Has save data indicator
+    if (localStorage.getItem('suika_save')) {
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#8f8';
+      ctx.fillText('セーブデータあり', 200, 250);
+    }
+
+    // Credits
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('2002-2008 製作・著作 くろすけ', 200, 295);
   }
 
   updateGame() {
@@ -313,6 +377,13 @@ class SuikaGame {
     // Camera rotation (A/S keys or touch buttons)
     if (this.input.isKeyDown('a') || this.input.touchButtons['camL']) this.field.rotateCameraLeft();
     if (this.input.isKeyDown('s') || this.input.touchButtons['camR']) this.field.rotateCameraRight();
+
+    // System menu (Z key or touch menu button)
+    if (this.input.isKeyDown('z') || this.input.touchButtonDown['menu']) {
+      this.menuCursor = 0;
+      this.state = 'menu';
+      return;
+    }
 
     // Debug: B key to start test battle
     if (this.input.isKeyDown('b') && this.paramAll.parties.length > 0) {
@@ -513,6 +584,149 @@ class SuikaGame {
 
     if (player.lv > prevLv) {
       console.log(`${player.name} Lv${prevLv}→${player.lv}!`);
+    }
+  }
+
+  // --- System Menu ---
+  updateMenu() {
+    const items = ['ステータス', 'セーブ', 'タイトルへ', '閉じる'];
+    if (this.input.isKeyDown('arrowup')) {
+      this.menuCursor = (this.menuCursor - 1 + items.length) % items.length;
+    }
+    if (this.input.isKeyDown('arrowdown')) {
+      this.menuCursor = (this.menuCursor + 1) % items.length;
+    }
+    if (this.input.isOK()) {
+      switch (this.menuCursor) {
+        case 0: break; // Status shown in draw
+        case 1: this.saveGame(); this.state = 'game'; break;
+        case 2: this.state = 'title'; this.titleCursor = 0; break;
+        case 3: this.state = 'game'; break;
+      }
+    }
+    if (this.input.isCancel() || this.input.isKeyDown('z')) {
+      this.state = 'game';
+    }
+  }
+
+  drawMenu() {
+    const ctx = this.ctx;
+    // Draw field behind
+    this.field.draw();
+
+    // Darken
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, 400, 320);
+
+    // Menu panel
+    const mx = 20, my = 20, mw = 140, mh = 120;
+    ctx.fillStyle = 'rgba(0,0,60,0.92)';
+    ctx.fillRect(mx, my, mw, mh);
+    ctx.strokeStyle = '#88f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mx, my, mw, mh);
+
+    const items = ['ステータス', 'セーブ', 'タイトルへ', '閉じる'];
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'left';
+    for (let i = 0; i < items.length; i++) {
+      ctx.fillStyle = i === this.menuCursor ? '#ff0' : '#fff';
+      const prefix = i === this.menuCursor ? '▶' : '  ';
+      ctx.fillText(prefix + items[i], mx + 10, my + 24 + i * 24);
+    }
+
+    // Status panel (right side)
+    const sx = 170, sy = 20, sw = 210, sh = 280;
+    ctx.fillStyle = 'rgba(0,0,60,0.92)';
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeStyle = '#88f';
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    let py = sy + 18;
+    for (let i = 0; i < this.playerParams.length; i++) {
+      const p = this.playerParams[i];
+      ctx.fillStyle = '#ff0';
+      ctx.fillText(`${p.name}  Lv${p.lv}`, sx + 10, py);
+      py += 16;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`HP:${p.hp}/${p.maxHP}  MP:${p.mp}/${p.maxMP}`, sx + 10, py);
+      py += 14;
+      ctx.fillStyle = '#ccc';
+      ctx.font = '10px monospace';
+      ctx.fillText(`STR:${p.str} INT:${p.int_} DEF:${p.def}`, sx + 10, py);
+      py += 13;
+      ctx.fillText(`AGI:${p.agi} DEX:${p.dex} EXP:${p.exp||0}`, sx + 10, py);
+      py += 20;
+      ctx.font = '11px sans-serif';
+    }
+    // Gold
+    ctx.fillStyle = '#fd0';
+    ctx.fillText(`所持金: ${this.gold || 0} G`, sx + 10, py + 5);
+  }
+
+  // --- Save / Load ---
+  saveGame() {
+    const data = {
+      playerParams: this.playerParams.map(p => ({
+        index: p.index, name: p.name, lv: p.lv, hp: p.hp, maxHP: p.maxHP,
+        mp: p.mp, maxMP: p.maxMP, str: p.str, int_: p.int_, def: p.def,
+        agi: p.agi, dex: p.dex, exp: p.exp, pat: p.pat, algo: p.algo,
+        abi1: p.abi1, abi2: p.abi2,
+      })),
+      gold: this.gold || 0,
+      area: this.currentArea,
+      px: this.field.playerPos.x,
+      pz: this.field.playerPos.z,
+      pvect: this.playerVect,
+      flags: [...this.eventManager.flags],
+      inventory: this.eventManager.inventory,
+    };
+    localStorage.setItem('suika_save', JSON.stringify(data));
+    console.log('Game saved');
+  }
+
+  loadGame() {
+    const raw = localStorage.getItem('suika_save');
+    if (!raw) return false;
+    try {
+      const data = JSON.parse(raw);
+      // Restore player params
+      this.playerParams = data.playerParams.map(d => {
+        const p = this.paramAll.chrParams[d.index] ? this.paramAll.chrParams[d.index].clone() : new (Object.getPrototypeOf(this.paramAll.chrParams[0]).constructor)(d.index);
+        Object.assign(p, d);
+        p.isPlayer = true;
+        // Restore getter methods
+        p.getStr = () => Math.max(1, p.str);
+        p.getDef = () => p.def;
+        p.getInt = () => p.int_;
+        p.getAgi = () => p.agi;
+        p.getDex = () => p.dex;
+        p.getMaxHP = () => p.maxHP;
+        p.getMaxMP = () => p.maxMP;
+        return p;
+      });
+      this.gold = data.gold || 0;
+      this.eventManager.flags = new Set(data.flags || []);
+      this.eventManager.inventory = data.inventory || [];
+      this.eventManager.gold = this.gold;
+
+      // Restore area
+      if (data.area < this.stageManager.stages.length) {
+        const area = this.stageManager.stages[data.area];
+        this.field.setArea(area);
+        this.field.area = area;
+        this.currentArea = data.area;
+        this.field.playerPos.x = data.px;
+        this.field.playerPos.z = data.pz;
+      }
+      this.field.eventFlags = this.eventManager.flags;
+      console.log('Game loaded');
+      return true;
+    } catch (e) {
+      console.warn('Load failed:', e);
+      return false;
     }
   }
 }
