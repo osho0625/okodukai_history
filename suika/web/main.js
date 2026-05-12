@@ -65,6 +65,8 @@ class SuikaGame {
     this._titleDirHeld = false;
     this.quakeFrames = 0;
     this.battleFlash = 0;
+    this.playTime = 0; // seconds
+    this._lastTime = Date.now();
   }
 
   async init() {
@@ -391,6 +393,13 @@ class SuikaGame {
     this.input.update();
     this.frameCount++;
 
+    // Track play time (only during gameplay)
+    const now = Date.now();
+    if (this.state === 'game' || this.state === 'battle' || this.state === 'menu') {
+      this.playTime += (now - this._lastTime) / 1000;
+    }
+    this._lastTime = now;
+
     switch (this.state) {
       case 'title':
         this.updateTitle();
@@ -537,10 +546,18 @@ class SuikaGame {
     }
 
     // Has save data indicator
-    if (localStorage.getItem('suika_save')) {
+    const saveRaw = localStorage.getItem('suika_save');
+    if (saveRaw) {
       ctx.font = '10px sans-serif';
       ctx.fillStyle = '#8f8';
-      ctx.fillText('セーブデータあり', 200, 258);
+      try {
+        const save = JSON.parse(saveRaw);
+        const h = Math.floor((save.playTime || 0) / 3600);
+        const m = Math.floor(((save.playTime || 0) % 3600) / 60);
+        ctx.fillText(`セーブデータあり (${h}:${String(m).padStart(2,'0')})`, 200, 258);
+      } catch(e) {
+        ctx.fillText('セーブデータあり', 200, 258);
+      }
     }
 
     // Credits
@@ -845,6 +862,7 @@ class SuikaGame {
     if (bState.state === 'playerTurn') {
       const action = this.battleUI.update(bState);
       if (action) {
+        this.audio.play(8); // SE: command confirm
         this.battleEngine.doPlayerCommand(action.cmd, action.target, action.extra);
         this.battleUI.reset();
       }
@@ -1273,6 +1291,11 @@ class SuikaGame {
     }
     ctx.fillStyle = '#fd0';
     ctx.fillText(`所持金: ${this.gold || 0} G`, sx + 10, py + 5);
+    // Play time
+    const hours = Math.floor(this.playTime / 3600);
+    const mins = Math.floor((this.playTime % 3600) / 60);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`プレイ時間: ${hours}:${String(mins).padStart(2, '0')}`, sx + 10, py + 20);
   }
 
   drawEquipMenu(ctx) {
@@ -1462,9 +1485,13 @@ class SuikaGame {
       pvect: this.field.playerVect,
       flags: [...this.eventManager.flags],
       inventory: this.eventManager.inventory,
+      playTime: Math.floor(this.playTime),
     };
     localStorage.setItem('suika_save', JSON.stringify(data));
-    if (!silent && this.messageWindow) this.messageWindow.show('セーブしました');
+    if (!silent) {
+      this.audio.play(10); // SE: save
+      if (this.messageWindow) this.messageWindow.show('セーブしました');
+    }
   }
 
   loadGame() {
@@ -1490,6 +1517,7 @@ class SuikaGame {
       this.eventManager.flags = new Set(data.flags || []);
       this.eventManager.inventory = data.inventory || [];
       this.eventManager.gold = this.gold;
+      this.playTime = data.playTime || 0;
 
       if (data.area < this.stageManager.stages.length) {
         const area = this.stageManager.stages[data.area];

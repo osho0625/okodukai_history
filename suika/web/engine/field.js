@@ -428,6 +428,18 @@ export class Field {
       const scl = new Vec3(1, 1, 1);
       const wvp = this.renderer.calcModel(model, pos, rot, scl);
       this.renderer.drawModel(model, wvp, this.renderer.getTransform(3), 0, 0);
+
+      // Talk indicator "!" above NPC if they have an event
+      if (npc.event > 0 && npc.event < 0xFFFF) {
+        const headPos = this.renderer.get3DPos(wvp, new Vec3(0, model.topY + 30, 0));
+        if (headPos.x > 0 && headPos.x < 400 && headPos.y > 0 && headPos.y < 320) {
+          const pulse = Math.sin(this.frameCount * 0.15 + ni) * 0.3 + 0.7;
+          this.renderer.ctx.fillStyle = `rgba(255,255,0,${pulse})`;
+          this.renderer.ctx.font = 'bold 12px sans-serif';
+          this.renderer.ctx.textAlign = 'center';
+          this.renderer.ctx.fillText('!', headPos.x, headPos.y - 5);
+        }
+      }
     }
   }
 
