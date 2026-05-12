@@ -461,11 +461,13 @@ export class BattleUI {
     const players = battleState.players;
     const count = Math.min(players.length, this.playerModelPats.length);
 
-    // Setup camera (same as enemy drawing will use)
-    const eye = new Vec3(0, 120, -350);
-    const at = new Vec3(0, 40, 150);
+    // Camera matching original: distance 2100, height 1600, looking at center
+    // Initial angle ~108 degrees (facing from behind players toward enemies)
+    const camAngle = Math.PI * 0.6; // ~108 degrees
+    const eye = new Vec3(Math.sin(camAngle) * 2100, 1600, Math.cos(camAngle) * 2100);
+    const at = new Vec3(0, 0, 0);
     this.renderer.viewTransform(eye, at);
-    this.renderer.projTransform(10, 2000);
+    this.renderer.projTransform(10, 5000);
     this.renderer.setAmbient(new Color(80, 80, 100));
     this.renderer.light = { direction: new Vec3(-0.3, -0.8, 0.5).normalize() };
 
@@ -476,42 +478,41 @@ export class BattleUI {
       const model = this.models[modelIdx];
       if (!model || model.vertices.length === 0) continue;
 
-      // Position players in foreground (closer to camera, facing enemies)
-      const spacing = count <= 2 ? 150 : 120;
+      // Position players at Z=-230 (foreground), spread on X axis
+      const spacing = count <= 2 ? 180 : 140;
       const startX = -(count - 1) * spacing / 2;
       const posX = startX + i * spacing;
-      const posZ = -200;
+      const posZ = -230;
 
-      // Attack animation: move forward when it's this player's turn and attacking
+      // Attack animation: move forward
       let animOffsetZ = 0;
       if (this.attackAnim && this.attackAnim.who === 'player' && this.attackAnim.idx === i) {
         const t = this.attackAnim.frame / this.attackAnim.maxFrame;
-        if (t < 0.4) animOffsetZ = t / 0.4 * 150; // move forward
-        else if (t < 0.6) animOffsetZ = 150; // hold
-        else animOffsetZ = (1 - (t - 0.6) / 0.4) * 150; // move back
+        if (t < 0.4) animOffsetZ = t / 0.4 * 200;
+        else if (t < 0.6) animOffsetZ = 200;
+        else animOffsetZ = (1 - (t - 0.6) / 0.4) * 200;
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
-      const rot = new Vec3(0, 0, 0); // facing forward (toward enemies)
+      const rot = new Vec3(0, Math.PI / 2, 0); // face right (toward enemies)
       const scl = new Vec3(1, 1, 1);
 
-      // Dim dead players
-      if (!p.alive) {
-        this.ctx.globalAlpha = 0.3;
-      }
+      if (!p.alive) this.ctx.globalAlpha = 0.3;
 
       const wvp = this.renderer.calcModel(model, pos, rot, scl);
       const worldMat = this.renderer.getTransform(3);
       this.renderer.drawModel(model, wvp, worldMat, 0, 0);
 
-      // Current turn indicator glow
+      // Current turn indicator
       if (battleState.currentUnit && battleState.currentUnit.isPlayer &&
           battleState.currentUnit.index === i) {
-        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, model.topY + 20, 0));
-        this.ctx.fillStyle = '#ff0';
-        this.ctx.font = '10px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('▼', screenPos.x, Math.max(screenPos.y - 5, 180));
+        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, model.topY + 30, 0));
+        if (screenPos.y > 0 && screenPos.y < 320) {
+          this.ctx.fillStyle = '#ff0';
+          this.ctx.font = '10px sans-serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.fillText('▼', screenPos.x, screenPos.y - 5);
+        }
       }
 
       this.ctx.globalAlpha = 1;
@@ -529,11 +530,12 @@ export class BattleUI {
       return;
     }
 
-    // Setup camera for battle scene (closer, lower angle to see enemies better)
-    const eye = new Vec3(0, 120, -350);
-    const at = new Vec3(0, 40, 150);
+    // Setup camera for battle scene (matching original: dist 2100, height 1600)
+    const camAngle = Math.PI * 0.6;
+    const eye = new Vec3(Math.sin(camAngle) * 2100, 1600, Math.cos(camAngle) * 2100);
+    const at = new Vec3(0, 0, 0);
     this.renderer.viewTransform(eye, at);
-    this.renderer.projTransform(10, 2000);
+    this.renderer.projTransform(10, 5000);
 
     // Set lighting
     this.renderer.setAmbient(new Color(80, 80, 100));
@@ -566,11 +568,11 @@ export class BattleUI {
         continue;
       }
 
-      // Position enemies in a row (centered, tighter spacing)
-      const spacing = totalEnemies <= 2 ? 200 : 140;
+      // Position enemies in a row (at Z=+230, matching original)
+      const spacing = totalEnemies <= 2 ? 200 : 150;
       const startX = -(totalEnemies - 1) * spacing / 2;
       const posX = startX + i * spacing;
-      const posZ = 180;
+      const posZ = 230;
 
       const pos = new Vec3(posX, 0, posZ);
       const rot = new Vec3(0, Math.PI, 0); // face player
