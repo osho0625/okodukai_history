@@ -193,6 +193,16 @@ async function sendMessage() {
 let aiCooldown = false;
 async function askAI() {
   if (aiCooldown) { alert('少し待ってからもう一度押してね'); return; }
+
+  // APIキーチェック
+  if (!GEMINI_API_KEY) {
+    await loadGeminiKey();
+    if (!GEMINI_API_KEY) {
+      alert('APIキーが設定されていません。Supabaseのgame_settingsテーブルにgemini_api_keyを設定してください。');
+      return;
+    }
+  }
+
   const btn = document.getElementById('aiBtn');
   btn.disabled = true;
   btn.textContent = '🤖 考え中…';
@@ -223,6 +233,7 @@ ${conversation}
 
     let aiText = '';
     let retries = 0;
+    let lastError = '';
     while (retries < 3) {
       const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -235,17 +246,28 @@ ${conversation}
       if (res.status === 429) {
         retries++;
         btn.textContent = `🤖 混み合ってるよ…(${retries}/3)`;
-        await new Promise(r => setTimeout(r, 5000 * retries));
+        await new Promise(r => setTimeout(r, 10000 * retries));
         continue;
+      }
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        lastError = `HTTP ${res.status}: ${errBody.substring(0, 200)}`;
+        console.error('Gemini API error:', lastError);
+        break;
       }
 
       const data = await res.json();
       aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!aiText) {
+        lastError = 'レスポンスにテキストがありません: ' + JSON.stringify(data).substring(0, 300);
+        console.error(lastError);
+      }
       break;
     }
 
     if (!aiText) {
-      alert('AIが混み合っています。少し待ってからもう一度試してね（1分に15回まで）');
+      alert('AIからの応答が得られませんでした。\n' + (lastError || '1分ほど待ってから再度お試しください。'));
       return;
     }
 
