@@ -89,16 +89,17 @@ export class Field {
     if (this.area) {
       const hit = this.area.map.checkHit(newPos, 0);
       if (hit >= 3) {
-        // Hit a wall — check for wall events
-        this._checkWallEventOnMove(newPos);
+        // Hit a wall — check for wall events on BOTH the wall cell AND player's current cell
+        this._checkWallEventOnMove(newPos);  // wall cell
+        this._checkWallEventOnMove(this.playerPos); // player's cell (facing wall)
         return false;
       }
     }
 
     this.playerPos.set(newPos);
 
-    // Check wall events on the cell we moved into
-    this._checkWallEventOnMove(newPos);
+    // Check wall events on the cell we moved into (for floor-trigger type)
+    this._checkWallEventOnMove(this.playerPos);
 
     // Check scope events (area transitions)
     this._checkScopes();
@@ -106,34 +107,33 @@ export class Field {
     return true;
   }
 
-  // Called when player bumps into a wall
-  _checkWallEventOnMove(blockedPos) {
-    const bx = MapData.getXBlock(blockedPos.x);
-    const bz = MapData.getZBlock(blockedPos.z);
+  // Called when player bumps into a wall or moves into a cell
+  _checkWallEventOnMove(checkPos) {
+    const bx = MapData.getXBlock(checkPos.x);
+    const bz = MapData.getZBlock(checkPos.z);
 
-    // Determine facing direction as bit flag (1=north, 2=east, 4=south, 8=west)
-    // Normalize angle to 0-2PI
+    // Determine player's facing direction as bit flag
+    // playerVect is the angle the player is facing
+    // 0 rad = +Z (north), PI/2 = +X (east), PI = -Z (south), 3PI/2 = -X (west)
     let a = this.playerVect % (Math.PI * 2);
     if (a < 0) a += Math.PI * 2;
 
-    // Map angle to direction bit
-    // 0 (north/+Z) → bit 0 (1)
-    // PI/2 (east/+X) → bit 1 (2)  
-    // PI (south/-Z) → bit 2 (4)
-    // 3PI/2 (west/-X) → bit 3 (8)
-    const sector = Math.round(a / (Math.PI / 2)) % 4;
+    // Convert angle to 4-direction sector
+    // Sector 0 = north (+Z), 1 = east (+X), 2 = south (-Z), 3 = west (-X)
+    let sector;
+    if (a >= Math.PI * 7/4 || a < Math.PI * 1/4) sector = 0;      // north
+    else if (a >= Math.PI * 1/4 && a < Math.PI * 3/4) sector = 1;  // east
+    else if (a >= Math.PI * 3/4 && a < Math.PI * 5/4) sector = 2;  // south
+    else sector = 3;                                                  // west
+
     const dirBit = 1 << sector;
 
     if (this.area && this.area.wallEvents) {
       for (const we of this.area.wallEvents) {
         if (we.xPos === bx && we.zPos === bz) {
-          // Check ifFlag condition (Java: CheckIf)
-          // 0xFFFF (-1 in signed short) = always active
-          // < 10000 = active if flag is set
-          // >= 10000 = active if flag (n-10000) is NOT set
           if (!this._checkIf(we.ifFlag)) continue;
-          // vect is a bitmask: 15 = all directions, or specific bits
-          if ((we.vect & dirBit) !== 0 || we.vect === 15) {
+          // vect is a bitmask: 15 (0xF) = all directions, or specific bits
+          if (we.vect === 15 || (we.vect & dirBit) !== 0) {
             if (this.onWallEvent) this.onWallEvent(we.event);
             return;
           }
@@ -198,14 +198,16 @@ export class Field {
       const dz = nz - this.playerPos.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
 
-      if (dist > 400) continue;
+      // Allow talking up to 2.5 cells away (for counter/wall talk)
+      if (dist > 500) continue;
 
       const angleToNpc = Math.atan2(dx, dz);
       let angleDiff = angleToNpc - this.playerVect;
       while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-      if (Math.abs(angleDiff) < Math.PI * 0.6) {
+      // Wide angle check (120 degrees each side) for easier targeting
+      if (Math.abs(angleDiff) < Math.PI * 0.7) {
         if (dist < bestDist) {
           bestDist = dist;
           bestNpc = npc;
