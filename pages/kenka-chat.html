@@ -88,7 +88,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 
 <div class="chat-area" id="chatArea"></div>
 
-<button class="ai-btn" id="aiBtn" onclick="askAI()">🤖 AIにまとめてもらう</button>
+<div style="position:fixed; bottom:80px; right:16px; z-index:10; display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+  <button class="ai-btn" id="aiBtn" onclick="askAI()" style="position:static;">🤖 AIにまとめてもらう</button>
+  <button id="modelToggle" onclick="toggleModel()" style="background:#eee; border:1px solid #ccc; border-radius:16px; padding:4px 12px; font-size:0.75em; cursor:pointer;">🟢 Gemini（無料）</button>
+</div>
 
 <div class="input-area">
   <textarea id="msgInput" rows="1" placeholder="意見を書いてね…" oninput="autoResize(this)"></textarea>
@@ -131,6 +134,21 @@ loadApiKeys();
 
 let myName = localStorage.getItem('kenka_chat_name') || '';
 let messages = [];
+let useGpt = false; // false=Gemini優先, true=GPT優先
+
+function toggleModel() {
+  useGpt = !useGpt;
+  const btn = document.getElementById('modelToggle');
+  if (useGpt) {
+    btn.textContent = '🔵 GPT（高品質）';
+    btn.style.background = '#e3f2fd';
+    btn.style.borderColor = '#90caf9';
+  } else {
+    btn.textContent = '🟢 Gemini（無料）';
+    btn.style.background = '#eee';
+    btn.style.borderColor = '#ccc';
+  }
+}
 
 // 名前未設定なら入力モーダル表示
 if (!myName) {
@@ -246,78 +264,20 @@ ${conversation}
     let aiText = '';
     let lastError = '';
 
-    // 1. まずOpenAI GPT-4o-miniを試す（最高品質）
-    if (OPENAI_API_KEY) {
-      try {
-        const res = await fetch(OPENAI_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 500
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          aiText = data.choices?.[0]?.message?.content || '';
-        } else {
-          lastError = `OpenAI: HTTP ${res.status}`;
-          console.warn(lastError);
-        }
-      } catch(e) { lastError = 'OpenAI接続エラー'; }
-    }
-
-    // 2. OpenAI失敗時、Geminiを試す
-    if (!aiText && GEMINI_API_KEY) {
-      btn.textContent = '🤖 別のAIに聞いてるよ…';
-      try {
-        const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } else {
-          lastError += ` / Gemini: HTTP ${res.status}`;
-          console.warn(lastError);
-        }
-      } catch(e) { lastError += ' / Gemini接続エラー'; }
-    }
-
-    // 3. 最後にGroqを試す
-    if (!aiText && GROQ_API_KEY) {
-      btn.textContent = '🤖 別のAIに聞いてるよ…';
-      try {
-        const res = await fetch(GROQ_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 500
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          aiText = data.choices?.[0]?.message?.content || '';
-        } else {
-          lastError += ` / Groq: HTTP ${res.status}`;
-          console.error(lastError);
-        }
-      } catch(e) { lastError += ' / Groq接続エラー'; }
+    if (useGpt) {
+      // GPTモード: OpenAI → Gemini → Groq
+      aiText = await tryOpenAI(prompt, btn);
+      if (!aiText) aiText = await tryGemini(prompt, btn);
+      if (!aiText) aiText = await tryGroq(prompt, btn);
+    } else {
+      // Geminiモード: Gemini → Groq → OpenAI
+      aiText = await tryGemini(prompt, btn);
+      if (!aiText) aiText = await tryGroq(prompt, btn);
+      if (!aiText) aiText = await tryOpenAI(prompt, btn);
     }
 
     if (!aiText) {
-      alert('AIからの応答が得られませんでした。\n' + (lastError || '少し待ってから再度お試しください。'));
+      alert('AIからの応答が得られませんでした。少し待ってから再度お試しください。');
       return;
     }
 
@@ -372,6 +332,61 @@ document.getElementById('msgInput').addEventListener('keydown', e => {
 
 // 初期読み込み
 loadMessages();
+
+// --- AI呼び出しヘルパー ---
+async function tryOpenAI(prompt, btn) {
+  if (!OPENAI_API_KEY) return '';
+  try {
+    const res = await fetch(OPENAI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 500 })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+    console.warn('OpenAI:', res.status);
+  } catch(e) { console.warn('OpenAI接続エラー'); }
+  btn.textContent = '🤖 別のAIに聞いてるよ…';
+  return '';
+}
+
+async function tryGemini(prompt, btn) {
+  if (!GEMINI_API_KEY) return '';
+  try {
+    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+    console.warn('Gemini:', res.status);
+  } catch(e) { console.warn('Gemini接続エラー'); }
+  btn.textContent = '🤖 別のAIに聞いてるよ…';
+  return '';
+}
+
+async function tryGroq(prompt, btn) {
+  if (!GROQ_API_KEY) return '';
+  try {
+    const res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 500 })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+    console.warn('Groq:', res.status);
+  } catch(e) { console.warn('Groq接続エラー'); }
+  btn.textContent = '🤖 別のAIに聞いてるよ…';
+  return '';
+}
 </script>
 </body>
 </html>
