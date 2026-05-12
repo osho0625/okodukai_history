@@ -265,15 +265,12 @@ ${conversation}
     let lastError = '';
 
     if (useGpt) {
-      // GPTモード: OpenAI → Gemini → Groq
+      // GPTモード: OpenAIのみ
       aiText = await tryOpenAI(prompt, btn);
-      if (!aiText) aiText = await tryGemini(prompt, btn);
-      if (!aiText) aiText = await tryGroq(prompt, btn);
     } else {
-      // Geminiモード: Gemini → Groq → OpenAI
+      // Geminiモード: Gemini → Groq
       aiText = await tryGemini(prompt, btn);
       if (!aiText) aiText = await tryGroq(prompt, btn);
-      if (!aiText) aiText = await tryOpenAI(prompt, btn);
     }
 
     if (!aiText) {
