@@ -56,6 +56,7 @@ class SuikaGame {
     this.shopUI = null;
     this.battleResult = null; // { exp, gold, levelUps[] }
     this.equipMenu = null;
+    this.gemMenu = null;
     this.itemMenu = null; // equipment sub-state
     this.gameOverTimer = 0;
     this.credits = new Credits(this.ctx);
@@ -1168,11 +1169,17 @@ class SuikaGame {
 
   // --- System Menu ---
   updateMenu() {
-    const items = ['アイテム', 'ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', '装備', '勾玉', 'ステータス', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
 
     // Equipment sub-menu
     if (this.equipMenu) {
       this.updateEquipMenu();
+      return;
+    }
+
+    // Gem sub-menu
+    if (this.gemMenu) {
+      this.updateGemMenu();
       return;
     }
 
@@ -1193,12 +1200,13 @@ class SuikaGame {
     if (this.input.isOK()) {
       switch (this.menuCursor) {
         case 0: this.itemMenu = { cursor: 0 }; break;
-        case 1: break; // Status shown in draw
-        case 2: this.equipMenu = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
-        case 3: this.state = 'worldmap'; break;
-        case 4: this.saveGame(); this.state = 'game'; break;
-        case 5: this.state = 'title'; this.titleCursor = 0; break;
-        case 6: this.state = 'game'; break;
+        case 1: this.equipMenu = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
+        case 2: this.gemMenu = { chrIdx: 0, phase: 'chr', cursor: 0 }; break;
+        case 3: break; // Status shown in draw
+        case 4: this.state = 'worldmap'; break;
+        case 5: this.saveGame(); this.state = 'game'; break;
+        case 6: this.state = 'title'; this.titleCursor = 0; break;
+        case 7: this.state = 'game'; break;
       }
     }
     if (this.input.isCancel() || this.input.isKeyDown('z')) {
@@ -1248,6 +1256,48 @@ class SuikaGame {
     if (this.input.isCancel()) this.itemMenu = null;
   }
 
+  updateGemMenu() {
+    const gm = this.gemMenu;
+    if (gm.phase === 'chr') {
+      // Select character
+      if (this.input.isUp()) gm.chrIdx = (gm.chrIdx - 1 + this.playerParams.length) % this.playerParams.length;
+      if (this.input.isDown()) gm.chrIdx = (gm.chrIdx + 1) % this.playerParams.length;
+      if (this.input.isOK()) { gm.phase = 'gem'; gm.cursor = 0; }
+      if (this.input.isCancel()) { this.gemMenu = null; }
+    } else if (gm.phase === 'gem') {
+      // Select gem to equip
+      const p = this.playerParams[gm.chrIdx];
+      const gems = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
+      const available = gems.filter(g => this.getGemRestriction(g.idx, gm.chrIdx) !== 2);
+      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+      if (gm.cursor >= available.length) gm.cursor = available.length - 1;
+      if (this.input.isUp()) gm.cursor = (gm.cursor - 1 + available.length) % available.length;
+      if (this.input.isDown()) gm.cursor = (gm.cursor + 1) % available.length;
+      if (this.input.isOK()) {
+        const selected = available[gm.cursor];
+        // Unequip current gem (AP preserved)
+        if (p.gem >= 0) {
+          this.eventManager.inventory.push(p.gem);
+        }
+        // Equip new gem
+        if (selected.idx >= 0) {
+          p.gem = selected.idx;
+          if (!p.gemFlags) p.gemFlags = {};
+          p.gemFlags[selected.idx - 110] = true;
+          const pos = this.eventManager.inventory.indexOf(selected.idx);
+          if (pos >= 0) this.eventManager.inventory.splice(pos, 1);
+        } else {
+          p.gem = -1;
+        }
+        gm.phase = 'chr';
+      }
+      if (this.input.isCancel()) { gm.phase = 'chr'; }
+    }
+  }
+
   updateEquipMenu() {
     const eq = this.equipMenu;
     if (eq.phase === 'chr') {
@@ -1257,61 +1307,17 @@ class SuikaGame {
       if (this.input.isOK()) { eq.phase = 'slot'; eq.slot = 0; }
       if (this.input.isCancel()) { this.equipMenu = null; }
     } else if (eq.phase === 'slot') {
-      // Select equipment slot: 5 slots + gem (original structure)
+      // Select equipment slot: 5 slots (no gem — gem is separate menu)
       const p = this.playerParams[eq.chrIdx];
       const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
-      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾', '勾玉'];
+      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾'];
       if (this.input.isUp()) eq.slot = (eq.slot - 1 + slots.length) % slots.length;
       if (this.input.isDown()) eq.slot = (eq.slot + 1) % slots.length;
       if (this.input.isOK()) {
-        if (eq.slot === 5) {
-          // Gem sub-menu
-          eq.phase = 'gem';
-          eq.itemCursor = 0;
-        } else {
-          eq.phase = 'item';
-          eq.itemCursor = 0;
-        }
+        eq.phase = 'item';
+        eq.itemCursor = 0;
       }
       if (this.input.isCancel()) { eq.phase = 'chr'; }
-    } else if (eq.phase === 'gem') {
-      // Gem (勾玉) selection
-      const p = this.playerParams[eq.chrIdx];
-      const gems = this.eventManager.inventory
-        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
-        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
-      // Check equip restrictions
-      const available = gems.filter(g => {
-        const gemData = this.getGemRestriction(g.idx, eq.chrIdx);
-        return gemData !== 2; // 2 = cannot equip
-      });
-      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
-
-      if (eq.itemCursor >= available.length) eq.itemCursor = available.length - 1;
-      if (this.input.isUp()) eq.itemCursor = (eq.itemCursor - 1 + available.length) % available.length;
-      if (this.input.isDown()) eq.itemCursor = (eq.itemCursor + 1) % available.length;
-      if (this.input.isOK()) {
-        const selected = available[eq.itemCursor];
-        // Unequip current gem (AP is preserved per-gem, custom behavior)
-        if (p.gem >= 0) {
-          this.eventManager.inventory.push(p.gem);
-          // AP is stored per-gem (not reset on removal)
-        }
-        // Equip new gem
-        if (selected.idx >= 0) {
-          p.gem = selected.idx;
-          // Mark gem as bound to this character (装備制限 — 使い回し不可)
-          if (!p.gemFlags) p.gemFlags = {};
-          p.gemFlags[selected.idx - 110] = true;
-          // Remove from inventory
-          const pos = this.eventManager.inventory.indexOf(selected.idx);
-          if (pos >= 0) this.eventManager.inventory.splice(pos, 1);
-        } else {
-          p.gem = -1;
-        }
-        eq.phase = 'slot';
-      }
-      if (this.input.isCancel()) { eq.phase = 'slot'; }
     } else if (eq.phase === 'item') {
       // Select item to equip from inventory
       // kind: 1=weapon, 2=armor, 3=shield, 4=accessory
@@ -1420,25 +1426,31 @@ class SuikaGame {
     ctx.fillRect(0, 0, 400, 320);
 
     // Menu panel
-    const mx = 10, my = 10, mw = 110, mh = 170;
+    const mx = 10, my = 10, mw = 110, mh = 175;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = '#88f';
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, mw, mh);
 
-    const items = ['アイテム', 'ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', '装備', '勾玉', 'ステータス', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     for (let i = 0; i < items.length; i++) {
       ctx.fillStyle = i === this.menuCursor ? '#ff0' : '#fff';
       const prefix = i === this.menuCursor ? '▶' : '  ';
-      ctx.fillText(prefix + items[i], mx + 6, my + 20 + i * 20);
+      ctx.fillText(prefix + items[i], mx + 6, my + 18 + i * 18);
     }
 
     // Item list sub-menu overlay
     if (this.itemMenu) {
       this.drawItemMenu(ctx);
+      return;
+    }
+
+    // Gem menu overlay
+    if (this.gemMenu) {
+      this.drawGemMenu(ctx);
       return;
     }
 
@@ -1494,6 +1506,65 @@ class SuikaGame {
     const mins = Math.floor((this.playTime % 3600) / 60);
     ctx.fillStyle = '#aaa';
     ctx.fillText(`プレイ時間: ${hours}:${String(mins).padStart(2, '0')}`, sx + 10, py + 20);
+  }
+
+  drawGemMenu(ctx) {
+    const gm = this.gemMenu;
+    const sx = 130, sy = 10, sw = 260, sh = 300;
+    ctx.fillStyle = 'rgba(20,0,40,0.95)';
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeStyle = '#a6f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+
+    if (gm.phase === 'chr') {
+      ctx.fillStyle = '#daf';
+      ctx.fillText('勾玉を装備するキャラ:', sx + 10, sy + 20);
+      for (let i = 0; i < this.playerParams.length; i++) {
+        const p = this.playerParams[i];
+        ctx.fillStyle = i === gm.chrIdx ? '#ff0' : '#fff';
+        let gemInfo = '';
+        if (p.gem >= 0) {
+          const gemItem = this.paramAll.getItem(p.gem);
+          const progress = this.getGemProgress(p, p.gem);
+          gemInfo = ` [${gemItem ? gemItem.name.trim() : '?'} ${progress.learned}/${progress.total}]`;
+        }
+        ctx.fillText((i === gm.chrIdx ? '▶' : '  ') + p.name + gemInfo, sx + 10, sy + 42 + i * 24);
+      }
+    } else if (gm.phase === 'gem') {
+      const p = this.playerParams[gm.chrIdx];
+      ctx.fillStyle = '#daf';
+      ctx.fillText(`${p.name} の勾玉:`, sx + 10, sy + 20);
+
+      const gems = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
+      const available = gems.filter(g => this.getGemRestriction(g.idx, gm.chrIdx) !== 2);
+      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+      for (let i = 0; i < Math.min(10, available.length); i++) {
+        const g = available[i];
+        ctx.fillStyle = i === gm.cursor ? '#ff0' : '#fff';
+        let label = g.item.name ? g.item.name.trim() : 'はずす';
+        if (g.idx >= 110) {
+          const progress = this.getGemProgress(p, g.idx);
+          label += ` (${progress.ap || 0}AP ${progress.learned}/${progress.total})`;
+          if (this.getGemRestriction(g.idx, gm.chrIdx) === 1) label += ' ★';
+        }
+        ctx.fillText((i === gm.cursor ? '▶' : '  ') + label, sx + 10, sy + 42 + i * 22);
+      }
+
+      // Current gem info
+      if (p.gem >= 0) {
+        ctx.fillStyle = '#aaa';
+        ctx.font = '10px sans-serif';
+        const gemItem = this.paramAll.getItem(p.gem);
+        ctx.fillText(`現在: ${gemItem ? gemItem.name.trim() : '?'}`, sx + 10, sy + sh - 15);
+      }
+    }
   }
 
   drawItemMenu(ctx) {
@@ -1565,27 +1636,14 @@ class SuikaGame {
       ctx.fillStyle = '#ff0';
       ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
       const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
-      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾', '勾玉'];
+      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾'];
       for (let i = 0; i < slots.length; i++) {
         ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
-        let eqName = 'なし';
-        if (i < 5) {
-          const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
-          eqName = equipped ? equipped.name.trim() : 'なし';
-        } else {
-          // Gem slot
-          if (p.gem >= 0) {
-            const gemItem = this.paramAll.getItem(p.gem);
-            const progress = this.getGemProgress(p, p.gem);
-            eqName = `${gemItem ? gemItem.name.trim() : '???'} (${progress.learned}/${progress.total})`;
-          }
-        }
+        const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
+        const eqName = equipped ? equipped.name.trim() : 'なし';
         ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
       }
-    } else if (eq.phase === 'gem') {
-      // Gem selection display
-      const p = this.playerParams[eq.chrIdx];
-      ctx.fillStyle = '#adf';
+    } else if (eq.phase === 'item') {
       ctx.fillText('勾玉を選択:', sx + 10, sy + 20);
 
       const gems = this.eventManager.inventory
