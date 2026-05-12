@@ -176,10 +176,30 @@ const DEFAULT_PROMPT = `あなたは「夫婦・パートナー間の対話を�
 let myName = localStorage.getItem('kenka_chat_name') || '';
 let aiMode = localStorage.getItem('ai_chat_mode') || 'gemini';
 if (aiMode === 'groq') { aiMode = 'gemini'; localStorage.setItem('ai_chat_mode', 'gemini'); }
-let systemPrompt = localStorage.getItem('ai_chat_system_prompt') || '';
+let systemPrompt = '';
 let conversationSummary = localStorage.getItem('ai_chat_summary') || '';
 let aiNames = JSON.parse(localStorage.getItem('ai_chat_names') || '{}');
 let messages = [];
+
+// プロンプトをSupabaseから読み込み
+async function loadSystemPrompt() {
+  try {
+    const { data } = await client.from('app_config').select('value').eq('key', 'system_prompt').maybeSingle();
+    if (data && data.value) systemPrompt = data.value;
+  } catch(e) { console.warn('プロンプト読み込み失敗:', e); }
+}
+
+// プロンプトをSupabaseに保存
+async function saveSystemPrompt(prompt) {
+  try {
+    const { data } = await client.from('app_config').select('key').eq('key', 'system_prompt').maybeSingle();
+    if (data) {
+      await client.from('app_config').update({ value: prompt }).eq('key', 'system_prompt');
+    } else {
+      await client.from('app_config').insert({ key: 'system_prompt', value: prompt });
+    }
+  } catch(e) { console.warn('プロンプト保存失敗:', e); }
+}
 
 // APIキー読み込み
 async function loadApiKeys() {
@@ -235,7 +255,7 @@ function saveSettings() {
   aiNames.gpt5 = document.getElementById('nameGpt5').value.trim() || '';
   systemPrompt = document.getElementById('settingsPrompt').value.trim();
   localStorage.setItem('ai_chat_names', JSON.stringify(aiNames));
-  localStorage.setItem('ai_chat_system_prompt', systemPrompt);
+  saveSystemPrompt(systemPrompt);
   closeSettingsModal();
   updateHeader();
   renderMessages();
@@ -446,6 +466,7 @@ async function tryGroq(sysPrompt, userContent, btn) {
 
 // 初期化
 updateHeader();
+loadSystemPrompt();
 loadMessages();
 </script>
 </body>
