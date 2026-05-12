@@ -98,9 +98,6 @@ export class Field {
 
     this.playerPos.set(newPos);
 
-    // Check wall events on the cell we moved into (for floor-trigger type)
-    this._checkWallEventOnMove(this.playerPos);
-
     // Check scope events (area transitions)
     this._checkScopes();
 
@@ -109,35 +106,48 @@ export class Field {
 
   // Called when player bumps into a wall or moves into a cell
   _checkWallEventOnMove(checkPos) {
-    const bx = MapData.getXBlock(checkPos.x);
-    const bz = MapData.getZBlock(checkPos.z);
+    if (!this.area || !this.area.wallEvents) return;
 
-    // Determine player's facing direction as bit flag
-    // playerVect is the angle the player is facing
-    // 0 rad = +Z (north), PI/2 = +X (east), PI = -Z (south), 3PI/2 = -X (west)
+    const playerBx = MapData.getXBlock(this.playerPos.x);
+    const playerBz = MapData.getZBlock(this.playerPos.z);
+    const wallBx = MapData.getXBlock(checkPos.x);
+    const wallBz = MapData.getZBlock(checkPos.z);
+
+    // Determine player's facing direction bit
     let a = this.playerVect % (Math.PI * 2);
     if (a < 0) a += Math.PI * 2;
+    let dirBit;
+    if (a >= Math.PI * 7/4 || a < Math.PI * 1/4) dirBit = 1;      // north (+Z)
+    else if (a >= Math.PI * 1/4 && a < Math.PI * 3/4) dirBit = 2;  // east (+X)
+    else if (a >= Math.PI * 3/4 && a < Math.PI * 5/4) dirBit = 4;  // south (-Z)
+    else dirBit = 8;                                                  // west (-X)
 
-    // Convert angle to 4-direction sector
-    // Sector 0 = north (+Z), 1 = east (+X), 2 = south (-Z), 3 = west (-X)
-    let sector;
-    if (a >= Math.PI * 7/4 || a < Math.PI * 1/4) sector = 0;      // north
-    else if (a >= Math.PI * 1/4 && a < Math.PI * 3/4) sector = 1;  // east
-    else if (a >= Math.PI * 3/4 && a < Math.PI * 5/4) sector = 2;  // south
-    else sector = 3;                                                  // west
+    for (const we of this.area.wallEvents) {
+      if (!this._checkIf(we.ifFlag)) continue;
 
-    const dirBit = 1 << sector;
-
-    if (this.area && this.area.wallEvents) {
-      for (const we of this.area.wallEvents) {
-        if (we.xPos === bx && we.zPos === bz) {
-          if (!this._checkIf(we.ifFlag)) continue;
-          // vect is a bitmask: 15 (0xF) = all directions, or specific bits
-          if (we.vect === 15 || (we.vect & dirBit) !== 0) {
-            if (this.onWallEvent) this.onWallEvent(we.event);
-            return;
-          }
+      // Original CheckWallVect logic:
+      // 1. If vect==15 and event is on same row or column as player → trigger
+      if (we.vect === 15) {
+        if ((we.xPos === playerBx || we.zPos === playerBz) &&
+            we.xPos === wallBx && we.zPos === wallBz) {
+          if (this.onWallEvent) this.onWallEvent(we.event);
+          return;
         }
+      }
+
+      // 2. Check direction bit matches
+      if ((dirBit & we.vect) === 0) continue;
+
+      // 3. Verify wall event is in the correct adjacent cell
+      let match = false;
+      if ((we.vect & 1) !== 0 && we.xPos === playerBx && we.zPos === playerBz + 1) match = true;
+      if ((we.vect & 2) !== 0 && we.xPos === playerBx + 1 && we.zPos === playerBz) match = true;
+      if ((we.vect & 4) !== 0 && we.xPos === playerBx && we.zPos === playerBz - 1) match = true;
+      if ((we.vect & 8) !== 0 && we.xPos === playerBx - 1 && we.zPos === playerBz) match = true;
+
+      if (match) {
+        if (this.onWallEvent) this.onWallEvent(we.event);
+        return;
       }
     }
   }

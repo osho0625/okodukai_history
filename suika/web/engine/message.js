@@ -7,9 +7,9 @@ export class MessageWindow {
     this.text = '';
     this.resolve = null;
     this.displayedChars = 0;
-    this.charSpeed = 2;
+    this.charSpeed = 1; // 1 char per frame (matching original)
     this.frameCount = 0;
-    this.onAdvance = null; // callback when text advances (for SE)
+    this.onAdvance = null;
   }
 
   // Show message and return a promise that resolves when player presses OK
@@ -32,8 +32,8 @@ export class MessageWindow {
     if (this.displayedChars < this.text.length) {
       const prevChars = this.displayedChars;
       this.displayedChars = Math.min(this.text.length, this.displayedChars + this.charSpeed);
-      // Play text advance SE every few characters
-      if (this.onAdvance && Math.floor(this.displayedChars / 4) > Math.floor(prevChars / 4)) {
+      // Play text advance SE every 2 characters (matching original tick rate)
+      if (this.onAdvance && Math.floor(this.displayedChars / 2) > Math.floor(prevChars / 2)) {
         this.onAdvance();
       }
       // If player presses OK, show all text immediately

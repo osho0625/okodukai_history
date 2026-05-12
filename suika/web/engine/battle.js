@@ -247,7 +247,12 @@ export class BattleEngine {
     unit.at = 0;
     this.checkBattleEnd();
     if (this.result === BATTLE_RESULT.CONTINUE) {
-      this.nextTurn();
+      // Small delay after player action (matching original pacing)
+      setTimeout(() => {
+        if (this.result === BATTLE_RESULT.CONTINUE) {
+          this.nextTurn();
+        }
+      }, 200);
     }
   }
 
