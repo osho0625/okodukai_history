@@ -473,99 +473,128 @@ export class BattleUI {
     // Detect new log entries for effects
     if (battleState.log.length > this.lastLogLen) {
       const newMsg = battleState.log[battleState.log.length - 1];
+
+      // Calculate target position for effects
+      const enemyCount = battleState.enemies.length;
+      const eSpacing = enemyCount <= 2 ? 80 : 60;
+      const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
+      const eY = 90;
+      // Get current target enemy position (use targetCursor or first alive)
+      const targetEIdx = this.targetCursor || 0;
+      const eX = eStartX + targetEIdx * eSpacing;
+
+      // Player positions
+      const pCount = battleState.players.length;
+      const pSpacing = pCount <= 2 ? 80 : 60;
+      const pStartX = 200 - (pCount - 1) * pSpacing / 2;
+      const pY = 260;
+
+      // Determine who is being targeted
+      const curUnit = battleState.currentUnit;
+      const isPlayerActing = curUnit && curUnit.isPlayer;
+      // Effect on enemy (when player attacks) or on player (when enemy attacks)
+      const targetX = isPlayerActing ? eX : (pStartX + (curUnit ? 0 : 0) * pSpacing);
+      const targetY = isPlayerActing ? eY : pY;
+      // Effect on self (buffs/heals)
+      const selfX = isPlayerActing ? (pStartX + (curUnit ? curUnit.index : 0) * pSpacing) : eX;
+      const selfY = isPlayerActing ? pY : eY;
+
       if (newMsg.includes('ダメージ') && !newMsg.includes('毒で') && !newMsg.includes('吸収')) {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
         if (newMsg.includes('の攻撃')) {
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, 200, 120);
-          if (battleState.currentUnit && battleState.currentUnit.isPlayer) {
-            this.attackAnim = { who: 'player', idx: battleState.currentUnit.index, frame: 0, maxFrame: 20 };
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, targetX, targetY);
+          if (isPlayerActing) {
+            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 20 };
           }
         }
         if (newMsg.includes('強攻撃')) {
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, 200, 100);
-          this.effect.spawnParticles(200, 120, 10, '#fff', 40);
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, targetX, targetY);
+          this.effect.spawnParticles(targetX, targetY, 10, '#fff', 40);
         }
         if (newMsg.includes('連続攻撃')) {
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, 200, 100);
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, targetX, targetY);
         }
       }
       if (newMsg.includes('会心')) {
         this.effect.triggerFlash('#ff0', 8);
         this.effect.triggerShake(8);
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.EXPLOSION, 200, 100);
-        this.effect.spawnParticles(200, 120, 25, '#ff4', 60);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.EXPLOSION, targetX, targetY);
+        this.effect.spawnParticles(targetX, targetY, 25, '#ff4', 60);
       }
       if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
         this.effect.triggerFlash('#ff0', 6);
-        this.effect.spawnParticles(200, 120, 15, '#f80');
+        this.effect.spawnParticles(targetX, targetY, 15, '#f80');
       }
       if (newMsg.includes('魔法攻撃')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, 200, 100);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, targetX, targetY);
         this.effect.triggerFlash('#f80', 2);
       }
       if (newMsg.includes('全体魔法')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, 80);
-        this.effect.spawnParticles(100, 100, 8, '#ff0', 50);
-        this.effect.spawnParticles(300, 100, 8, '#ff0', 50);
+        // All targets — spread across enemy/player line
+        if (isPlayerActing) {
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, eStartX + (enemyCount - 1) * eSpacing / 2, eY);
+          for (let i = 0; i < enemyCount; i++) {
+            this.effect.spawnParticles(eStartX + i * eSpacing, eY, 6, '#ff0', 30);
+          }
+        } else {
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, pY - 20);
+          for (let i = 0; i < pCount; i++) {
+            this.effect.spawnParticles(pStartX + i * pSpacing, pY, 6, '#ff0', 30);
+          }
+        }
       }
       if (newMsg.includes('唱えた')) {
-        // Determine skill animation type from skill kind
         const skillKind = this._lastSkillKind;
-        if (skillKind === 0) { // attack magic
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, 200, 100);
-        } else if (skillKind === 1) { // heal
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 250, 250);
-        } else if (skillKind === 2) { // buff
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, 250, 250);
-        } else if (skillKind === 3) { // debuff
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, 200, 100);
-        } else if (skillKind === 4) { // status
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, 200, 100);
-        }
+        if (skillKind === 0) this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, targetX, targetY);
+        else if (skillKind === 1) this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, selfX, selfY);
+        else if (skillKind === 2) this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, selfX, selfY);
+        else if (skillKind === 3) this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, targetX, targetY);
+        else if (skillKind === 4) this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, targetX, targetY);
         this.effect.triggerFlash('#44f', 2);
       }
-      if (newMsg.includes('回復魔法') || newMsg.includes('HP') && newMsg.includes('回復')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 250, 250);
-        this.effect.spawnParticles(250, 260, 12, '#4f8', 40);
+      if (newMsg.includes('回復魔法') || (newMsg.includes('HP') && newMsg.includes('回復'))) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, selfX, selfY);
+        this.effect.spawnParticles(selfX, selfY, 12, '#4f8', 40);
         this.effect.triggerFlash('#0f4', 2);
       }
       if (newMsg.includes('全体回復')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 200, 200);
-        this.effect.spawnParticles(150, 250, 8, '#4f8', 30);
-        this.effect.spawnParticles(250, 250, 8, '#4f8', 30);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 200, selfY);
+        for (let i = 0; i < enemyCount; i++) {
+          this.effect.spawnParticles(eStartX + i * eSpacing, eY, 6, '#4f8', 25);
+        }
       }
       if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('素早さが上がった') || newMsg.includes('全能力')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, 250, 250);
-        this.effect.spawnParticles(250, 250, 10, '#ff8', 30);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, selfX, selfY);
+        this.effect.spawnParticles(selfX, selfY, 10, '#ff8', 30);
       }
       if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった') || newMsg.includes('呪い')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, 200, 100);
-        this.effect.spawnParticles(200, 100, 10, '#a4f', 30);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, targetX, targetY);
+        this.effect.spawnParticles(targetX, targetY, 10, '#a4f', 30);
       }
       if (newMsg.includes('毒を受けた') || newMsg.includes('毒攻撃')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, 200, 100);
-        this.effect.spawnParticles(200, 100, 12, '#8f0', 40);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, targetX, targetY);
+        this.effect.spawnParticles(targetX, targetY, 12, '#8f0', 40);
       }
       if (newMsg.includes('麻痺') || newMsg.includes('石になった')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, 100);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, targetX, targetY);
         this.effect.triggerFlash('#ff0', 4);
-        this.effect.spawnParticles(200, 100, 15, '#cc0', 30);
+        this.effect.spawnParticles(targetX, targetY, 15, '#cc0', 30);
       }
       if (newMsg.includes('混乱')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DARK, 200, 100);
-        this.effect.spawnParticles(200, 100, 10, '#f0f', 40);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DARK, targetX, targetY);
+        this.effect.spawnParticles(targetX, targetY, 10, '#f0f', 40);
       }
       if (newMsg.includes('HP吸収') || newMsg.includes('吸い取った')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DRAIN, 200, 100);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DRAIN, targetX, targetY);
         this.effect.triggerFlash('#f44', 3);
       }
       if (newMsg.includes('蘇生') || newMsg.includes('復活')) {
-        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HOLY, 200, 120);
-        this.effect.spawnParticles(200, 120, 15, '#ffa', 40);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HOLY, selfX, selfY);
+        this.effect.spawnParticles(selfX, selfY, 15, '#ffa', 40);
       }
       if (newMsg.includes('ミス')) {
-        this.effect.spawnParticles(200, 120, 4, '#888', 20);
+        this.effect.spawnParticles(targetX, targetY, 4, '#888', 20);
       }
       this.lastLogLen = battleState.log.length;
     }

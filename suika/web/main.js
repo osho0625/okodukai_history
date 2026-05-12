@@ -1047,7 +1047,7 @@ class SuikaGame {
     }
 
     // Set player model indices for battle display
-    const CChrPrm = [
+    const CChrPrmTable = [
       [0,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[10,0],[11,0],
       [13,0],[15,0],[17,0],[19,0],[20,0],[2,0],[7,0],[35,0],[37,0],[39,0],
       [41,0],[42,0],[46,0],[47,0],[48,0],[49,0],[50,0],[47,0],[51,0],[53,0],
@@ -1056,7 +1056,7 @@ class SuikaGame {
     ];
     this.battleUI.playerModelPats = this.playerParams.map(p => {
       const pat = p.pat || 0;
-      if (pat < CChrPrm.length) return CChrPrm[pat][0] + CChrPrm[pat][1] + 55;
+      if (pat < CChrPrmTable.length) return CChrPrmTable[pat][0] + CChrPrmTable[pat][1] + 55;
       return 55;
     });
     this.battleUI.playerCount = this.playerParams.length;
@@ -1183,8 +1183,8 @@ class SuikaGame {
       if (this.battleUI) {
         const idx = target.index;
         const total = target.isPlayer ? this.playerParams.length : this.battleEngine.enemies.length;
-        const spacing = target.isPlayer ? 85 : 70;
-        const startX = target.isPlayer ? 180 : 200 - (total - 1) * spacing / 2;
+        const spacing = total <= 2 ? 80 : 60;
+        const startX = 200 - (total - 1) * spacing / 2;
         const x = startX + idx * spacing;
         const y = target.isPlayer ? 260 : 90;
         this.battleUI.effect.addDamageNum(String(dmg), x, y, target.isPlayer ? '#f44' : '#ff0');

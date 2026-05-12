@@ -531,12 +531,12 @@ export class BattleEngine {
     unit.at = 0;
     this.checkBattleEnd();
     if (this.result === BATTLE_RESULT.CONTINUE) {
-      // Small delay after player action (matching original pacing)
+      // Delay after player action so the result is visible
       setTimeout(() => {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, 200);
+      }, 600);
     }
   }
 
@@ -1047,7 +1047,7 @@ export class BattleEngine {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, 300);
+      }, 800);
     }
   }
 
