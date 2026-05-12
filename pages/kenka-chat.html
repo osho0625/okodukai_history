@@ -84,7 +84,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
   <a href="../index.html">←</a>
   <h1>🤖 AI相談所</h1>
   <button id="modelToggle" onclick="toggleModel()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); border-radius:12px; padding:4px 10px; font-size:0.7em; color:#fff; cursor:pointer; white-space:nowrap;">GPT-4.1に変更</button>
-  <button class="clear-btn" id="clearBtn">リセット</button>
+  <span onclick="openAiNameModal()" style="cursor:pointer; font-size:1.3em;" title="AI名前設定">⚙️</span>
+  <button class="clear-btn" id="clearBtn" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:4px 10px; font-size:0.75em; color:#fff; cursor:pointer;">会話をリセット</button>
 </div>
 
 <div class="chat-area" id="chatArea"></div>
@@ -102,6 +103,16 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
     <h2>🙋 あなたの名前は？</h2>
     <input type="text" id="nameInput" placeholder="名前を入力" autocomplete="off">
     <button onclick="setName()">OK</button>
+  </div>
+</div>
+
+<!-- AI名前設定モーダル -->
+<div class="name-modal" id="aiNameModal" style="display:none;">
+  <div class="modal-box">
+    <h2>⚙️ AIの名前を設定</h2>
+    <input type="text" id="aiNameInput" placeholder="例: さくら先生" autocomplete="off">
+    <button onclick="setAiName()">OK</button>
+    <button onclick="closeAiNameModal()" style="background:#eee; color:#333; margin-top:8px;">キャンセル</button>
   </div>
 </div>
 
@@ -131,8 +142,28 @@ async function loadApiKeys() {
 loadApiKeys();
 
 let myName = localStorage.getItem('kenka_chat_name') || '';
+let aiName = localStorage.getItem('ai_chat_ai_name') || 'AI';
 let messages = [];
 let aiMode = 'gemini'; // 'gemini' | 'gpt41' | 'gpt5'
+
+function openAiNameModal() {
+  document.getElementById('aiNameInput').value = aiName === 'AI' ? '' : aiName;
+  document.getElementById('aiNameModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('aiNameInput').focus(), 100);
+}
+function closeAiNameModal() {
+  document.getElementById('aiNameModal').style.display = 'none';
+}
+function setAiName() {
+  const name = document.getElementById('aiNameInput').value.trim() || 'AI';
+  aiName = name;
+  localStorage.setItem('ai_chat_ai_name', name);
+  closeAiNameModal();
+  renderMessages();
+}
+document.getElementById('aiNameInput')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') setAiName();
+});
 
 function toggleModel() {
   const btn = document.getElementById('modelToggle');
@@ -188,7 +219,7 @@ function renderMessages() {
     const timeStr = time.getHours() + ':' + String(time.getMinutes()).padStart(2, '0');
 
     let senderHtml = '';
-    if (m.role === 'ai') senderHtml = '<div class="sender">🤖 AI仲裁</div>';
+    if (m.role === 'ai') senderHtml = `<div class="sender">🤖 ${aiName}</div>`;
     else if (m.sender !== myName) senderHtml = `<div class="sender">${m.sender}</div>`;
 
     div.innerHTML = `${senderHtml}<div>${escapeHtml(m.content).replace(/\n/g, '<br>')}</div><div class="time">${timeStr}</div>`;
@@ -277,6 +308,11 @@ async function askAI() {
     }
 
     const conversation = userMsgs.map(m => `${m.sender}: ${m.content}`).join('\n');
+
+    // 会話が長くなったら警告（2000文字超）
+    if (conversation.length > 2000) {
+      if (!confirm('会話がかなり長くなっています。APIの料金が増えるので、そろそろ「会話をリセット」するのがおすすめだよ。\n\nこのまま続ける？')) return;
+    }
 
     const prompt = `あなたは子供たちの相談に乗る優しいAIカウンセラーです。以下はみんなの意見や相談内容です。
 
