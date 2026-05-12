@@ -110,9 +110,28 @@ export class Input {
     }
 
     // Touch direction edge detection (fires once when stick moves to a new direction)
+    // Also fires on repeat interval when held
     this._touchDirDown = DIR.NONE;
-    if (this.touchDir !== DIR.NONE && this.touchDir !== this._prevTouchDir) {
-      this._touchDirDown = this.touchDir;
+    if (this.touchDir !== DIR.NONE) {
+      if (this.touchDir !== this._prevTouchDir) {
+        // New direction
+        this._touchDirDown = this.touchDir;
+        this._touchDirRepeat = 0;
+        this._touchDirHoldFrames = 0;
+      } else {
+        // Same direction held — repeat after delay
+        this._touchDirHoldFrames = (this._touchDirHoldFrames || 0) + 1;
+        if (this._touchDirHoldFrames > 8) { // initial delay: 8 frames
+          this._touchDirRepeat = (this._touchDirRepeat || 0) + 1;
+          if (this._touchDirRepeat >= 4) { // repeat every 4 frames
+            this._touchDirDown = this.touchDir;
+            this._touchDirRepeat = 0;
+          }
+        }
+      }
+    } else {
+      this._touchDirHoldFrames = 0;
+      this._touchDirRepeat = 0;
     }
 
     this.prevKeys = { ...this.keys };
@@ -133,18 +152,36 @@ export class Input {
     return this.isKeyDown('x') || this.isKeyDown('escape') || this.mouseRightDown || !!this.touchButtonDown['cancel'];
   }
 
-  // Direction edge-triggered (works with both keyboard and touch stick)
+  // Direction edge-triggered with repeat (works with both keyboard and touch stick)
   isUp() {
-    return this.isKeyDown('arrowup') || this._touchDirDown === DIR.UP || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.UP_RIGHT;
+    return this._isDirEdge('arrowup') || this._touchDirDown === DIR.UP || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.UP_RIGHT;
   }
   isDown() {
-    return this.isKeyDown('arrowdown') || this._touchDirDown === DIR.DOWN || this._touchDirDown === DIR.DOWN_LEFT || this._touchDirDown === DIR.DOWN_RIGHT;
+    return this._isDirEdge('arrowdown') || this._touchDirDown === DIR.DOWN || this._touchDirDown === DIR.DOWN_LEFT || this._touchDirDown === DIR.DOWN_RIGHT;
   }
   isLeft() {
-    return this.isKeyDown('arrowleft') || this._touchDirDown === DIR.LEFT || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.DOWN_LEFT;
+    return this._isDirEdge('arrowleft') || this._touchDirDown === DIR.LEFT || this._touchDirDown === DIR.UP_LEFT || this._touchDirDown === DIR.DOWN_LEFT;
   }
   isRight() {
-    return this.isKeyDown('arrowright') || this._touchDirDown === DIR.RIGHT || this._touchDirDown === DIR.UP_RIGHT || this._touchDirDown === DIR.DOWN_RIGHT;
+    return this._isDirEdge('arrowright') || this._touchDirDown === DIR.RIGHT || this._touchDirDown === DIR.UP_RIGHT || this._touchDirDown === DIR.DOWN_RIGHT;
+  }
+
+  // Key edge with repeat (initial delay then repeat)
+  _isDirEdge(key) {
+    const k = key.toLowerCase();
+    if (this.keyDown[k]) {
+      this._keyHold = this._keyHold || {};
+      this._keyHold[k] = 0;
+      return true;
+    }
+    if (this.keys[k]) {
+      this._keyHold = this._keyHold || {};
+      this._keyHold[k] = (this._keyHold[k] || 0) + 1;
+      if (this._keyHold[k] > 10 && this._keyHold[k] % 3 === 0) return true;
+    } else {
+      if (this._keyHold) this._keyHold[k] = 0;
+    }
+    return false;
   }
 
   // Get 8-direction from arrow keys or virtual stick
