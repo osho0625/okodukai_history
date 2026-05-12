@@ -85,12 +85,13 @@ export class BattleUI {
     ];
     this.effect = new BattleEffect();
     this.lastLogLen = 0;
-    this.enemyPats = []; // model pattern indices for enemies
+    this.enemyPats = [];
     this.selectedSkill = -1;
     this.selectedItem = -1;
-    // Player inventory (simplified: indices into paramAll.items)
     this.inventory = [];
     this.playerSkills = [];
+    // Attack animation state
+    this.attackAnim = null; // { target: 'enemy'|'player', idx, frame, maxFrame, type }
   }
 
   setEnemyPats(pats) {
@@ -105,40 +106,54 @@ export class BattleUI {
     // Detect new log entries for effects
     if (battleState.log.length > this.lastLogLen) {
       const newMsg = battleState.log[battleState.log.length - 1];
-      if (newMsg.includes('ダメージ')) {
+      if (newMsg.includes('ダメージ') && !newMsg.includes('毒で')) {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
+        // Trigger slash effect at target position
+        if (newMsg.includes('の攻撃')) {
+          this.effect.spawnParticles(200, 120, 6, '#fff', 40);
+        }
       }
       if (newMsg.includes('会心')) {
         this.effect.triggerFlash('#ff0', 8);
         this.effect.triggerShake(8);
-        this.effect.spawnParticles(200, 150, 20, '#ff4');
+        this.effect.spawnParticles(200, 120, 25, '#ff4', 60);
       }
       if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
         this.effect.triggerFlash('#ff0', 6);
         this.effect.spawnParticles(200, 120, 15, '#f80');
       }
       if (newMsg.includes('魔法') || newMsg.includes('唱えた')) {
-        this.effect.spawnParticles(200, 100, 12, '#8af');
+        this.effect.spawnParticles(200, 80, 18, '#8af', 80);
+        this.effect.triggerFlash('#44f', 2);
+      }
+      if (newMsg.includes('全体魔法')) {
+        this.effect.spawnParticles(100, 100, 10, '#8af', 50);
+        this.effect.spawnParticles(200, 100, 10, '#8af', 50);
+        this.effect.spawnParticles(300, 100, 10, '#8af', 50);
       }
       if (newMsg.includes('回復')) {
-        this.effect.spawnParticles(250, 260, 10, '#4f8');
+        this.effect.spawnParticles(250, 260, 12, '#4f8', 40);
+        this.effect.triggerFlash('#0f4', 2);
       }
       if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('全能力')) {
-        this.effect.spawnParticles(250, 250, 8, '#ff8');
+        this.effect.spawnParticles(250, 250, 10, '#ff8', 30);
       }
       if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった')) {
-        this.effect.spawnParticles(200, 100, 8, '#a4f');
+        this.effect.spawnParticles(200, 100, 10, '#a4f', 30);
       }
       if (newMsg.includes('毒を受けた')) {
-        this.effect.spawnParticles(200, 100, 10, '#8f0');
+        this.effect.spawnParticles(200, 100, 12, '#8f0', 40);
       }
       if (newMsg.includes('麻痺') || newMsg.includes('石になった')) {
         this.effect.triggerFlash('#ff0', 4);
-        this.effect.spawnParticles(200, 100, 12, '#cc0');
+        this.effect.spawnParticles(200, 100, 15, '#cc0', 30);
       }
       if (newMsg.includes('混乱')) {
-        this.effect.spawnParticles(200, 100, 8, '#f0f');
+        this.effect.spawnParticles(200, 100, 10, '#f0f', 40);
+      }
+      if (newMsg.includes('ミス')) {
+        this.effect.spawnParticles(200, 120, 4, '#888', 20);
       }
       this.lastLogLen = battleState.log.length;
     }
@@ -331,6 +346,22 @@ export class BattleUI {
     // Draw enemy 3D models
     this.drawEnemyModels(battleState);
 
+    // Attack slash effect (drawn over enemies)
+    if (this.effect.flash > 0 && this.effect.flashColor === '#f44') {
+      // Draw slash lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      const cx = 200, cy = 110;
+      for (let s = 0; s < 3; s++) {
+        const angle = (this.effect.flash * 0.5 + s * 2.1);
+        const len = 30 + this.effect.flash * 5;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+        ctx.lineTo(cx - Math.cos(angle) * len, cy - Math.sin(angle) * len);
+        ctx.stroke();
+      }
+    }
+
     // Flash overlay
     if (this.effect.flash > 0) {
       ctx.fillStyle = this.effect.flashColor;
@@ -419,9 +450,9 @@ export class BattleUI {
       return;
     }
 
-    // Setup camera for battle scene
-    const eye = new Vec3(0, 150, -400);
-    const at = new Vec3(0, 50, 200);
+    // Setup camera for battle scene (closer, lower angle to see enemies better)
+    const eye = new Vec3(0, 120, -350);
+    const at = new Vec3(0, 40, 150);
     this.renderer.viewTransform(eye, at);
     this.renderer.projTransform(10, 2000);
 
@@ -456,11 +487,11 @@ export class BattleUI {
         continue;
       }
 
-      // Position enemies in a row
-      const spacing = 180;
+      // Position enemies in a row (centered, tighter spacing)
+      const spacing = totalEnemies <= 2 ? 200 : 140;
       const startX = -(totalEnemies - 1) * spacing / 2;
       const posX = startX + i * spacing;
-      const posZ = 230;
+      const posZ = 180;
 
       const pos = new Vec3(posX, 0, posZ);
       const rot = new Vec3(0, Math.PI, 0); // face player

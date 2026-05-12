@@ -767,9 +767,23 @@ class SuikaGame {
     // Set enemy model patterns from party data
     const party = this.paramAll.getParty(partyIndex);
     if (party) {
+      // Convert pat (CChrPrm index) to actual model index
+      // Same mapping as field.js: CChrPrm[pat][0] + CChrPrm[pat][1] + 55
+      const CChrPrm = [
+        [0,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[10,0],[11,0],
+        [13,0],[15,0],[17,0],[19,0],[20,0],[2,0],[7,0],[35,0],[37,0],[39,0],
+        [41,0],[42,0],[46,0],[47,0],[48,0],[49,0],[50,0],[47,0],[51,0],[53,0],
+        [54,0],[8,0],[55,0],[3,0],[5,0],[54,0],[41,0],[42,0],[42,0],[42,0],
+        [42,0],[56,0],[39,0],[57,0]
+      ];
       const pats = party.enemies.map(e => {
         const prm = this.paramAll.getPrm(e.kind);
-        return prm ? prm.pat : 0;
+        if (!prm) return 55;
+        const pat = prm.pat;
+        if (pat < CChrPrm.length) {
+          return CChrPrm[pat][0] + CChrPrm[pat][1] + 55;
+        }
+        return 55;
       });
       this.battleUI.setEnemyPats(pats);
     }
