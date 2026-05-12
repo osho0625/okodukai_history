@@ -11,10 +11,13 @@
 body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh; display: flex; flex-direction: column; }
 .header {
   background: #5c6bc0; color: #fff; padding: 12px 16px;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  transition: background 0.3s;
 }
 .header a { color: #fff; text-decoration: none; font-size: 1.3em; }
-.header h1 { font-size: 1.1em; flex: 1; }
+.header h1 { font-size: 1.1em; }
+.header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.model-info { font-size: 0.65em; opacity: 0.8; width: 100%; text-align: center; margin-top: -4px; }
 .chat-area {
   flex: 1; overflow-y: auto; padding: 12px 16px;
   display: flex; flex-direction: column; gap: 8px;
@@ -22,7 +25,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 .msg {
   max-width: 85%; padding: 10px 14px; border-radius: 12px;
   font-size: 0.95em; line-height: 1.5; word-break: break-word;
-  position: relative;
 }
 .msg.mine { align-self: flex-end; background: #c5cae9; border-bottom-right-radius: 4px; }
 .msg.other { align-self: flex-start; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
@@ -44,13 +46,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
   background: #5c6bc0; color: #fff; font-size: 1.2em; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.send-btn:disabled { background: #ccc; }
 .ai-btn {
   position: fixed; bottom: 80px; right: 16px;
   background: #f9a825; color: #333; border: none; border-radius: 24px;
   padding: 10px 16px; font-size: 0.85em; font-weight: 600;
-  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 10;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;
 }
 .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .ai-btn:hover:not(:disabled) { background: #f57f17; color: #fff; }
@@ -60,37 +60,41 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 }
 .name-modal .modal-box {
   background: #fff; border-radius: 16px; padding: 28px 24px;
-  width: 90%; max-width: 320px; text-align: center;
+  width: 90%; max-width: 400px; text-align: center;
 }
 .name-modal h2 { margin-bottom: 16px; font-size: 1.1em; }
-.name-modal input {
+.name-modal input, .name-modal textarea {
   width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
-  font-size: 1em; text-align: center; margin-bottom: 12px;
+  font-size: 1em; margin-bottom: 12px;
 }
 .name-modal button {
   width: 100%; padding: 12px; border: none; border-radius: 8px;
   background: #5c6bc0; color: #fff; font-size: 1em; font-weight: 600; cursor: pointer;
 }
-.clear-btn {
-  background: none; border: none; color: rgba(255,255,255,0.7);
-  font-size: 0.8em; cursor: pointer;
+.name-modal button.secondary { background: #eee; color: #333; margin-top: 8px; }
+.hdr-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px; padding: 4px 10px; font-size: 0.75em; color: #fff; cursor: pointer;
+  white-space: nowrap;
 }
-.clear-btn:hover { color: #fff; }
 </style>
 </head>
 <body>
 
-<div class="header">
+<div class="header" id="header">
   <a href="../index.html">←</a>
   <h1>🤖 AI相談所</h1>
-  <button id="modelToggle" onclick="toggleModel()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); border-radius:12px; padding:4px 10px; font-size:0.7em; color:#fff; cursor:pointer; white-space:nowrap;">GPT-4.1に変更</button>
-  <span onclick="openSettingsModal()" style="cursor:pointer; font-size:1.3em;" title="AI設定">⚙️</span>
-  <button class="clear-btn" id="clearBtn" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:4px 10px; font-size:0.75em; color:#fff; cursor:pointer;">会話をリセット</button>
+  <div class="header-right">
+    <button class="hdr-btn" id="clearBtn">会話をリセット</button>
+    <button class="hdr-btn" id="modelToggle" onclick="toggleModel()">GPT-4.1に変更</button>
+    <span onclick="openSettingsModal()" style="cursor:pointer; font-size:1.3em;" title="AI設定">⚙️</span>
+  </div>
+  <div class="model-info" id="modelInfo">Gemini（アカオニ）</div>
 </div>
 
 <div class="chat-area" id="chatArea"></div>
 
-<button class="ai-btn" id="aiBtn" onclick="askAI()" style="position:fixed; bottom:80px; right:16px; z-index:10;">🤖 AIに相談する</button>
+<button class="ai-btn" id="aiBtn" onclick="askAI()">🤖 AIに相談する</button>
 
 <div class="input-area">
   <textarea id="msgInput" rows="1" placeholder="意見を書いてね…" oninput="autoResize(this)"></textarea>
@@ -108,18 +112,20 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 
 <!-- 設定モーダル -->
 <div class="name-modal" id="settingsModal" style="display:none;">
-  <div class="modal-box" style="max-width:400px; text-align:left; max-height:85vh; overflow-y:auto;">
-    <h2 style="text-align:center; margin-bottom:16px;">⚙️ AI設定</h2>
-
-    <label style="font-size:0.85em; font-weight:600; color:#555;">AIの名前</label>
-    <input type="text" id="settingsAiName" placeholder="例: さくら先生" autocomplete="off" style="text-align:left; margin-bottom:16px;">
-
-    <label style="font-size:0.85em; font-weight:600; color:#555;">システムプロンプト（AIの性格・回答方針）</label>
-    <textarea id="settingsPrompt" rows="10" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.85em; font-family:inherit; line-height:1.5; resize:vertical; margin-bottom:8px;" placeholder="例: あなたは家族の相談に乗る優しいカウンセラーです。中立的に、子供にもわかりやすい言葉で回答してください。"></textarea>
-    <div style="font-size:0.7em; color:#999; margin-bottom:16px;">※ここに書いた内容がAIへの指示になります。会話内容は自動で追加されます。</div>
-
-    <button onclick="saveSettings()" style="width:100%;">保存</button>
-    <button onclick="closeSettingsModal()" style="background:#eee; color:#333; margin-top:8px; width:100%;">キャンセル</button>
+  <div class="modal-box" style="text-align:left; max-height:85vh; overflow-y:auto;">
+    <h2 style="text-align:center;">⚙️ AI設定</h2>
+    <label style="font-size:0.85em; font-weight:600; color:#555;">AIの名前（モデル別）</label>
+    <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+      <input type="text" id="nameGemini" placeholder="Gemini名" style="flex:1; min-width:0; font-size:0.85em;">
+      <input type="text" id="nameGpt41" placeholder="GPT-4.1名" style="flex:1; min-width:0; font-size:0.85em;">
+      <input type="text" id="nameGpt5" placeholder="GPT-5名" style="flex:1; min-width:0; font-size:0.85em;">
+      <input type="text" id="nameGroq" placeholder="Groq名" style="flex:1; min-width:0; font-size:0.85em;">
+    </div>
+    <label style="font-size:0.85em; font-weight:600; color:#555;">システムプロンプト</label>
+    <textarea id="settingsPrompt" rows="10" style="font-size:0.85em; font-family:inherit; line-height:1.5; resize:vertical;" placeholder="AIへの指示を書いてください"></textarea>
+    <div style="font-size:0.7em; color:#999; margin-bottom:12px;">※会話内容は自動で追加されます</div>
+    <button onclick="saveSettings()">保存</button>
+    <button class="secondary" onclick="closeSettingsModal()">キャンセル</button>
   </div>
 </div>
 
@@ -131,77 +137,102 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemi
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
-// APIキーをSupabaseから読み込み
+// モデル設定
+const MODEL_CONFIG = {
+  gemini: { label: 'Gemini', defaultName: 'アカオニ', color: '#43a047', next: 'gpt41', nextLabel: 'GPT-4.1に変更' },
+  gpt41:  { label: 'GPT-4.1 mini', defaultName: '雷神', color: '#5c6bc0', next: 'gpt5', nextLabel: 'GPT-5に変更' },
+  gpt5:   { label: 'GPT-5 mini', defaultName: 'エンマ', color: '#7b1fa2', next: 'groq', nextLabel: 'Groqに変更' },
+  groq:   { label: 'Groq', defaultName: 'サクマ', color: '#e65100', next: 'gemini', nextLabel: 'Geminiに変更' }
+};
+
+const DEFAULT_PROMPT = `あなたは30代の夫婦喧嘩を仲裁するプロのカウンセラーです。
+
+【前提】
+- 相談者は30歳を過ぎた大人同士
+- 否定されると感情的になりやすく、話し合いが苦手な二人
+- お互い悪気はないが、伝え方が下手で衝突しやすい
+
+【あなたの役割】
+1. 双方の主張を「事実」と「感情」に分けて整理する
+2. 相手を否定せず、それぞれの気持ちを言語化する
+3. 感情的にならずに済む「伝え方の例」を提案する
+4. 妥協点や次のアクションを具体的に1〜2個提示する
+
+【ルール】
+- どちらの味方もしない
+- 「あなたが悪い」とは絶対に言わない
+- 感情を受け止めてから論点を整理する
+- 簡潔に、でも丁寧に`;
+
+// 状態
+let myName = localStorage.getItem('kenka_chat_name') || '';
+let aiMode = localStorage.getItem('ai_chat_mode') || 'gemini';
+let systemPrompt = localStorage.getItem('ai_chat_system_prompt') || '';
+let conversationSummary = localStorage.getItem('ai_chat_summary') || '';
+let aiNames = JSON.parse(localStorage.getItem('ai_chat_names') || '{}');
+let messages = [];
+
+// APIキー読み込み
 async function loadApiKeys() {
   try {
     const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key', 'openai_api_key']);
-    if (data) {
-      data.forEach(row => {
-        if (row.key === 'gemini_api_key') GEMINI_API_KEY = row.value;
-        if (row.key === 'groq_api_key') GROQ_API_KEY = row.value;
-        if (row.key === 'openai_api_key') OPENAI_API_KEY = row.value;
-      });
-    }
-  } catch(e) {
-    console.warn('APIキー読み込み失敗:', e);
-  }
+    if (data) data.forEach(row => {
+      if (row.key === 'gemini_api_key') GEMINI_API_KEY = row.value;
+      if (row.key === 'groq_api_key') GROQ_API_KEY = row.value;
+      if (row.key === 'openai_api_key') OPENAI_API_KEY = row.value;
+    });
+  } catch(e) { console.warn('APIキー読み込み失敗:', e); }
 }
 loadApiKeys();
 
-let myName = localStorage.getItem('kenka_chat_name') || '';
-let aiName = localStorage.getItem('ai_chat_ai_name') || 'AI';
-let systemPrompt = localStorage.getItem('ai_chat_system_prompt') || '';
-let messages = [];
-let aiMode = 'gemini'; // 'gemini' | 'gpt41' | 'gpt5'
+// AI名前取得
+function getAiName(mode) {
+  return aiNames[mode] || MODEL_CONFIG[mode].defaultName;
+}
 
-const DEFAULT_PROMPT = `あなたは子供たちの相談に乗る優しいAIカウンセラーです。以下はみんなの意見や相談内容です。
+// ヘッダー更新
+function updateHeader() {
+  const cfg = MODEL_CONFIG[aiMode];
+  document.getElementById('header').style.background = cfg.color;
+  document.getElementById('modelInfo').textContent = `${cfg.label}（${getAiName(aiMode)}）`;
+  document.getElementById('modelToggle').textContent = cfg.nextLabel;
+}
 
-以下のことをしてください：
-1. それぞれの言い分や気持ちを短くまとめる
-2. お互いの気持ちを代弁する
-3. 解決のためのアドバイスや提案を1〜2個出す
+// モデル切替
+function toggleModel() {
+  aiMode = MODEL_CONFIG[aiMode].next;
+  localStorage.setItem('ai_chat_mode', aiMode);
+  updateHeader();
+}
 
-子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
-
+// 設定モーダル
 function openSettingsModal() {
-  document.getElementById('settingsAiName').value = aiName === 'AI' ? '' : aiName;
+  document.getElementById('nameGemini').value = aiNames.gemini || '';
+  document.getElementById('nameGpt41').value = aiNames.gpt41 || '';
+  document.getElementById('nameGpt5').value = aiNames.gpt5 || '';
+  document.getElementById('nameGroq').value = aiNames.groq || '';
   document.getElementById('settingsPrompt').value = systemPrompt || DEFAULT_PROMPT;
   document.getElementById('settingsModal').style.display = 'flex';
 }
-function closeSettingsModal() {
-  document.getElementById('settingsModal').style.display = 'none';
-}
+function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
 function saveSettings() {
-  const name = document.getElementById('settingsAiName').value.trim() || 'AI';
-  const prompt = document.getElementById('settingsPrompt').value.trim();
-  aiName = name;
-  systemPrompt = prompt;
-  localStorage.setItem('ai_chat_ai_name', name);
-  localStorage.setItem('ai_chat_system_prompt', prompt);
+  aiNames.gemini = document.getElementById('nameGemini').value.trim() || '';
+  aiNames.gpt41 = document.getElementById('nameGpt41').value.trim() || '';
+  aiNames.gpt5 = document.getElementById('nameGpt5').value.trim() || '';
+  aiNames.groq = document.getElementById('nameGroq').value.trim() || '';
+  systemPrompt = document.getElementById('settingsPrompt').value.trim();
+  localStorage.setItem('ai_chat_names', JSON.stringify(aiNames));
+  localStorage.setItem('ai_chat_system_prompt', systemPrompt);
   closeSettingsModal();
+  updateHeader();
   renderMessages();
 }
 
-function toggleModel() {
-  const btn = document.getElementById('modelToggle');
-  if (aiMode === 'gemini') {
-    aiMode = 'gpt41';
-    btn.textContent = 'GPT-5に変更';
-  } else if (aiMode === 'gpt41') {
-    aiMode = 'gpt5';
-    btn.textContent = 'Geminiに変更';
-  } else {
-    aiMode = 'gemini';
-    btn.textContent = 'GPT-4.1に変更';
-  }
-}
-
-// 名前未設定なら入力モーダル表示
+// 名前設定
 if (!myName) {
   document.getElementById('nameModal').style.display = 'flex';
   setTimeout(() => document.getElementById('nameInput').focus(), 100);
 }
-
 function setName() {
   const name = document.getElementById('nameInput').value.trim();
   if (!name) return;
@@ -209,12 +240,9 @@ function setName() {
   localStorage.setItem('kenka_chat_name', name);
   document.getElementById('nameModal').style.display = 'none';
 }
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') setName(); });
 
-document.getElementById('nameInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') setName();
-});
-
-// メッセージ読み込み
+// メッセージ
 async function loadMessages() {
   const { data } = await client.from('kenka_chat').select('*').order('created_at', { ascending: true });
   messages = data || [];
@@ -231,41 +259,29 @@ function renderMessages() {
     else if (m.sender === myName) cls += ' mine';
     else cls += ' other';
     div.className = cls;
-
     const time = new Date(m.created_at);
     const timeStr = time.getHours() + ':' + String(time.getMinutes()).padStart(2, '0');
-
     let senderHtml = '';
-    if (m.role === 'ai') senderHtml = `<div class="sender">🤖 ${aiName}</div>`;
+    if (m.role === 'ai') senderHtml = `<div class="sender">🤖 ${getAiName(aiMode)}</div>`;
     else if (m.sender !== myName) senderHtml = `<div class="sender">${m.sender}</div>`;
-
     div.innerHTML = `${senderHtml}<div>${escapeHtml(m.content).replace(/\n/g, '<br>')}</div><div class="time">${timeStr}</div>`;
     area.appendChild(div);
   });
   area.scrollTop = area.scrollHeight;
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// メッセージ送信
 async function sendMessage() {
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
   if (!text || !myName) return;
-
   input.value = '';
   autoResize(input);
-
-  await client.from('kenka_chat').insert({
-    sender: myName,
-    content: text,
-    role: 'user'
-  });
+  await client.from('kenka_chat').insert({ sender: myName, content: text, role: 'user' });
 }
 
-// AIまとめ（課金保護付き）
+// 課金保護
 let lastAiCall = 0;
 let gptDailyCount = parseInt(localStorage.getItem('gpt_daily_count') || '0');
 let gptDailyDate = localStorage.getItem('gpt_daily_date') || '';
@@ -273,43 +289,26 @@ const GPT_DAILY_LIMIT = 20;
 
 function checkGptLimit() {
   const today = new Date().toDateString();
-  if (gptDailyDate !== today) {
-    gptDailyCount = 0;
-    gptDailyDate = today;
-    localStorage.setItem('gpt_daily_count', '0');
-    localStorage.setItem('gpt_daily_date', today);
-  }
+  if (gptDailyDate !== today) { gptDailyCount = 0; gptDailyDate = today; localStorage.setItem('gpt_daily_count', '0'); localStorage.setItem('gpt_daily_date', today); }
   if (gptDailyCount > 0 && gptDailyCount % GPT_DAILY_LIMIT === 0) {
     if (!confirm(`GPTを${gptDailyCount}回使ったよ。続けて使う？`)) return false;
   }
   return true;
 }
+function incrementGptCount() { gptDailyCount++; localStorage.setItem('gpt_daily_count', String(gptDailyCount)); localStorage.setItem('gpt_daily_date', new Date().toDateString()); }
 
-function incrementGptCount() {
-  gptDailyCount++;
-  localStorage.setItem('gpt_daily_count', String(gptDailyCount));
-  localStorage.setItem('gpt_daily_date', new Date().toDateString());
-}
-
+// AI相談
 async function askAI() {
-  // 30秒以内の再呼び出しは確認
   const now = Date.now();
   if (now - lastAiCall < 30000 && lastAiCall > 0) {
     if (!confirm('さっき聞いたばかりだけど、もう一度聞く？')) return;
   }
-
-  // GPTモードの場合、上限チェック
   if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !checkGptLimit()) return;
 
-  // APIキーチェック
-  if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !OPENAI_API_KEY) {
-    await loadApiKeys();
-    if (!OPENAI_API_KEY) { alert('OpenAI APIキーが設定されていません。'); return; }
-  }
-  if (aiMode === 'gemini' && !GEMINI_API_KEY && !GROQ_API_KEY) {
-    await loadApiKeys();
-    if (!GEMINI_API_KEY && !GROQ_API_KEY) { alert('APIキーが設定されていません。'); return; }
-  }
+  // キーチェック
+  if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !OPENAI_API_KEY) { await loadApiKeys(); if (!OPENAI_API_KEY) { alert('OpenAI APIキーが設定されていません。'); return; } }
+  if (aiMode === 'gemini' && !GEMINI_API_KEY && !GROQ_API_KEY) { await loadApiKeys(); if (!GEMINI_API_KEY && !GROQ_API_KEY) { alert('APIキーが設定されていません。'); return; } }
+  if (aiMode === 'groq' && !GROQ_API_KEY) { await loadApiKeys(); if (!GROQ_API_KEY) { alert('Groq APIキーが設定されていません。'); return; } }
 
   lastAiCall = now;
   const btn = document.getElementById('aiBtn');
@@ -317,163 +316,118 @@ async function askAI() {
   btn.textContent = '🤖 考え中…';
 
   try {
-    // 直近のユーザーメッセージを取得（AI発言は除く）
     const userMsgs = messages.filter(m => m.role === 'user');
-    if (userMsgs.length < 2) {
-      alert('まだ意見が少ないよ。もう少し書いてからAIに聞いてみよう！');
-      return;
-    }
+    if (userMsgs.length < 2) { alert('まだ意見が少ないよ。もう少し書いてからAIに聞いてみよう！'); return; }
 
     const conversation = userMsgs.map(m => `${m.sender}: ${m.content}`).join('\n');
 
-    // 会話が長くなったら警告（2000文字超）
+    // 会話が長い場合の警告＋要約提案
     if (conversation.length > 2000) {
-      if (!confirm('会話がかなり長くなっています。APIの料金が増えるので、そろそろ「会話をリセット」するのがおすすめだよ。\n\nこのまま続ける？')) return;
+      const choice = confirm('会話がかなり長くなっています。料金節約のため、会話を要約してリセットしますか？\n\nOK → 要約してリセット\nキャンセル → このまま続ける');
+      if (choice) {
+        await summarizeAndReset(conversation);
+        return;
+      }
     }
 
     const activePrompt = systemPrompt || DEFAULT_PROMPT;
-    const fullPrompt = `${activePrompt}\n\n【会話内容】\n${conversation}`;
+    const contextPrefix = conversationSummary ? `【前回までの要約】\n${conversationSummary}\n\n` : '';
+    const userContent = `${contextPrefix}【会話内容】\n${conversation}`;
 
     let aiText = '';
-    let lastError = '';
+    if (aiMode === 'gpt41') { aiText = await tryOpenAI(activePrompt, userContent, btn, 'gpt-4.1-mini'); if (aiText) incrementGptCount(); }
+    else if (aiMode === 'gpt5') { aiText = await tryOpenAI(activePrompt, userContent, btn, 'gpt-5-mini'); if (aiText) incrementGptCount(); }
+    else if (aiMode === 'groq') { aiText = await tryGroq(activePrompt, userContent, btn); }
+    else { aiText = await tryGemini(activePrompt, userContent, btn); if (!aiText) aiText = await tryGroq(activePrompt, userContent, btn); }
 
-    if (aiMode === 'gpt41') {
-      aiText = await tryOpenAI(fullPrompt, activePrompt, btn, 'gpt-4.1-mini');
-      if (aiText) incrementGptCount();
-    } else if (aiMode === 'gpt5') {
-      aiText = await tryOpenAI(fullPrompt, activePrompt, btn, 'gpt-5-mini');
-      if (aiText) incrementGptCount();
-    } else {
-      // Geminiモード: Gemini → Groq
-      aiText = await tryGemini(fullPrompt, btn);
-      if (!aiText) aiText = await tryGroq(fullPrompt, activePrompt, btn);
-    }
+    if (!aiText) { alert('AIからの応答が得られませんでした。少し待ってから再度お試しください。'); return; }
 
-    if (!aiText) {
-      alert('AIからの応答が得られませんでした。少し待ってから再度お試しください。');
-      return;
-    }
-
-    // AIメッセージをDBに保存
-    await client.from('kenka_chat').insert({
-      sender: 'AI',
-      content: aiText,
-      role: 'ai'
-    });
-
-  } catch (e) {
-    alert('AIに接続できませんでした。APIキーを確認してね。');
-    console.error(e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🤖 AIに相談する';
-  }
+    await client.from('kenka_chat').insert({ sender: 'AI', content: aiText, role: 'ai' });
+  } catch (e) { alert('AIに接続できませんでした。'); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = '🤖 AIに相談する'; }
 }
 
-// リアルタイム購読
-client.channel('kenka_chat_realtime')
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kenka_chat' }, payload => {
-    messages.push(payload.new);
+// 要約してリセット
+async function summarizeAndReset(conversation) {
+  const btn = document.getElementById('aiBtn');
+  btn.textContent = '🤖 要約中…';
+  const summaryPrompt = '以下の会話を200文字以内で要約してください。論点と各自の立場を簡潔にまとめてください。';
+  let summary = '';
+  if (OPENAI_API_KEY) { summary = await tryOpenAI(summaryPrompt, conversation, btn, 'gpt-4.1-mini'); }
+  else if (GEMINI_API_KEY) { summary = await tryGemini(summaryPrompt + '\n\n' + conversation, btn); }
+  else if (GROQ_API_KEY) { summary = await tryGroq(summaryPrompt, conversation, btn); }
+
+  if (summary) {
+    conversationSummary = summary;
+    localStorage.setItem('ai_chat_summary', summary);
+    await client.from('kenka_chat').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    messages = [];
     renderMessages();
-  })
-  .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'kenka_chat' }, () => {
-    loadMessages();
-  })
-  .subscribe();
+    alert('会話を要約してリセットしました。次回のAI相談時に前回の要約が引き継がれます。');
+  } else {
+    alert('要約に失敗しました。そのまま続けます。');
+  }
+  btn.disabled = false;
+  btn.textContent = '🤖 AIに相談する';
+}
 
 // リセット
 document.getElementById('clearBtn').addEventListener('click', async () => {
   if (!confirm('チャットをリセットしますか？全員のメッセージが消えます。')) return;
   await client.from('kenka_chat').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  conversationSummary = '';
+  localStorage.removeItem('ai_chat_summary');
   messages = [];
   renderMessages();
 });
 
-// テキストエリア自動リサイズ
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-}
+// リアルタイム
+client.channel('kenka_chat_realtime')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kenka_chat' }, payload => { messages.push(payload.new); renderMessages(); })
+  .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'kenka_chat' }, () => { loadMessages(); })
+  .subscribe();
 
-// Enterで送信（Shift+Enterは改行）
-document.getElementById('msgInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
+// UI
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+document.getElementById('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
-// 初期読み込み
-loadMessages();
-
-// --- AI呼び出しヘルパー ---
-async function tryOpenAI(fullPrompt, sysPrompt, btn, model = 'gpt-4.1-mini') {
+// API呼び出し
+async function tryOpenAI(sysPrompt, userContent, btn, model) {
   if (!OPENAI_API_KEY) return '';
   try {
-    const res = await fetch(OPENAI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: fullPrompt.replace(sysPrompt + '\n\n', '') }
-        ],
-        max_tokens: 500
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
-    }
+    const res = await fetch(OPENAI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+      body: JSON.stringify({ model, messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userContent }], max_tokens: 800 }) });
+    if (res.ok) { const data = await res.json(); return data.choices?.[0]?.message?.content || ''; }
     console.warn('OpenAI:', res.status);
   } catch(e) { console.warn('OpenAI接続エラー'); }
-  btn.textContent = '🤖 別のAIに聞いてるよ…';
   return '';
 }
 
 async function tryGemini(fullPrompt, btn) {
   if (!GEMINI_API_KEY) return '';
   try {
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    }
+    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] }) });
+    if (res.ok) { const data = await res.json(); return data.candidates?.[0]?.content?.parts?.[0]?.text || ''; }
     console.warn('Gemini:', res.status);
   } catch(e) { console.warn('Gemini接続エラー'); }
-  btn.textContent = '🤖 別のAIに聞いてるよ…';
   return '';
 }
 
-async function tryGroq(fullPrompt, sysPrompt, btn) {
+async function tryGroq(sysPrompt, userContent, btn) {
   if (!GROQ_API_KEY) return '';
   try {
-    const res = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: fullPrompt.replace(sysPrompt + '\n\n', '') }
-        ],
-        max_tokens: 500
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
-    }
+    const res = await fetch(GROQ_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userContent }], max_tokens: 800 }) });
+    if (res.ok) { const data = await res.json(); return data.choices?.[0]?.message?.content || ''; }
     console.warn('Groq:', res.status);
   } catch(e) { console.warn('Groq接続エラー'); }
-  btn.textContent = '🤖 別のAIに聞いてるよ…';
   return '';
 }
+
+// 初期化
+updateHeader();
+loadMessages();
 </script>
 </body>
 </html>
