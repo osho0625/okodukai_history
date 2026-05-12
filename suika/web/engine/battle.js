@@ -351,6 +351,9 @@ export class BattleEngine {
     this.result = BATTLE_RESULT.CONTINUE;
     this.totalExp = 0;
     this.totalGold = 0;
+    // Turn delay settings (ms)
+    this.playerTurnDelay = 600;
+    this.enemyTurnDelay = 800;
 
     // Callbacks for UI
     this.onLog = null;        // (message) => void
@@ -536,7 +539,7 @@ export class BattleEngine {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, 600);
+      }, this.playerTurnDelay);
     }
   }
 
@@ -1047,7 +1050,7 @@ export class BattleEngine {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, 800);
+      }, this.enemyTurnDelay);
     }
   }
 
