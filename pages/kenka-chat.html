@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>けんか仲裁チャット</title>
+<title>AI相談所</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <style>
@@ -82,7 +82,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 
 <div class="header">
   <a href="../index.html">←</a>
-  <h1>🕊️ けんか仲裁チャット</h1>
+  <h1>🤖 AI相談所</h1>
   <button class="clear-btn" id="clearBtn">リセット</button>
 </div>
 
@@ -111,9 +111,22 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemi
 // APIキーをSupabaseのgame_settingsから読み込み（コードに直書きしない）
 async function loadGeminiKey() {
   try {
+    // まずgame_settingsから試す
     const { data } = await client.from('game_settings').select('gemini_api_key').eq('id', 1).maybeSingle();
-    if (data && data.gemini_api_key) GEMINI_API_KEY = data.gemini_api_key;
-  } catch(e) {}
+    if (data && data.gemini_api_key) {
+      GEMINI_API_KEY = data.gemini_api_key;
+      return;
+    }
+  } catch(e) {
+    console.warn('game_settings読み込み失敗:', e);
+  }
+  // フォールバック: app_configテーブルから試す
+  try {
+    const { data } = await client.from('app_config').select('value').eq('key', 'gemini_api_key').maybeSingle();
+    if (data && data.value) GEMINI_API_KEY = data.value;
+  } catch(e) {
+    console.warn('app_config読み込み失敗:', e);
+  }
 }
 loadGeminiKey();
 
@@ -219,15 +232,15 @@ async function askAI() {
 
     const conversation = userMsgs.map(m => `${m.sender}: ${m.content}`).join('\n');
 
-    const prompt = `あなたは子供たちの喧嘩を仲裁する優しいAIです。以下は兄弟げんかの両者の意見です。
+    const prompt = `あなたは子供たちの相談に乗る優しいAIカウンセラーです。以下はみんなの意見や相談内容です。
 
 【会話内容】
 ${conversation}
 
 以下のことをしてください：
-1. それぞれの言い分を短くまとめる
+1. それぞれの言い分や気持ちを短くまとめる
 2. お互いの気持ちを代弁する
-3. 解決のためのアドバイスを1〜2個提案する
+3. 解決のためのアドバイスや提案を1〜2個出す
 
 子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
 
