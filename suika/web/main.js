@@ -55,7 +55,8 @@ class SuikaGame {
     this.menuOpen = false;
     this.shopUI = null;
     this.battleResult = null; // { exp, gold, levelUps[] }
-    this.equipMenu = null; // equipment sub-state
+    this.equipMenu = null;
+    this.itemMenu = null; // equipment sub-state
     this.gameOverTimer = 0;
     this.credits = new Credits(this.ctx);
     this.passwordSystem = new PasswordSystem();
@@ -1146,11 +1147,17 @@ class SuikaGame {
 
   // --- System Menu ---
   updateMenu() {
-    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', 'ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
 
     // Equipment sub-menu
     if (this.equipMenu) {
       this.updateEquipMenu();
+      return;
+    }
+
+    // Item list sub-menu
+    if (this.itemMenu) {
+      this.updateItemMenu();
       return;
     }
 
@@ -1164,17 +1171,60 @@ class SuikaGame {
     }
     if (this.input.isOK()) {
       switch (this.menuCursor) {
-        case 0: break; // Status shown in draw
-        case 1: this.equipMenu = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
-        case 2: this.state = 'worldmap'; break;
-        case 3: this.saveGame(); this.state = 'game'; break;
-        case 4: this.state = 'title'; this.titleCursor = 0; break;
-        case 5: this.state = 'game'; break;
+        case 0: this.itemMenu = { cursor: 0 }; break;
+        case 1: break; // Status shown in draw
+        case 2: this.equipMenu = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
+        case 3: this.state = 'worldmap'; break;
+        case 4: this.saveGame(); this.state = 'game'; break;
+        case 5: this.state = 'title'; this.titleCursor = 0; break;
+        case 6: this.state = 'game'; break;
       }
     }
     if (this.input.isCancel() || this.input.isKeyDown('z')) {
       this.state = 'game';
     }
+  }
+
+  updateItemMenu() {
+    const inv = this.eventManager.inventory;
+    // Build item list with counts
+    const itemMap = {};
+    for (const idx of inv) {
+      itemMap[idx] = (itemMap[idx] || 0) + 1;
+    }
+    const itemList = Object.entries(itemMap).map(([idx, count]) => {
+      const item = this.paramAll.getItem(Number(idx));
+      return { idx: Number(idx), name: item ? item.name.trim() : '???', count, item };
+    });
+
+    if (itemList.length === 0) {
+      this.itemMenu = null;
+      return;
+    }
+    if (this.itemMenu.cursor >= itemList.length) this.itemMenu.cursor = itemList.length - 1;
+
+    if (this.input.isUp()) this.itemMenu.cursor = (this.itemMenu.cursor - 1 + itemList.length) % itemList.length;
+    if (this.input.isDown()) this.itemMenu.cursor = (this.itemMenu.cursor + 1) % itemList.length;
+
+    if (this.input.isOK()) {
+      // Use consumable items (kind=0) to heal
+      const selected = itemList[this.itemMenu.cursor];
+      if (selected.item && selected.item.kind === 0 && selected.item.effect > 0) {
+        // Heal first alive player
+        for (const p of this.playerParams) {
+          if (p.hp > 0 && p.hp < p.maxHP) {
+            const heal = Math.min(selected.item.effect, p.maxHP - p.hp);
+            p.hp += heal;
+            this.audio.play(10);
+            // Remove one from inventory
+            const pos = this.eventManager.inventory.indexOf(selected.idx);
+            if (pos >= 0) this.eventManager.inventory.splice(pos, 1);
+            break;
+          }
+        }
+      }
+    }
+    if (this.input.isCancel()) this.itemMenu = null;
   }
 
   updateEquipMenu() {
@@ -1186,19 +1236,21 @@ class SuikaGame {
       if (this.input.isOK()) { eq.phase = 'slot'; eq.slot = 0; }
       if (this.input.isCancel()) { this.equipMenu = null; }
     } else if (eq.phase === 'slot') {
-      // Select equipment slot (weapon/armor/shield/acc1/acc2)
-      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
+      // Select equipment slot (weapon/armor/shield/acc1/acc2/gem)
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2', '勾玉'];
       if (this.input.isUp()) eq.slot = (eq.slot - 1 + slots.length) % slots.length;
       if (this.input.isDown()) eq.slot = (eq.slot + 1) % slots.length;
       if (this.input.isOK()) { eq.phase = 'item'; eq.itemCursor = 0; }
       if (this.input.isCancel()) { eq.phase = 'chr'; }
     } else if (eq.phase === 'item') {
       // Select item to equip from inventory
-      const slotKind = eq.slot + 1; // kind: 1=weapon, 2=armor, 3=shield, 4=acc
+      // kind: 1=weapon, 2=armor, 3=shield, 4=accessory, 5=gem(勾玉)
+      const kindMap = [1, 2, 3, 4, 4, 5]; // slot index → item kind
+      const slotKind = kindMap[eq.slot] || 1;
       const equippable = this.eventManager.inventory
         .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
         .filter(e => e.item && e.item.kind === slotKind);
-      equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 }); // unequip option
+      equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
 
       if (equippable.length === 0) { eq.phase = 'slot'; return; }
       if (eq.itemCursor >= equippable.length) eq.itemCursor = equippable.length - 1;
@@ -1207,7 +1259,7 @@ class SuikaGame {
       if (this.input.isOK()) {
         const selected = equippable[eq.itemCursor];
         const p = this.playerParams[eq.chrIdx];
-        if (!p.equip) p.equip = [-1, -1, -1, -1, -1];
+        if (!p.equip) p.equip = [-1, -1, -1, -1, -1, -1];
         // Unequip current
         const oldEquip = p.equip[eq.slot];
         if (oldEquip >= 0) {
@@ -1257,20 +1309,26 @@ class SuikaGame {
     ctx.fillRect(0, 0, 400, 320);
 
     // Menu panel
-    const mx = 10, my = 10, mw = 110, mh = 160;
+    const mx = 10, my = 10, mw = 110, mh = 170;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = '#88f';
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, mw, mh);
 
-    const items = ['ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', 'ステータス', '装備', 'マップ', 'セーブ', 'タイトルへ', '閉じる'];
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     for (let i = 0; i < items.length; i++) {
       ctx.fillStyle = i === this.menuCursor ? '#ff0' : '#fff';
       const prefix = i === this.menuCursor ? '▶' : '  ';
-      ctx.fillText(prefix + items[i], mx + 6, my + 20 + i * 22);
+      ctx.fillText(prefix + items[i], mx + 6, my + 20 + i * 20);
+    }
+
+    // Item list sub-menu overlay
+    if (this.itemMenu) {
+      this.drawItemMenu(ctx);
+      return;
     }
 
     // Equipment sub-menu overlay
@@ -1327,6 +1385,51 @@ class SuikaGame {
     ctx.fillText(`プレイ時間: ${hours}:${String(mins).padStart(2, '0')}`, sx + 10, py + 20);
   }
 
+  drawItemMenu(ctx) {
+    const sx = 130, sy = 10, sw = 260, sh = 300;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeStyle = '#8a8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.fillStyle = '#afc';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('アイテム (X:閉じる / A:使う)', sx + 10, sy + 18);
+
+    // Build item list
+    const inv = this.eventManager.inventory;
+    const itemMap = {};
+    for (const idx of inv) { itemMap[idx] = (itemMap[idx] || 0) + 1; }
+    const itemList = Object.entries(itemMap).map(([idx, count]) => {
+      const item = this.paramAll.getItem(Number(idx));
+      return { idx: Number(idx), name: item ? item.name.trim() : '???', count, kind: item ? item.kind : -1 };
+    });
+
+    if (itemList.length === 0) {
+      ctx.fillStyle = '#888';
+      ctx.fillText('アイテムを持っていない', sx + 10, sy + 50);
+      return;
+    }
+
+    const maxShow = 12;
+    const startIdx = Math.max(0, (this.itemMenu.cursor || 0) - maxShow + 1);
+    ctx.font = '11px sans-serif';
+    for (let i = 0; i < maxShow && startIdx + i < itemList.length; i++) {
+      const idx = startIdx + i;
+      const it = itemList[idx];
+      ctx.fillStyle = idx === this.itemMenu.cursor ? '#ff0' : '#fff';
+      const prefix = idx === this.itemMenu.cursor ? '▶' : '  ';
+      const kindLabel = it.kind === 0 ? '消' : it.kind === 1 ? '武' : it.kind === 2 ? '防' : it.kind === 3 ? '飾' : '？';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${prefix}[${kindLabel}]${it.name}`, sx + 8, sy + 38 + i * 20);
+      ctx.textAlign = 'right';
+      ctx.fillText(`×${it.count}`, sx + sw - 10, sy + 38 + i * 20);
+    }
+    ctx.textAlign = 'left';
+  }
+
   drawEquipMenu(ctx) {
     const eq = this.equipMenu;
     const sx = 130, sy = 10, sw = 260, sh = 300;
@@ -1350,15 +1453,16 @@ class SuikaGame {
       const p = this.playerParams[eq.chrIdx];
       ctx.fillStyle = '#ff0';
       ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
-      const slots = ['武器', '防具', '盾', '装飾1', '装飾2'];
+      const slots = ['武器', '防具', '盾', '装飾1', '装飾2', '勾玉'];
       for (let i = 0; i < slots.length; i++) {
         ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
         const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
         const eqName = equipped ? equipped.name.trim() : 'なし';
-        ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 42 + i * 22);
+        ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
       }
     } else if (eq.phase === 'item') {
-      const slotKind = eq.slot + 1;
+      const kindMap = [1, 2, 3, 4, 4, 5];
+      const slotKind = kindMap[eq.slot] || 1;
       const equippable = this.eventManager.inventory
         .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
         .filter(e => e.item && e.item.kind === slotKind);
