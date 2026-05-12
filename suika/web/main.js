@@ -838,6 +838,11 @@ class SuikaGame {
             if (p.lv > prevLv) {
               levelUps.push({ name: p.name, prevLv, newLv: p.lv });
             }
+            // Gem AP gain (AP = EXP earned from battle)
+            if (p.gem >= 0) {
+              if (!p.gemAP) p.gemAP = {};
+              p.gemAP[p.gem] = (p.gemAP[p.gem] || 0) + exp;
+            }
           }
         }
       }
@@ -1236,16 +1241,64 @@ class SuikaGame {
       if (this.input.isOK()) { eq.phase = 'slot'; eq.slot = 0; }
       if (this.input.isCancel()) { this.equipMenu = null; }
     } else if (eq.phase === 'slot') {
-      // Select equipment slot (weapon/armor/shield/acc1/acc2/gem)
-      const slots = ['武器', '防具', '盾', '装飾1', '装飾2', '勾玉'];
+      // Select equipment slot: 5 slots + gem (original structure)
+      const p = this.playerParams[eq.chrIdx];
+      const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
+      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾', '勾玉'];
       if (this.input.isUp()) eq.slot = (eq.slot - 1 + slots.length) % slots.length;
       if (this.input.isDown()) eq.slot = (eq.slot + 1) % slots.length;
-      if (this.input.isOK()) { eq.phase = 'item'; eq.itemCursor = 0; }
+      if (this.input.isOK()) {
+        if (eq.slot === 5) {
+          // Gem sub-menu
+          eq.phase = 'gem';
+          eq.itemCursor = 0;
+        } else {
+          eq.phase = 'item';
+          eq.itemCursor = 0;
+        }
+      }
       if (this.input.isCancel()) { eq.phase = 'chr'; }
+    } else if (eq.phase === 'gem') {
+      // Gem (勾玉) selection
+      const p = this.playerParams[eq.chrIdx];
+      const gems = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
+      // Check equip restrictions
+      const available = gems.filter(g => {
+        const gemData = this.getGemRestriction(g.idx, eq.chrIdx);
+        return gemData !== 2; // 2 = cannot equip
+      });
+      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+      if (eq.itemCursor >= available.length) eq.itemCursor = available.length - 1;
+      if (this.input.isUp()) eq.itemCursor = (eq.itemCursor - 1 + available.length) % available.length;
+      if (this.input.isDown()) eq.itemCursor = (eq.itemCursor + 1) % available.length;
+      if (this.input.isOK()) {
+        const selected = available[eq.itemCursor];
+        // Unequip current gem
+        if (p.gem >= 0) {
+          this.eventManager.inventory.push(p.gem);
+        }
+        // Equip new gem
+        if (selected.idx >= 0) {
+          p.gem = selected.idx;
+          // Mark gem as bound to this character
+          if (!p.gemFlags) p.gemFlags = {};
+          p.gemFlags[selected.idx - 110] = true;
+          // Remove from inventory
+          const pos = this.eventManager.inventory.indexOf(selected.idx);
+          if (pos >= 0) this.eventManager.inventory.splice(pos, 1);
+        } else {
+          p.gem = -1;
+        }
+        eq.phase = 'slot';
+      }
+      if (this.input.isCancel()) { eq.phase = 'slot'; }
     } else if (eq.phase === 'item') {
       // Select item to equip from inventory
-      // kind: 1=weapon, 2=armor, 3=shield, 4=accessory, 5=gem(勾玉)
-      const kindMap = [1, 2, 3, 4, 4, 5]; // slot index → item kind
+      // kind: 1=weapon, 2=armor, 3=shield, 4=accessory
+      const kindMap = [1, 2, 3, 4, 4];
       const slotKind = kindMap[eq.slot] || 1;
       const equippable = this.eventManager.inventory
         .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
@@ -1259,7 +1312,7 @@ class SuikaGame {
       if (this.input.isOK()) {
         const selected = equippable[eq.itemCursor];
         const p = this.playerParams[eq.chrIdx];
-        if (!p.equip) p.equip = [-1, -1, -1, -1, -1, -1];
+        if (!p.equip) p.equip = [-1, -1, -1, -1, -1];
         // Unequip current
         const oldEquip = p.equip[eq.slot];
         if (oldEquip >= 0) {
@@ -1300,6 +1353,47 @@ class SuikaGame {
     player.def -= item.def;
     player.agi -= item.agi;
     player.dex -= item.dex;
+  }
+
+  // Gem restriction check (matching original CGemData.IsEquip)
+  // Returns: 0=can equip, 1=already bound to this char, 2=cannot equip
+  getGemRestriction(gemIdx, chrIdx) {
+    const p = this.playerParams[chrIdx];
+    const gemId = gemIdx - 110;
+    // Already bound to this character
+    if (p.gemFlags && p.gemFlags[gemId]) return 1;
+    // Currently equipped by this character
+    if (p.gem === gemIdx) return 1;
+    // Check if bound to another character
+    for (let i = 0; i < this.playerParams.length; i++) {
+      if (i === chrIdx) continue;
+      const other = this.playerParams[i];
+      if (other.gemFlags && other.gemFlags[gemId]) return 2;
+    }
+    // Character-specific restrictions (from original)
+    if (gemIdx === 120 && chrIdx !== 0) return 2; // 主人公専用
+    if (gemIdx === 124 && chrIdx !== 2) return 2; // かるび専用
+    if (gemIdx === 125 && chrIdx !== 1) return 2; // うな専用(仮)
+    return 0;
+  }
+
+  // Get gem growth progress: current AP / max AP for next skill
+  getGemProgress(player, gemIdx) {
+    if (!player.gemAP) player.gemAP = {};
+    const ap = player.gemAP[gemIdx] || 0;
+    // GEM_DATA: 7 skills per gem, each has [threshold, skillId]
+    const GEM_DATA = [25,16,55,0,90,26,130,17,175,18,225,19,300,15,25,26,55,27,90,4,130,28,175,29,225,37,300,110,25,0,55,17,90,4,130,20,175,8,225,21,300,22,25,10,55,1001,90,88,130,27,175,12,225,89,300,105,25,39,55,40,90,41,130,6,175,42,225,43,300,44,25,1000,55,12,90,104,130,2,175,103,225,6,300,102,30,68,65,69,105,70,150,71,200,72,255,73,330,74,35,50,75,51,120,6,170,52,225,53,285,54,380,55,40,82,95,83,135,84,190,3,250,85,315,86,400,87,50,30,95,11,155,90,220,1002,290,31,370,13,500,33,50,50,95,90,155,51,220,62,290,1,370,52,500,65,60,45,130,46,210,3,300,47,400,48,520,7,670,49,70,23,150,1,240,5,340,24,550,9,670,109,800,25,70,31,150,32,240,5,340,38,550,34,670,36,800,111,80,56,170,97,270,93,380,57,600,7,730,58,870,59,80,75,170,76,270,91,380,77,600,78,730,11,870,79,80,55,170,94,270,63,380,5,600,35,730,106,870,66];
+    const gemId = gemIdx - 110;
+    if (gemId < 0 || gemId >= 17) return { ap, maxAP: 300, learned: 0, total: 7 };
+    let learned = 0;
+    let nextThreshold = 999;
+    for (let i = 0; i < 7; i++) {
+      const threshold = GEM_DATA[gemId * 14 + i * 2];
+      if (ap >= threshold) learned++;
+      else if (threshold < nextThreshold) nextThreshold = threshold;
+    }
+    const maxAP = GEM_DATA[gemId * 14 + 6 * 2]; // last skill's threshold
+    return { ap, maxAP, learned, total: 7, nextThreshold };
   }
 
   drawMenu() {
@@ -1453,15 +1547,51 @@ class SuikaGame {
       const p = this.playerParams[eq.chrIdx];
       ctx.fillStyle = '#ff0';
       ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
-      const slots = ['武器', '防具', '盾', '装飾1', '装飾2', '勾玉'];
+      const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
+      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾', '勾玉'];
       for (let i = 0; i < slots.length; i++) {
         ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
-        const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
-        const eqName = equipped ? equipped.name.trim() : 'なし';
+        let eqName = 'なし';
+        if (i < 5) {
+          const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
+          eqName = equipped ? equipped.name.trim() : 'なし';
+        } else {
+          // Gem slot
+          if (p.gem >= 0) {
+            const gemItem = this.paramAll.getItem(p.gem);
+            const progress = this.getGemProgress(p, p.gem);
+            eqName = `${gemItem ? gemItem.name.trim() : '???'} (${progress.learned}/${progress.total})`;
+          }
+        }
         ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
       }
+    } else if (eq.phase === 'gem') {
+      // Gem selection display
+      const p = this.playerParams[eq.chrIdx];
+      ctx.fillStyle = '#adf';
+      ctx.fillText('勾玉を選択:', sx + 10, sy + 20);
+
+      const gems = this.eventManager.inventory
+        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
+      const available = gems.filter(g => this.getGemRestriction(g.idx, eq.chrIdx) !== 2);
+      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+      for (let i = 0; i < Math.min(10, available.length); i++) {
+        const g = available[i];
+        const isCurrent = i === eq.itemCursor;
+        ctx.fillStyle = isCurrent ? '#ff0' : '#fff';
+        let label = g.item.name ? g.item.name.trim() : 'はずす';
+        if (g.idx >= 110) {
+          const progress = this.getGemProgress(p, g.idx);
+          label += ` (${progress.learned}/${progress.total})`;
+          const restriction = this.getGemRestriction(g.idx, eq.chrIdx);
+          if (restriction === 1) label += ' ★';
+        }
+        ctx.fillText((isCurrent ? '▶' : '  ') + label, sx + 10, sy + 40 + i * 20);
+      }
     } else if (eq.phase === 'item') {
-      const kindMap = [1, 2, 3, 4, 4, 5];
+      const kindMap = [1, 2, 3, 4, 4];
       const slotKind = kindMap[eq.slot] || 1;
       const equippable = this.eventManager.inventory
         .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
@@ -1610,6 +1740,7 @@ class SuikaGame {
         mp: p.mp, maxMP: p.maxMP, str: p.str, int_: p.int_, def: p.def,
         agi: p.agi, dex: p.dex, exp: p.exp, pat: p.pat, algo: p.algo,
         abi1: p.abi1, abi2: p.abi2, equip: p.equip || [-1,-1,-1,-1,-1],
+        gem: p.gem || -1, gemFlags: p.gemFlags || {}, gemAP: p.gemAP || {},
       })),
       gold: this.gold || 0,
       area: this.currentArea,
