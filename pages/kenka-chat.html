@@ -220,10 +220,10 @@ async function sendMessage() {
 }
 
 // AIまとめ（課金保護付き）
-let aiCooldown = false;
+let lastAiCall = 0;
 let gptDailyCount = parseInt(localStorage.getItem('gpt_daily_count') || '0');
 let gptDailyDate = localStorage.getItem('gpt_daily_date') || '';
-const GPT_DAILY_LIMIT = 20; // GPTは1日20回まで
+const GPT_DAILY_LIMIT = 20;
 
 function checkGptLimit() {
   const today = new Date().toDateString();
@@ -233,7 +233,10 @@ function checkGptLimit() {
     localStorage.setItem('gpt_daily_count', '0');
     localStorage.setItem('gpt_daily_date', today);
   }
-  return gptDailyCount < GPT_DAILY_LIMIT;
+  if (gptDailyCount > 0 && gptDailyCount % GPT_DAILY_LIMIT === 0) {
+    if (!confirm(`GPTを${gptDailyCount}回使ったよ。続けて使う？`)) return false;
+  }
+  return true;
 }
 
 function incrementGptCount() {
@@ -243,37 +246,29 @@ function incrementGptCount() {
 }
 
 async function askAI() {
-  if (aiCooldown) { alert('少し待ってからもう一度押してね（60秒に1回まで）'); return; }
-
-  // GPTモードの場合、1日の上限チェック
-  if (useGpt) {
-    if (!checkGptLimit()) {
-      alert(`今日のGPT利用回数（${GPT_DAILY_LIMIT}回）に達しました。Geminiモードに切り替えるか、明日また使ってね。`);
-      return;
-    }
+  // 30秒以内の再呼び出しは確認
+  const now = Date.now();
+  if (now - lastAiCall < 30000 && lastAiCall > 0) {
+    if (!confirm('さっき聞いたばかりだけど、もう一度聞く？')) return;
   }
+
+  // GPTモードの場合、上限チェック
+  if (useGpt && !checkGptLimit()) return;
 
   // APIキーチェック
   if (useGpt && !OPENAI_API_KEY) {
     await loadApiKeys();
-    if (!OPENAI_API_KEY) {
-      alert('OpenAI APIキーが設定されていません。');
-      return;
-    }
+    if (!OPENAI_API_KEY) { alert('OpenAI APIキーが設定されていません。'); return; }
   }
   if (!useGpt && !GEMINI_API_KEY && !GROQ_API_KEY) {
     await loadApiKeys();
-    if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-      alert('APIキーが設定されていません。');
-      return;
-    }
+    if (!GEMINI_API_KEY && !GROQ_API_KEY) { alert('APIキーが設定されていません。'); return; }
   }
 
+  lastAiCall = now;
   const btn = document.getElementById('aiBtn');
   btn.disabled = true;
   btn.textContent = '🤖 考え中…';
-  aiCooldown = true;
-  setTimeout(() => { aiCooldown = false; }, 60000); // 60秒クールダウン
 
   try {
     // 直近のユーザーメッセージを取得（AI発言は除く）
