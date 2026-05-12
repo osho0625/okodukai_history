@@ -788,6 +788,21 @@ class SuikaGame {
       this.battleUI.setEnemyPats(pats);
     }
 
+    // Set player model indices for battle display
+    const CChrPrm = [
+      [0,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[10,0],[11,0],
+      [13,0],[15,0],[17,0],[19,0],[20,0],[2,0],[7,0],[35,0],[37,0],[39,0],
+      [41,0],[42,0],[46,0],[47,0],[48,0],[49,0],[50,0],[47,0],[51,0],[53,0],
+      [54,0],[8,0],[55,0],[3,0],[5,0],[54,0],[41,0],[42,0],[42,0],[42,0],
+      [42,0],[56,0],[39,0],[57,0]
+    ];
+    this.battleUI.playerModelPats = this.playerParams.map(p => {
+      const pat = p.pat || 0;
+      if (pat < CChrPrm.length) return CChrPrm[pat][0] + CChrPrm[pat][1] + 55;
+      return 55;
+    });
+    this.battleUI.playerCount = this.playerParams.length;
+
     // Setup inventory for battle (consumable items: kind=0)
     this.battleUI.inventory = [];
     for (let i = 0; i < this.paramAll.items.length; i++) {

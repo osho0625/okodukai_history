@@ -91,7 +91,10 @@ export class BattleUI {
     this.inventory = [];
     this.playerSkills = [];
     // Attack animation state
-    this.attackAnim = null; // { target: 'enemy'|'player', idx, frame, maxFrame, type }
+    this.attackAnim = null; // { who: 'player'|'enemy', idx, frame, maxFrame }
+    // Player model indices (set from main.js)
+    this.playerModelPats = [];
+    this.playerCount = 0;
   }
 
   setEnemyPats(pats) {
@@ -103,15 +106,26 @@ export class BattleUI {
   update(battleState) {
     this.effect.update();
 
+    // Advance attack animation
+    if (this.attackAnim) {
+      this.attackAnim.frame++;
+      if (this.attackAnim.frame >= this.attackAnim.maxFrame) {
+        this.attackAnim = null;
+      }
+    }
+
     // Detect new log entries for effects
     if (battleState.log.length > this.lastLogLen) {
       const newMsg = battleState.log[battleState.log.length - 1];
       if (newMsg.includes('ダメージ') && !newMsg.includes('毒で')) {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
-        // Trigger slash effect at target position
         if (newMsg.includes('の攻撃')) {
           this.effect.spawnParticles(200, 120, 6, '#fff', 40);
+          // Start attack animation for current unit
+          if (battleState.currentUnit && battleState.currentUnit.isPlayer) {
+            this.attackAnim = { who: 'player', idx: battleState.currentUnit.index, frame: 0, maxFrame: 20 };
+          }
         }
       }
       if (newMsg.includes('会心')) {
@@ -343,6 +357,9 @@ export class BattleUI {
     // Ground plane (simple perspective grid)
     this.drawBattleGround(ctx);
 
+    // Draw player 3D models (foreground, facing away)
+    this.drawPlayerModels(battleState);
+
     // Draw enemy 3D models
     this.drawEnemyModels(battleState);
 
@@ -437,6 +454,68 @@ export class BattleUI {
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  drawPlayerModels(battleState) {
+    if (!this.renderer || !this.models || this.playerModelPats.length === 0) return;
+    const players = battleState.players;
+    const count = Math.min(players.length, this.playerModelPats.length);
+
+    // Setup camera (same as enemy drawing will use)
+    const eye = new Vec3(0, 120, -350);
+    const at = new Vec3(0, 40, 150);
+    this.renderer.viewTransform(eye, at);
+    this.renderer.projTransform(10, 2000);
+    this.renderer.setAmbient(new Color(80, 80, 100));
+    this.renderer.light = { direction: new Vec3(-0.3, -0.8, 0.5).normalize() };
+
+    for (let i = 0; i < count; i++) {
+      const p = players[i];
+      const modelIdx = this.playerModelPats[i];
+      if (modelIdx < 0 || modelIdx >= this.models.length) continue;
+      const model = this.models[modelIdx];
+      if (!model || model.vertices.length === 0) continue;
+
+      // Position players in foreground (closer to camera, facing enemies)
+      const spacing = count <= 2 ? 150 : 120;
+      const startX = -(count - 1) * spacing / 2;
+      const posX = startX + i * spacing;
+      const posZ = -200;
+
+      // Attack animation: move forward when it's this player's turn and attacking
+      let animOffsetZ = 0;
+      if (this.attackAnim && this.attackAnim.who === 'player' && this.attackAnim.idx === i) {
+        const t = this.attackAnim.frame / this.attackAnim.maxFrame;
+        if (t < 0.4) animOffsetZ = t / 0.4 * 150; // move forward
+        else if (t < 0.6) animOffsetZ = 150; // hold
+        else animOffsetZ = (1 - (t - 0.6) / 0.4) * 150; // move back
+      }
+
+      const pos = new Vec3(posX, 0, posZ + animOffsetZ);
+      const rot = new Vec3(0, 0, 0); // facing forward (toward enemies)
+      const scl = new Vec3(1, 1, 1);
+
+      // Dim dead players
+      if (!p.alive) {
+        this.ctx.globalAlpha = 0.3;
+      }
+
+      const wvp = this.renderer.calcModel(model, pos, rot, scl);
+      const worldMat = this.renderer.getTransform(3);
+      this.renderer.drawModel(model, wvp, worldMat, 0, 0);
+
+      // Current turn indicator glow
+      if (battleState.currentUnit && battleState.currentUnit.isPlayer &&
+          battleState.currentUnit.index === i) {
+        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, model.topY + 20, 0));
+        this.ctx.fillStyle = '#ff0';
+        this.ctx.font = '10px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('▼', screenPos.x, Math.max(screenPos.y - 5, 180));
+      }
+
+      this.ctx.globalAlpha = 1;
+    }
   }
 
   drawEnemyModels(battleState) {
