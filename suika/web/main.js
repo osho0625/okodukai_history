@@ -859,6 +859,13 @@ class SuikaGame {
               }
               const apGain = Math.max(1, Math.floor(totalEnemyAP * 0.1));
               p.gemAP[p.gem] = (p.gemAP[p.gem] || 0) + apGain;
+              // Check if all skills learned → gem breaks
+              const progress = this.getGemProgress(p, p.gem);
+              if (progress.learned >= progress.total) {
+                // Gem mastered — it breaks (disappears)
+                levelUps.push({ name: p.name, prevLv: 0, newLv: 0, gemBreak: true, gemName: this.paramAll.getItem(p.gem)?.name?.trim() || '勾玉' });
+                p.gem = -1;
+              }
             }
           }
         }
@@ -1009,8 +1016,13 @@ class SuikaGame {
 
       let y = 145;
       for (const lu of this.battleResult.levelUps) {
-        this.ctx.fillStyle = '#8f8';
-        this.ctx.fillText(`${lu.name} Lv${lu.prevLv}→${lu.newLv}!`, 200, y);
+        if (lu.gemBreak) {
+          this.ctx.fillStyle = '#f8f';
+          this.ctx.fillText(`${lu.name}の${lu.gemName}が砕け散った！`, 200, y);
+        } else {
+          this.ctx.fillStyle = '#8f8';
+          this.ctx.fillText(`${lu.name} Lv${lu.prevLv}→${lu.newLv}!`, 200, y);
+        }
         y += 20;
       }
 
@@ -1419,6 +1431,75 @@ class SuikaGame {
     return { ap, maxAP, learned, total: 7, nextThreshold };
   }
 
+  _getGemData() {
+    return [25,16,55,0,90,26,130,17,175,18,225,19,300,15,25,26,55,27,90,4,130,28,175,29,225,37,300,110,25,0,55,17,90,4,130,20,175,8,225,21,300,22,25,10,55,1001,90,88,130,27,175,12,225,89,300,105,25,39,55,40,90,41,130,6,175,42,225,43,300,44,25,1000,55,12,90,104,130,2,175,103,225,6,300,102,30,68,65,69,105,70,150,71,200,72,255,73,330,74,35,50,75,51,120,6,170,52,225,53,285,54,380,55,40,82,95,83,135,84,190,3,250,85,315,86,400,87,50,30,95,11,155,90,220,1002,290,31,370,13,500,33,50,50,95,90,155,51,220,62,290,1,370,52,500,65,60,45,130,46,210,3,300,47,400,48,520,7,670,49,70,23,150,1,240,5,340,24,550,9,670,109,800,25,70,31,150,32,240,5,340,38,550,34,670,36,800,111,80,56,170,97,270,93,380,57,600,7,730,58,870,59,80,75,170,76,270,91,380,77,600,78,730,11,870,79,80,55,170,94,270,63,380,5,600,35,730,106,870,66];
+  }
+
+  _getGemSkillName(skillId) {
+    if (skillId === 1000) return '戦闘アイテム';
+    if (skillId === 1001) return '盗む';
+    if (skillId === 1002) return 'ぶん取る';
+    // Try to get from paramAll skills
+    const skill = this.paramAll.getSkill(skillId);
+    if (skill && skill.name) return skill.name.trim();
+    // Fallback names for common ability IDs
+    const abilityNames = {
+      0:'ファイア',1:'ヒール',2:'逃走成功率UP',3:'ガード',4:'MP回復',5:'HP回復',
+      6:'全体攻撃',7:'全体回復',8:'リジェネ',9:'リレイズ',10:'アイテム強化',
+      11:'カウンター',12:'二回攻撃',13:'即死攻撃',15:'AP1.3倍',
+      16:'炎攻撃',17:'氷攻撃',18:'雷攻撃',19:'風攻撃',20:'水攻撃',21:'土攻撃',22:'闇攻撃',
+      23:'聖攻撃',24:'無属性攻撃',25:'究極攻撃',26:'炎耐性',27:'氷耐性',28:'雷耐性',29:'風耐性',
+      30:'毒攻撃',31:'石化攻撃',32:'麻痺攻撃',33:'即死耐性',34:'石化耐性',35:'全状態耐性',
+      36:'吸収攻撃',37:'全体炎',38:'全体氷',39:'小回復',40:'中回復',41:'大回復',42:'全体小回復',
+      43:'全体中回復',44:'全体大回復',45:'攻撃UP',46:'防御UP',47:'素早さUP',48:'全能力UP',
+      49:'究極バフ',50:'連続斬り',51:'強斬り',52:'必殺斬り',53:'乱れ斬り',54:'奥義斬り',55:'極意斬り',
+      56:'火炎弾',57:'氷結弾',58:'雷撃弾',59:'暴風弾',
+      62:'会心率UP',63:'回避率UP',65:'EXP1.5倍',66:'ゴールド2倍',
+      68:'初級魔法',69:'中級魔法',70:'上級魔法',71:'超級魔法',72:'炎魔法',73:'氷魔法',74:'雷魔法',
+      75:'連撃',76:'強撃',77:'必殺撃',78:'乱撃',79:'奥義撃',
+      80:'大火炎',82:'火球',83:'火柱',84:'火炎嵐',85:'灼熱',86:'煉獄',87:'業火',
+      88:'毒攻撃',89:'猛毒攻撃',90:'石化',91:'麻痺',93:'暗闇',94:'混乱',
+      97:'デスペル',102:'盗む強化',103:'逃走確実',104:'先制攻撃',105:'アイテム効果2倍',
+      106:'状態異常耐性',109:'全体蘇生',110:'全体大回復',111:'究極魔法',
+    };
+    return abilityNames[skillId] || `スキル${skillId}`;
+  }
+
+  _getGemSkillDesc(skillId) {
+    if (skillId === 1000) return '戦闘中にアイテムが使える';
+    if (skillId === 1001) return '敵からアイテムを盗む';
+    if (skillId === 1002) return '敵からアイテムを強奪する';
+    const descMap = {
+      0:'単体に炎ダメージ',1:'味方1人のHPを回復',2:'逃走の成功率が上がる',3:'ダメージを半減する',
+      4:'毎ターンMPが少し回復',5:'毎ターンHPが少し回復',6:'敵全体に物理攻撃',7:'味方全体のHPを回復',
+      8:'毎ターンHP自動回復',9:'戦闘不能時に自動復活',10:'回復アイテムの効果UP',
+      11:'攻撃を受けた時に反撃',12:'通常攻撃が2回になる',13:'一定確率で即死させる',15:'AP獲得量1.3倍',
+      16:'炎属性の攻撃魔法',17:'氷属性の攻撃魔法',18:'雷属性の攻撃魔法',19:'風属性の攻撃魔法',
+      20:'水属性の攻撃魔法',21:'土属性の攻撃魔法',22:'闇属性の攻撃魔法',
+      23:'聖属性の攻撃魔法',24:'無属性の強力な魔法',25:'最強の攻撃魔法',
+      26:'炎ダメージを軽減',27:'氷ダメージを軽減',28:'雷ダメージを軽減',29:'風ダメージを軽減',
+      30:'攻撃時に毒を付与',31:'攻撃時に石化を付与',32:'攻撃時に麻痺を付与',33:'即死攻撃を無効化',
+      34:'石化を無効化',35:'全ての状態異常を無効化',36:'与ダメージの一部をHP吸収',
+      37:'敵全体に炎ダメージ',38:'敵全体に氷ダメージ',
+      39:'少量のHP回復',40:'中量のHP回復',41:'大量のHP回復',
+      42:'味方全体を少し回復',43:'味方全体を中回復',44:'味方全体を大回復',
+      45:'攻撃力を一時的に上昇',46:'防御力を一時的に上昇',47:'素早さを一時的に上昇',
+      48:'全能力を一時的に上昇',49:'全能力を大幅に上昇',
+      50:'2連続の斬撃',51:'強力な一撃',52:'必殺の一撃',53:'ランダム4回攻撃',54:'奥義の一撃',55:'極意の一撃',
+      56:'炎の弾を放つ',57:'氷の弾を放つ',58:'雷の弾を放つ',59:'暴風の弾を放つ',
+      62:'会心の一撃が出やすくなる',63:'敵の攻撃を回避しやすくなる',65:'獲得EXPが1.5倍',66:'獲得ゴールドが2倍',
+      68:'基本的な攻撃魔法',69:'中級の攻撃魔法',70:'上級の攻撃魔法',71:'超級の攻撃魔法',
+      72:'強力な炎魔法',73:'強力な氷魔法',74:'強力な雷魔法',
+      75:'2連続攻撃',76:'強力な打撃',77:'必殺の打撃',78:'乱れ打ち',79:'奥義の打撃',
+      82:'火の玉を放つ',83:'火柱を立てる',84:'炎の嵐',85:'灼熱の炎',86:'煉獄の炎',87:'業火の炎',
+      88:'毒を付与する攻撃',89:'猛毒を付与する攻撃',90:'石化させる魔法',91:'麻痺させる魔法',
+      93:'暗闇にする魔法',94:'混乱させる魔法',97:'魔法効果を解除',
+      102:'盗む成功率UP',103:'逃走が必ず成功する',104:'先制攻撃しやすくなる',105:'アイテム効果2倍',
+      106:'状態異常にかかりにくい',109:'味方全体を蘇生',110:'味方全体を大回復',111:'最強の魔法',
+    };
+    return descMap[skillId] || '';
+  }
+
   drawMenu() {
     const ctx = this.ctx;
     this.field.draw();
@@ -1533,6 +1614,36 @@ class SuikaGame {
           gemInfo = ` [${gemItem ? gemItem.name.trim() : '?'} ${progress.learned}/${progress.total}]`;
         }
         ctx.fillText((i === gm.chrIdx ? '▶' : '  ') + p.name + gemInfo, sx + 10, sy + 42 + i * 24);
+      }
+
+      // Show equipped gem skill details for selected character
+      const selP = this.playerParams[gm.chrIdx];
+      if (selP.gem >= 0) {
+        const gemItem = this.paramAll.getItem(selP.gem);
+        const progress = this.getGemProgress(selP, selP.gem);
+        ctx.fillStyle = '#a8f';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(`── ${gemItem ? gemItem.name.trim() : '?'} (${progress.ap}/${progress.maxAP} AP) ──`, sx + 10, sy + 110);
+
+        // Show skill list
+        const GEM_DATA = this._getGemData();
+        const gemId = selP.gem - 110;
+        ctx.font = '10px monospace';
+        for (let s = 0; s < 7; s++) {
+          const threshold = GEM_DATA[gemId * 14 + s * 2];
+          const skillId = GEM_DATA[gemId * 14 + s * 2 + 1];
+          const learned = progress.ap >= threshold;
+          const skillName = this._getGemSkillName(skillId);
+          const skillDesc = this._getGemSkillDesc(skillId);
+
+          ctx.fillStyle = learned ? '#8f8' : (progress.ap >= threshold * 0.7 ? '#cc8' : '#888');
+          const mark = learned ? '✓' : '　';
+          ctx.fillText(`${mark} ${threshold}AP: ${skillName}`, sx + 12, sy + 130 + s * 22);
+          ctx.fillStyle = '#777';
+          ctx.font = '9px sans-serif';
+          ctx.fillText(`  ${skillDesc}`, sx + 14, sy + 142 + s * 22);
+          ctx.font = '10px monospace';
+        }
       }
     } else if (gm.phase === 'gem') {
       const p = this.playerParams[gm.chrIdx];
