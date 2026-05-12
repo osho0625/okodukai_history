@@ -114,6 +114,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 <div class="name-modal" id="settingsModal" style="display:none;">
   <div class="modal-box" style="text-align:left; max-height:85vh; overflow-y:auto;">
     <h2 style="text-align:center;">⚙️ AI設定</h2>
+    <label style="font-size:0.85em; font-weight:600; color:#555;">あなたの名前</label>
+    <input type="text" id="settingsMyName" placeholder="名前" autocomplete="off" style="margin-bottom:12px;">
     <label style="font-size:0.85em; font-weight:600; color:#555;">AIの名前（モデル別）</label>
     <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
       <input type="text" id="nameGemini" placeholder="Gemini名" style="flex:1; min-width:0; font-size:0.85em;">
@@ -214,6 +216,7 @@ function toggleModel() {
 
 // 設定モーダル
 function openSettingsModal() {
+  document.getElementById('settingsMyName').value = myName;
   document.getElementById('nameGemini').value = aiNames.gemini || '';
   document.getElementById('nameGpt41').value = aiNames.gpt41 || '';
   document.getElementById('nameGpt5').value = aiNames.gpt5 || '';
@@ -222,6 +225,11 @@ function openSettingsModal() {
 }
 function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
 function saveSettings() {
+  const newName = document.getElementById('settingsMyName').value.trim();
+  if (newName && newName !== myName) {
+    myName = newName;
+    localStorage.setItem('kenka_chat_name', myName);
+  }
   aiNames.gemini = document.getElementById('nameGemini').value.trim() || '';
   aiNames.gpt41 = document.getElementById('nameGpt41').value.trim() || '';
   aiNames.gpt5 = document.getElementById('nameGpt5').value.trim() || '';
