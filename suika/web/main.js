@@ -1292,16 +1292,15 @@ class SuikaGame {
       if (this.input.isDown()) eq.itemCursor = (eq.itemCursor + 1) % available.length;
       if (this.input.isOK()) {
         const selected = available[eq.itemCursor];
-        // Unequip current gem (AP resets on removal, matching original)
+        // Unequip current gem (AP is preserved per-gem, custom behavior)
         if (p.gem >= 0) {
           this.eventManager.inventory.push(p.gem);
-          // AP resets when gem is removed (original behavior)
-          if (p.gemAP) p.gemAP[p.gem] = 0;
+          // AP is stored per-gem (not reset on removal)
         }
         // Equip new gem
         if (selected.idx >= 0) {
           p.gem = selected.idx;
-          // Mark gem as bound to this character (装備制限)
+          // Mark gem as bound to this character (装備制限 — 使い回し不可)
           if (!p.gemFlags) p.gemFlags = {};
           p.gemFlags[selected.idx - 110] = true;
           // Remove from inventory
