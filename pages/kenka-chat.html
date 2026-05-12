@@ -84,7 +84,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
   <a href="../index.html">←</a>
   <h1>🤖 AI相談所</h1>
   <button id="modelToggle" onclick="toggleModel()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); border-radius:12px; padding:4px 10px; font-size:0.7em; color:#fff; cursor:pointer; white-space:nowrap;">GPT-4.1に変更</button>
-  <span onclick="openAiNameModal()" style="cursor:pointer; font-size:1.3em;" title="AI名前設定">⚙️</span>
+  <span onclick="openSettingsModal()" style="cursor:pointer; font-size:1.3em;" title="AI設定">⚙️</span>
   <button class="clear-btn" id="clearBtn" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:4px 10px; font-size:0.75em; color:#fff; cursor:pointer;">会話をリセット</button>
 </div>
 
@@ -106,13 +106,20 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
   </div>
 </div>
 
-<!-- AI名前設定モーダル -->
-<div class="name-modal" id="aiNameModal" style="display:none;">
-  <div class="modal-box">
-    <h2>⚙️ AIの名前を設定</h2>
-    <input type="text" id="aiNameInput" placeholder="例: さくら先生" autocomplete="off">
-    <button onclick="setAiName()">OK</button>
-    <button onclick="closeAiNameModal()" style="background:#eee; color:#333; margin-top:8px;">キャンセル</button>
+<!-- 設定モーダル -->
+<div class="name-modal" id="settingsModal" style="display:none;">
+  <div class="modal-box" style="max-width:400px; text-align:left; max-height:85vh; overflow-y:auto;">
+    <h2 style="text-align:center; margin-bottom:16px;">⚙️ AI設定</h2>
+
+    <label style="font-size:0.85em; font-weight:600; color:#555;">AIの名前</label>
+    <input type="text" id="settingsAiName" placeholder="例: さくら先生" autocomplete="off" style="text-align:left; margin-bottom:16px;">
+
+    <label style="font-size:0.85em; font-weight:600; color:#555;">システムプロンプト（AIの性格・回答方針）</label>
+    <textarea id="settingsPrompt" rows="10" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.85em; font-family:inherit; line-height:1.5; resize:vertical; margin-bottom:8px;" placeholder="例: あなたは家族の相談に乗る優しいカウンセラーです。中立的に、子供にもわかりやすい言葉で回答してください。"></textarea>
+    <div style="font-size:0.7em; color:#999; margin-bottom:16px;">※ここに書いた内容がAIへの指示になります。会話内容は自動で追加されます。</div>
+
+    <button onclick="saveSettings()" style="width:100%;">保存</button>
+    <button onclick="closeSettingsModal()" style="background:#eee; color:#333; margin-top:8px; width:100%;">キャンセル</button>
   </div>
 </div>
 
@@ -143,27 +150,37 @@ loadApiKeys();
 
 let myName = localStorage.getItem('kenka_chat_name') || '';
 let aiName = localStorage.getItem('ai_chat_ai_name') || 'AI';
+let systemPrompt = localStorage.getItem('ai_chat_system_prompt') || '';
 let messages = [];
 let aiMode = 'gemini'; // 'gemini' | 'gpt41' | 'gpt5'
 
-function openAiNameModal() {
-  document.getElementById('aiNameInput').value = aiName === 'AI' ? '' : aiName;
-  document.getElementById('aiNameModal').style.display = 'flex';
-  setTimeout(() => document.getElementById('aiNameInput').focus(), 100);
+const DEFAULT_PROMPT = `あなたは子供たちの相談に乗る優しいAIカウンセラーです。以下はみんなの意見や相談内容です。
+
+以下のことをしてください：
+1. それぞれの言い分や気持ちを短くまとめる
+2. お互いの気持ちを代弁する
+3. 解決のためのアドバイスや提案を1〜2個出す
+
+子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
+
+function openSettingsModal() {
+  document.getElementById('settingsAiName').value = aiName === 'AI' ? '' : aiName;
+  document.getElementById('settingsPrompt').value = systemPrompt || DEFAULT_PROMPT;
+  document.getElementById('settingsModal').style.display = 'flex';
 }
-function closeAiNameModal() {
-  document.getElementById('aiNameModal').style.display = 'none';
+function closeSettingsModal() {
+  document.getElementById('settingsModal').style.display = 'none';
 }
-function setAiName() {
-  const name = document.getElementById('aiNameInput').value.trim() || 'AI';
+function saveSettings() {
+  const name = document.getElementById('settingsAiName').value.trim() || 'AI';
+  const prompt = document.getElementById('settingsPrompt').value.trim();
   aiName = name;
+  systemPrompt = prompt;
   localStorage.setItem('ai_chat_ai_name', name);
-  closeAiNameModal();
+  localStorage.setItem('ai_chat_system_prompt', prompt);
+  closeSettingsModal();
   renderMessages();
 }
-document.getElementById('aiNameInput')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') setAiName();
-});
 
 function toggleModel() {
   const btn = document.getElementById('modelToggle');
@@ -314,31 +331,22 @@ async function askAI() {
       if (!confirm('会話がかなり長くなっています。APIの料金が増えるので、そろそろ「会話をリセット」するのがおすすめだよ。\n\nこのまま続ける？')) return;
     }
 
-    const prompt = `あなたは子供たちの相談に乗る優しいAIカウンセラーです。以下はみんなの意見や相談内容です。
-
-【会話内容】
-${conversation}
-
-以下のことをしてください：
-1. それぞれの言い分や気持ちを短くまとめる
-2. お互いの気持ちを代弁する
-3. 解決のためのアドバイスや提案を1〜2個出す
-
-子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
+    const activePrompt = systemPrompt || DEFAULT_PROMPT;
+    const fullPrompt = `${activePrompt}\n\n【会話内容】\n${conversation}`;
 
     let aiText = '';
     let lastError = '';
 
     if (aiMode === 'gpt41') {
-      aiText = await tryOpenAI(prompt, btn, 'gpt-4.1-mini');
+      aiText = await tryOpenAI(fullPrompt, activePrompt, btn, 'gpt-4.1-mini');
       if (aiText) incrementGptCount();
     } else if (aiMode === 'gpt5') {
-      aiText = await tryOpenAI(prompt, btn, 'gpt-5-mini');
+      aiText = await tryOpenAI(fullPrompt, activePrompt, btn, 'gpt-5-mini');
       if (aiText) incrementGptCount();
     } else {
       // Geminiモード: Gemini → Groq
-      aiText = await tryGemini(prompt, btn);
-      if (!aiText) aiText = await tryGroq(prompt, btn);
+      aiText = await tryGemini(fullPrompt, btn);
+      if (!aiText) aiText = await tryGroq(fullPrompt, activePrompt, btn);
     }
 
     if (!aiText) {
@@ -358,7 +366,7 @@ ${conversation}
     console.error(e);
   } finally {
     btn.disabled = false;
-    btn.textContent = '🤖 AIにまとめてもらう';
+    btn.textContent = '🤖 AIに相談する';
   }
 }
 
@@ -399,13 +407,20 @@ document.getElementById('msgInput').addEventListener('keydown', e => {
 loadMessages();
 
 // --- AI呼び出しヘルパー ---
-async function tryOpenAI(prompt, btn, model = 'gpt-4.1-mini') {
+async function tryOpenAI(fullPrompt, sysPrompt, btn, model = 'gpt-4.1-mini') {
   if (!OPENAI_API_KEY) return '';
   try {
     const res = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 500 })
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: fullPrompt.replace(sysPrompt + '\n\n', '') }
+        ],
+        max_tokens: 500
+      })
     });
     if (res.ok) {
       const data = await res.json();
@@ -417,13 +432,13 @@ async function tryOpenAI(prompt, btn, model = 'gpt-4.1-mini') {
   return '';
 }
 
-async function tryGemini(prompt, btn) {
+async function tryGemini(fullPrompt, btn) {
   if (!GEMINI_API_KEY) return '';
   try {
     const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
     });
     if (res.ok) {
       const data = await res.json();
@@ -435,13 +450,20 @@ async function tryGemini(prompt, btn) {
   return '';
 }
 
-async function tryGroq(prompt, btn) {
+async function tryGroq(fullPrompt, sysPrompt, btn) {
   if (!GROQ_API_KEY) return '';
   try {
     const res = await fetch(GROQ_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 500 })
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: fullPrompt.replace(sysPrompt + '\n\n', '') }
+        ],
+        max_tokens: 500
+      })
     });
     if (res.ok) {
       const data = await res.json();
