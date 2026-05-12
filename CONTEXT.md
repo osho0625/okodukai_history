@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/11 v1.46.0
+最終更新: 2026/05/12 v1.47.0
 
 ## プロジェクト概要
 
@@ -30,6 +30,7 @@
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
 │   ├── suika.html      # すいかが食べたい（3D RPG HTML5移植）
+│   ├── suika-original.html # すいかが食べたい（原作Java版 CheerpJ）
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
@@ -159,12 +160,15 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたいの5ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版の6ゲームをカード形式で表示
+- game_settings.game_publish で各ゲームの公開/非公開を制御
 
 ### すいかが食べたい（pages/suika.html + suika/web/）
 - Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
 - ソフトウェア3Dレンダラ（Canvas 2D）、400×320px、約11FPS
 - game_settings.game_publish.game_suika で公開制御
+- 原作Java版: pages/suika-original.html（CheerpJ 4.3、PC専用）
+  - game_settings.game_publish.game_suika_java で公開制御
 - セーブ: localStorage `suika_save`（オートセーブ+手動セーブ）
 - スマホ: タッチUI自動表示（アナログスティック+A/B/◀▶/≡ボタン）
 - 原作アセット: suika/ 配下（モデル204個、画像32枚、SE30個、ステージ/イベント/パラメータ）
@@ -255,7 +259,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.46.0
+- 現在: v1.47.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
