@@ -2277,9 +2277,8 @@ class SuikaGame {
     ctx.textAlign = 'left';
 
     // Help text for selected item
-    const inv = this.eventManager.inventory;
     const itemMap2 = {};
-    for (const idx of inv) { itemMap2[idx] = (itemMap2[idx] || 0) + 1; }
+    for (const idx of this.eventManager.inventory) { itemMap2[idx] = (itemMap2[idx] || 0) + 1; }
     const itemList2 = Object.entries(itemMap2).map(([idx]) => Number(idx));
     if (itemList2.length > 0 && this.itemMenu.cursor < itemList2.length) {
       const selItem = this.paramAll.getItem(itemList2[this.itemMenu.cursor]);
