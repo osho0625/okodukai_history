@@ -290,6 +290,7 @@ async function sendMessage() {
 let lastAiCall = 0;
 let gptDailyCount = parseInt(localStorage.getItem('gpt_daily_count') || '0');
 let gptDailyDate = localStorage.getItem('gpt_daily_date') || '';
+let gptSessionConfirmed = false; // ブラウザ閉じたらリセット（sessionStorageではなく変数）
 const GPT_DAILY_LIMIT = 20;
 
 function checkGptLimit() {
@@ -300,6 +301,12 @@ function checkGptLimit() {
   }
   return true;
 }
+function checkGptSessionFirst() {
+  if (gptSessionConfirmed) return true;
+  if (!confirm('有料モデル（GPT）を使います。料金がかかりますが、よろしいですか？')) return false;
+  gptSessionConfirmed = true;
+  return true;
+}
 function incrementGptCount() { gptDailyCount++; localStorage.setItem('gpt_daily_count', String(gptDailyCount)); localStorage.setItem('gpt_daily_date', new Date().toDateString()); }
 
 // AI相談
@@ -308,6 +315,7 @@ async function askAI() {
   if (now - lastAiCall < 30000 && lastAiCall > 0) {
     if (!confirm('さっき聞いたばかりだけど、もう一度聞く？')) return;
   }
+  if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !checkGptSessionFirst()) return;
   if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !checkGptLimit()) return;
 
   // キーチェック
