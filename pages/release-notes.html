@@ -36,6 +36,121 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.59.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいかSE音量調整機能追加（タイトル画面+メニュー←→キー）</li>
+    <li><span class="tag tag-feat">feat</span> デフォルトSEオフ、設定はlocalStorageに保存</li>
+    <li><span class="tag tag-fix">fix</span> セーブデータにadd/cmdSlots/stealthCounter追加</li>
+    <li><span class="tag tag-fix">fix</span> 復活の呪文ロード処理を完全再実装（EXPからステータス再計算）</li>
+    <li><span class="tag tag-fix">fix</span> 剣技コンボで倒した時のEXP/Gold加算漏れ修正</li>
+    <li><span class="tag tag-fix">fix</span> ターゲット選択キャンセル時のコマンド残留バグ修正</li>
+    <li><span class="tag tag-fix">fix</span> パスワード生成のMapData参照修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.58.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🍉 すいかイベントスクリプトに再帰深度制限追加（スタックオーバーフロー防止）</li>
+    <li><span class="tag tag-fix">fix</span> フィールド移動のnullチェック追加（不完全なエリアロード時のクラッシュ防止）</li>
+    <li><span class="tag tag-fix">fix</span> エリア遷移時にNPC移動アニメーションをクリア（前エリアの残留防止）</li>
+    <li><span class="tag tag-fix">fix</span> 装備ステータスの下限チェック追加（負の値防止）</li>
+    <li><span class="tag tag-fix">fix</span> EXP/レベルアップ計算を原作準拠に修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.57.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🍉 すいかEXP計算を原作準拠に修正（累積方式、lv*lv*(lv+1)*10）</li>
+    <li><span class="tag tag-fix">fix</span> レベルアップ成長を原作準拠に修正（乗算方式、prmUpsテーブル参照）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.56.1</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🍉 すいかショップ内で購入後に方向キーが効かなくなるバグ修正</li>
+    <li><span class="tag tag-feat">feat</span> ショップに挨拶会話を追加（店種別メッセージ表示後にメニュー）</li>
+    <li><span class="tag tag-feat">feat</span> 名前変更確認ダイアログ追加（デフォルト「いいえ」→西瓜太郎で開始）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.55.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 🍉 すいかオープニングをスキップ不可に修正（原作準拠）</li>
+    <li><span class="tag tag-fix">fix</span> 名前入力のデフォルトを空白に修正（決定時に「西瓜太郎」設定）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.54.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか逃走判定を原作準拠に修正（AGI+DEX比較方式）</li>
+    <li><span class="tag tag-feat">feat</span> 忍び足システム実装（エンカウント率半減、スキル/アイテムで発動）</li>
+    <li><span class="tag tag-feat">feat</span> 猫目システム実装（暗いエリアの視界拡大、スキル/アイテムで発動）</li>
+    <li><span class="tag tag-feat">feat</span> フィールドアイテム使用拡張（回復/蘇生/猫目/忍び足）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.53.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか戦闘コマンドスロット設定（メニュー→コマンド）</li>
+    <li><span class="tag tag-feat">feat</span> ヘルプテキスト表示（アイテム/スキル選択時に説明文表示）</li>
+    <li><span class="tag tag-feat">feat</span> 船移動実装（ワールドマップ上で方向キー移動＋着陸）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.52.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか「盗む」「ぶん取る」戦闘コマンド追加（勾玉で習得）</li>
+    <li><span class="tag tag-feat">feat</span> 剣技コンボ実装（通常攻撃時にDEX依存で追加攻撃発動）</li>
+    <li><span class="tag tag-feat">feat</span> 宇宙背景（CCosmo）実装（フィールド+戦闘、フラグ330/331）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.51.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか「特技」メニュー追加（フィールドで回復魔法使用可能）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.50.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいかワールドマップ改善（エリアノード表示・接続線・現在地表示）</li>
+    <li><span class="tag tag-feat">feat</span> スタッフロール演出強化（星空背景・フェード・装飾線）</li>
+    <li><span class="tag tag-feat">feat</span> 戦闘結果画面に勾玉AP獲得表示追加</li>
+    <li><span class="tag tag-feat">feat</span> ゲームオーバー画面演出改善（フェードイン・赤グロー）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.49.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか名前入力画面実装（ひらがな/カタカナ切替、原作風UI）</li>
+    <li><span class="tag tag-feat">feat</span> 戦闘スキルリストをキャラ別に表示（習得済みスキルのみ）</li>
+    <li><span class="tag tag-fix">fix</span> 戦闘アイテム使用が実インベントリに反映されるよう修正</li>
+    <li><span class="tag tag-fix">fix</span> ニューゲーム時のパーティ初期化を原作準拠に修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.48.0</span><span class="date">2026/05/12</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍉 すいか戦闘AI大幅強化（20パターン、ボスサイクル制AI）</li>
+    <li><span class="tag tag-feat">feat</span> 14種スキルアニメーション追加（炎/氷/雷/風/聖/闇/回復/バフ等）</li>
+    <li><span class="tag tag-feat">feat</span> ふっかつのじゅもん生成機能（システムメニュー→じゅもん）</li>
+    <li><span class="tag tag-fix">fix</span> 戦闘カメラ距離・敵モデルサイズ調整</li>
+    <li><span class="tag tag-fix">fix</span> キャラ名を原作準拠に修正（西瓜太郎/うな/かるび）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.47.0</span><span class="date">2026/05/12</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 🍉 すいかが食べたい大幅アップデート</li>

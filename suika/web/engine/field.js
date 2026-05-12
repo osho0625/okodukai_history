@@ -28,6 +28,10 @@ export class Field {
 
   setArea(area) {
     this.area = area;
+    // Clear NPC movement animations from previous area
+    this.npcMoveAnims = [];
+    this.npcAnimOffsets = {};
+
     // Apply area render states
     this.renderer.setRenderState(9, area.backColor.clone());
     this.renderer.setRenderState(10, area.lightColor.clone());
@@ -86,7 +90,7 @@ export class Field {
     );
 
     // Collision check — only block on hit value >= 3 (wall)
-    if (this.area) {
+    if (this.area && this.area.map) {
       const hit = this.area.map.checkHit(newPos, 0);
       if (hit >= 3) {
         // Hit a wall — check for wall events on BOTH the wall cell AND player's current cell
@@ -459,7 +463,22 @@ export class Field {
     this.frameCount++;
     this.updateNpcMoves();
     this.setCamera();
+
+    // Cat's eye effect: temporarily increase light range
+    if (this.catsEyeCounter && this.catsEyeCounter > 0) {
+      if (this.renderer.light) {
+        this.renderer.light.range = (this.renderer.light.range || 500) + this.catsEyeCounter;
+      }
+      this.catsEyeCounter--;
+    }
+
     this.renderer.clear();
+
+    // Cosmic background (drawn when event flag 330 is set — space areas)
+    if (this.eventFlags && this.eventFlags.has(330)) {
+      this.drawCosmo();
+    }
+
     this.drawGround();
     this.drawMapObjects();
     this.drawPlayer();
@@ -477,6 +496,45 @@ export class Field {
           this.renderer.drawShadow(pos, 35, this.cameraVect);
         }
       }
+    }
+  }
+
+  // Cosmic starfield background (ported from CCosmo)
+  drawCosmo() {
+    if (!this._cosmoStars) {
+      // Initialize 128 stars
+      this._cosmoStars = [];
+      for (let i = 0; i < 128; i++) {
+        this._cosmoStars.push({
+          x: Math.random() * 1400 - 700,
+          z: Math.random() * 1400 - 700 - 150,
+          speed: Math.random() * 25,
+        });
+      }
+    }
+    const ctx = this.renderer.ctx;
+    const cx = 200, cy = 160; // screen center
+    for (let i = 0; i < 128; i++) {
+      const star = this._cosmoStars[i];
+      // Move stars
+      star.x -= star.speed * 0.08;
+      star.z += star.speed * 0.06;
+      if (star.x < -700) star.x += 1400;
+      if (star.z > 700) star.z -= 1550;
+
+      // Project to screen (simple perspective)
+      const depth = 500;
+      const sx = cx + (star.x - this.playerPos.x * 0.01) * depth / (depth + 200);
+      const sy = cy + (star.z - this.playerPos.z * 0.01) * depth / (depth + 200) * 0.5;
+      if (sx < 0 || sx > 400 || sy < 0 || sy > 320) continue;
+
+      // Color based on index (matching original)
+      if (i < 56) ctx.fillStyle = '#fff';
+      else if (i < 80) ctx.fillStyle = '#8888ff';
+      else if (i < 104) ctx.fillStyle = '#8080ff';
+      else ctx.fillStyle = '#ffffaa';
+
+      ctx.fillRect(sx, sy, 1, 1);
     }
   }
 }

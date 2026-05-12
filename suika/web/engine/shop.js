@@ -21,13 +21,24 @@ export class ShopUI {
   // Open shop with item indices to sell
   open(shopName, itemIndices, playerGold, playerInventory) {
     this.visible = true;
-    this.mode = 'main';
+    this.mode = 'greeting'; // Start with greeting message
     this.cursor = 0;
     this.shopName = shopName;
     this.gold = playerGold;
     this.inventory = playerInventory;
-    this.message = `${shopName}「いらっしゃいませ」`;
+    this.message = '';
     this.messageTimer = 0;
+    this._greetingDone = false;
+
+    // Greeting messages per shop type
+    const greetings = {
+      '道具屋': 'いらっしゃい！\n何をお探しかな？',
+      '武器屋': 'よう来たな！\nいい武器が揃ってるぜ。',
+      '勾玉屋': 'ようこそ。\n勾玉はいかがですか？',
+      '土産屋': 'いらっしゃいませ。\nお土産はいかが？',
+      '合成屋': 'いらっしゃい。\n何か作りましょうか？',
+    };
+    this._greeting = greetings[shopName] || `${shopName}「いらっしゃいませ」`;
 
     this.itemList = [];
     for (const idx of itemIndices) {
@@ -48,7 +59,31 @@ export class ShopUI {
 
   update() {
     if (!this.visible) return;
-    if (this.messageTimer > 0) { this.messageTimer--; return; }
+    if (this.messageTimer > 0) {
+      this.messageTimer--;
+      // Still process direction input during message display to prevent stuck keys
+      if (this.mode === 'buy') {
+        if (this.input.isUp()) this.cursor = (this.cursor - 1 + this.itemList.length) % this.itemList.length;
+        if (this.input.isDown()) this.cursor = (this.cursor + 1) % this.itemList.length;
+      } else if (this.mode === 'sell') {
+        // Allow cursor movement during sell message too
+        const sellCount = this.inventory.filter((_, i) => this.paramAll.getItem(this.inventory[i])).length;
+        if (sellCount > 0) {
+          if (this.input.isUp()) this.cursor = Math.max(0, this.cursor - 1);
+          if (this.input.isDown()) this.cursor = Math.min(sellCount - 1, this.cursor + 1);
+        }
+      }
+      return;
+    }
+
+    if (this.mode === 'greeting') {
+      // Show greeting, wait for OK to proceed to main menu
+      if (this.input.isOK() || this.input.isCancel()) {
+        this.mode = 'main';
+        this.cursor = 0;
+      }
+      return;
+    }
 
     if (this.mode === 'main') {
       const items = ['買う', '売る', 'やめる'];
@@ -105,6 +140,26 @@ export class ShopUI {
     // Background
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, 400, 320);
+
+    // Greeting mode: show dialogue box
+    if (this.mode === 'greeting') {
+      ctx.fillStyle = 'rgba(0,0,60,0.92)';
+      ctx.fillRect(30, 100, 340, 100);
+      ctx.strokeStyle = '#88f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(30, 100, 340, 100);
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      const lines = this._greeting.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], 200, 135 + i * 24);
+      }
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('▼', 200, 190);
+      return;
+    }
 
     // Shop title
     ctx.fillStyle = 'rgba(0,0,60,0.9)';

@@ -12,6 +12,8 @@ class BattleEffect {
     this.shakeX = 0;
     this.damageNums = []; // { text, x, y, life, color }
     this.particles = [];  // { x, y, vx, vy, life, color, size }
+    // Skill animation overlays
+    this.skillAnim = null; // { type, frame, maxFrame, x, y, ... }
   }
 
   triggerFlash(color = '#fff', frames = 4) {
@@ -42,6 +44,11 @@ class BattleEffect {
     }
   }
 
+  // Trigger a distinct skill animation overlay
+  triggerSkillAnim(type, x, y) {
+    this.skillAnim = { type, frame: 0, maxFrame: getSkillAnimDuration(type), x, y };
+  }
+
   update() {
     if (this.flash > 0) this.flash--;
     if (this.shake > 0) {
@@ -62,7 +69,332 @@ class BattleEffect {
       p.life--;
       return p.life > 0;
     });
+    // Advance skill animation
+    if (this.skillAnim) {
+      this.skillAnim.frame++;
+      if (this.skillAnim.frame >= this.skillAnim.maxFrame) {
+        this.skillAnim = null;
+      }
+    }
   }
+}
+
+// Skill animation types and durations
+const SKILL_ANIM_TYPE = {
+  SLASH: 'slash',           // Physical slash lines
+  FIRE: 'fire',             // Fire burst
+  ICE: 'ice',              // Ice crystals
+  THUNDER: 'thunder',       // Lightning bolt
+  WIND: 'wind',            // Wind spiral
+  HOLY: 'holy',            // Holy light rays
+  DARK: 'dark',            // Dark vortex
+  HEAL: 'heal',            // Green rising sparkles
+  BUFF: 'buff',            // Golden aura
+  DEBUFF: 'debuff',        // Purple drain
+  POISON: 'poison',        // Green bubbles
+  DRAIN: 'drain',          // Red energy flow
+  MULTI_SLASH: 'multiSlash', // Multiple slash lines
+  EXPLOSION: 'explosion',   // Large explosion
+};
+
+function getSkillAnimDuration(type) {
+  switch (type) {
+    case SKILL_ANIM_TYPE.SLASH: return 12;
+    case SKILL_ANIM_TYPE.FIRE: return 20;
+    case SKILL_ANIM_TYPE.ICE: return 18;
+    case SKILL_ANIM_TYPE.THUNDER: return 15;
+    case SKILL_ANIM_TYPE.WIND: return 22;
+    case SKILL_ANIM_TYPE.HOLY: return 25;
+    case SKILL_ANIM_TYPE.DARK: return 20;
+    case SKILL_ANIM_TYPE.HEAL: return 20;
+    case SKILL_ANIM_TYPE.BUFF: return 16;
+    case SKILL_ANIM_TYPE.DEBUFF: return 16;
+    case SKILL_ANIM_TYPE.POISON: return 18;
+    case SKILL_ANIM_TYPE.DRAIN: return 18;
+    case SKILL_ANIM_TYPE.MULTI_SLASH: return 18;
+    case SKILL_ANIM_TYPE.EXPLOSION: return 24;
+    default: return 15;
+  }
+}
+
+// Draw skill animation overlay on canvas
+function drawSkillAnimation(ctx, anim) {
+  if (!anim) return;
+  const { type, frame, maxFrame, x, y } = anim;
+  const t = frame / maxFrame; // 0..1 progress
+  ctx.save();
+
+  switch (type) {
+    case SKILL_ANIM_TYPE.SLASH: {
+      // Diagonal slash lines
+      const alpha = t < 0.3 ? t / 0.3 : 1 - (t - 0.3) / 0.7;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 30 + t * 60, y - 20);
+      ctx.lineTo(x + 30 - t * 20, y + 20);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 20 - t * 40, y - 15);
+      ctx.lineTo(x - 20 + t * 50, y + 25);
+      ctx.stroke();
+      break;
+    }
+    case SKILL_ANIM_TYPE.FIRE: {
+      // Fire burst — expanding orange/red circles + rising particles
+      const alpha = t < 0.5 ? 1 : 1 - (t - 0.5) * 2;
+      ctx.globalAlpha = alpha * 0.7;
+      const radius = 10 + t * 40;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      grad.addColorStop(0, '#ff4');
+      grad.addColorStop(0.5, '#f80');
+      grad.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      // Fire tongues
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 + t * 3;
+        const r = radius * 0.6 * (0.5 + Math.sin(frame * 0.5 + i) * 0.5);
+        ctx.fillStyle = `rgba(255,${100 + i * 30},0,${alpha * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(angle) * r, y + Math.sin(angle) * r, 4 + Math.random() * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.ICE: {
+      // Ice crystals — blue shards radiating outward
+      const alpha = t < 0.4 ? t / 0.4 : 1 - (t - 0.4) / 0.6;
+      ctx.globalAlpha = alpha;
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = t * 35;
+        const cx = x + Math.cos(angle) * dist;
+        const cy = y + Math.sin(angle) * dist;
+        ctx.fillStyle = '#8df';
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle + t * 2);
+        ctx.fillRect(-3, -6, 6, 12); // crystal shard
+        ctx.restore();
+      }
+      // Center glow
+      ctx.fillStyle = `rgba(180,220,255,${alpha * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 15 - t * 5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case SKILL_ANIM_TYPE.THUNDER: {
+      // Lightning bolt — jagged line from top
+      const alpha = t < 0.2 ? 1 : (t < 0.5 ? 1 : 1 - (t - 0.5) * 2);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#ff0';
+      ctx.lineWidth = 2 + (1 - t) * 3;
+      ctx.beginPath();
+      let bx = x, by = y - 60;
+      ctx.moveTo(bx, by);
+      const segments = 6;
+      for (let i = 0; i < segments; i++) {
+        bx += (Math.random() - 0.5) * 20;
+        by += 60 / segments;
+        ctx.lineTo(bx, by);
+      }
+      ctx.stroke();
+      // Flash at impact
+      if (t < 0.3) {
+        ctx.fillStyle = `rgba(255,255,200,${(0.3 - t) * 2})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.WIND: {
+      // Wind spiral — curved lines rotating
+      const alpha = t < 0.3 ? t / 0.3 : (t > 0.8 ? (1 - t) / 0.2 : 1);
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.strokeStyle = '#afa';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        const baseAngle = t * Math.PI * 4 + (i / 3) * Math.PI * 2;
+        for (let j = 0; j <= 20; j++) {
+          const a = baseAngle + j * 0.3;
+          const r = 5 + j * 1.5;
+          const px = x + Math.cos(a) * r;
+          const py = y + Math.sin(a) * r * 0.6;
+          if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.HOLY: {
+      // Holy light — rays from above
+      const alpha = t < 0.3 ? t / 0.3 : (t > 0.7 ? (1 - t) / 0.3 : 1);
+      ctx.globalAlpha = alpha * 0.5;
+      for (let i = 0; i < 5; i++) {
+        const rx = x - 20 + i * 10 + Math.sin(frame * 0.3 + i) * 5;
+        ctx.fillStyle = `rgba(255,255,200,${alpha * 0.4})`;
+        ctx.fillRect(rx, y - 50, 3, 60 + t * 20);
+      }
+      // Center glow
+      ctx.fillStyle = `rgba(255,255,220,${alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 12 + Math.sin(frame * 0.5) * 4, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case SKILL_ANIM_TYPE.DARK: {
+      // Dark vortex — purple/black swirl
+      const alpha = t < 0.3 ? t / 0.3 : (t > 0.7 ? (1 - t) / 0.3 : 1);
+      ctx.globalAlpha = alpha * 0.7;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, 30 + t * 10);
+      grad.addColorStop(0, 'rgba(80,0,120,0.8)');
+      grad.addColorStop(0.6, 'rgba(40,0,80,0.4)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, 30 + t * 10, 0, Math.PI * 2);
+      ctx.fill();
+      // Swirl lines
+      ctx.strokeStyle = '#a4f';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        const a = t * Math.PI * 3 + (i / 4) * Math.PI * 2;
+        const r = 15 + t * 15;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * r * 0.3, y + Math.sin(a) * r * 0.3, r * 0.4, a, a + 1.5);
+        ctx.stroke();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.HEAL: {
+      // Green rising sparkles
+      const alpha = t < 0.2 ? t / 0.2 : (t > 0.8 ? (1 - t) / 0.2 : 1);
+      ctx.globalAlpha = alpha;
+      for (let i = 0; i < 8; i++) {
+        const px = x - 20 + (i % 4) * 13 + Math.sin(frame * 0.4 + i) * 5;
+        const py = y + 20 - t * 50 - i * 4;
+        const size = 2 + Math.sin(frame * 0.6 + i * 2) * 1.5;
+        ctx.fillStyle = i % 2 === 0 ? '#4f8' : '#8fc';
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.BUFF: {
+      // Golden aura ring expanding
+      const alpha = t < 0.3 ? t / 0.3 : 1 - (t - 0.3) / 0.7;
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.strokeStyle = '#fd0';
+      ctx.lineWidth = 2;
+      const r = 10 + t * 30;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner sparkles
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + frame * 0.3;
+        ctx.fillStyle = '#ff8';
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.DEBUFF: {
+      // Purple downward drain
+      const alpha = t < 0.2 ? t / 0.2 : (t > 0.7 ? (1 - t) / 0.3 : 1);
+      ctx.globalAlpha = alpha * 0.6;
+      for (let i = 0; i < 6; i++) {
+        const px = x - 15 + i * 6;
+        const py = y - 20 + t * 40 + Math.sin(i + frame * 0.5) * 5;
+        ctx.fillStyle = `rgba(160,60,255,${0.4 + Math.sin(i) * 0.2})`;
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.POISON: {
+      // Green bubbles rising
+      const alpha = t < 0.2 ? t / 0.2 : (t > 0.8 ? (1 - t) / 0.2 : 1);
+      ctx.globalAlpha = alpha;
+      for (let i = 0; i < 6; i++) {
+        const px = x - 15 + (i % 3) * 15 + Math.sin(frame * 0.3 + i * 2) * 4;
+        const py = y + 10 - t * 30 - i * 5;
+        const size = 3 + Math.sin(frame * 0.4 + i) * 1.5;
+        ctx.strokeStyle = '#8f0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.DRAIN: {
+      // Red energy flowing from target to caster
+      const alpha = t < 0.2 ? t / 0.2 : (t > 0.8 ? (1 - t) / 0.2 : 1);
+      ctx.globalAlpha = alpha * 0.7;
+      for (let i = 0; i < 5; i++) {
+        const progress = (t + i * 0.15) % 1;
+        const px = x + (200 - x) * progress;
+        const py = y + (250 - y) * progress + Math.sin(progress * Math.PI * 3) * 10;
+        ctx.fillStyle = '#f44';
+        ctx.beginPath();
+        ctx.arc(px, py, 3 - progress * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.MULTI_SLASH: {
+      // Multiple slash lines in sequence
+      const alpha = t < 0.1 ? t / 0.1 : (t > 0.8 ? (1 - t) / 0.2 : 1);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      const slashCount = 3;
+      for (let i = 0; i < slashCount; i++) {
+        const st = i / slashCount;
+        if (t < st || t > st + 0.4) continue;
+        const lt = (t - st) / 0.4;
+        const sx = x - 25 + i * 15;
+        ctx.beginPath();
+        ctx.moveTo(sx + lt * 30, y - 20 + i * 5);
+        ctx.lineTo(sx + lt * 30 + 15, y + 20 - i * 3);
+        ctx.stroke();
+      }
+      break;
+    }
+    case SKILL_ANIM_TYPE.EXPLOSION: {
+      // Large explosion — expanding ring + debris
+      const alpha = t < 0.3 ? 1 : 1 - (t - 0.3) / 0.7;
+      ctx.globalAlpha = alpha;
+      const r = t * 50;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grad.addColorStop(0, `rgba(255,200,50,${alpha})`);
+      grad.addColorStop(0.4, `rgba(255,100,0,${alpha * 0.7})`);
+      grad.addColorStop(1, 'rgba(100,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      // Ring
+      ctx.strokeStyle = `rgba(255,200,100,${alpha * 0.5})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.2, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
 }
 
 export class BattleUI {
@@ -80,6 +412,8 @@ export class BattleUI {
       { label: 'こうげき', cmd: CMD.ATTACK },
       { label: 'まほう', cmd: CMD.SKILL },
       { label: 'アイテム', cmd: CMD.ITEM },
+      { label: '盗む', cmd: CMD.STEAL, needAbility: true },
+      { label: 'ぶん取る', cmd: CMD.SEIZE, needAbility: true },
       { label: 'ぼうぎょ', cmd: CMD.DEFEND },
       { label: 'にげる', cmd: CMD.RUN },
     ];
@@ -95,12 +429,34 @@ export class BattleUI {
     // Player model indices (set from main.js)
     this.playerModelPats = [];
     this.playerCount = 0;
+    // Track last skill kind for animation selection
+    this._lastSkillKind = -1;
+    // Player skill sets (set from main.js per character)
+    this.playerSkillSets = null;
+    // Ability flags for steal/seize commands
+    this.hasSteal = false;
+    this.hasSeize = false;
+    this._pendingCmd = null;
+    // Cosmic background mode (space areas)
+    this.cosmoMode = false;
   }
 
   setEnemyPats(pats) {
     this.enemyPats = pats;
     this.enemyDeathTimers = new Array(pats.length).fill(0); // death fade timer per enemy
     this._prevAlive = null;
+  }
+
+  // Get commands available to current player (filter steal/seize by ability)
+  getAvailableCommands() {
+    return this.commands.filter(c => {
+      if (!c.needAbility) return true;
+      // Check if current player has steal/seize ability
+      // hasSteal/hasSeize are set from main.js based on learned abilities
+      if (c.cmd === CMD.STEAL) return this.hasSteal;
+      if (c.cmd === CMD.SEIZE) return this.hasSeize;
+      return true;
+    });
   }
 
   update(battleState) {
@@ -117,54 +473,96 @@ export class BattleUI {
     // Detect new log entries for effects
     if (battleState.log.length > this.lastLogLen) {
       const newMsg = battleState.log[battleState.log.length - 1];
-      if (newMsg.includes('ダメージ') && !newMsg.includes('毒で')) {
+      if (newMsg.includes('ダメージ') && !newMsg.includes('毒で') && !newMsg.includes('吸収')) {
         this.effect.triggerFlash('#f44', 3);
         this.effect.triggerShake(4);
         if (newMsg.includes('の攻撃')) {
-          this.effect.spawnParticles(200, 120, 6, '#fff', 40);
-          // Start attack animation for current unit
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, 200, 120);
           if (battleState.currentUnit && battleState.currentUnit.isPlayer) {
             this.attackAnim = { who: 'player', idx: battleState.currentUnit.index, frame: 0, maxFrame: 20 };
           }
+        }
+        if (newMsg.includes('強攻撃')) {
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, 200, 100);
+          this.effect.spawnParticles(200, 120, 10, '#fff', 40);
+        }
+        if (newMsg.includes('連続攻撃')) {
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.MULTI_SLASH, 200, 100);
         }
       }
       if (newMsg.includes('会心')) {
         this.effect.triggerFlash('#ff0', 8);
         this.effect.triggerShake(8);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.EXPLOSION, 200, 100);
         this.effect.spawnParticles(200, 120, 25, '#ff4', 60);
       }
       if (newMsg.includes('倒した') || newMsg.includes('倒れた')) {
         this.effect.triggerFlash('#ff0', 6);
         this.effect.spawnParticles(200, 120, 15, '#f80');
       }
-      if (newMsg.includes('魔法') || newMsg.includes('唱えた')) {
-        this.effect.spawnParticles(200, 80, 18, '#8af', 80);
-        this.effect.triggerFlash('#44f', 2);
+      if (newMsg.includes('魔法攻撃')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, 200, 100);
+        this.effect.triggerFlash('#f80', 2);
       }
       if (newMsg.includes('全体魔法')) {
-        this.effect.spawnParticles(100, 100, 10, '#8af', 50);
-        this.effect.spawnParticles(200, 100, 10, '#8af', 50);
-        this.effect.spawnParticles(300, 100, 10, '#8af', 50);
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, 80);
+        this.effect.spawnParticles(100, 100, 8, '#ff0', 50);
+        this.effect.spawnParticles(300, 100, 8, '#ff0', 50);
       }
-      if (newMsg.includes('回復')) {
+      if (newMsg.includes('唱えた')) {
+        // Determine skill animation type from skill kind
+        const skillKind = this._lastSkillKind;
+        if (skillKind === 0) { // attack magic
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.FIRE, 200, 100);
+        } else if (skillKind === 1) { // heal
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 250, 250);
+        } else if (skillKind === 2) { // buff
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, 250, 250);
+        } else if (skillKind === 3) { // debuff
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, 200, 100);
+        } else if (skillKind === 4) { // status
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, 200, 100);
+        }
+        this.effect.triggerFlash('#44f', 2);
+      }
+      if (newMsg.includes('回復魔法') || newMsg.includes('HP') && newMsg.includes('回復')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 250, 250);
         this.effect.spawnParticles(250, 260, 12, '#4f8', 40);
         this.effect.triggerFlash('#0f4', 2);
       }
-      if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('全能力')) {
+      if (newMsg.includes('全体回復')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 200, 200);
+        this.effect.spawnParticles(150, 250, 8, '#4f8', 30);
+        this.effect.spawnParticles(250, 250, 8, '#4f8', 30);
+      }
+      if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('素早さが上がった') || newMsg.includes('全能力')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.BUFF, 250, 250);
         this.effect.spawnParticles(250, 250, 10, '#ff8', 30);
       }
-      if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった')) {
+      if (newMsg.includes('防御力が下がった') || newMsg.includes('攻撃力が下がった') || newMsg.includes('呪い')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DEBUFF, 200, 100);
         this.effect.spawnParticles(200, 100, 10, '#a4f', 30);
       }
-      if (newMsg.includes('毒を受けた')) {
+      if (newMsg.includes('毒を受けた') || newMsg.includes('毒攻撃')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.POISON, 200, 100);
         this.effect.spawnParticles(200, 100, 12, '#8f0', 40);
       }
       if (newMsg.includes('麻痺') || newMsg.includes('石になった')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, 100);
         this.effect.triggerFlash('#ff0', 4);
         this.effect.spawnParticles(200, 100, 15, '#cc0', 30);
       }
       if (newMsg.includes('混乱')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DARK, 200, 100);
         this.effect.spawnParticles(200, 100, 10, '#f0f', 40);
+      }
+      if (newMsg.includes('HP吸収') || newMsg.includes('吸い取った')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.DRAIN, 200, 100);
+        this.effect.triggerFlash('#f44', 3);
+      }
+      if (newMsg.includes('蘇生') || newMsg.includes('復活')) {
+        this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HOLY, 200, 120);
+        this.effect.spawnParticles(200, 120, 15, '#ffa', 40);
       }
       if (newMsg.includes('ミス')) {
         this.effect.spawnParticles(200, 120, 4, '#888', 20);
@@ -175,14 +573,15 @@ export class BattleUI {
     if (battleState.state !== 'playerTurn') return null;
 
     if (this.phase === 'command') {
+      const availCmds = this.getAvailableCommands();
       if (this.input.isUp()) {
-        this.cursor = (this.cursor - 1 + this.commands.length) % this.commands.length;
+        this.cursor = (this.cursor - 1 + availCmds.length) % availCmds.length;
       }
       if (this.input.isDown()) {
-        this.cursor = (this.cursor + 1) % this.commands.length;
+        this.cursor = (this.cursor + 1) % availCmds.length;
       }
       if (this.input.isOK()) {
-        const selected = this.commands[this.cursor];
+        const selected = availCmds[this.cursor];
         if (selected.cmd === CMD.ATTACK) {
           this.phase = 'target';
           this.targetCursor = 0;
@@ -198,6 +597,12 @@ export class BattleUI {
         if (selected.cmd === CMD.ITEM) {
           this.phase = 'item';
           this.subCursor = 0;
+          return null;
+        }
+        if (selected.cmd === CMD.STEAL || selected.cmd === CMD.SEIZE) {
+          this.phase = 'target';
+          this.targetCursor = 0;
+          this._pendingCmd = selected.cmd;
           return null;
         }
         return { cmd: selected.cmd, target: 0 };
@@ -216,11 +621,14 @@ export class BattleUI {
       }
       if (this.input.isOK()) {
         const target = this.targetCursor;
+        const cmd = this._pendingCmd || CMD.ATTACK;
+        this._pendingCmd = null;
         this.phase = 'command';
-        return { cmd: CMD.ATTACK, target };
+        return { cmd, target };
       }
       if (this.input.isCancel()) {
         this.phase = 'command';
+        this._pendingCmd = null;
       }
     } else if (this.phase === 'skill') {
       if (this.playerSkills.length === 0) {
@@ -326,14 +734,22 @@ export class BattleUI {
   }
 
   buildSkillList(battleState) {
-    // Get skills available to current player (simplified: first few skills from paramAll)
+    // Get skills available to current player from playerSkillSets
     this.playerSkills = [];
     const currentMP = battleState.currentUnit ? battleState.currentUnit.mp : 0;
-    // Use first 8 skills from paramAll as available skills
-    for (let i = 0; i < Math.min(8, this.paramAll.skills.length); i++) {
-      const s = this.paramAll.skills[i];
-      if (s.name && s.name.trim()) {
-        this.playerSkills.push({ ...s, index: i, canUse: currentMP >= s.mp });
+    const chrIdx = battleState.currentUnit ? battleState.currentUnit.index : 0;
+
+    if (this.playerSkillSets && this.playerSkillSets[chrIdx]) {
+      for (const s of this.playerSkillSets[chrIdx]) {
+        this.playerSkills.push({ ...s, canUse: currentMP >= s.mp });
+      }
+    } else {
+      // Fallback: first 8 skills from paramAll
+      for (let i = 0; i < Math.min(8, this.paramAll.skills.length); i++) {
+        const s = this.paramAll.skills[i];
+        if (s.name && s.name.trim()) {
+          this.playerSkills.push({ ...s, index: i, canUse: currentMP >= s.mp });
+        }
       }
     }
   }
@@ -353,6 +769,11 @@ export class BattleUI {
     grad.addColorStop(1, `rgb(${Math.floor(bgR * 0.5)},${Math.floor(bgG * 0.5)},${Math.floor(bgB * 0.5)})`);
     ctx.fillStyle = grad;
     ctx.fillRect(-10, 0, 420, 320);
+
+    // Cosmic starfield for space battles (flag 330/331)
+    if (this.cosmoMode) {
+      this.drawCosmoStars(ctx);
+    }
 
     // Ground plane (simple perspective grid)
     this.drawBattleGround(ctx);
@@ -389,6 +810,9 @@ export class BattleUI {
 
     // Damage numbers
     this.drawDamageNums(ctx);
+
+    // Skill animation overlay
+    drawSkillAnimation(ctx, this.effect.skillAnim);
 
     // Player status panel
     this.drawPlayerStatus(battleState);
@@ -461,13 +885,12 @@ export class BattleUI {
     const players = battleState.players;
     const count = Math.min(players.length, this.playerModelPats.length);
 
-    // Camera matching original: distance 2100, height 1600, looking at center
-    // Initial angle ~108 degrees (facing from behind players toward enemies)
-    const camAngle = Math.PI * 0.6; // ~108 degrees
-    const eye = new Vec3(Math.sin(camAngle) * 2100, 1600, Math.cos(camAngle) * 2100);
-    const at = new Vec3(0, 0, 0);
+    // Camera: slightly further back for better framing
+    const camAngle = Math.PI * 0.6;
+    const eye = new Vec3(Math.sin(camAngle) * 2400, 1700, Math.cos(camAngle) * 2400);
+    const at = new Vec3(0, 100, 0);
     this.renderer.viewTransform(eye, at);
-    this.renderer.projTransform(10, 5000);
+    this.renderer.projTransform(10, 6000);
     this.renderer.setAmbient(new Color(80, 80, 100));
     this.renderer.light = { direction: new Vec3(-0.3, -0.8, 0.5).normalize() };
 
@@ -478,11 +901,11 @@ export class BattleUI {
       const model = this.models[modelIdx];
       if (!model || model.vertices.length === 0) continue;
 
-      // Position players at Z=-230 (foreground), spread on X axis
-      const spacing = count <= 2 ? 180 : 140;
+      // Position players at Z=-280 (foreground), spread on X axis
+      const spacing = count <= 2 ? 200 : 160;
       const startX = -(count - 1) * spacing / 2;
       const posX = startX + i * spacing;
-      const posZ = -230;
+      const posZ = -280;
 
       // Attack animation: move forward
       let animOffsetZ = 0;
@@ -530,12 +953,12 @@ export class BattleUI {
       return;
     }
 
-    // Setup camera for battle scene (matching original: dist 2100, height 1600)
+    // Setup camera for battle scene (adjusted for better enemy sizing)
     const camAngle = Math.PI * 0.6;
-    const eye = new Vec3(Math.sin(camAngle) * 2100, 1600, Math.cos(camAngle) * 2100);
-    const at = new Vec3(0, 0, 0);
+    const eye = new Vec3(Math.sin(camAngle) * 2400, 1700, Math.cos(camAngle) * 2400);
+    const at = new Vec3(0, 100, 0);
     this.renderer.viewTransform(eye, at);
-    this.renderer.projTransform(10, 5000);
+    this.renderer.projTransform(10, 6000);
 
     // Set lighting
     this.renderer.setAmbient(new Color(80, 80, 100));
@@ -568,15 +991,15 @@ export class BattleUI {
         continue;
       }
 
-      // Position enemies in a row (at Z=+230, matching original)
-      const spacing = totalEnemies <= 2 ? 200 : 150;
+      // Position enemies in a row (at Z=+280, slightly further from camera)
+      const spacing = totalEnemies <= 2 ? 220 : 160;
       const startX = -(totalEnemies - 1) * spacing / 2;
       const posX = startX + i * spacing;
-      const posZ = 230;
+      const posZ = 280;
 
       const pos = new Vec3(posX, 0, posZ);
       const rot = new Vec3(0, Math.PI, 0); // face player
-      const scl = new Vec3(1, 1, 1);
+      const scl = new Vec3(0.9, 0.9, 0.9); // slightly smaller to prevent oversized appearance
 
       const wvp = this.renderer.calcModel(model, pos, rot, scl);
       const worldMat = this.renderer.getTransform(3); // TS_WORLD
@@ -789,8 +1212,9 @@ export class BattleUI {
 
   drawCommandMenu() {
     const ctx = this.ctx;
+    const availCmds = this.getAvailableCommands();
     const x = 8, y = 232;
-    const h = 16 + this.commands.length * 18;
+    const h = 16 + availCmds.length * 18;
     ctx.fillStyle = 'rgba(10,10,50,0.92)';
     ctx.fillRect(x, y, 115, h);
     ctx.strokeStyle = '#66a';
@@ -798,11 +1222,11 @@ export class BattleUI {
     ctx.strokeRect(x, y, 115, h);
 
     ctx.font = '12px sans-serif';
-    for (let i = 0; i < this.commands.length; i++) {
+    for (let i = 0; i < availCmds.length; i++) {
       ctx.fillStyle = i === this.cursor ? '#ff0' : '#ddd';
       ctx.textAlign = 'left';
       const prefix = i === this.cursor ? '▶ ' : '   ';
-      ctx.fillText(prefix + this.commands[i].label, x + 8, y + 15 + i * 18);
+      ctx.fillText(prefix + availCmds[i].label, x + 8, y + 15 + i * 18);
     }
   }
 
@@ -951,5 +1375,34 @@ export class BattleUI {
     this.phase = 'command';
     this.cursor = 0;
     this.subCursor = 0;
+    this._pendingCmd = null;
+  }
+
+  // Cosmic starfield for space battle backgrounds
+  drawCosmoStars(ctx) {
+    if (!this._cosmoStars) {
+      this._cosmoStars = [];
+      for (let i = 0; i < 80; i++) {
+        this._cosmoStars.push({
+          x: Math.random() * 400,
+          y: Math.random() * 200,
+          speed: 0.2 + Math.random() * 0.8,
+          size: 0.5 + Math.random() * 1.5,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+    this._cosmoFrame = (this._cosmoFrame || 0) + 1;
+    for (let i = 0; i < this._cosmoStars.length; i++) {
+      const s = this._cosmoStars[i];
+      s.x -= s.speed;
+      if (s.x < 0) s.x += 400;
+      const twinkle = 0.4 + Math.sin(this._cosmoFrame * 0.03 + s.phase) * 0.4;
+      if (i < 30) ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
+      else if (i < 50) ctx.fillStyle = `rgba(150,150,255,${twinkle})`;
+      else if (i < 65) ctx.fillStyle = `rgba(100,100,255,${twinkle})`;
+      else ctx.fillStyle = `rgba(255,255,180,${twinkle})`;
+      ctx.fillRect(s.x, s.y, s.size, s.size);
+    }
   }
 }

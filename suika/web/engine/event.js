@@ -128,7 +128,8 @@ export class EventManager {
     return count;
   }
 
-  async run(eventNo) {
+  async run(eventNo, _depth = 0) {
+    if (_depth > 50) { console.warn('Event recursion limit reached:', eventNo); return; }
     if (eventNo < 0 || eventNo >= this.events.length) return;
     const evt = this.events[eventNo];
     if (!evt || !evt.data || evt.data.length === 0) return;
@@ -216,7 +217,7 @@ export class EventManager {
 
         case E.JUMP: {
           const target = evt.getWord(ptr); ptr += 2;
-          return this.run(target);
+          return this.run(target, _depth + 1);
         }
 
         case E.YESNO: {
@@ -233,28 +234,28 @@ export class EventManager {
         case E.IF: {
           const flag = evt.getWord(ptr); ptr += 2;
           const target = evt.getWord(ptr); ptr += 2;
-          if (this.getFlag(flag)) return this.run(target);
+          if (this.getFlag(flag)) return this.run(target, _depth + 1);
           break;
         }
 
         case E.IFN: {
           const flag = evt.getWord(ptr); ptr += 2;
           const target = evt.getWord(ptr); ptr += 2;
-          if (!this.getFlag(flag)) return this.run(target);
+          if (!this.getFlag(flag)) return this.run(target, _depth + 1);
           break;
         }
 
         case E.IFCALL: {
           const flag = evt.getWord(ptr); ptr += 2;
           const target = evt.getWord(ptr); ptr += 2;
-          if (this.getFlag(flag)) await this.run(target);
+          if (this.getFlag(flag)) await this.run(target, _depth + 1);
           break;
         }
 
         case E.IFNCALL: {
           const flag = evt.getWord(ptr); ptr += 2;
           const target = evt.getWord(ptr); ptr += 2;
-          if (!this.getFlag(flag)) await this.run(target);
+          if (!this.getFlag(flag)) await this.run(target, _depth + 1);
           break;
         }
 
@@ -274,7 +275,7 @@ export class EventManager {
 
         case E.CALL: {
           const target = evt.getWord(ptr); ptr += 2;
-          await this.run(target);
+          await this.run(target, _depth + 1);
           break;
         }
 

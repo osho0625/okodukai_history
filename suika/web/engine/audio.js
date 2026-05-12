@@ -6,7 +6,15 @@ export class AudioManager {
     this.ctx = null;
     this.buffers = []; // AudioBuffer[]
     this.enabled = true;
-    this.volume = 0.5;
+    this.volume = 0; // Default: SE off
+    // Restore volume from localStorage
+    const saved = localStorage.getItem('suika_se_volume');
+    if (saved !== null) this.volume = parseFloat(saved);
+  }
+
+  setVolume(v) {
+    this.volume = Math.max(0, Math.min(1, v));
+    localStorage.setItem('suika_se_volume', String(this.volume));
   }
 
   init() {
