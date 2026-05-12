@@ -153,10 +153,10 @@ body {
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
+  <a class="back" onclick="blastNavGuard('前の画面', function(){history.back()})" style="cursor:pointer;">←</a>
   <div class="score">Score: <span id="score">0</span></div>
-  <a href="blast-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
-  <a href="../index.html" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;">🏠</a>
+  <a onclick="blastNavGuard('ランキング', function(){location.href='blast-ranking.html'})" style="text-decoration:none; font-size:1.4em; padding:4px 8px; cursor:pointer;">&#x1F3C6;</a>
+  <a onclick="blastNavGuard('ホーム', function(){location.href='../index.html'})" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;cursor:pointer;">🏠</a>
 </div>
 <div class="board-container" id="boardContainer">
   <div class="board" id="board"></div>
@@ -188,7 +188,7 @@ body {
 <script src="../js/common.js"></script>
 <script src="../js/puyo-escape.js"></script>
 <script>
-const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
+const sbClient = client; // common.jsのSupabaseクライアントを再利用
 
 const GRID = 8;
 const COLORS = ['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff7043','#26c6da','#ec407a'];
@@ -361,17 +361,32 @@ function generatePiecesGuaranteed() {
 
 function generatePieces() {
   const maxColors = getUnlockedPuyoColorCount();
-  let attempts = 0;
-  do {
-    pieces = [];
+
+  function genSet() {
+    const ps = [];
     for (let i = 0; i < 3; i++) {
       const shape = pickRandomPiece();
       const puyoMap = shape.map(row => row.map(v => v ? Math.floor(Math.random() * maxColors) : -1));
-      pieces.push({ shape, puyoMap, used: false });
+      ps.push({ shape, puyoMap, used: false });
     }
-    attempts++;
-    if (canPlaceAllThree(pieces)) break;
-  } while (attempts < 3);
+    return ps;
+  }
+
+  function countFittable(ps) {
+    return ps.filter(p => canFitAnywhere(p.shape)).length;
+  }
+
+  // 段階的に条件を緩和: 3つ全部→2つ以上→1つ以上
+  for (let threshold = 3; threshold >= 1; threshold--) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      pieces = genSet();
+      if (countFittable(pieces) >= threshold) {
+        renderPieces();
+        return;
+      }
+    }
+  }
+  // 全て失敗（ほぼありえないが安全策）
   renderPieces();
 }
 
@@ -453,6 +468,13 @@ function renderBoard() {
       }
       cell.dataset.x = x; cell.dataset.y = y;
       cell.addEventListener('click', () => handleCellClick(x, y));
+      // スマホ用: ドラッグ中はイベントを上位に伝播させる
+      cell.addEventListener('touchend', (e) => {
+        if (touchDragStarted || dragging) return; // ドラッグ中は何もしない（documentのtouchendに任せる）
+        e.preventDefault();
+        e.stopPropagation(); // documentのtouchendが二重発火しないように
+        handleCellClick(x, y);
+      });
       board.appendChild(cell);
     }
   boardRect = document.getElementById('board').getBoundingClientRect();
@@ -478,31 +500,231 @@ function renderPieces() {
       }
       container.appendChild(cell);
     }));
-    // タップで選択
+    // タップで選択（マウスのみ）
     container.addEventListener('click', (e) => {
       if (dragging) return;
       if (p.used) return;
       selectedIdx = (selectedIdx === i) ? -1 : i;
+      clearPreview();
       renderPieces();
     });
-    // ドラッグ開始
-    container.addEventListener('mousedown', (e) => startDrag(e, i));
-    container.addEventListener('touchstart', (e) => startDrag(e, i), { passive: false });
+    // ドラッグ開始（マウスのみ）
+    container.addEventListener('mousedown', (e) => startMouseDrag(e, i));
     area.appendChild(container);
   });
 }
 
-// --- ドラッグ操作 ---
-function startDrag(e, idx) {
+// --- タッチ操作（スマホ専用） ---
+// 全てdocumentレベルで処理し、タッチターゲット移動によるtouchcancelを回避
+let touchStartPos = null;
+let touchStartIdx = -1;
+let touchDragStarted = false;
+let activeTouchId = null;
+let lastTouchPos = null;
+const DRAG_THRESHOLD = 12;
+
+// ピースコンテナのヒットテスト
+function getPieceIdxAtPos(x, y) {
+  const containers = document.querySelectorAll('.piece-container:not(.used)');
+  for (const el of containers) {
+    const rect = el.getBoundingClientRect();
+    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      return parseInt(el.dataset.idx);
+    }
+  }
+  return -1;
+}
+
+document.addEventListener('touchstart', (e) => {
+  // ドラッグ中やゲームオーバー中は無視
+  if (dragging || touchDragStarted) return;
+  const pos = getEventPos(e);
+  const idx = getPieceIdxAtPos(pos.x, pos.y);
+  if (idx < 0) return;
   if (pieces[idx].used) return;
   e.preventDefault();
+  touchStartPos = { x: pos.x, y: pos.y };
+  touchStartIdx = idx;
+  touchDragStarted = false;
+  lastTouchPos = { x: pos.x, y: pos.y };
+  if (e.touches.length > 0) {
+    activeTouchId = e.touches[0].identifier;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+  if (touchStartPos === null) return;
+  // 常にpreventDefaultを呼んでブラウザのスクロール/ジェスチャーを抑止
+  e.preventDefault();
+  const pos = getEventPos(e);
+  lastTouchPos = { x: pos.x, y: pos.y };
+  if (!touchDragStarted) {
+    const dx = pos.x - touchStartPos.x, dy = pos.y - touchStartPos.y;
+    if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+    // 閾値超え → ドラッグ開始
+    touchDragStarted = true;
+    dragging = true;
+    dragPieceIdx = touchStartIdx;
+    selectedIdx = touchStartIdx;
+    // DOM再構築せずCSSクラスだけ更新（タッチターゲット消失を防ぐ）
+    document.querySelectorAll('.piece-container').forEach((el, idx) => {
+      el.classList.toggle('selected', idx === touchStartIdx);
+    });
+    createDragGhost(touchStartIdx);
+  }
+  if (touchDragStarted) {
+    moveDragGhost(pos.x, pos.y);
+    updatePreview(pos.x, pos.y);
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (touchStartPos === null && !touchDragStarted) return;
+  e.preventDefault();
+  if (!touchDragStarted) {
+    // タップ扱い → ピース選択切り替え
+    const idx = touchStartIdx;
+    touchStartPos = null;
+    touchStartIdx = -1;
+    activeTouchId = null;
+    lastTouchPos = null;
+    if (idx >= 0 && idx < pieces.length && !pieces[idx].used) {
+      selectedIdx = (selectedIdx === idx) ? -1 : idx;
+      clearPreview();
+      renderPieces();
+    }
+    return;
+  }
+  // ドラッグ終了 → 配置試行
+  // changedTouchesから位置を取得、取れなければ最終記録位置を使用
+  let pos;
+  if (e.changedTouches && e.changedTouches.length > 0) {
+    pos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  } else {
+    pos = lastTouchPos || touchStartPos || { x: 0, y: 0 };
+  }
+
+  touchStartPos = null;
+  touchStartIdx = -1;
+  touchDragStarted = false;
+  dragging = false;
+  activeTouchId = null;
+  lastTouchPos = null;
+  clearPreview();
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+
+  if (dragPieceIdx >= 0) {
+    const p = pieces[dragPieceIdx];
+    const cell = getBoardCell(pos.x, pos.y - 40);
+    const ox = cell.x - Math.floor(p.shape[0].length / 2);
+    const oy = cell.y - Math.floor(p.shape.length / 2);
+    if (canPlace(p.shape, ox, oy)) {
+      doPlace(dragPieceIdx, ox, oy);
+    } else {
+      // 配置失敗 → 選択状態をリセット
+      selectedIdx = -1;
+      renderPieces();
+    }
+  }
+  dragPieceIdx = -1;
+});
+
+document.addEventListener('touchcancel', (e) => {
+  // touchcancelが発火してもドラッグ中なら最終位置で配置を試みる
+  if (touchDragStarted && dragPieceIdx >= 0 && lastTouchPos) {
+    const pos = lastTouchPos;
+    const p = pieces[dragPieceIdx];
+    const cell = getBoardCell(pos.x, pos.y - 40);
+    const ox = cell.x - Math.floor(p.shape[0].length / 2);
+    const oy = cell.y - Math.floor(p.shape.length / 2);
+    clearPreview();
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    if (canPlace(p.shape, ox, oy)) {
+      dragging = false;
+      touchStartPos = null;
+      touchStartIdx = -1;
+      touchDragStarted = false;
+      activeTouchId = null;
+      lastTouchPos = null;
+      doPlace(dragPieceIdx, ox, oy);
+      dragPieceIdx = -1;
+      return;
+    }
+  }
+  clearPreview();
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+  dragging = false;
+  touchStartPos = null;
+  touchStartIdx = -1;
+  touchDragStarted = false;
+  activeTouchId = null;
+  lastTouchPos = null;
+  dragPieceIdx = -1;
+  selectedIdx = -1;
+  renderPieces();
+});
+
+// 安全策: ページ復帰時やフォーカス時にプレビュー残留をクリーンアップ
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    clearPreview();
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    dragging = false;
+    touchDragStarted = false;
+    mouseDragging = false;
+    touchStartPos = null;
+    activeTouchId = null;
+    lastTouchPos = null;
+  }
+});
+
+// --- マウス操作（PC専用） ---
+let mouseDragging = false;
+
+function startMouseDrag(e, idx) {
+  if (pieces[idx].used) return;
+  e.preventDefault();
+  mouseDragging = true;
   dragging = true;
   dragPieceIdx = idx;
   selectedIdx = idx;
   renderPieces();
+  createDragGhost(idx);
+  const pos = getEventPos(e);
+  moveDragGhost(pos.x, pos.y);
+  updatePreview(pos.x, pos.y);
+}
 
+document.addEventListener('mousemove', (e) => {
+  if (!mouseDragging) return;
+  const pos = getEventPos(e);
+  moveDragGhost(pos.x, pos.y);
+  updatePreview(pos.x, pos.y);
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!mouseDragging) return;
+  mouseDragging = false;
+  dragging = false;
+  clearPreview();
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+
+  const pos = getEventPos(e);
+  if (dragPieceIdx >= 0) {
+    const p = pieces[dragPieceIdx];
+    const cell = getBoardCell(pos.x, pos.y - 40);
+    const ox = cell.x - Math.floor(p.shape[0].length / 2);
+    const oy = cell.y - Math.floor(p.shape.length / 2);
+    if (canPlace(p.shape, ox, oy)) {
+      doPlace(dragPieceIdx, ox, oy);
+    }
+  }
+  dragPieceIdx = -1;
+});
+
+// --- 共通ヘルパー ---
+function createDragGhost(idx) {
   const p = pieces[idx];
-  // ゴースト作成（ぷよ画像で表示）
   dragGhost = document.createElement('div');
   dragGhost.className = 'drag-ghost';
   dragGhost.style.gridTemplateColumns = `repeat(${p.shape[0].length}, var(--cell-size))`;
@@ -519,10 +741,6 @@ function startDrag(e, idx) {
     dragGhost.appendChild(cell);
   }));
   document.body.appendChild(dragGhost);
-
-  const pos = getEventPos(e);
-  moveDragGhost(pos.x, pos.y);
-  updatePreview(pos.x, pos.y);
 }
 
 function moveDragGhost(x, y) {
@@ -553,6 +771,10 @@ function updatePreview(px, py) {
   const p = pieces[dragPieceIdx];
   // ゴーストは指の40px上に表示されるので、ボード座標もそれに合わせる
   const adjustedY = py - 40;
+  // ボード外判定: 指がボードの外にある場合はプレビューを表示しない
+  const rect = document.getElementById('board').getBoundingClientRect();
+  if (px < rect.left || px > rect.right || adjustedY < rect.top || adjustedY > rect.bottom) return;
+
   const cell = getBoardCell(px, adjustedY);
   const ox = cell.x - Math.floor(p.shape[0].length / 2);
   const oy = cell.y - Math.floor(p.shape.length / 2);
@@ -580,58 +802,56 @@ function clearPreview() {
   document.querySelectorAll('.cell.preview, .cell.invalid-preview').forEach(el => {
     el.classList.remove('preview', 'invalid-preview');
     const x = parseInt(el.dataset.x), y = parseInt(el.dataset.y);
-    if (!grid[y][x]) {
+    // gridに実データがなければ表示をクリア
+    if (!grid[y] || !grid[y][x]) {
       el.style.background = '';
       el.innerHTML = '';
+    } else {
+      // gridにデータがある場合は正しい表示に戻す
+      const puyoIdx = COLORS.indexOf(grid[y][x]);
+      const imgSrc = PUYO_IMGS[(puyoIdx >= 0 ? puyoIdx : 0) % PUYO_IMGS.length];
+      el.style.background = 'none';
+      el.innerHTML = '<img src="' + imgSrc + '">';
     }
   });
 }
 
-function endDrag(e) {
-  if (!dragging) return;
-  dragging = false;
-  clearPreview();
-  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
-
-  const pos = getEventPos(e);
-  const p = pieces[dragPieceIdx];
-  const cell = getBoardCell(pos.x, pos.y - 40);
-  const ox = cell.x - Math.floor(p.shape[0].length / 2);
-  const oy = cell.y - Math.floor(p.shape.length / 2);
-
-  if (canPlace(p.shape, ox, oy)) {
-    doPlace(dragPieceIdx, ox, oy);
-  }
-  dragPieceIdx = -1;
-}
-
-document.addEventListener('mousemove', (e) => {
-  if (!dragging) return;
-  const pos = getEventPos(e);
-  moveDragGhost(pos.x, pos.y);
-  updatePreview(pos.x, pos.y);
-});
-document.addEventListener('touchmove', (e) => {
-  if (!dragging) return;
-  e.preventDefault();
-  const pos = getEventPos(e);
-  moveDragGhost(pos.x, pos.y);
-  updatePreview(pos.x, pos.y);
-}, { passive: false });
-document.addEventListener('mouseup', endDrag);
-document.addEventListener('touchend', endDrag);
-
 // --- タップ配置 ---
+let lastCellClickTime = 0;
 function handleCellClick(x, y) {
-  if (dragging) return;
+  // 重複呼び出し防止（touchend + click の両方が発火する場合）
+  const now = Date.now();
+  if (now - lastCellClickTime < 300) return;
+  lastCellClickTime = now;
+  if (dragging || touchDragStarted) return;
   if (selectedIdx < 0 || selectedIdx >= pieces.length) return;
   const p = pieces[selectedIdx];
   if (p.used) return;
   const ox = x - Math.floor(p.shape[0].length / 2);
   const oy = y - Math.floor(p.shape.length / 2);
+  clearPreview();
   if (canPlace(p.shape, ox, oy)) {
     doPlace(selectedIdx, ox, oy);
+  } else {
+    // 配置不可でもプレビューを一瞬表示して消す（フィードバック）
+    showTapPreview(p, ox, oy);
+    setTimeout(clearPreview, 400);
   }
+}
+
+// タップ時のプレビュー表示（配置不可の場合のフィードバック用）
+function showTapPreview(p, ox, oy) {
+  for (let y = 0; y < p.shape.length; y++)
+    for (let x = 0; x < p.shape[y].length; x++)
+      if (p.shape[y][x]) {
+        const nx = ox + x, ny = oy + y;
+        if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+          const el = document.getElementById('c_' + nx + '_' + ny);
+          if (el && !grid[ny][nx]) {
+            el.classList.add('invalid-preview');
+          }
+        }
+      }
 }
 
 // --- 配置ロジック ---
@@ -647,6 +867,7 @@ function canPlace(shape, px, py) {
 }
 
 function doPlace(pieceIdx, px, py) {
+  clearPreview();
   const p = pieces[pieceIdx];
 
   // 配置
@@ -860,6 +1081,14 @@ function dismissTitle() {
 
 init();
 window.addEventListener('resize', () => { init(); renderBoard(); });
+
+function blastNavGuard(dest, action) {
+  const title = document.getElementById('titleMenu');
+  const over = document.getElementById('gameOver');
+  const isPlaying = (!title || title.style.display === 'none') && (!over || !over.classList.contains('active'));
+  if (!isPlaying) { action(); return; }
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？')) { action(); }
+}
 </script>
 </body>
 </html>

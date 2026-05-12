@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000">
+<title>🍉 すいかが食べたい（原作Java版）</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #000; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh;
+}
+.header {
+  display: flex; align-items: center; width: 100%; max-width: 420px;
+  padding: 8px 10px; gap: 8px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.5em; cursor: pointer; }
+.header h1 { font-size: 0.95em; font-weight: 600; }
+.home-link { color: #eee; text-decoration: none; font-size: 1.3em; margin-left: auto; }
+.game-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 10px;
+}
+.info { margin-top: 8px; font-size: 0.7rem; color: #666; text-align: center; }
+.warn { color: #fa0; font-size: 0.8rem; margin-top: 12px; text-align: center; max-width: 380px; }
+</style>
+<script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">←</a>
+  <h1>🍉 すいかが食べたい（原作Java版）</h1>
+  <a class="home-link" href="arcade.html">🕹️</a>
+</div>
+
+<div class="game-wrap">
+  <applet
+    archive="../suika/arpg.jar"
+    code="ARpg.class"
+    codebase="../suika/"
+    width="400"
+    height="320">
+    <param name="Mode" value="0">
+    <param name="Safe" value="0">
+  </applet>
+
+  <p class="info">CheerpJ 4.3 で Java Applet を実行中…</p>
+  <p class="warn">⚠️ PC専用（スマホ非対応）。初回読み込みに時間がかかります。<br>操作: マウスクリックで決定、矢印キーで移動</p>
+</div>
+
+<script>
+cheerpjInit();
+</script>
+</body>
+</html>

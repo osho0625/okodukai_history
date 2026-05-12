@@ -80,14 +80,14 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()" style="cursor:pointer;">←</a>
+  <a class="back" onclick="tetrisNavGuard('前の画面', function(){history.back()})" style="cursor:pointer;">←</a>
   <div class="score-area">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="lines">Lines: <span id="lines">0</span></div>
   </div>
-  <a href="tetris-ranking.html" style="text-decoration:none; font-size:1.4em; padding:4px 8px;">&#x1F3C6;</a>
+  <a onclick="tetrisNavGuard('ランキング', function(){location.href='tetris-ranking.html'})" style="text-decoration:none; font-size:1.4em; padding:4px 8px; cursor:pointer;">&#x1F3C6;</a>
   <span id="settingsBtn" style="cursor:pointer; font-size:1.3em; padding:4px 8px; opacity:0.7;">&#x2699;&#xFE0F;</span>
-  <a href="../index.html" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;">🏠</a>
+  <a onclick="tetrisNavGuard('ホーム', function(){location.href='../index.html'})" style="color:#eee;text-decoration:none;font-size:1.4em;padding:4px 8px;cursor:pointer;">🏠</a>
 </div>
 <div class="game-wrap">
   <canvas id="game"></canvas>
@@ -143,7 +143,7 @@ canvas { border: 2px solid #333; border-radius: 8px; background: #16213e; displa
 <script src="../js/common.js"></script>
 <script src="../js/puyo-escape.js"></script>
 <script>
-const sbClient = supabase.createClient("https://ynecezxnltigplrfzzoh.supabase.co", "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4");
+const sbClient = client; // common.jsのSupabaseクライアントを再利用
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -188,7 +188,7 @@ function drawPuyoCell(context, x, y, size, colorIdx, alpha) {
     context.beginPath();
     context.arc(cx, cy, r, 0, Math.PI * 2);
     context.clip();
-    const s = r * 2.2;
+    const s = r * 2.6;
     context.drawImage(img, cx - s/2, cy - s/2, s, s);
     context.restore();
   } else {
@@ -846,6 +846,13 @@ renderControls();
 grid = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
 state = 'menu';
 requestAnimationFrame(loop);
+
+function tetrisNavGuard(dest, action) {
+  if (state !== 'play') { action(); return; }
+  state = 'paused';
+  if (confirm('現在のゲームを中断して' + dest + 'に移動しますか？')) { action(); }
+  else { state = 'play'; }
+}
 </script>
 </body>
 </html>

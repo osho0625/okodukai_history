@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/08 v1.37.1
+最終更新: 2026/05/12 v1.54.0
 
 ## プロジェクト概要
 
@@ -29,6 +29,8 @@
 │   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
+│   ├── suika.html      # すいかが食べたい（3D RPG HTML5移植）
+│   ├── suika-original.html # すいかが食べたい（原作Java版 CheerpJ）
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
@@ -36,12 +38,21 @@
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
-│   └── puyo_1〜5.avif  # ぷよ画像
+│   └── puyo_1〜9.avif  # ピクミン画像（1:紫, 2:赤, 3:青, 4:黄, 5:白, 6:氷, 7:岩, 8:羽, 9:光）
 ├── js/
 │   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知等）
+│   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
+│   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
 ├── backups/            # 自動バックアップJSON
+├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
+│   ├── web/            # HTML5版エンジン（main.js + engine/21モジュール）
+│   ├── data/           # ゲームデータ（モデル/ステージ/イベント/パラメータ）
+│   ├── image00-31.gif  # スプライト/UI画像
+│   ├── efc_00-29.au    # 効果音
+│   ├── decompiled/     # 逆コンパイル済みJavaソース（参考用）
+│   └── ANALYSIS.md     # 解析ドキュメント
 └── .github/workflows/
     └── backup.yml      # 毎日AM3:00 JST自動バックアップ
 ```
@@ -149,7 +160,23 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険の4ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版の6ゲームをカード形式で表示
+- game_settings.game_publish で各ゲームの公開/非公開を制御
+
+### すいかが食べたい（pages/suika.html + suika/web/）
+- Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
+- ソフトウェア3Dレンダラ（Canvas 2D）、400×320px、約11FPS
+- game_settings.game_publish.game_suika で公開制御
+- 原作Java版: pages/suika-original.html（CheerpJ 4.3、PC専用）
+  - game_settings.game_publish.game_suika_java で公開制御
+- セーブ: localStorage `suika_save`（オートセーブ+手動セーブ）
+- スマホ: タッチUI自動表示（アナログスティック+A/B/◀▶/≡ボタン）
+- 原作アセット: suika/ 配下（モデル204個、画像32枚、SE30個、ステージ/イベント/パラメータ）
+- エンジン構成: suika/web/engine/ に21モジュール
+- イベントスクリプト75コマンド完全対応
+- 戦闘: ターン制、スキル5種、状態異常5種、敵AI5カテゴリ、クリティカル
+- ショップ: 道具屋/武器屋/勾玉屋/土産屋/合成屋（14レシピ）
+- 初期状態: area 0, pos(16,35), 主人公1人, 1000G, 回復草×3（原作CInitGame準拠）
 
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）
@@ -165,6 +192,40 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - ドラッグ＆ドロップまたはタップで配置（プレビュー表示）
 - 行/列が揃ったら消去（フラッシュ＋パーティクル演出）
 - ランキングTOP10（blast_rankings）
+
+### オリマーの冒険（olimar.html + js/olimar-scenario.js）
+- Ruina風ゲームブック形式RPG（テキスト＋選択肢で物語進行）
+- スマホ向けUI、ふりがな付き全テキスト
+- シナリオデータは `js/olimar-scenario.js` に分離（Object.assign方式）
+- 全7章＋脱出パート、62ノード、エンディングまで実装済み
+- セーブ: localStorage、端末ごと1スロット、自動セーブ（S&L不可）
+- 実績: 10種（端末ごと管理）
+- マップ: Canvas描画、探検キット入手後に使用可能
+- 9種ピクミン全入手、仲間2人（エンジニア・パイロット）救出
+- 脱出パート: 4パーツ集め（通信モジュール/推進コイル/耐熱シールド/エネルギーセル）→修理→エンディング
+- オリマーのロケットは修理不能。仲間のロケットを修理して脱出。通信モジュールだけ再利用
+
+#### 章構成
+| 章 | エリア | 入手ピクミン | ギミック |
+|----|--------|-------------|---------|
+| 1 | 不時着地点・森・洞窟 | 赤(火に強い) | 炎、暗闘、敵 |
+| 2 | 水辺の谷 | 青(水中OK) | 水流、滝の裏 |
+| 3 | 雷鳴の丘 | 黄(電気耐性) | 電気柵 |
+| 4 | 毒の沼地 | 白(毒耐性+小さい) | 毒霧、小さな穴 |
+| 5 | 凍てつく洞窟 | 紫(力強い)+氷(凍らせる) | 重い氷塊、氷を溶かす。エンジニア救出 |
+| 6 | 岩山の砦 | 岩(壁破壊) | 崩れた壁、敵の巣。パイロット救出 |
+| 7 | 天空の庭 | 羽(飛べる)+光(闇を照らす) | 浮島、暗い通路 |
+
+#### シーン描画（Canvas水彩風）
+crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
+
+#### テキストルール
+- セリフ・心理描写なし（状況説明のみ）。他キャラのセリフはOK
+- 全テキストにrubyタグでふりがな
+- 2行ずつタップ送り、全テキスト表示後に選択肢出現
+
+#### ピクミンインデックス（PUYO_IMGS）
+0=紫, 1=赤, 2=青, 3=黄, 4=白, 5=氷, 6=岩, 7=羽, 8=光
 
 ## localStorage使用一覧
 
@@ -184,6 +245,10 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | puyo_special_unlocked | ぷよSpecial解除フラグ | 永続 |
 | puyo_hard_unlock_pending | Hard解除演出待ち | 消化で削除 |
 | puyo_special_unlock_pending | Special解除演出待ち | 消化で削除 |
+| olimar_device_id | オリマーの冒険端末ID | 永続 |
+| olimar_save_{deviceId} | オリマーの冒険セーブデータ | 永続 |
+| olimar_achievements | オリマーの冒険実績 | 永続 |
+| suika_save | すいかが食べたいセーブデータ（JSON） | 永続 |
 
 ## sessionStorage使用
 
@@ -194,7 +259,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.37.1
+- 現在: v1.47.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
