@@ -219,16 +219,52 @@ async function sendMessage() {
   });
 }
 
-// AIまとめ（30秒クールダウン付き）
+// AIまとめ（課金保護付き）
 let aiCooldown = false;
+let gptDailyCount = parseInt(localStorage.getItem('gpt_daily_count') || '0');
+let gptDailyDate = localStorage.getItem('gpt_daily_date') || '';
+const GPT_DAILY_LIMIT = 20; // GPTは1日20回まで
+
+function checkGptLimit() {
+  const today = new Date().toDateString();
+  if (gptDailyDate !== today) {
+    gptDailyCount = 0;
+    gptDailyDate = today;
+    localStorage.setItem('gpt_daily_count', '0');
+    localStorage.setItem('gpt_daily_date', today);
+  }
+  return gptDailyCount < GPT_DAILY_LIMIT;
+}
+
+function incrementGptCount() {
+  gptDailyCount++;
+  localStorage.setItem('gpt_daily_count', String(gptDailyCount));
+  localStorage.setItem('gpt_daily_date', new Date().toDateString());
+}
+
 async function askAI() {
-  if (aiCooldown) { alert('少し待ってからもう一度押してね'); return; }
+  if (aiCooldown) { alert('少し待ってからもう一度押してね（60秒に1回まで）'); return; }
+
+  // GPTモードの場合、1日の上限チェック
+  if (useGpt) {
+    if (!checkGptLimit()) {
+      alert(`今日のGPT利用回数（${GPT_DAILY_LIMIT}回）に達しました。Geminiモードに切り替えるか、明日また使ってね。`);
+      return;
+    }
+  }
 
   // APIキーチェック
-  if (!OPENAI_API_KEY && !GEMINI_API_KEY && !GROQ_API_KEY) {
+  if (useGpt && !OPENAI_API_KEY) {
     await loadApiKeys();
-    if (!OPENAI_API_KEY && !GEMINI_API_KEY && !GROQ_API_KEY) {
-      alert('APIキーが設定されていません。Supabaseのapp_configテーブルにopenai_api_keyを設定してください。');
+    if (!OPENAI_API_KEY) {
+      alert('OpenAI APIキーが設定されていません。');
+      return;
+    }
+  }
+  if (!useGpt && !GEMINI_API_KEY && !GROQ_API_KEY) {
+    await loadApiKeys();
+    if (!GEMINI_API_KEY && !GROQ_API_KEY) {
+      alert('APIキーが設定されていません。');
       return;
     }
   }
@@ -237,7 +273,7 @@ async function askAI() {
   btn.disabled = true;
   btn.textContent = '🤖 考え中…';
   aiCooldown = true;
-  setTimeout(() => { aiCooldown = false; }, 30000);
+  setTimeout(() => { aiCooldown = false; }, 60000); // 60秒クールダウン
 
   try {
     // 直近のユーザーメッセージを取得（AI発言は除く）
@@ -265,8 +301,9 @@ ${conversation}
     let lastError = '';
 
     if (useGpt) {
-      // GPTモード: OpenAIのみ
+      // GPTモード: OpenAIのみ（リトライなし）
       aiText = await tryOpenAI(prompt, btn);
+      if (aiText) incrementGptCount();
     } else {
       // Geminiモード: Gemini → Groq
       aiText = await tryGemini(prompt, btn);
