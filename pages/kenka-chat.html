@@ -106,29 +106,32 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 
 <script>
 let GEMINI_API_KEY = '';
+let GROQ_API_KEY = '';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// APIキーをSupabaseのgame_settingsから読み込み（コードに直書きしない）
-async function loadGeminiKey() {
+// APIキーをSupabaseから読み込み
+async function loadApiKeys() {
   try {
-    // まずgame_settingsから試す
-    const { data } = await client.from('game_settings').select('gemini_api_key').eq('id', 1).maybeSingle();
-    if (data && data.gemini_api_key) {
-      GEMINI_API_KEY = data.gemini_api_key;
-      return;
+    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+    if (data) {
+      data.forEach(row => {
+        if (row.key === 'gemini_api_key') GEMINI_API_KEY = row.value;
+        if (row.key === 'groq_api_key') GROQ_API_KEY = row.value;
+      });
     }
   } catch(e) {
-    console.warn('game_settings読み込み失敗:', e);
+    console.warn('APIキー読み込み失敗:', e);
   }
-  // フォールバック: app_configテーブルから試す
-  try {
-    const { data } = await client.from('app_config').select('value').eq('key', 'gemini_api_key').maybeSingle();
-    if (data && data.value) GEMINI_API_KEY = data.value;
-  } catch(e) {
-    console.warn('app_config読み込み失敗:', e);
+  // フォールバック: game_settingsから
+  if (!GEMINI_API_KEY) {
+    try {
+      const { data } = await client.from('game_settings').select('gemini_api_key').eq('id', 1).maybeSingle();
+      if (data && data.gemini_api_key) GEMINI_API_KEY = data.gemini_api_key;
+    } catch(e) {}
   }
 }
-loadGeminiKey();
+loadApiKeys();
 
 let myName = localStorage.getItem('kenka_chat_name') || '';
 let messages = [];
@@ -208,10 +211,10 @@ async function askAI() {
   if (aiCooldown) { alert('少し待ってからもう一度押してね'); return; }
 
   // APIキーチェック
-  if (!GEMINI_API_KEY) {
-    await loadGeminiKey();
-    if (!GEMINI_API_KEY) {
-      alert('APIキーが設定されていません。Supabaseのgame_settingsテーブルにgemini_api_keyを設定してください。');
+  if (!GEMINI_API_KEY && !GROQ_API_KEY) {
+    await loadApiKeys();
+    if (!GEMINI_API_KEY && !GROQ_API_KEY) {
+      alert('APIキーが設定されていません。Supabaseのapp_configテーブルにgemini_api_keyまたはgroq_api_keyを設定してください。');
       return;
     }
   }
@@ -245,42 +248,55 @@ ${conversation}
 子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
 
     let aiText = '';
-    let retries = 0;
     let lastError = '';
-    while (retries < 3) {
-      const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
 
-      if (res.status === 429) {
-        retries++;
-        btn.textContent = `🤖 混み合ってるよ…(${retries}/3)`;
-        await new Promise(r => setTimeout(r, 10000 * retries));
-        continue;
-      }
+    // 1. まずGeminiを試す
+    if (GEMINI_API_KEY) {
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else {
+          lastError = `Gemini: HTTP ${res.status}`;
+          console.warn(lastError);
+        }
+      } catch(e) { lastError = 'Gemini接続エラー'; }
+    }
 
-      if (!res.ok) {
-        const errBody = await res.text();
-        lastError = `HTTP ${res.status}: ${errBody.substring(0, 200)}`;
-        console.error('Gemini API error:', lastError);
-        break;
-      }
-
-      const data = await res.json();
-      aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (!aiText) {
-        lastError = 'レスポンスにテキストがありません: ' + JSON.stringify(data).substring(0, 300);
-        console.error(lastError);
-      }
-      break;
+    // 2. Gemini失敗時、Groqにフォールバック
+    if (!aiText && GROQ_API_KEY) {
+      btn.textContent = '🤖 別のAIに聞いてるよ…';
+      try {
+        const res = await fetch(GROQ_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-8b-instant',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 500
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          aiText = data.choices?.[0]?.message?.content || '';
+        } else {
+          const errBody = await res.text();
+          lastError += ` / Groq: HTTP ${res.status}: ${errBody.substring(0, 100)}`;
+          console.error(lastError);
+        }
+      } catch(e) { lastError += ' / Groq接続エラー'; }
     }
 
     if (!aiText) {
-      alert('AIからの応答が得られませんでした。\n' + (lastError || '1分ほど待ってから再度お試しください。'));
+      alert('AIからの応答が得られませんでした。\n' + (lastError || '少し待ってから再度お試しください。'));
       return;
     }
 
