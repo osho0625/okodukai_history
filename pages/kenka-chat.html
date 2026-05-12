@@ -83,15 +83,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 <div class="header">
   <a href="../index.html">←</a>
   <h1>🤖 AI相談所</h1>
+  <button id="modelToggle" onclick="toggleModel()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); border-radius:12px; padding:4px 10px; font-size:0.7em; color:#fff; cursor:pointer; white-space:nowrap;">GPT-4.1に変更</button>
   <button class="clear-btn" id="clearBtn">リセット</button>
 </div>
 
 <div class="chat-area" id="chatArea"></div>
 
-<div style="position:fixed; bottom:80px; right:16px; z-index:10; display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
-  <button class="ai-btn" id="aiBtn" onclick="askAI()" style="position:static;">🤖 AIにまとめてもらう</button>
-  <button id="modelToggle" onclick="toggleModel()" style="background:#eee; border:1px solid #ccc; border-radius:16px; padding:4px 12px; font-size:0.75em; cursor:pointer;">🟢 Gemini（無料）</button>
-</div>
+<button class="ai-btn" id="aiBtn" onclick="askAI()" style="position:fixed; bottom:80px; right:16px; z-index:10;">🤖 AIに相談する</button>
 
 <div class="input-area">
   <textarea id="msgInput" rows="1" placeholder="意見を書いてね…" oninput="autoResize(this)"></textarea>
@@ -140,19 +138,13 @@ function toggleModel() {
   const btn = document.getElementById('modelToggle');
   if (aiMode === 'gemini') {
     aiMode = 'gpt41';
-    btn.textContent = '🔵 GPT-4.1 mini';
-    btn.style.background = '#e3f2fd';
-    btn.style.borderColor = '#90caf9';
+    btn.textContent = 'GPT-5に変更';
   } else if (aiMode === 'gpt41') {
     aiMode = 'gpt5';
-    btn.textContent = '🟣 GPT-5 mini';
-    btn.style.background = '#f3e5f5';
-    btn.style.borderColor = '#ce93d8';
+    btn.textContent = 'Geminiに変更';
   } else {
     aiMode = 'gemini';
-    btn.textContent = '🟢 Gemini（無料）';
-    btn.style.background = '#eee';
-    btn.style.borderColor = '#ccc';
+    btn.textContent = 'GPT-4.1に変更';
   }
 }
 
