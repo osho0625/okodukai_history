@@ -189,11 +189,15 @@ async function sendMessage() {
   });
 }
 
-// AIまとめ
+// AIまとめ（30秒クールダウン付き）
+let aiCooldown = false;
 async function askAI() {
+  if (aiCooldown) { alert('少し待ってからもう一度押してね'); return; }
   const btn = document.getElementById('aiBtn');
   btn.disabled = true;
   btn.textContent = '🤖 考え中…';
+  aiCooldown = true;
+  setTimeout(() => { aiCooldown = false; }, 30000);
 
   try {
     // 直近のユーザーメッセージを取得（AI発言は除く）
@@ -217,16 +221,33 @@ ${conversation}
 
 子供にもわかりやすい言葉で、どちらの味方もせず公平に、200文字以内でまとめてください。`;
 
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
+    let aiText = '';
+    let retries = 0;
+    while (retries < 3) {
+      const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
 
-    const data = await res.json();
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'ごめんね、うまくまとめられなかったよ。もう一度試してみてね。';
+      if (res.status === 429) {
+        retries++;
+        btn.textContent = `🤖 混み合ってるよ…(${retries}/3)`;
+        await new Promise(r => setTimeout(r, 5000 * retries));
+        continue;
+      }
+
+      const data = await res.json();
+      aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      break;
+    }
+
+    if (!aiText) {
+      alert('AIが混み合っています。少し待ってからもう一度試してね（1分に15回まで）');
+      return;
+    }
 
     // AIメッセージをDBに保存
     await client.from('kenka_chat').insert({
