@@ -838,10 +838,26 @@ class SuikaGame {
             if (p.lv > prevLv) {
               levelUps.push({ name: p.name, prevLv, newLv: p.lv });
             }
-            // Gem AP gain (AP = EXP earned from battle)
+            // Gem AP gain: based on enemy party's total AP (not EXP)
+            // Original: AP = totalEnemyAP * 0.1 (or 0.13 with ability)
             if (p.gem >= 0) {
               if (!p.gemAP) p.gemAP = {};
-              p.gemAP[p.gem] = (p.gemAP[p.gem] || 0) + exp;
+              // Calculate total AP from defeated enemies
+              let totalEnemyAP = 0;
+              for (const enemy of this.battleEngine.enemies) {
+                if (!enemy.isAlive()) totalEnemyAP += (enemy.exp || 0); // ap field stored as exp in enemy params
+              }
+              // Use the party's AP value (stored in enemy params as 'ap' field)
+              const party = this.paramAll.getParty(partyIndex);
+              if (party) {
+                totalEnemyAP = 0;
+                for (const e of party.enemies) {
+                  const prm = this.paramAll.getPrm(e.kind);
+                  if (prm) totalEnemyAP += prm.ap;
+                }
+              }
+              const apGain = Math.max(1, Math.floor(totalEnemyAP * 0.1));
+              p.gemAP[p.gem] = (p.gemAP[p.gem] || 0) + apGain;
             }
           }
         }
@@ -1276,14 +1292,16 @@ class SuikaGame {
       if (this.input.isDown()) eq.itemCursor = (eq.itemCursor + 1) % available.length;
       if (this.input.isOK()) {
         const selected = available[eq.itemCursor];
-        // Unequip current gem
+        // Unequip current gem (AP resets on removal, matching original)
         if (p.gem >= 0) {
           this.eventManager.inventory.push(p.gem);
+          // AP resets when gem is removed (original behavior)
+          if (p.gemAP) p.gemAP[p.gem] = 0;
         }
         // Equip new gem
         if (selected.idx >= 0) {
           p.gem = selected.idx;
-          // Mark gem as bound to this character
+          // Mark gem as bound to this character (装備制限)
           if (!p.gemFlags) p.gemFlags = {};
           p.gemFlags[selected.idx - 110] = true;
           // Remove from inventory
