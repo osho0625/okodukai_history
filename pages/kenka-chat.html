@@ -107,28 +107,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
 <script>
 let GEMINI_API_KEY = '';
 let GROQ_API_KEY = '';
+let OPENAI_API_KEY = '';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
 // APIキーをSupabaseから読み込み
 async function loadApiKeys() {
   try {
-    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key', 'openai_api_key']);
     if (data) {
       data.forEach(row => {
         if (row.key === 'gemini_api_key') GEMINI_API_KEY = row.value;
         if (row.key === 'groq_api_key') GROQ_API_KEY = row.value;
+        if (row.key === 'openai_api_key') OPENAI_API_KEY = row.value;
       });
     }
   } catch(e) {
     console.warn('APIキー読み込み失敗:', e);
-  }
-  // フォールバック: game_settingsから
-  if (!GEMINI_API_KEY) {
-    try {
-      const { data } = await client.from('game_settings').select('gemini_api_key').eq('id', 1).maybeSingle();
-      if (data && data.gemini_api_key) GEMINI_API_KEY = data.gemini_api_key;
-    } catch(e) {}
   }
 }
 loadApiKeys();
@@ -211,10 +207,10 @@ async function askAI() {
   if (aiCooldown) { alert('少し待ってからもう一度押してね'); return; }
 
   // APIキーチェック
-  if (!GEMINI_API_KEY && !GROQ_API_KEY) {
+  if (!OPENAI_API_KEY && !GEMINI_API_KEY && !GROQ_API_KEY) {
     await loadApiKeys();
-    if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-      alert('APIキーが設定されていません。Supabaseのapp_configテーブルにgemini_api_keyまたはgroq_api_keyを設定してください。');
+    if (!OPENAI_API_KEY && !GEMINI_API_KEY && !GROQ_API_KEY) {
+      alert('APIキーが設定されていません。Supabaseのapp_configテーブルにopenai_api_keyを設定してください。');
       return;
     }
   }
@@ -250,8 +246,34 @@ ${conversation}
     let aiText = '';
     let lastError = '';
 
-    // 1. まずGeminiを試す
-    if (GEMINI_API_KEY) {
+    // 1. まずOpenAI GPT-4o-miniを試す（最高品質）
+    if (OPENAI_API_KEY) {
+      try {
+        const res = await fetch(OPENAI_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 500
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          aiText = data.choices?.[0]?.message?.content || '';
+        } else {
+          lastError = `OpenAI: HTTP ${res.status}`;
+          console.warn(lastError);
+        }
+      } catch(e) { lastError = 'OpenAI接続エラー'; }
+    }
+
+    // 2. OpenAI失敗時、Geminiを試す
+    if (!aiText && GEMINI_API_KEY) {
+      btn.textContent = '🤖 別のAIに聞いてるよ…';
       try {
         const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
           method: 'POST',
@@ -262,13 +284,13 @@ ${conversation}
           const data = await res.json();
           aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         } else {
-          lastError = `Gemini: HTTP ${res.status}`;
+          lastError += ` / Gemini: HTTP ${res.status}`;
           console.warn(lastError);
         }
-      } catch(e) { lastError = 'Gemini接続エラー'; }
+      } catch(e) { lastError += ' / Gemini接続エラー'; }
     }
 
-    // 2. Gemini失敗時、Groqにフォールバック
+    // 3. 最後にGroqを試す
     if (!aiText && GROQ_API_KEY) {
       btn.textContent = '🤖 別のAIに聞いてるよ…';
       try {
@@ -288,8 +310,7 @@ ${conversation}
           const data = await res.json();
           aiText = data.choices?.[0]?.message?.content || '';
         } else {
-          const errBody = await res.text();
-          lastError += ` / Groq: HTTP ${res.status}: ${errBody.substring(0, 100)}`;
+          lastError += ` / Groq: HTTP ${res.status}`;
           console.error(lastError);
         }
       } catch(e) { lastError += ' / Groq接続エラー'; }
