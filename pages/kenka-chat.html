@@ -119,7 +119,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; height: 100dvh;
       <input type="text" id="nameGemini" placeholder="Gemini名" style="flex:1; min-width:0; font-size:0.85em;">
       <input type="text" id="nameGpt41" placeholder="GPT-4.1名" style="flex:1; min-width:0; font-size:0.85em;">
       <input type="text" id="nameGpt5" placeholder="GPT-5名" style="flex:1; min-width:0; font-size:0.85em;">
-      <input type="text" id="nameGroq" placeholder="Groq名" style="flex:1; min-width:0; font-size:0.85em;">
     </div>
     <label style="font-size:0.85em; font-weight:600; color:#555;">システムプロンプト</label>
     <textarea id="settingsPrompt" rows="10" style="font-size:0.85em; font-family:inherit; line-height:1.5; resize:vertical;" placeholder="AIへの指示を書いてください"></textarea>
@@ -141,8 +140,7 @@ const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL_CONFIG = {
   gemini: { label: 'Gemini', defaultName: 'アカオニ', color: '#43a047', next: 'gpt41', nextLabel: 'GPT-4.1に変更' },
   gpt41:  { label: 'GPT-4.1 mini', defaultName: '雷神', color: '#5c6bc0', next: 'gpt5', nextLabel: 'GPT-5に変更' },
-  gpt5:   { label: 'GPT-5 mini', defaultName: 'エンマ', color: '#7b1fa2', next: 'groq', nextLabel: 'Groqに変更' },
-  groq:   { label: 'Groq', defaultName: 'サクマ', color: '#e65100', next: 'gemini', nextLabel: 'Geminiに変更' }
+  gpt5:   { label: 'GPT-5 mini', defaultName: 'エンマ', color: '#7b1fa2', next: 'gemini', nextLabel: 'Geminiに変更' }
 };
 
 const DEFAULT_PROMPT = `あなたは30代の夫婦喧嘩を仲裁するプロのカウンセラーです。
@@ -167,6 +165,7 @@ const DEFAULT_PROMPT = `あなたは30代の夫婦喧嘩を仲裁するプロの
 // 状態
 let myName = localStorage.getItem('kenka_chat_name') || '';
 let aiMode = localStorage.getItem('ai_chat_mode') || 'gemini';
+if (aiMode === 'groq') { aiMode = 'gemini'; localStorage.setItem('ai_chat_mode', 'gemini'); }
 let systemPrompt = localStorage.getItem('ai_chat_system_prompt') || '';
 let conversationSummary = localStorage.getItem('ai_chat_summary') || '';
 let aiNames = JSON.parse(localStorage.getItem('ai_chat_names') || '{}');
@@ -210,7 +209,6 @@ function openSettingsModal() {
   document.getElementById('nameGemini').value = aiNames.gemini || '';
   document.getElementById('nameGpt41').value = aiNames.gpt41 || '';
   document.getElementById('nameGpt5').value = aiNames.gpt5 || '';
-  document.getElementById('nameGroq').value = aiNames.groq || '';
   document.getElementById('settingsPrompt').value = systemPrompt || DEFAULT_PROMPT;
   document.getElementById('settingsModal').style.display = 'flex';
 }
@@ -219,7 +217,6 @@ function saveSettings() {
   aiNames.gemini = document.getElementById('nameGemini').value.trim() || '';
   aiNames.gpt41 = document.getElementById('nameGpt41').value.trim() || '';
   aiNames.gpt5 = document.getElementById('nameGpt5').value.trim() || '';
-  aiNames.groq = document.getElementById('nameGroq').value.trim() || '';
   systemPrompt = document.getElementById('settingsPrompt').value.trim();
   localStorage.setItem('ai_chat_names', JSON.stringify(aiNames));
   localStorage.setItem('ai_chat_system_prompt', systemPrompt);
@@ -308,7 +305,6 @@ async function askAI() {
   // キーチェック
   if ((aiMode === 'gpt41' || aiMode === 'gpt5') && !OPENAI_API_KEY) { await loadApiKeys(); if (!OPENAI_API_KEY) { alert('OpenAI APIキーが設定されていません。'); return; } }
   if (aiMode === 'gemini' && !GEMINI_API_KEY && !GROQ_API_KEY) { await loadApiKeys(); if (!GEMINI_API_KEY && !GROQ_API_KEY) { alert('APIキーが設定されていません。'); return; } }
-  if (aiMode === 'groq' && !GROQ_API_KEY) { await loadApiKeys(); if (!GROQ_API_KEY) { alert('Groq APIキーが設定されていません。'); return; } }
 
   lastAiCall = now;
   const btn = document.getElementById('aiBtn');
@@ -337,8 +333,7 @@ async function askAI() {
     let aiText = '';
     if (aiMode === 'gpt41') { aiText = await tryOpenAI(activePrompt, userContent, btn, 'gpt-4.1-mini'); if (aiText) incrementGptCount(); }
     else if (aiMode === 'gpt5') { aiText = await tryOpenAI(activePrompt, userContent, btn, 'gpt-5-mini'); if (aiText) incrementGptCount(); }
-    else if (aiMode === 'groq') { aiText = await tryGroq(activePrompt, userContent, btn); }
-    else { aiText = await tryGemini(activePrompt, userContent, btn); if (!aiText) aiText = await tryGroq(activePrompt, userContent, btn); }
+    else { aiText = await tryGemini(activePrompt + '\n\n' + userContent, btn); if (!aiText) aiText = await tryGroq(activePrompt, userContent, btn); }
 
     if (!aiText) { alert('AIからの応答が得られませんでした。少し待ってから再度お試しください。'); return; }
 
