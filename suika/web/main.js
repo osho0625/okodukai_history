@@ -1408,8 +1408,8 @@ class SuikaGame {
     this.ctx.fillStyle = '#fff';
     this.ctx.font = '10px monospace';
     this.ctx.textAlign = 'left';
-    // Player status mini-HUD
-    if (this.playerParams.length > 0 && !this.messageWindow.visible) {
+    // Player status mini-HUD (hide during conversations/events)
+    if (this.playerParams.length > 0 && !this.messageWindow.visible && !this.choiceWindow.visible && !this.eventRunning) {
       const p = this.playerParams[0];
       this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
       this.ctx.fillRect(2, 2, 130, 36);
