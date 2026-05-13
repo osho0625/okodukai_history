@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.8';
+const SUIKA_VERSION = 'v0.5.9';
 
 class SuikaGame {
   constructor() {
@@ -2541,85 +2541,103 @@ class SuikaGame {
 
   drawEquipMenu(ctx) {
     const eq = this.equipMenu;
-    const sx = 130, sy = 10, sw = 260, sh = 300;
+
+    // Window 1: Character selection (always visible)
+    const w1x = 130, w1y = 10, w1w = 130, w1h = 80;
     ctx.fillStyle = 'rgba(0,0,60,0.95)';
-    ctx.fillRect(sx, sy, sw, sh);
+    ctx.fillRect(w1x, w1y, w1w, w1h);
     ctx.strokeStyle = '#8af';
     ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    ctx.font = '12px sans-serif';
+    ctx.strokeRect(w1x, w1y, w1w, w1h);
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
+    ctx.fillStyle = '#adf';
+    ctx.fillText('キャラ:', w1x + 6, w1y + 15);
+    for (let i = 0; i < this.playerParams.length; i++) {
+      const active = eq.phase === 'chr' && i === eq.chrIdx;
+      ctx.fillStyle = (eq.phase === 'chr' ? (active ? '#ff0' : '#fff') : (i === eq.chrIdx ? '#8f8' : '#888'));
+      ctx.fillText((active ? '▶' : '  ') + this.playerParams[i].name, w1x + 6, w1y + 33 + i * 16);
+    }
 
-    if (eq.phase === 'chr') {
-      ctx.fillStyle = '#adf';
-      ctx.fillText('装備するキャラを選択:', sx + 10, sy + 20);
-      for (let i = 0; i < this.playerParams.length; i++) {
-        ctx.fillStyle = i === eq.chrIdx ? '#ff0' : '#fff';
-        ctx.fillText((i === eq.chrIdx ? '▶' : '  ') + this.playerParams[i].name, sx + 10, sy + 42 + i * 22);
-      }
-    } else if (eq.phase === 'slot') {
-      const p = this.playerParams[eq.chrIdx];
-      ctx.fillStyle = '#ff0';
-      ctx.fillText(`${p.name} の装備:`, sx + 10, sy + 20);
-      const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
-      const slots = ['武器', '防具', slotLabel2, '装飾', '装飾'];
-      for (let i = 0; i < slots.length; i++) {
-        ctx.fillStyle = i === eq.slot ? '#ff0' : '#fff';
-        const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
-        const eqName = equipped ? equipped.name.trim() : 'なし';
-        ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
-      }
-    } else if (eq.phase === 'item') {
-      const p = this.playerParams[eq.chrIdx];
-      const kindMap = [1, 2, 3, 4, 4];
-      const slotKind = kindMap[eq.slot] || 1;
-      const equippable = this.eventManager.inventory
-        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
-        .filter(e => e.item && e.item.kind === slotKind);
-      equippable.unshift({ invIdx: -1, item: { name: 'はずす', str: 0, int_: 0, def: 0, agi: 0, dex: 0 }, idx: -1 });
+    if (eq.phase === 'chr') return;
 
-      ctx.fillStyle = '#adf';
-      ctx.fillText('装備するアイテム:', sx + 10, sy + 20);
-      const maxShow = 7;
-      const startIdx = Math.max(0, (eq.itemCursor || 0) - maxShow + 1);
-      for (let i = 0; i < maxShow && startIdx + i < equippable.length; i++) {
-        const idx = startIdx + i;
-        const e = equippable[idx];
-        ctx.fillStyle = idx === eq.itemCursor ? '#ff0' : '#fff';
-        ctx.fillText((idx === eq.itemCursor ? '▶' : '  ') + (e.item.name || '').trim(), sx + 10, sy + 42 + i * 18);
-      }
+    // Window 2: Slot selection (visible when slot or item phase)
+    const p = this.playerParams[eq.chrIdx];
+    const slotLabel2 = eq.chrIdx === 2 ? '手袋' : '盾　';
+    const slots = ['武器', '防具', slotLabel2, '装飾', '装飾'];
+    const w2x = 130, w2y = 95, w2w = 155, w2h = 120;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
+    ctx.fillRect(w2x, w2y, w2w, w2h);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w2x, w2y, w2w, w2h);
+    ctx.fillStyle = '#adf';
+    ctx.fillText(`${p.name}の装備:`, w2x + 6, w2y + 15);
+    for (let i = 0; i < slots.length; i++) {
+      const active = eq.phase === 'slot' && i === eq.slot;
+      const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
+      const eqName = equipped ? equipped.name.trim() : 'なし';
+      ctx.fillStyle = (eq.phase === 'slot' ? (active ? '#ff0' : '#fff') : (i === eq.slot ? '#8f8' : '#888'));
+      ctx.fillText((active ? '▶' : '  ') + `${slots[i]}:${eqName}`, w2x + 6, w2y + 33 + i * 18);
+    }
 
-      // Stat comparison for selected item
-      const selected = equippable[eq.itemCursor || 0];
-      if (selected) {
-        const currentEquipIdx = (p.equip && p.equip[eq.slot] >= 0) ? p.equip[eq.slot] : -1;
-        const currentItem = currentEquipIdx >= 0 ? this.paramAll.getItem(currentEquipIdx) : null;
-        const curStats = { str: currentItem ? currentItem.str : 0, def: currentItem ? currentItem.def : 0, agi: currentItem ? currentItem.agi : 0, dex: currentItem ? currentItem.dex : 0 };
-        const newStats = { str: selected.item.str || 0, def: selected.item.def || 0, agi: selected.item.agi || 0, dex: selected.item.dex || 0 };
+    if (eq.phase === 'slot') return;
 
-        const statY = sy + 180;
-        ctx.fillStyle = '#aaa';
-        ctx.font = '11px sans-serif';
-        ctx.fillText('能力変化:', sx + 10, statY);
+    // Window 3: Item selection (visible in item phase)
+    const kindMap = [1, 2, 3, 4, 4];
+    const slotKind = kindMap[eq.slot] || 1;
+    const equippable = this.eventManager.inventory
+      .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+      .filter(e => e.item && e.item.kind === slotKind);
+    equippable.unshift({ invIdx: -1, item: { name: 'はずす', str: 0, int_: 0, def: 0, agi: 0, dex: 0 }, idx: -1 });
 
-        const labels = [['攻撃', 'str'], ['防御', 'def'], ['素早', 'agi'], ['命中', 'dex']];
-        for (let i = 0; i < labels.length; i++) {
-          const [label, key] = labels[i];
-          const diff = newStats[key] - curStats[key];
-          ctx.fillStyle = '#ccc';
-          ctx.fillText(`${label}:`, sx + 10, statY + 18 + i * 16);
-          if (diff > 0) {
-            ctx.fillStyle = '#4f4';
-            ctx.fillText(`+${diff}`, sx + 60, statY + 18 + i * 16);
-          } else if (diff < 0) {
-            ctx.fillStyle = '#f44';
-            ctx.fillText(`${diff}`, sx + 60, statY + 18 + i * 16);
-          } else {
-            ctx.fillStyle = '#888';
-            ctx.fillText('--', sx + 60, statY + 18 + i * 16);
-          }
-        }
+    const w3x = 290, w3y = 10, w3w = 105, w3h = 150;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
+    ctx.fillRect(w3x, w3y, w3w, w3h);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w3x, w3y, w3w, w3h);
+    ctx.fillStyle = '#adf';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('装備品:', w3x + 6, w3y + 14);
+    const maxShow = 7;
+    const startIdx = Math.max(0, (eq.itemCursor || 0) - maxShow + 1);
+    for (let i = 0; i < maxShow && startIdx + i < equippable.length; i++) {
+      const idx = startIdx + i;
+      const e = equippable[idx];
+      ctx.fillStyle = idx === eq.itemCursor ? '#ff0' : '#fff';
+      ctx.fillText((idx === eq.itemCursor ? '▶' : '  ') + (e.item.name || '').trim(), w3x + 4, w3y + 30 + i * 16);
+    }
+
+    // Stat comparison window (bottom)
+    const selected = equippable[eq.itemCursor || 0];
+    if (selected) {
+      const currentEquipIdx = (p.equip && p.equip[eq.slot] >= 0) ? p.equip[eq.slot] : -1;
+      const currentItem = currentEquipIdx >= 0 ? this.paramAll.getItem(currentEquipIdx) : null;
+      const curStats = { str: currentItem ? currentItem.str : 0, def: currentItem ? currentItem.def : 0, agi: currentItem ? currentItem.agi : 0, dex: currentItem ? currentItem.dex : 0 };
+      const newStats = { str: selected.item.str || 0, def: selected.item.def || 0, agi: selected.item.agi || 0, dex: selected.item.dex || 0 };
+
+      const w4x = 130, w4y = 220, w4w = 265, w4h = 90;
+      ctx.fillStyle = 'rgba(0,0,60,0.95)';
+      ctx.fillRect(w4x, w4y, w4w, w4h);
+      ctx.strokeStyle = '#8af';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(w4x, w4y, w4w, w4h);
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('能力変化:', w4x + 6, w4y + 16);
+
+      const labels = [['攻撃', 'str'], ['防御', 'def'], ['素早', 'agi'], ['命中', 'dex']];
+      for (let i = 0; i < labels.length; i++) {
+        const [label, key] = labels[i];
+        const diff = newStats[key] - curStats[key];
+        const lx = w4x + 6 + (i % 2) * 130;
+        const ly = w4y + 36 + Math.floor(i / 2) * 22;
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(`${label}:`, lx, ly);
+        if (diff > 0) { ctx.fillStyle = '#4f4'; ctx.fillText(`+${diff}`, lx + 45, ly); }
+        else if (diff < 0) { ctx.fillStyle = '#f44'; ctx.fillText(`${diff}`, lx + 45, ly); }
+        else { ctx.fillStyle = '#888'; ctx.fillText('--', lx + 45, ly); }
       }
     }
   }
