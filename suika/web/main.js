@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.5';
+const SUIKA_VERSION = 'v0.5.6';
 
 class SuikaGame {
   constructor() {
@@ -448,8 +448,7 @@ class SuikaGame {
       case 'credits': this.credits.draw(); break;
       case 'opening': this.drawOpening(); break;
     }
-    // Touch UI overlay (always drawn)
-    this.touchUI.draw(this.ctx);
+    // Touch UI overlay (DOM-based, no canvas draw needed)
   }
 
   updateTitle() {
