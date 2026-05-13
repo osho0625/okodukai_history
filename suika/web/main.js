@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.1';
+const SUIKA_VERSION = 'v0.5.2';
 
 class SuikaGame {
   constructor() {
@@ -1113,7 +1113,7 @@ class SuikaGame {
     // Setup player skill sets (skills each character has learned)
     this.battleUI.playerSkillSets = this.playerParams.map(p => {
       const skills = [];
-      // abi1/abi2 are command ability indices
+      // abi1/abi2 are command ability indices (from CInitGame m_anCmdAb)
       if (p.abi1 > 0 && p.abi1 < this.paramAll.skills.length) {
         const s = this.paramAll.skills[p.abi1];
         if (s && s.name && s.name.trim()) skills.push({ ...s, index: p.abi1 });
@@ -1122,13 +1122,23 @@ class SuikaGame {
         const s = this.paramAll.skills[p.abi2];
         if (s && s.name && s.name.trim()) skills.push({ ...s, index: p.abi2 });
       }
-      // Also add skills from gem learning (simplified: check first 20 skills)
-      for (let i = 0; i < Math.min(30, this.paramAll.skills.length); i++) {
-        if (i === p.abi1 || i === p.abi2) continue;
-        const s = this.paramAll.skills[i];
-        if (s && s.name && s.name.trim() && s.mp > 0) {
-          // Check if player has this skill (simplified: include basic attack/heal spells)
-          if (skills.length < 8) skills.push({ ...s, index: i });
+      // Add skills learned from gems (gemFlags tracks learned skill flags)
+      if (p.gemFlags) {
+        for (const [gemId, flags] of Object.entries(p.gemFlags)) {
+          if (!flags) continue;
+          // Each gem has up to 7 skills; flags is a bitmask or array of learned indices
+          // GEM_DATA maps gem → skill indices (defined in compose.js or main.js)
+          // For now, check if gemFlags stores learned skill indices directly
+          if (Array.isArray(flags)) {
+            for (const skillIdx of flags) {
+              if (skillIdx > 0 && skillIdx < this.paramAll.skills.length) {
+                const s = this.paramAll.skills[skillIdx];
+                if (s && s.name && s.name.trim() && !skills.find(sk => sk.index === skillIdx)) {
+                  skills.push({ ...s, index: skillIdx });
+                }
+              }
+            }
+          }
         }
       }
       return skills;
@@ -2828,6 +2838,8 @@ class SuikaGame {
       const p0 = this.paramAll.chrParams[0].clone();
       p0.isPlayer = true;
       p0.equip = [-1, -1, -1, -1, -1];
+      p0.abi1 = 1;   // Original: m_anCmdAb[0] = 1
+      p0.abi2 = 10;  // Original: m_anCmdAb[1] = 10
       this.playerParams.push(p0);
     }
     // Prepare party members 1 (うな, chrParams[21]) and 2 (かるび, chrParams[28])
