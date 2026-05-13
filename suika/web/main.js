@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.0';
+const SUIKA_VERSION = 'v0.5.1';
 
 class SuikaGame {
   constructor() {
