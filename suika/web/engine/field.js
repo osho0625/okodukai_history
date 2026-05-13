@@ -212,16 +212,19 @@ export class Field {
       const dz = nz - this.playerPos.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
 
-      // Allow talking up to 2.5 cells away (for counter/wall talk)
-      if (dist > 500) continue;
+      // Allow talking up to 2 cells away
+      if (dist > 400) continue;
 
       const angleToNpc = Math.atan2(dx, dz);
       let angleDiff = angleToNpc - this.playerVect;
       while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-      // Wide angle check (120 degrees each side) for easier targeting
-      if (Math.abs(angleDiff) < Math.PI * 0.7) {
+      // Wide angle check (90 degrees each side)
+      if (Math.abs(angleDiff) < Math.PI * 0.55) {
+        // Wall check: verify no wall between player and NPC
+        if (this._hasWallBetween(this.playerPos.x, this.playerPos.z, nx, nz)) continue;
+
         if (dist < bestDist) {
           bestDist = dist;
           bestNpc = npc;
@@ -234,6 +237,25 @@ export class Field {
       return bestNpc;
     }
     return null;
+  }
+
+  // Check if there's a wall between two positions (simple line check)
+  _hasWallBetween(x1, z1, x2, z2) {
+    if (!this.area || !this.area.map) return false;
+    const map = this.area.map;
+    // Check cells along the line between the two points
+    const steps = Math.max(2, Math.ceil(Math.sqrt((x2-x1)**2 + (z2-z1)**2) / 100));
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const mx = x1 + (x2 - x1) * t;
+      const mz = z1 + (z2 - z1) * t;
+      const bx = MapData.getXBlock(mx);
+      const bz = MapData.getZBlock(mz);
+      if (bx < 0 || bx >= map.xNum || bz < 0 || bz >= map.zNum) continue;
+      const hit = map.hit[map.getPtr(bx, bz)];
+      if (hit >= 3) return true; // Wall found
+    }
+    return false;
   }
 
   rotateCameraLeft() {

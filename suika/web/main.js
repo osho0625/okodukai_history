@@ -70,7 +70,7 @@ class SuikaGame {
     this.playTime = 0; // seconds
     this._lastTime = Date.now();
     // Battle speed setting: 0=slow(1200/1600ms), 1=normal(600/800ms), 2=fast(300/400ms), 3=instant(50/100ms)
-    this.battleSpeed = parseInt(localStorage.getItem('suika_battle_speed') || '1');
+    this.battleSpeed = parseInt(localStorage.getItem('suika_battle_speed') || '0');
   }
 
   async init() {
@@ -1536,7 +1536,7 @@ class SuikaGame {
 
   // --- System Menu ---
   updateMenu() {
-    const items = ['アイテム', '特技', '装備', '勾玉', 'ステータス', 'コマンド', 'マップ', 'セーブ', 'じゅもん', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', '特技', '装備', '勾玉', 'ステータス', 'コマンド', '設定', 'マップ', 'セーブ', 'じゅもん', 'タイトルへ', '閉じる'];
 
     // Equipment sub-menu
     if (this.equipMenu) {
@@ -1568,6 +1568,12 @@ class SuikaGame {
       return;
     }
 
+    // Settings sub-menu
+    if (this.settingsMenu) {
+      this.updateSettings();
+      return;
+    }
+
     // Password display
     if (this.passwordDisplay) {
       if (this.input.isOK() || this.input.isCancel()) {
@@ -1592,36 +1598,16 @@ class SuikaGame {
         case 3: this.gemMenu = { chrIdx: 0, phase: 'chr', cursor: 0 }; break;
         case 4: break; // Status shown in draw
         case 5: this.cmdConfig = { chrIdx: 0, slot: 0, phase: 'chr' }; break;
-        case 6: this.state = 'worldmap'; break;
-        case 7: this.saveGame(); this.state = 'game'; break;
-        case 8: this.generatePassword(); break;
-        case 9: this.state = 'title'; this.titleCursor = 0; break;
-        case 10: this.state = 'game'; break;
+        case 6: this.settingsMenu = { cursor: 0 }; break;
+        case 7: this.state = 'worldmap'; break;
+        case 8: this.saveGame(); this.state = 'game'; break;
+        case 9: this.generatePassword(); break;
+        case 10: this.state = 'title'; this.titleCursor = 0; break;
+        case 11: this.state = 'game'; break;
       }
     }
     if (this.input.isCancel() || this.input.isKeyDown('z')) {
       this.state = 'game';
-    }
-    // Volume and battle speed adjustment with left/right in menu
-    if (this.input.isLeft()) {
-      if (this.menuCursor === 4) {
-        // On "ステータス" — adjust battle speed
-        this.battleSpeed = Math.max(0, this.battleSpeed - 1);
-        localStorage.setItem('suika_battle_speed', String(this.battleSpeed));
-      } else {
-        this.audio.setVolume(this.audio.volume - 0.1);
-      }
-    }
-    if (this.input.isRight()) {
-      if (this.menuCursor === 4) {
-        // On "ステータス" — adjust battle speed
-        this.battleSpeed = Math.min(3, this.battleSpeed + 1);
-        localStorage.setItem('suika_battle_speed', String(this.battleSpeed));
-        this.audio.play(5);
-      } else {
-        this.audio.setVolume(this.audio.volume + 0.1);
-        this.audio.play(5);
-      }
     }
   }
 
@@ -1800,6 +1786,24 @@ class SuikaGame {
       }
       if (this.input.isCancel()) { cc.phase = 'slot'; }
     }
+  }
+
+  // Settings sub-menu (volume + battle speed)
+  updateSettings() {
+    const sm = this.settingsMenu;
+    const items = ['SE音量', '戦闘速度', '戻る'];
+    if (this.input.isUp()) { sm.cursor = (sm.cursor - 1 + items.length) % items.length; this.audio.play(5); }
+    if (this.input.isDown()) { sm.cursor = (sm.cursor + 1) % items.length; this.audio.play(5); }
+    if (this.input.isLeft()) {
+      if (sm.cursor === 0) this.audio.setVolume(this.audio.volume - 0.1);
+      if (sm.cursor === 1) { this.battleSpeed = Math.max(0, this.battleSpeed - 1); localStorage.setItem('suika_battle_speed', String(this.battleSpeed)); }
+    }
+    if (this.input.isRight()) {
+      if (sm.cursor === 0) { this.audio.setVolume(this.audio.volume + 0.1); this.audio.play(5); }
+      if (sm.cursor === 1) { this.battleSpeed = Math.min(3, this.battleSpeed + 1); localStorage.setItem('suika_battle_speed', String(this.battleSpeed)); this.audio.play(5); }
+    }
+    if (this.input.isOK() && sm.cursor === 2) { this.settingsMenu = null; }
+    if (this.input.isCancel()) { this.settingsMenu = null; }
   }
 
   updateGemMenu() {
@@ -2041,14 +2045,14 @@ class SuikaGame {
     ctx.fillRect(0, 0, 400, 320);
 
     // Menu panel
-    const mx = 10, my = 10, mw = 110, mh = 228;
+    const mx = 10, my = 10, mw = 110, mh = 240;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = '#88f';
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, mw, mh);
 
-    const items = ['アイテム', '特技', '装備', '勾玉', 'ステータス', 'コマンド', 'マップ', 'セーブ', 'じゅもん', 'タイトルへ', '閉じる'];
+    const items = ['アイテム', '特技', '装備', '勾玉', 'ステータス', 'コマンド', '設定', 'マップ', 'セーブ', 'じゅもん', 'タイトルへ', '閉じる'];
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     for (let i = 0; i < items.length; i++) {
@@ -2096,6 +2100,12 @@ class SuikaGame {
     // Command config overlay
     if (this.cmdConfig) {
       this.drawCmdConfig(ctx);
+      return;
+    }
+
+    // Settings overlay
+    if (this.settingsMenu) {
+      this.drawSettings(ctx);
       return;
     }
 
@@ -2157,20 +2167,6 @@ class SuikaGame {
     const mins = Math.floor((this.playTime % 3600) / 60);
     ctx.fillStyle = '#aaa';
     ctx.fillText(`プレイ時間: ${hours}:${String(mins).padStart(2, '0')}`, sx + 10, py + 20);
-
-    // Volume control
-    const vol = Math.round(this.audio.volume * 100);
-    ctx.fillStyle = '#8cf';
-    ctx.fillText(`SE音量: ${vol}%  (←→で調整)`, sx + 10, py + 40);
-    ctx.fillStyle = '#333';
-    ctx.fillRect(sx + 10, py + 45, 120, 8);
-    ctx.fillStyle = '#4af';
-    ctx.fillRect(sx + 10, py + 45, 120 * this.audio.volume, 8);
-
-    // Battle speed
-    const speedLabels = ['おそい', 'ふつう', 'はやい', '瞬間'];
-    ctx.fillStyle = '#fc8';
-    ctx.fillText(`戦闘速度: ${speedLabels[this.battleSpeed] || 'ふつう'}  (←→で調整)`, sx + 10, py + 65);
   }
 
   drawGemMenu(ctx) {
@@ -2449,6 +2445,49 @@ class SuikaGame {
         ctx.fillText((i === cc.optCursor ? '▶' : '  ') + CMD_OPTIONS[i], sx + 10, sy + 42 + i * 20);
       }
     }
+  }
+
+  drawSettings(ctx) {
+    const sm = this.settingsMenu;
+    const sx = 130, sy = 60, sw = 260, sh = 180;
+    ctx.fillStyle = 'rgba(0,10,30,0.95)';
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('設定', sx + 10, sy + 22);
+
+    // SE Volume
+    const vol = Math.round(this.audio.volume * 100);
+    ctx.fillStyle = sm.cursor === 0 ? '#ff0' : '#ccc';
+    ctx.fillText((sm.cursor === 0 ? '▶' : '  ') + `SE音量: ${vol}%`, sx + 10, sy + 55);
+    ctx.fillStyle = '#333';
+    ctx.fillRect(sx + 130, sy + 45, 100, 10);
+    ctx.fillStyle = '#4af';
+    ctx.fillRect(sx + 130, sy + 45, 100 * this.audio.volume, 10);
+
+    // Battle speed
+    const speedLabels = ['おそい', 'ふつう', 'はやい', '瞬間'];
+    ctx.fillStyle = sm.cursor === 1 ? '#ff0' : '#ccc';
+    ctx.fillText((sm.cursor === 1 ? '▶' : '  ') + `戦闘速度: ${speedLabels[this.battleSpeed]}`, sx + 10, sy + 90);
+    // Speed indicator dots
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i <= this.battleSpeed ? '#fc8' : '#444';
+      ctx.fillRect(sx + 150 + i * 22, sy + 82, 16, 8);
+    }
+
+    // Back
+    ctx.fillStyle = sm.cursor === 2 ? '#ff0' : '#ccc';
+    ctx.fillText((sm.cursor === 2 ? '▶' : '  ') + '戻る', sx + 10, sy + 125);
+
+    // Hint
+    ctx.fillStyle = '#888';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('←→で値を変更', sx + 10, sy + sh - 12);
   }
 
   drawEquipMenu(ctx) {

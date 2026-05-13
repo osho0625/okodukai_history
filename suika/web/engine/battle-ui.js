@@ -475,11 +475,12 @@ export class BattleUI {
       const newMsg = battleState.log[battleState.log.length - 1];
 
       // Calculate target position for effects
+      // Enemy models are drawn at Y≈60 (center of enemy area on screen)
+      // Player models are at Y≈240 (lower portion)
       const enemyCount = battleState.enemies.length;
       const eSpacing = enemyCount <= 2 ? 80 : 60;
       const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
-      const eY = 90;
-      // Get current target enemy position (use targetCursor or first alive)
+      const eY = 60; // Enemy center Y on screen
       const targetEIdx = this.targetCursor || 0;
       const eX = eStartX + targetEIdx * eSpacing;
 
@@ -487,15 +488,15 @@ export class BattleUI {
       const pCount = battleState.players.length;
       const pSpacing = pCount <= 2 ? 80 : 60;
       const pStartX = 200 - (pCount - 1) * pSpacing / 2;
-      const pY = 260;
+      const pY = 240; // Player center Y on screen
 
       // Determine who is being targeted
       const curUnit = battleState.currentUnit;
       const isPlayerActing = curUnit && curUnit.isPlayer;
-      // Effect on enemy (when player attacks) or on player (when enemy attacks)
-      const targetX = isPlayerActing ? eX : (pStartX + (curUnit ? 0 : 0) * pSpacing);
+      // When player attacks → effect on enemy; when enemy attacks → effect on player
+      const targetX = isPlayerActing ? eX : (pStartX + (curUnit ? curUnit.index : 0) * pSpacing);
       const targetY = isPlayerActing ? eY : pY;
-      // Effect on self (buffs/heals)
+      // Effect on self (buffs/heals go on the caster)
       const selfX = isPlayerActing ? (pStartX + (curUnit ? curUnit.index : 0) * pSpacing) : eX;
       const selfY = isPlayerActing ? pY : eY;
 
