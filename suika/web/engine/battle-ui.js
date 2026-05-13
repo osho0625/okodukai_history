@@ -475,20 +475,26 @@ export class BattleUI {
       const newMsg = battleState.log[battleState.log.length - 1];
 
       // Calculate target position for effects
-      // Enemy models are drawn at Y≈60 (center of enemy area on screen)
-      // Player models are at Y≈240 (lower portion)
+      // Use stored screen positions from 3D rendering if available
       const enemyCount = battleState.enemies.length;
-      const eSpacing = enemyCount <= 2 ? 80 : 60;
-      const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
-      const eY = 60; // Enemy center Y on screen
+      let eX, eY;
       const targetEIdx = this.targetCursor || 0;
-      const eX = eStartX + targetEIdx * eSpacing;
+      if (this._enemyScreenPos && this._enemyScreenPos[targetEIdx]) {
+        eX = this._enemyScreenPos[targetEIdx].x;
+        eY = this._enemyScreenPos[targetEIdx].y;
+      } else {
+        // Fallback for placeholder rendering
+        const eSpacing = enemyCount <= 2 ? 80 : 60;
+        const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
+        eX = eStartX + targetEIdx * eSpacing;
+        eY = 90;
+      }
 
-      // Player positions
+      // Player positions (bottom area of screen)
       const pCount = battleState.players.length;
       const pSpacing = pCount <= 2 ? 80 : 60;
       const pStartX = 200 - (pCount - 1) * pSpacing / 2;
-      const pY = 240; // Player center Y on screen
+      const pY = 240;
 
       // Determine who is being targeted
       const curUnit = battleState.currentUnit;
@@ -650,11 +656,20 @@ export class BattleUI {
         this.targetCursor = (this.targetCursor + 1) % aliveEnemies.length;
       }
       if (this.input.isOK()) {
-        const target = this.targetCursor;
+        // Convert alive-enemy index to full array index
+        const aliveIdx = this.targetCursor;
+        let realIdx = 0;
+        let count = 0;
+        for (let i = 0; i < battleState.enemies.length; i++) {
+          if (battleState.enemies[i].alive) {
+            if (count === aliveIdx) { realIdx = i; break; }
+            count++;
+          }
+        }
         const cmd = this._pendingCmd || CMD.ATTACK;
         this._pendingCmd = null;
         this.phase = 'command';
-        return { cmd, target };
+        return { cmd, target: realIdx };
       }
       if (this.input.isCancel()) {
         this.phase = 'command';
@@ -701,9 +716,16 @@ export class BattleUI {
         this.targetCursor = (this.targetCursor + 1) % aliveEnemies.length;
       }
       if (this.input.isOK()) {
-        const target = this.targetCursor;
+        // Convert alive-enemy index to full array index
+        let realIdx = 0, count = 0;
+        for (let i = 0; i < battleState.enemies.length; i++) {
+          if (battleState.enemies[i].alive) {
+            if (count === this.targetCursor) { realIdx = i; break; }
+            count++;
+          }
+        }
         this.phase = 'command';
-        return { cmd: CMD.SKILL, target, extra: this.selectedSkill };
+        return { cmd: CMD.SKILL, target: realIdx, extra: this.selectedSkill };
       }
       if (this.input.isCancel()) { this.phase = 'skill'; }
     } else if (this.phase === 'skillAllyTarget') {
@@ -1037,6 +1059,14 @@ export class BattleUI {
 
       // Draw name below
       const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, -10, 0));
+      // Also get model top position for cursor
+      const screenTop = this.renderer.get3DPos(wvp, new Vec3(0, model.topY || 50, 0));
+      const screenCenter = this.renderer.get3DPos(wvp, new Vec3(0, (model.topY || 50) / 2, 0));
+
+      // Store screen position for effects
+      if (!this._enemyScreenPos) this._enemyScreenPos = [];
+      this._enemyScreenPos[i] = { x: screenCenter.x, y: screenCenter.y };
+
       this.ctx.globalAlpha = deathAlpha;
       this.ctx.fillStyle = '#fff';
       this.ctx.font = '10px sans-serif';
@@ -1053,13 +1083,13 @@ export class BattleUI {
       this.ctx.fillStyle = hpRatio > 0.3 ? '#4c4' : '#c44';
       this.ctx.fillRect(barX, barY, barW * hpRatio, 4);
 
-      // Target cursor
+      // Target cursor (above model top)
       if (this.phase === 'target') {
         const aliveIdx = aliveEnemies.indexOf(e);
         if (aliveIdx === this.targetCursor) {
           this.ctx.fillStyle = '#ff0';
           this.ctx.font = '14px sans-serif';
-          this.ctx.fillText('▼', screenPos.x, Math.min(screenPos.y - 30, 50));
+          this.ctx.fillText('▼', screenTop.x, Math.max(screenTop.y - 5, 20));
         }
       }
       this.ctx.globalAlpha = 1;

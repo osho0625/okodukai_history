@@ -1201,11 +1201,19 @@ class SuikaGame {
     this.battleEngine.onDamage = (target, dmg) => {
       if (this.battleUI) {
         const idx = target.index;
-        const total = target.isPlayer ? this.playerParams.length : this.battleEngine.enemies.length;
-        const spacing = total <= 2 ? 80 : 60;
-        const startX = 200 - (total - 1) * spacing / 2;
-        const x = startX + idx * spacing;
-        const y = target.isPlayer ? 260 : 90;
+        let x, y;
+        if (!target.isPlayer && this.battleUI._enemyScreenPos && this.battleUI._enemyScreenPos[idx]) {
+          // Use actual 3D screen position for enemies
+          x = this.battleUI._enemyScreenPos[idx].x;
+          y = this.battleUI._enemyScreenPos[idx].y;
+        } else {
+          // Fallback calculation
+          const total = target.isPlayer ? this.playerParams.length : this.battleEngine.enemies.length;
+          const spacing = total <= 2 ? 80 : 60;
+          const startX = 200 - (total - 1) * spacing / 2;
+          x = startX + idx * spacing;
+          y = target.isPlayer ? 240 : 90;
+        }
         this.battleUI.effect.addDamageNum(String(dmg), x, y, target.isPlayer ? '#f44' : '#ff0');
       }
     };
