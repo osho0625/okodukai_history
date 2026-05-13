@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.7';
+const SUIKA_VERSION = 'v0.5.8';
 
 class SuikaGame {
   constructor() {
@@ -2099,12 +2099,12 @@ class SuikaGame {
   drawMenu() {
     const ctx = this.ctx;
     this.field.draw();
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, 400, 320);
 
-    // Menu panel
-    const mx = 10, my = 10, mw = 110, mh = 240;
-    ctx.fillStyle = 'rgba(0,0,60,0.92)';
+    // Main menu panel (always visible, left side — DQ style)
+    const mx = 8, my = 8, mw = 110, mh = 240;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = '#88f';
     ctx.lineWidth = 2;
@@ -2119,7 +2119,7 @@ class SuikaGame {
       ctx.fillText(prefix + items[i], mx + 6, my + 18 + i * 18);
     }
 
-    // Password display overlay
+    // Password display overlay (full screen)
     if (this.passwordDisplay) {
       ctx.fillStyle = 'rgba(0,0,40,0.95)';
       ctx.fillRect(20, 20, 360, 280);
@@ -2143,43 +2143,26 @@ class SuikaGame {
       return;
     }
 
-    // Item list sub-menu overlay
+    // Sub-menu windows (stacked on top of main menu — DQ style)
     if (this.itemMenu) {
       this.drawItemMenu(ctx);
-      return;
-    }
-
-    // Skill menu overlay
-    if (this.skillMenu) {
+    } else if (this.skillMenu) {
       this.drawSkillMenu(ctx);
-      return;
-    }
-
-    // Command config overlay
-    if (this.cmdConfig) {
+    } else if (this.cmdConfig) {
       this.drawCmdConfig(ctx);
-      return;
-    }
-
-    // Settings overlay
-    if (this.settingsMenu) {
+    } else if (this.settingsMenu) {
       this.drawSettings(ctx);
-      return;
-    }
-
-    // Gem menu overlay
-    if (this.gemMenu) {
+    } else if (this.gemMenu) {
       this.drawGemMenu(ctx);
-      return;
-    }
-
-    // Equipment sub-menu overlay
-    if (this.equipMenu) {
+    } else if (this.equipMenu) {
       this.drawEquipMenu(ctx);
-      return;
+    } else {
+      // Default: status panel (right side)
+      this._drawStatusPanel(ctx);
     }
+  }
 
-    // Status panel (right side)
+  _drawStatusPanel(ctx) {
     const sx = 130, sy = 10, sw = 260, sh = 300;
     ctx.fillStyle = 'rgba(0,0,60,0.92)';
     ctx.fillRect(sx, sy, sw, sh);
@@ -2928,7 +2911,11 @@ class SuikaGame {
     localStorage.setItem('suika_save', JSON.stringify(data));
     if (!silent) {
       this.audio.play(10); // SE: save
-      if (this.messageWindow) this.messageWindow.show('セーブしました');
+      if (this.messageWindow) {
+        this.messageWindow.show('セーブしました').then(() => {
+          this.messageWindow.close();
+        });
+      }
     }
   }
 
