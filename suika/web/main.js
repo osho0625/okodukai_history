@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.9';
+const SUIKA_VERSION = 'v0.6.0';
 
 class SuikaGame {
   constructor() {
@@ -2212,90 +2212,84 @@ class SuikaGame {
 
   drawGemMenu(ctx) {
     const gm = this.gemMenu;
-    const sx = 130, sy = 10, sw = 260, sh = 300;
-    ctx.fillStyle = 'rgba(20,0,40,0.95)';
-    ctx.fillRect(sx, sy, sw, sh);
-    ctx.strokeStyle = '#a6f';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    ctx.font = '12px sans-serif';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
 
-    if (gm.phase === 'chr') {
-      ctx.fillStyle = '#daf';
-      ctx.fillText('勾玉を装備するキャラ:', sx + 10, sy + 20);
-      for (let i = 0; i < this.playerParams.length; i++) {
-        const p = this.playerParams[i];
-        ctx.fillStyle = i === gm.chrIdx ? '#ff0' : '#fff';
-        let gemInfo = '';
-        if (p.gem >= 0) {
-          const gemItem = this.paramAll.getItem(p.gem);
-          const progress = this.getGemProgress(p, p.gem);
-          gemInfo = ` [${gemItem ? gemItem.name.trim() : '?'} ${progress.learned}/${progress.total}]`;
-        }
-        ctx.fillText((i === gm.chrIdx ? '▶' : '  ') + p.name + gemInfo, sx + 10, sy + 42 + i * 24);
-      }
-
-      // Show equipped gem skill details for selected character
-      const selP = this.playerParams[gm.chrIdx];
-      if (selP.gem >= 0) {
-        const gemItem = this.paramAll.getItem(selP.gem);
-        const progress = this.getGemProgress(selP, selP.gem);
-        ctx.fillStyle = '#a8f';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(`── ${gemItem ? gemItem.name.trim() : '?'} (${progress.ap}/${progress.maxAP} AP) ──`, sx + 10, sy + 110);
-
-        // Show skill list
-        const GEM_DATA = this._getGemData();
-        const gemId = selP.gem - 110;
-        ctx.font = '10px monospace';
-        for (let s = 0; s < 7; s++) {
-          const threshold = GEM_DATA[gemId * 14 + s * 2];
-          const skillId = GEM_DATA[gemId * 14 + s * 2 + 1];
-          const learned = progress.ap >= threshold;
-          const skillName = this._getGemSkillName(skillId);
-          const skillDesc = this._getGemSkillDesc(skillId);
-
-          ctx.fillStyle = learned ? '#8f8' : (progress.ap >= threshold * 0.7 ? '#cc8' : '#888');
-          const mark = learned ? '✓' : '　';
-          ctx.fillText(`${mark} ${threshold}AP: ${skillName}`, sx + 12, sy + 130 + s * 22);
-          ctx.fillStyle = '#777';
-          ctx.font = '9px sans-serif';
-          ctx.fillText(`  ${skillDesc}`, sx + 14, sy + 142 + s * 22);
-          ctx.font = '10px monospace';
-        }
-      }
-    } else if (gm.phase === 'gem') {
-      const p = this.playerParams[gm.chrIdx];
-      ctx.fillStyle = '#daf';
-      ctx.fillText(`${p.name} の勾玉:`, sx + 10, sy + 20);
-
-      const gems = this.eventManager.inventory
-        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
-        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
-      const available = gems.filter(g => this.getGemRestriction(g.idx, gm.chrIdx) !== 2);
-      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
-
-      for (let i = 0; i < Math.min(10, available.length); i++) {
-        const g = available[i];
-        ctx.fillStyle = i === gm.cursor ? '#ff0' : '#fff';
-        let label = g.item.name ? g.item.name.trim() : 'はずす';
-        if (g.idx >= 110) {
-          const progress = this.getGemProgress(p, g.idx);
-          label += ` (${progress.ap || 0}AP ${progress.learned}/${progress.total})`;
-          if (this.getGemRestriction(g.idx, gm.chrIdx) === 1) label += ' ★';
-        }
-        ctx.fillText((i === gm.cursor ? '▶' : '  ') + label, sx + 10, sy + 42 + i * 22);
-      }
-
-      // Current gem info
+    // Window 1: Character selection (always visible)
+    const w1x = 130, w1y = 10, w1w = 150, w1h = 75;
+    ctx.fillStyle = 'rgba(20,0,40,0.95)';
+    ctx.fillRect(w1x, w1y, w1w, w1h);
+    ctx.strokeStyle = '#a6f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w1x, w1y, w1w, w1h);
+    ctx.fillStyle = '#daf';
+    ctx.fillText('勾玉:', w1x + 6, w1y + 15);
+    for (let i = 0; i < this.playerParams.length; i++) {
+      const p = this.playerParams[i];
+      const active = gm.phase === 'chr' && i === gm.chrIdx;
+      ctx.fillStyle = gm.phase === 'chr' ? (active ? '#ff0' : '#fff') : (i === gm.chrIdx ? '#8f8' : '#888');
+      let gemShort = '';
       if (p.gem >= 0) {
-        ctx.fillStyle = '#aaa';
-        ctx.font = '10px sans-serif';
-        const gemItem = this.paramAll.getItem(p.gem);
-        ctx.fillText(`現在: ${gemItem ? gemItem.name.trim() : '?'}`, sx + 10, sy + sh - 15);
+        const gi = this.paramAll.getItem(p.gem);
+        gemShort = ` [${gi ? gi.name.trim().slice(0,4) : '?'}]`;
       }
+      ctx.fillText((active ? '▶' : '  ') + p.name + gemShort, w1x + 6, w1y + 32 + i * 16);
+    }
+
+    // Window 2: Gem skill details (visible when chr selected)
+    const selP = this.playerParams[gm.chrIdx];
+    if (selP.gem >= 0) {
+      const w2x = 130, w2y = 90, w2w = 260, w2h = 130;
+      ctx.fillStyle = 'rgba(20,0,40,0.95)';
+      ctx.fillRect(w2x, w2y, w2w, w2h);
+      ctx.strokeStyle = '#a6f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(w2x, w2y, w2w, w2h);
+
+      const gemItem = this.paramAll.getItem(selP.gem);
+      const progress = this.getGemProgress(selP, selP.gem);
+      ctx.fillStyle = '#a8f';
+      ctx.fillText(`${gemItem ? gemItem.name.trim() : '?'} (${progress.ap}/${progress.maxAP} AP)`, w2x + 6, w2y + 15);
+
+      const GEM_DATA = this._getGemData();
+      const gemId = selP.gem - 110;
+      ctx.font = '9px monospace';
+      for (let s = 0; s < 7; s++) {
+        const threshold = GEM_DATA[gemId * 14 + s * 2];
+        const skillId = GEM_DATA[gemId * 14 + s * 2 + 1];
+        const learned = progress.ap >= threshold;
+        const skillName = this._getGemSkillName(skillId);
+        ctx.fillStyle = learned ? '#8f8' : '#888';
+        ctx.fillText(`${learned ? '✓' : '　'} ${threshold}AP: ${skillName}`, w2x + 6, w2y + 32 + s * 14);
+      }
+      ctx.font = '11px sans-serif';
+    }
+
+    if (gm.phase === 'chr') return;
+
+    // Window 3: Gem selection list (visible in gem phase)
+    const p = this.playerParams[gm.chrIdx];
+    const gems = this.eventManager.inventory
+      .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
+      .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
+    const available = gems.filter(g => this.getGemRestriction(g.idx, gm.chrIdx) !== 2);
+    available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+
+    const w3x = 285, w3y = 10, w3w = 110, w3h = 30 + Math.min(10, available.length) * 18;
+    ctx.fillStyle = 'rgba(20,0,40,0.95)';
+    ctx.fillRect(w3x, w3y, w3w, w3h);
+    ctx.strokeStyle = '#a6f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w3x, w3y, w3w, w3h);
+    ctx.fillStyle = '#daf';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('選択:', w3x + 6, w3y + 14);
+    for (let i = 0; i < Math.min(10, available.length); i++) {
+      const g = available[i];
+      ctx.fillStyle = i === gm.cursor ? '#ff0' : '#fff';
+      let label = g.item.name ? g.item.name.trim().slice(0, 7) : 'はずす';
+      if (g.idx >= 110 && this.getGemRestriction(g.idx, gm.chrIdx) === 1) label += '★';
+      ctx.fillText((i === gm.cursor ? '▶' : '  ') + label, w3x + 4, w3y + 30 + i * 18);
     }
   }
 
@@ -2364,79 +2358,66 @@ class SuikaGame {
 
   drawSkillMenu(ctx) {
     const sm = this.skillMenu;
-    const sx = 130, sy = 10, sw = 260, sh = 300;
-    ctx.fillStyle = 'rgba(0,20,40,0.95)';
-    ctx.fillRect(sx, sy, sw, sh);
-    ctx.strokeStyle = '#8af';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    ctx.font = '12px sans-serif';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
 
-    if (sm.phase === 'chr') {
-      ctx.fillStyle = '#adf';
-      ctx.fillText('特技を使うキャラ:', sx + 10, sy + 20);
+    // Window 1: Character selection (always visible)
+    const w1x = 130, w1y = 10, w1w = 155, w1h = 75;
+    ctx.fillStyle = 'rgba(0,20,40,0.95)';
+    ctx.fillRect(w1x, w1y, w1w, w1h);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w1x, w1y, w1w, w1h);
+    ctx.fillStyle = '#adf';
+    ctx.fillText('特技:', w1x + 6, w1y + 15);
+    for (let i = 0; i < this.playerParams.length; i++) {
+      const p = this.playerParams[i];
+      const active = sm.phase === 'chr' && i === sm.chrIdx;
+      ctx.fillStyle = sm.phase === 'chr' ? (active ? '#ff0' : '#fff') : (i === sm.chrIdx ? '#8f8' : '#888');
+      ctx.fillText((active ? '▶' : '  ') + `${p.name} MP:${p.mp}/${p.maxMP}`, w1x + 6, w1y + 32 + i * 16);
+    }
+
+    if (sm.phase === 'chr') return;
+
+    // Window 2: Skill list (visible in skill/target phase)
+    const p = this.playerParams[sm.chrIdx];
+    const skills = [];
+    for (let i = 0; i < Math.min(30, this.paramAll.skills.length); i++) {
+      const s = this.paramAll.skills[i];
+      if (s && s.name && s.name.trim() && s.mp > 0) skills.push({ ...s, index: i });
+    }
+
+    const w2x = 130, w2y = 90, w2w = 180, w2h = 30 + Math.min(10, skills.length) * 18;
+    ctx.fillStyle = 'rgba(0,20,40,0.95)';
+    ctx.fillRect(w2x, w2y, w2w, w2h);
+    ctx.strokeStyle = '#8af';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w2x, w2y, w2w, w2h);
+    ctx.fillStyle = '#adf';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`${p.name}の特技:`, w2x + 6, w2y + 14);
+    for (let i = 0; i < Math.min(10, skills.length); i++) {
+      const s = skills[i];
+      const canUse = s.kind === 1 && p.mp >= s.mp;
+      ctx.fillStyle = i === sm.skillIdx ? '#ff0' : (canUse ? '#fff' : '#666');
+      ctx.fillText((i === sm.skillIdx ? '▶' : '  ') + `${s.name.trim()} MP${s.mp}`, w2x + 4, w2y + 30 + i * 18);
+    }
+
+    // Target selection window (stacked on top)
+    if (sm.phase === 'target') {
+      const w3x = 315, w3y = 90, w3w = 80, w3h = 30 + this.playerParams.length * 18;
+      ctx.fillStyle = 'rgba(0,30,20,0.95)';
+      ctx.fillRect(w3x, w3y, w3w, w3h);
+      ctx.strokeStyle = '#4f8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(w3x, w3y, w3w, w3h);
+      ctx.fillStyle = '#4f8';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('対象:', w3x + 6, w3y + 14);
       for (let i = 0; i < this.playerParams.length; i++) {
-        const p = this.playerParams[i];
-        ctx.fillStyle = i === sm.chrIdx ? '#ff0' : '#fff';
-        ctx.fillText((i === sm.chrIdx ? '▶' : '  ') + `${p.name}  MP:${p.mp}/${p.maxMP}`, sx + 10, sy + 42 + i * 22);
-      }
-    } else if (sm.phase === 'skill' || sm.phase === 'target') {
-      const p = this.playerParams[sm.chrIdx];
-      ctx.fillStyle = '#ff0';
-      ctx.fillText(`${p.name} の特技 (MP:${p.mp}/${p.maxMP})`, sx + 10, sy + 20);
-
-      // Build skill list
-      const skills = [];
-      for (let i = 0; i < Math.min(30, this.paramAll.skills.length); i++) {
-        const s = this.paramAll.skills[i];
-        if (s && s.name && s.name.trim() && s.mp > 0) {
-          skills.push({ ...s, index: i });
-        }
-      }
-
-      const maxShow = 10;
-      for (let i = 0; i < Math.min(maxShow, skills.length); i++) {
-        const s = skills[i];
-        const canUse = s.kind === 1 && p.mp >= s.mp;
-        ctx.fillStyle = i === sm.skillIdx ? '#ff0' : (canUse ? '#fff' : '#666');
-        const prefix = i === sm.skillIdx ? '▶' : '  ';
-        const kindLabel = s.kind === 0 ? '攻' : s.kind === 1 ? '回' : s.kind === 2 ? '強' : s.kind === 3 ? '弱' : '状';
-        ctx.fillText(`${prefix}[${kindLabel}]${s.name.trim()} MP${s.mp}`, sx + 10, sy + 42 + i * 22);
-      }
-
-      // Hint
-      // Help text for selected skill
-      if (sm.skillIdx < skills.length) {
-        const selSkill = skills[sm.skillIdx];
-        if (selSkill.help < this.paramAll.helps.length) {
-          const helpText = this.paramAll.helps[selSkill.help];
-          if (helpText && helpText.trim()) {
-            ctx.fillStyle = '#aaa';
-            ctx.font = '10px sans-serif';
-            ctx.fillText(helpText.trim(), sx + 10, sy + sh - 30);
-          }
-        }
-      }
-      ctx.fillStyle = '#666';
-      ctx.font = '9px sans-serif';
-      ctx.fillText('※フィールドでは回復魔法のみ使用可', sx + 10, sy + sh - 15);
-
-      // Target selection overlay
-      if (sm.phase === 'target') {
-        ctx.fillStyle = 'rgba(0,0,60,0.9)';
-        ctx.fillRect(sx + 140, sy + 30, 110, 80);
-        ctx.strokeStyle = '#4f8';
-        ctx.strokeRect(sx + 140, sy + 30, 110, 80);
-        ctx.fillStyle = '#4f8';
-        ctx.font = '11px sans-serif';
-        ctx.fillText('回復対象:', sx + 148, sy + 48);
-        for (let i = 0; i < this.playerParams.length; i++) {
-          const t = this.playerParams[i];
-          ctx.fillStyle = i === sm.targetIdx ? '#ff0' : '#fff';
-          ctx.fillText((i === sm.targetIdx ? '▶' : '  ') + `${t.name} ${t.hp}/${t.maxHP}`, sx + 148, sy + 66 + i * 18);
-        }
+        const t = this.playerParams[i];
+        ctx.fillStyle = i === sm.targetIdx ? '#ff0' : '#fff';
+        ctx.fillText((i === sm.targetIdx ? '▶' : '  ') + `${t.name}`, w3x + 4, w3y + 30 + i * 18);
       }
     }
   }
@@ -2445,46 +2426,62 @@ class SuikaGame {
     const cc = this.cmdConfig;
     const CMD_OPTIONS = ['こうげき', 'まほう', 'アイテム', 'ぼうぎょ', '盗む', 'ぶん取る', 'にげる'];
     const CMD_IDS = [1, 9, 10, 2, 3, 4, 5];
-    const sx = 130, sy = 10, sw = 260, sh = 300;
-    ctx.fillStyle = 'rgba(0,10,40,0.95)';
-    ctx.fillRect(sx, sy, sw, sh);
-    ctx.strokeStyle = '#a8f';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    ctx.font = '12px sans-serif';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
 
-    if (cc.phase === 'chr') {
-      ctx.fillStyle = '#daf';
-      ctx.fillText('戦闘コマンド設定:', sx + 10, sy + 20);
-      for (let i = 0; i < this.playerParams.length; i++) {
-        const p = this.playerParams[i];
-        ctx.fillStyle = i === cc.chrIdx ? '#ff0' : '#fff';
-        ctx.fillText((i === cc.chrIdx ? '▶' : '  ') + p.name, sx + 10, sy + 42 + i * 22);
-      }
-    } else if (cc.phase === 'slot') {
-      const p = this.playerParams[cc.chrIdx];
-      const slots = p.cmdSlots || [1, 9, 10, 2];
-      ctx.fillStyle = '#ff0';
-      ctx.fillText(`${p.name} のコマンド:`, sx + 10, sy + 20);
-      for (let i = 0; i < 4; i++) {
-        const cmdId = slots[i];
-        const cmdIdx = CMD_IDS.indexOf(cmdId);
-        const label = cmdIdx >= 0 ? CMD_OPTIONS[cmdIdx] : '---';
-        ctx.fillStyle = i === cc.slot ? '#ff0' : '#fff';
-        ctx.fillText((i === cc.slot ? '▶' : '  ') + `スロット${i + 1}: ${label}`, sx + 10, sy + 42 + i * 24);
-      }
-      ctx.fillStyle = '#888';
-      ctx.font = '10px sans-serif';
-      ctx.fillText('A:変更 / B:戻る', sx + 10, sy + sh - 15);
-    } else if (cc.phase === 'select') {
-      ctx.fillStyle = '#daf';
-      ctx.fillText(`スロット${cc.slot + 1}に設定:`, sx + 10, sy + 20);
-      for (let i = 0; i < CMD_OPTIONS.length; i++) {
-        ctx.fillStyle = i === cc.optCursor ? '#ff0' : '#fff';
-        ctx.fillText((i === cc.optCursor ? '▶' : '  ') + CMD_OPTIONS[i], sx + 10, sy + 42 + i * 20);
-      }
+    // Window 1: Character selection (always visible)
+    const w1x = 130, w1y = 10, w1w = 130, w1h = 75;
+    ctx.fillStyle = 'rgba(0,10,40,0.95)';
+    ctx.fillRect(w1x, w1y, w1w, w1h);
+    ctx.strokeStyle = '#a8f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w1x, w1y, w1w, w1h);
+    ctx.fillStyle = '#daf';
+    ctx.fillText('コマンド設定:', w1x + 6, w1y + 15);
+    for (let i = 0; i < this.playerParams.length; i++) {
+      const p = this.playerParams[i];
+      const active = cc.phase === 'chr' && i === cc.chrIdx;
+      ctx.fillStyle = cc.phase === 'chr' ? (active ? '#ff0' : '#fff') : (i === cc.chrIdx ? '#8f8' : '#888');
+      ctx.fillText((active ? '▶' : '  ') + p.name, w1x + 6, w1y + 32 + i * 16);
+    }
+
+    if (cc.phase === 'chr') return;
+
+    // Window 2: Slot list (visible in slot/select phase)
+    const p = this.playerParams[cc.chrIdx];
+    const slots = p.cmdSlots || [1, 9, 10, 2];
+    const w2x = 130, w2y = 90, w2w = 155, w2h = 115;
+    ctx.fillStyle = 'rgba(0,10,40,0.95)';
+    ctx.fillRect(w2x, w2y, w2w, w2h);
+    ctx.strokeStyle = '#a8f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w2x, w2y, w2w, w2h);
+    ctx.fillStyle = '#daf';
+    ctx.fillText(`${p.name}のコマンド:`, w2x + 6, w2y + 15);
+    for (let i = 0; i < 4; i++) {
+      const cmdId = slots[i];
+      const cmdIdx = CMD_IDS.indexOf(cmdId);
+      const label = cmdIdx >= 0 ? CMD_OPTIONS[cmdIdx] : '---';
+      const active = cc.phase === 'slot' && i === cc.slot;
+      ctx.fillStyle = cc.phase === 'slot' ? (active ? '#ff0' : '#fff') : (i === cc.slot ? '#8f8' : '#888');
+      ctx.fillText((active ? '▶' : '  ') + `${i + 1}: ${label}`, w2x + 6, w2y + 33 + i * 20);
+    }
+
+    if (cc.phase === 'slot') return;
+
+    // Window 3: Command selection (visible in select phase)
+    const w3x = 290, w3y = 10, w3w = 105, w3h = 30 + CMD_OPTIONS.length * 18;
+    ctx.fillStyle = 'rgba(0,10,40,0.95)';
+    ctx.fillRect(w3x, w3y, w3w, w3h);
+    ctx.strokeStyle = '#a8f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w3x, w3y, w3w, w3h);
+    ctx.fillStyle = '#daf';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('選択:', w3x + 6, w3y + 14);
+    for (let i = 0; i < CMD_OPTIONS.length; i++) {
+      ctx.fillStyle = i === cc.optCursor ? '#ff0' : '#fff';
+      ctx.fillText((i === cc.optCursor ? '▶' : '  ') + CMD_OPTIONS[i], w3x + 4, w3y + 30 + i * 18);
     }
   }
 
