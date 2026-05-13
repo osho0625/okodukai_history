@@ -466,11 +466,12 @@ export class BattleUI {
     const fastForward = !!this._fastForward;
     const animSpeed = fastForward ? 3 : 1;
 
-    // Advance attack animation
-    if (this.attackAnim) {
-      this.attackAnim.frame += animSpeed;
-      if (this.attackAnim.frame >= this.attackAnim.maxFrame) {
-        this.attackAnim = null;
+    // Advance attack animations (supports multiple simultaneous)
+    if (!this.attackAnims) this.attackAnims = [];
+    for (let i = this.attackAnims.length - 1; i >= 0; i--) {
+      this.attackAnims[i].frame += animSpeed;
+      if (this.attackAnims[i].frame >= this.attackAnims[i].maxFrame) {
+        this.attackAnims.splice(i, 1);
       }
     }
 
@@ -543,9 +544,9 @@ export class BattleUI {
         if (newMsg.includes('の攻撃')) {
           this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, targetX, targetY);
           if (isPlayerActing) {
-            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 10 };
+            this.attackAnims.push({ who: 'player', idx: curUnit.index, frame: 0, maxFrame: 10 });
           } else {
-            this.attackAnim = { who: 'enemy', idx: curUnit.index, frame: 0, maxFrame: 10 };
+            this.attackAnims.push({ who: 'enemy', idx: curUnit.index, frame: 0, maxFrame: 10 });
           }
         }
         if (newMsg.includes('強攻撃')) {
@@ -990,8 +991,9 @@ export class BattleUI {
 
       // Attack animation: move forward
       let animOffsetZ = 0;
-      if (this.attackAnim && this.attackAnim.who === 'player' && this.attackAnim.idx === i) {
-        const t = this.attackAnim.frame / this.attackAnim.maxFrame;
+      const playerAnim = this.attackAnims && this.attackAnims.find(a => a.who === 'player' && a.idx === i);
+      if (playerAnim) {
+        const t = playerAnim.frame / playerAnim.maxFrame;
         if (t < 0.5) animOffsetZ = t / 0.5 * 200;       // move forward (fast)
         else animOffsetZ = (1 - (t - 0.5) / 0.5) * 200; // return immediately
       }
@@ -1079,8 +1081,9 @@ export class BattleUI {
 
       // Enemy attack animation: move forward (toward player)
       let animOffsetZ = 0;
-      if (this.attackAnim && this.attackAnim.who === 'enemy' && this.attackAnim.idx === i) {
-        const t = this.attackAnim.frame / this.attackAnim.maxFrame;
+      const enemyAnim = this.attackAnims && this.attackAnims.find(a => a.who === 'enemy' && a.idx === i);
+      if (enemyAnim) {
+        const t = enemyAnim.frame / enemyAnim.maxFrame;
         if (t < 0.5) animOffsetZ = -(t / 0.5 * 200);       // move toward player
         else animOffsetZ = -((1 - (t - 0.5) / 0.5) * 200); // return immediately
       }

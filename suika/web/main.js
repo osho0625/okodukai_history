@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.6';
+const SUIKA_VERSION = 'v0.5.7';
 
 class SuikaGame {
   constructor() {
@@ -1213,7 +1213,7 @@ class SuikaGame {
           }
         }
       }
-      // Return to field
+      // Return to field after death animation completes (20 frames ≈ 1.8s at 11FPS)
       setTimeout(() => {
         this.state = 'game';
         this.battleEngine = null;
@@ -1227,7 +1227,7 @@ class SuikaGame {
           this.gameOverTimer = 0;
           this.state = 'gameover';
         }
-      }, 800);
+      }, 2000);
     };
 
     this.battleEngine.onDamage = (target, dmg) => {
