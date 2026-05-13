@@ -336,7 +336,7 @@ export class Field {
         // Frustum culling: skip tiles too far from player
         const dx = pos.x - this.playerPos.x;
         const dz = pos.z - this.playerPos.z;
-        if (dx * dx + dz * dz > 6000 * 6000) continue;
+        if (dx * dx + dz * dz > 4000 * 4000) continue;
 
         const wvp = this.renderer.calcModel(model, pos, rot, scl);
         this.renderer.drawModel(model, wvp, this.renderer.getTransform(3), 0, 0);
@@ -372,7 +372,7 @@ export class Field {
         // Frustum culling
         const dx = pos.x - this.playerPos.x;
         const dz = pos.z - this.playerPos.z;
-        if (dx * dx + dz * dz > 5000 * 5000) continue;
+        if (dx * dx + dz * dz > 3000 * 3000) continue;
 
         rot.x = 0; rot.y = rotation; rot.z = 0;
         const wvp = this.renderer.calcModel(model, pos, rot, scl);
