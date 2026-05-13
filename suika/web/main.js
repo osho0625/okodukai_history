@@ -19,8 +19,9 @@ import { Credits } from './engine/credits.js';
 import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
+import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.6.1';
+const SUIKA_VERSION = 'v0.6.2';
 
 class SuikaGame {
   constructor() {
@@ -30,6 +31,7 @@ class SuikaGame {
     this.input = new Input(this.canvas);
     this.touchUI = new TouchUI(this.input);
     this.loop = new GameLoop(90);
+    this.cloudSave = new CloudSave();
     this.loader = new AssetLoader(new URL('../', import.meta.url).href);
 
     this.images = [];
@@ -509,6 +511,11 @@ class SuikaGame {
       } else if (this.titleCursor === 1) {
         if (this.loadGame()) {
           this.state = 'game';
+        } else {
+          // No local save — try cloud
+          this.loadGameFromCloud().then(ok => {
+            if (ok) this.state = 'game';
+          });
         }
       } else if (this.titleCursor === 2) {
         // Password input
@@ -2935,6 +2942,8 @@ class SuikaGame {
       stealthCounter: this.stealthCounter || 0,
     };
     localStorage.setItem('suika_save', JSON.stringify(data));
+    // Cloud sync (background, non-blocking)
+    this.cloudSave.upload(data).catch(() => {});
     if (!silent) {
       this.audio.play(10); // SE: save
       if (this.messageWindow) {
@@ -2990,6 +2999,21 @@ class SuikaGame {
   loadGame() {
     const raw = localStorage.getItem('suika_save');
     if (!raw) return false;
+    return this._applyLoadData(raw);
+  }
+
+  // Try to load from cloud if no local save exists
+  async loadGameFromCloud() {
+    const cloudData = await this.cloudSave.download();
+    if (cloudData) {
+      // Store to local as well
+      localStorage.setItem('suika_save', JSON.stringify(cloudData));
+      return this._applyLoadData(JSON.stringify(cloudData));
+    }
+    return false;
+  }
+
+  _applyLoadData(raw) {
     try {
       const data = JSON.parse(raw);
       this.playerParams = data.playerParams.map(d => {
