@@ -1103,7 +1103,8 @@ export class BattleEngine {
         name: this.currentUnit.name, isPlayer: this.currentUnit.isPlayer,
         index: this.currentUnit.index, mp: this.currentUnit.mp, maxMP: this.currentUnit.maxMP
       } : null,
-      log: this.log.slice(-5),
+      log: this.log,
+      logLength: this.log.length,
       result: this.result,
     };
   }

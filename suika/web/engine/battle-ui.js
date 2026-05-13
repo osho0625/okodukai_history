@@ -481,7 +481,7 @@ export class BattleUI {
     }
 
     // Detect new log entries for effects
-    if (battleState.log.length > this.lastLogLen) {
+    if (battleState.logLength > this.lastLogLen) {
       const newMsg = battleState.log[battleState.log.length - 1];
 
       // Calculate target position for effects
@@ -646,7 +646,7 @@ export class BattleUI {
       if (newMsg.includes('ミス')) {
         this.effect.spawnParticles(targetX, targetY, 4, '#888', 20);
       }
-      this.lastLogLen = battleState.log.length;
+      this.lastLogLen = battleState.logLength;
     }
 
     if (battleState.state !== 'playerTurn') return null;

@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.3';
+const SUIKA_VERSION = 'v0.5.4';
 
 class SuikaGame {
   constructor() {
@@ -123,8 +123,8 @@ class SuikaGame {
         }
         // Initial gold (matching original: 1000G)
         this.gold = 1000;
-        // Initial items: 3x item[1] (いちご)
-        this.eventManager.inventory = [1, 1, 1];
+        // No initial items (いちご is obtained from NPC in town)
+        this.eventManager.inventory = [];
       } catch (e) {
         console.warn('Param data load failed:', e.message);
       }
@@ -397,7 +397,7 @@ class SuikaGame {
       return;
     }
 
-    this.loop.start((dt) => this.frame(dt));
+    this.loop.start(null, (dt) => this.update(dt), () => this.draw());
   }
 
   showLoadingScreen(msg) {
@@ -409,7 +409,7 @@ class SuikaGame {
     this.ctx.fillText(msg, 200, 160);
   }
 
-  frame(dt) {
+  update(dt) {
     this.input.update();
     this.frameCount++;
 
@@ -421,40 +421,33 @@ class SuikaGame {
     this._lastTime = now;
 
     switch (this.state) {
-      case 'title':
-        this.updateTitle();
-        this.drawTitle();
-        break;
-      case 'game':
-        this.updateGame();
-        this.drawGame();
-        break;
-      case 'battle':
-        this.updateBattle();
-        this.drawBattle();
-        break;
-      case 'menu':
-        this.updateMenu();
-        this.drawMenu();
-        break;
-      case 'gameover':
-        this.updateGameOver();
-        this.drawGameOver();
-        break;
-      case 'worldmap':
-        this.updateWorldMap();
-        this.drawWorldMap();
-        break;
+      case 'title': this.updateTitle(); break;
+      case 'game': this.updateGame(); break;
+      case 'battle': this.updateBattle(); break;
+      case 'menu': this.updateMenu(); break;
+      case 'gameover': this.updateGameOver(); break;
+      case 'worldmap': this.updateWorldMap(); break;
       case 'credits':
         this.credits.update(this.input);
-        this.credits.draw();
         if (!this.credits.active) this.state = 'title';
         break;
-      case 'opening':
-        this.updateOpening();
-        this.drawOpening();
-        break;
+      case 'opening': this.updateOpening(); break;
     }
+  }
+
+  draw() {
+    switch (this.state) {
+      case 'title': this.drawTitle(); break;
+      case 'game': this.drawGame(); break;
+      case 'battle': this.drawBattle(); break;
+      case 'menu': this.drawMenu(); break;
+      case 'gameover': this.drawGameOver(); break;
+      case 'worldmap': this.drawWorldMap(); break;
+      case 'credits': this.credits.draw(); break;
+      case 'opening': this.drawOpening(); break;
+    }
+    // Touch UI overlay (always drawn)
+    this.touchUI.draw(this.ctx);
   }
 
   updateTitle() {
@@ -988,6 +981,16 @@ class SuikaGame {
         this.eventManager.run(result.event).then(() => {
           this.eventRunning = false;
           this.messageWindow.close();
+          // Special: first NPC in starting area gives いちご (flag 500 = already received)
+          if (this.currentArea === 0 && !this.eventManager.flags.has(500)) {
+            this.eventManager.flags.add(500);
+            this.eventManager.inventory.push(1, 1, 1); // 3x いちご
+            this.eventRunning = true;
+            this.messageWindow.show('いちごを3つもらった！').then(() => {
+              this.eventRunning = false;
+              this.messageWindow.close();
+            });
+          }
         }).catch((e) => {
           console.warn('Event error:', e);
           this.eventRunning = false;
@@ -1117,24 +1120,15 @@ class SuikaGame {
     }
 
     // Setup player skill sets (skills each character has learned)
+    // NOTE: abi1/abi2 are BATTLE COMMAND indices (1=たたかう,2=アイテム,3=盗む,4=ぶんどる,
+    //   5=特技,6=神官魔法,7=陰陽術,8=連陰陽,9=敵の技,10=逃げる,11=唄,12=西瓜魔法)
+    // They are NOT skill indices. Skills come from gems only.
     this.battleUI.playerSkillSets = this.playerParams.map(p => {
       const skills = [];
-      // abi1/abi2 are command ability indices (from CInitGame m_anCmdAb)
-      if (p.abi1 > 0 && p.abi1 < this.paramAll.skills.length) {
-        const s = this.paramAll.skills[p.abi1];
-        if (s && s.name && s.name.trim()) skills.push({ ...s, index: p.abi1 });
-      }
-      if (p.abi2 > 0 && p.abi2 < this.paramAll.skills.length) {
-        const s = this.paramAll.skills[p.abi2];
-        if (s && s.name && s.name.trim()) skills.push({ ...s, index: p.abi2 });
-      }
       // Add skills learned from gems (gemFlags tracks learned skill flags)
       if (p.gemFlags) {
         for (const [gemId, flags] of Object.entries(p.gemFlags)) {
           if (!flags) continue;
-          // Each gem has up to 7 skills; flags is a bitmask or array of learned indices
-          // GEM_DATA maps gem → skill indices (defined in compose.js or main.js)
-          // For now, check if gemFlags stores learned skill indices directly
           if (Array.isArray(flags)) {
             for (const skillIdx of flags) {
               if (skillIdx > 0 && skillIdx < this.paramAll.skills.length) {
@@ -2885,7 +2879,7 @@ class SuikaGame {
     // They join via E.PARTY events when flags 1/2 are set
     this.gold = 1000;
     this.eventManager.flags = new Set();
-    this.eventManager.inventory = [1, 1, 1]; // 3x healing herb (item index 1)
+    this.eventManager.inventory = []; // No initial items (いちご obtained from NPC)
     this.eventManager.gold = 1000;
     this.field.eventFlags = this.eventManager.flags;
     this.playTime = 0;
