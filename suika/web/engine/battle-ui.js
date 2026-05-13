@@ -462,12 +462,22 @@ export class BattleUI {
   update(battleState) {
     this.effect.update();
 
+    // Fast-forward: advance animations faster when OK is held (don't skip)
+    const fastForward = this.input.isOKHeld();
+    const animSpeed = fastForward ? 3 : 1;
+
     // Advance attack animation
     if (this.attackAnim) {
-      this.attackAnim.frame++;
+      this.attackAnim.frame += animSpeed;
       if (this.attackAnim.frame >= this.attackAnim.maxFrame) {
         this.attackAnim = null;
       }
+    }
+
+    // Fast-forward effect animations too
+    if (fastForward) {
+      this.effect.update();
+      this.effect.update(); // 2 extra updates = 3x speed total
     }
 
     // Detect new log entries for effects
@@ -477,15 +487,15 @@ export class BattleUI {
       // Calculate target position for effects
       // Use stored screen positions from 3D rendering if available
       const enemyCount = battleState.enemies.length;
+      const eSpacing = enemyCount <= 2 ? 80 : 60;
+      const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
       let eX, eY;
-      const targetEIdx = this.targetCursor || 0;
+      const targetEIdx = this._lastTarget || this.targetCursor || 0;
       if (this._enemyScreenPos && this._enemyScreenPos[targetEIdx]) {
         eX = this._enemyScreenPos[targetEIdx].x;
         eY = this._enemyScreenPos[targetEIdx].y;
       } else {
         // Fallback for placeholder rendering
-        const eSpacing = enemyCount <= 2 ? 80 : 60;
-        const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
         eX = eStartX + targetEIdx * eSpacing;
         eY = 90;
       }
@@ -499,12 +509,33 @@ export class BattleUI {
       // Determine who is being targeted
       const curUnit = battleState.currentUnit;
       const isPlayerActing = curUnit && curUnit.isPlayer;
-      // When player attacks → effect on enemy; when enemy attacks → effect on player
-      const targetX = isPlayerActing ? eX : (pStartX + (curUnit ? curUnit.index : 0) * pSpacing);
-      const targetY = isPlayerActing ? eY : pY;
+      // When player attacks → effect on enemy; when enemy attacks → effect on player (center of party)
+      let targetX, targetY;
+      if (isPlayerActing) {
+        targetX = eX;
+        targetY = eY;
+      } else {
+        // Enemy attacking: effect on player party center
+        targetX = 200;
+        targetY = pY;
+      }
       // Effect on self (buffs/heals go on the caster)
-      const selfX = isPlayerActing ? (pStartX + (curUnit ? curUnit.index : 0) * pSpacing) : eX;
-      const selfY = isPlayerActing ? pY : eY;
+      let selfX, selfY;
+      if (isPlayerActing) {
+        const pIdx = curUnit ? curUnit.index : 0;
+        selfX = pStartX + pIdx * pSpacing;
+        selfY = pY;
+      } else {
+        // Enemy self-buff: use enemy screen position
+        const eIdx = curUnit ? curUnit.index : 0;
+        if (this._enemyScreenPos && this._enemyScreenPos[eIdx]) {
+          selfX = this._enemyScreenPos[eIdx].x;
+          selfY = this._enemyScreenPos[eIdx].y;
+        } else {
+          selfX = eX;
+          selfY = eY;
+        }
+      }
 
       if (newMsg.includes('ダメージ') && !newMsg.includes('毒で') && !newMsg.includes('吸収')) {
         this.effect.triggerFlash('#f44', 3);
@@ -512,7 +543,9 @@ export class BattleUI {
         if (newMsg.includes('の攻撃')) {
           this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, targetX, targetY);
           if (isPlayerActing) {
-            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 20 };
+            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 14 };
+          } else {
+            this.attackAnim = { who: 'enemy', idx: curUnit.index, frame: 0, maxFrame: 14 };
           }
         }
         if (newMsg.includes('強攻撃')) {
@@ -540,9 +573,17 @@ export class BattleUI {
       if (newMsg.includes('全体魔法')) {
         // All targets — spread across enemy/player line
         if (isPlayerActing) {
-          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, eStartX + (enemyCount - 1) * eSpacing / 2, eY);
+          // Use actual screen positions if available
+          let centerX = eStartX + (enemyCount - 1) * eSpacing / 2;
+          if (this._enemyScreenPos && this._enemyScreenPos.length > 0) {
+            const positions = this._enemyScreenPos.filter(p => p);
+            if (positions.length > 0) centerX = positions.reduce((s, p) => s + p.x, 0) / positions.length;
+          }
+          this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, centerX, eY);
           for (let i = 0; i < enemyCount; i++) {
-            this.effect.spawnParticles(eStartX + i * eSpacing, eY, 6, '#ff0', 30);
+            const px = (this._enemyScreenPos && this._enemyScreenPos[i]) ? this._enemyScreenPos[i].x : eStartX + i * eSpacing;
+            const py = (this._enemyScreenPos && this._enemyScreenPos[i]) ? this._enemyScreenPos[i].y : eY;
+            this.effect.spawnParticles(px, py, 6, '#ff0', 30);
           }
         } else {
           this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.THUNDER, 200, pY - 20);
@@ -568,7 +609,9 @@ export class BattleUI {
       if (newMsg.includes('全体回復')) {
         this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.HEAL, 200, selfY);
         for (let i = 0; i < enemyCount; i++) {
-          this.effect.spawnParticles(eStartX + i * eSpacing, eY, 6, '#4f8', 25);
+          const px = (this._enemyScreenPos && this._enemyScreenPos[i]) ? this._enemyScreenPos[i].x : eStartX + i * eSpacing;
+          const py = (this._enemyScreenPos && this._enemyScreenPos[i]) ? this._enemyScreenPos[i].y : eY;
+          this.effect.spawnParticles(px, py, 6, '#4f8', 25);
         }
       }
       if (newMsg.includes('防御力が上がった') || newMsg.includes('攻撃力が上がった') || newMsg.includes('素早さが上がった') || newMsg.includes('全能力')) {
@@ -963,9 +1006,9 @@ export class BattleUI {
       let animOffsetZ = 0;
       if (this.attackAnim && this.attackAnim.who === 'player' && this.attackAnim.idx === i) {
         const t = this.attackAnim.frame / this.attackAnim.maxFrame;
-        if (t < 0.4) animOffsetZ = t / 0.4 * 200;
-        else if (t < 0.6) animOffsetZ = 200;
-        else animOffsetZ = (1 - (t - 0.6) / 0.4) * 200;
+        if (t < 0.4) animOffsetZ = t / 0.4 * 200;       // move forward
+        else if (t < 0.55) animOffsetZ = 200;            // hold briefly
+        else animOffsetZ = (1 - (t - 0.55) / 0.45) * 200; // return quickly
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
@@ -1049,7 +1092,16 @@ export class BattleUI {
       const posX = startX + i * spacing;
       const posZ = 280;
 
-      const pos = new Vec3(posX, 0, posZ);
+      // Enemy attack animation: move forward (toward player)
+      let animOffsetZ = 0;
+      if (this.attackAnim && this.attackAnim.who === 'enemy' && this.attackAnim.idx === i) {
+        const t = this.attackAnim.frame / this.attackAnim.maxFrame;
+        if (t < 0.4) animOffsetZ = -(t / 0.4 * 200);       // move toward player (negative Z)
+        else if (t < 0.55) animOffsetZ = -200;              // hold briefly
+        else animOffsetZ = -((1 - (t - 0.55) / 0.45) * 200); // return quickly
+      }
+
+      const pos = new Vec3(posX, 0, posZ + animOffsetZ);
       const rot = new Vec3(0, Math.PI, 0); // face player
       const scl = new Vec3(0.9, 0.9, 0.9); // slightly smaller to prevent oversized appearance
 
@@ -1436,6 +1488,8 @@ export class BattleUI {
     this.cursor = 0;
     this.subCursor = 0;
     this._pendingCmd = null;
+    // Preserve targetCursor as _lastTarget for effect positioning
+    this._lastTarget = this.targetCursor || 0;
   }
 
   // Cosmic starfield for space battle backgrounds

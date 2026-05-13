@@ -20,6 +20,8 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
+const SUIKA_VERSION = 'v0.5.0';
+
 class SuikaGame {
   constructor() {
     this.canvas = document.getElementById('game');
@@ -127,6 +129,7 @@ class SuikaGame {
 
       // Wire up message callback
       this.eventManager.messageCallback = (text) => this.messageWindow.show(text);
+      this.eventManager.closeWindowCallback = () => this.messageWindow.close();
       this.eventManager.choiceCallback = (opt1, opt2) => this.choiceWindow.show(opt1, opt2);
       this.eventManager.battleCallback = (partyIndex) => {
         return new Promise((resolve) => {
@@ -359,9 +362,11 @@ class SuikaGame {
         this.eventRunning = true;
         this.eventManager.run(eventNo).then(() => {
           this.eventRunning = false;
+          this.messageWindow.close();
         }).catch((e) => {
           console.warn('Wall event error:', e);
           this.eventRunning = false;
+          this.messageWindow.close();
         });
       };
 
@@ -745,6 +750,13 @@ class SuikaGame {
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fillText('2002-2008 製作・著作 くろすけ', 200, 295);
 
+    // Version
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'right';
+    ctx.fillText(SUIKA_VERSION, 395, 295);
+    ctx.textAlign = 'center';
+
     // Volume control (bottom-left)
     const vol = Math.round(this.audio.volume * 100);
     ctx.font = '10px sans-serif';
@@ -878,7 +890,11 @@ class SuikaGame {
     else if (stage === 1) fontSize = 24;
     else if (stage === 2) fontSize = 36;
     else if (stage === 3) fontSize = 52;
-    else fontSize = 80 + stageProgress * 60; // 80→140px, overflows screen
+    else {
+      // Final stage: continuously grow from 80px using total elapsed time since stage 4 start
+      const stage4Elapsed = phase - 4 * 36;
+      fontSize = 80 + (stage4Elapsed / 36) * 60; // grows without resetting
+    }
 
     // Brightness pulse (0→255→0 per stage)
     let brightness;
@@ -965,9 +981,11 @@ class SuikaGame {
         this.eventRunning = true;
         this.eventManager.run(result.event).then(() => {
           this.eventRunning = false;
+          this.messageWindow.close();
         }).catch((e) => {
           console.warn('Event error:', e);
           this.eventRunning = false;
+          this.messageWindow.close();
         });
       }
     }
@@ -1250,6 +1268,9 @@ class SuikaGame {
     if (!this.battleEngine || !this.battleUI) return;
     const bState = this.battleEngine.getState();
 
+    // Sync fast-forward state (OK held = speed up animations + reduce delays)
+    this.battleEngine.fastForward = this.input.isOKHeld();
+
     if (bState.state === 'playerTurn') {
       const action = this.battleUI.update(bState);
       if (action) {
@@ -1257,6 +1278,9 @@ class SuikaGame {
         this.battleEngine.doPlayerCommand(action.cmd, action.target, action.extra);
         this.battleUI.reset();
       }
+    } else {
+      // During enemy/animating turns, still update UI for animations
+      this.battleUI.update(bState);
     }
   }
 
@@ -2693,11 +2717,11 @@ class SuikaGame {
 
   drawWorldMap() {
     const ctx = this.ctx;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 400, 320);
 
     // Draw world map image (image31 is the map in original)
     if (this.images && this.images[31]) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 400, 320);
       ctx.drawImage(this.images[31], 44, 14);
     } else {
       // Fallback: draw a stylized map representation
@@ -2764,7 +2788,7 @@ class SuikaGame {
       if (area && area.worldMapX !== 65535 && area.worldMapZ !== 65535) {
         const px = 30 + (area.worldMapX - 2) * 5;
         const pz = 20 + (area.worldMapZ - 3) * 5;
-        const blink = (this.frameCount & 4) ? 1 : 0;
+        const blink = (this.frameCount & 8) ? 1 : 0;
         ctx.fillStyle = blink ? '#f44' : '#ff0';
         ctx.beginPath();
         ctx.arc(px, pz, 5, 0, Math.PI * 2);

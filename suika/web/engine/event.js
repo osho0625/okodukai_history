@@ -81,6 +81,7 @@ export class EventManager {
     this.compShopCallback = null;  // () => Promise<void>
     this.saveCallback = null;      // () => Promise<void>
     this.effectCallback = null;    // (type, x, z, param) => void
+    this.closeWindowCallback = null; // () => void
   }
 
   load(buffer) {
@@ -148,6 +149,7 @@ export class EventManager {
           break;
 
         case E.CLOSEW:
+          if (this.closeWindowCallback) this.closeWindowCallback();
           break;
 
         case E.MESS: {

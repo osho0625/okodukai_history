@@ -39,12 +39,19 @@ export class GameLoop {
       this._accumulator += dt;
 
       // Fixed timestep: run logic at original game speed
-      while (this._accumulator >= this.targetMs) {
+      // Cap to prevent spiral of death (max 3 frames per rAF)
+      let steps = 0;
+      while (this._accumulator >= this.targetMs && steps < 3) {
         this._accumulator -= this.targetMs;
         if (this.onFrame) {
           this.onFrame(this.targetMs);
         }
         this.frameCount++;
+        steps++;
+      }
+      // Discard excess accumulated time to prevent catch-up stutter
+      if (this._accumulator > this.targetMs * 3) {
+        this._accumulator = 0;
       }
 
       this._tick();

@@ -18,9 +18,16 @@ export class MessageWindow {
     this.visible = true;
     this.displayedChars = 0;
     this.frameCount = 0;
+    this._closing = false;
     return new Promise((resolve) => {
       this.resolve = resolve;
     });
+  }
+
+  // Close the window (called by CLOSEW event command)
+  close() {
+    this.visible = false;
+    this._closing = false;
   }
 
   // Call each frame
@@ -41,11 +48,11 @@ export class MessageWindow {
         this.displayedChars = this.text.length;
       }
     } else if (inputOK) {
-      // Text fully displayed, player pressed OK → close
-      this.visible = false;
+      // Text fully displayed, player pressed OK → resolve (keep window visible for next message)
       if (this.resolve) {
-        this.resolve();
+        const r = this.resolve;
         this.resolve = null;
+        r();
       }
     }
   }

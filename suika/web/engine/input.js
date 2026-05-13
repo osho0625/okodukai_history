@@ -148,6 +148,11 @@ export class Input {
     return this.isKeyDown('enter') || this.isKeyDown(' ') || this.mouseLeftDown || !!this.touchButtonDown['ok'];
   }
 
+  // Returns true while OK button is held (for fast-forward)
+  isOKHeld() {
+    return this.isKey('enter') || this.isKey(' ') || !!this.touchButtons['ok'];
+  }
+
   isCancel() {
     return this.isKeyDown('x') || this.isKeyDown('escape') || this.mouseRightDown || !!this.touchButtonDown['cancel'];
   }

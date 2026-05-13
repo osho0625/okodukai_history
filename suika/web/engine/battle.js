@@ -354,6 +354,7 @@ export class BattleEngine {
     // Turn delay settings (ms)
     this.playerTurnDelay = 600;
     this.enemyTurnDelay = 800;
+    this.fastForward = false; // set by UI when OK is held
 
     // Callbacks for UI
     this.onLog = null;        // (message) => void
@@ -535,11 +536,12 @@ export class BattleEngine {
     this.checkBattleEnd();
     if (this.result === BATTLE_RESULT.CONTINUE) {
       // Delay after player action so the result is visible
+      const delay = this.fastForward ? Math.floor(this.playerTurnDelay / 3) : this.playerTurnDelay;
       setTimeout(() => {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, this.playerTurnDelay);
+      }, delay);
     }
   }
 
@@ -1046,11 +1048,12 @@ export class BattleEngine {
     unit.at = 0;
     this.checkBattleEnd();
     if (this.result === BATTLE_RESULT.CONTINUE) {
+      const delay = this.fastForward ? Math.floor(this.enemyTurnDelay / 3) : this.enemyTurnDelay;
       setTimeout(() => {
         if (this.result === BATTLE_RESULT.CONTINUE) {
           this.nextTurn();
         }
-      }, this.enemyTurnDelay);
+      }, delay);
     }
   }
 
