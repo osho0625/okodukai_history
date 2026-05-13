@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.4';
+const SUIKA_VERSION = 'v0.5.5';
 
 class SuikaGame {
   constructor() {
@@ -108,11 +108,13 @@ class SuikaGame {
       try {
         const paramBuf = await this.loader.fetchBinary('data/param._da');
         this.paramAll.load(paramBuf);
-        // Override item[1] (いちご): no ATK bonus, small DEX bonus only
+        // Override item[1] (いちご): no ATK bonus, small DEX bonus, usable as heal item
         const ichigo = this.paramAll.getItem(1);
         if (ichigo) {
           ichigo.str = 0;
           ichigo.dex = 2; // small evasion boost
+          ichigo.workNo = 1; // HEAL_ONE when used as item
+          ichigo.effect = 30; // heals ~30 HP
         }
         // Setup initial player party (only protagonist at start, matching original)
         if (this.paramAll.chrParams.length >= 1) {
@@ -1107,15 +1109,18 @@ class SuikaGame {
     });
     this.battleUI.playerCount = this.playerParams.length;
 
-    // Setup inventory for battle (actual player inventory, consumable items only)
+    // Setup inventory for battle (consumable items + いちご which is dual-use)
     this.battleUI.inventory = [];
     const invCount = {};
     for (const idx of this.eventManager.inventory) { invCount[idx] = (invCount[idx] || 0) + 1; }
     for (const [idxStr, count] of Object.entries(invCount)) {
       const idx = Number(idxStr);
       const item = this.paramAll.getItem(idx);
-      if (item && item.kind === 0 && item.name && item.name.trim()) {
-        this.battleUI.inventory.push({ ...item, index: idx, count });
+      if (item && item.name && item.name.trim()) {
+        // Show consumables (kind=0) and いちご (idx=1, dual-use weapon/consumable)
+        if (item.kind === 0 || idx === 1) {
+          this.battleUI.inventory.push({ ...item, index: idx, count });
+        }
       }
     }
 
@@ -1685,9 +1690,9 @@ class SuikaGame {
     if (this.input.isDown()) this.itemMenu.cursor = (this.itemMenu.cursor + 1) % itemList.length;
 
     if (this.input.isOK()) {
-      // Use consumable items (kind=0)
+      // Use consumable items (kind=0) or いちご (idx=1, dual-use)
       const selected = itemList[this.itemMenu.cursor];
-      if (selected.item && selected.item.kind === 0) {
+      if (selected.item && (selected.item.kind === 0 || selected.idx === 1)) {
         const algo = selected.item.workNo || 0;
         if (algo === 1 || algo === 2 || (selected.item.effect > 0 && algo <= 3)) {
           // Heal item: heal first alive player who needs it
