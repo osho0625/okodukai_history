@@ -71,6 +71,8 @@ class SuikaGame {
     this._lastTime = Date.now();
     // Battle speed setting: 0=slow(1200/1600ms), 1=normal(600/800ms), 2=fast(300/400ms), 3=instant(50/100ms)
     this.battleSpeed = parseInt(localStorage.getItem('suika_battle_speed') || '0');
+    // Encounter rate: 0=off, 1=low, 2=normal, 3=high
+    this.encounterRate = parseInt(localStorage.getItem('suika_encounter_rate') || '1');
   }
 
   async init() {
@@ -985,6 +987,7 @@ class SuikaGame {
   checkEncounter() {
     if (!this.field.area || !this.field.area.enemies) return;
     if (this.playerParams.length === 0) return;
+    if (this.encounterRate === 0) return; // Encounters off
 
     const bx = MapData.getXBlock(this.field.playerPos.x);
     const bz = MapData.getZBlock(this.field.playerPos.z);
@@ -993,11 +996,15 @@ class SuikaGame {
     const stealthMod = (this.stealthCounter && this.stealthCounter > 0) ? 2 : 1;
     if (this.stealthCounter > 0) this.stealthCounter--;
 
+    // Encounter rate multiplier: 0=off, 1=low(x4), 2=normal(x2), 3=high(x1)
+    const rateMod = [999, 4, 2, 1][this.encounterRate] || 4;
+
     for (const enc of this.field.area.enemies) {
       if (bx >= enc.xPos && bx < enc.xPos + enc.xSize &&
           bz >= enc.zPos && bz < enc.zPos + enc.zSize) {
-        // Random chance based on rnd1/rnd2, modified by stealth
-        const chance = (enc.rnd1 > 0 ? enc.rnd1 : 30) * stealthMod;
+        // Random chance based on rnd1, modified by stealth and rate setting
+        const baseChance = enc.rnd1 > 0 ? enc.rnd1 : 30;
+        const chance = baseChance * stealthMod * rateMod;
         if (Math.floor(Math.random() * chance) === 0) {
           this.startBattle(enc.kind);
           return;
@@ -1788,21 +1795,23 @@ class SuikaGame {
     }
   }
 
-  // Settings sub-menu (volume + battle speed)
+  // Settings sub-menu (volume + battle speed + encounter rate)
   updateSettings() {
     const sm = this.settingsMenu;
-    const items = ['SE音量', '戦闘速度', '戻る'];
+    const items = ['SE音量', '戦闘速度', 'エンカウント率', '戻る'];
     if (this.input.isUp()) { sm.cursor = (sm.cursor - 1 + items.length) % items.length; this.audio.play(5); }
     if (this.input.isDown()) { sm.cursor = (sm.cursor + 1) % items.length; this.audio.play(5); }
     if (this.input.isLeft()) {
       if (sm.cursor === 0) this.audio.setVolume(this.audio.volume - 0.1);
       if (sm.cursor === 1) { this.battleSpeed = Math.max(0, this.battleSpeed - 1); localStorage.setItem('suika_battle_speed', String(this.battleSpeed)); }
+      if (sm.cursor === 2) { this.encounterRate = Math.max(0, this.encounterRate - 1); localStorage.setItem('suika_encounter_rate', String(this.encounterRate)); }
     }
     if (this.input.isRight()) {
       if (sm.cursor === 0) { this.audio.setVolume(this.audio.volume + 0.1); this.audio.play(5); }
       if (sm.cursor === 1) { this.battleSpeed = Math.min(3, this.battleSpeed + 1); localStorage.setItem('suika_battle_speed', String(this.battleSpeed)); this.audio.play(5); }
+      if (sm.cursor === 2) { this.encounterRate = Math.min(3, this.encounterRate + 1); localStorage.setItem('suika_encounter_rate', String(this.encounterRate)); this.audio.play(5); }
     }
-    if (this.input.isOK() && sm.cursor === 2) { this.settingsMenu = null; }
+    if (this.input.isOK() && sm.cursor === 3) { this.settingsMenu = null; }
     if (this.input.isCancel()) { this.settingsMenu = null; }
   }
 
@@ -2449,7 +2458,7 @@ class SuikaGame {
 
   drawSettings(ctx) {
     const sm = this.settingsMenu;
-    const sx = 130, sy = 60, sw = 260, sh = 180;
+    const sx = 130, sy = 50, sw = 260, sh = 220;
     ctx.fillStyle = 'rgba(0,10,30,0.95)';
     ctx.fillRect(sx, sy, sw, sh);
     ctx.strokeStyle = '#8af';
@@ -2474,15 +2483,23 @@ class SuikaGame {
     const speedLabels = ['おそい', 'ふつう', 'はやい', '瞬間'];
     ctx.fillStyle = sm.cursor === 1 ? '#ff0' : '#ccc';
     ctx.fillText((sm.cursor === 1 ? '▶' : '  ') + `戦闘速度: ${speedLabels[this.battleSpeed]}`, sx + 10, sy + 90);
-    // Speed indicator dots
     for (let i = 0; i < 4; i++) {
       ctx.fillStyle = i <= this.battleSpeed ? '#fc8' : '#444';
       ctx.fillRect(sx + 150 + i * 22, sy + 82, 16, 8);
     }
 
-    // Back
+    // Encounter rate
+    const encLabels = ['なし', 'ひくい', 'ふつう', 'たかい'];
     ctx.fillStyle = sm.cursor === 2 ? '#ff0' : '#ccc';
-    ctx.fillText((sm.cursor === 2 ? '▶' : '  ') + '戻る', sx + 10, sy + 125);
+    ctx.fillText((sm.cursor === 2 ? '▶' : '  ') + `エンカウント: ${encLabels[this.encounterRate]}`, sx + 10, sy + 125);
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i <= this.encounterRate ? '#f84' : '#444';
+      ctx.fillRect(sx + 170 + i * 22, sy + 117, 16, 8);
+    }
+
+    // Back
+    ctx.fillStyle = sm.cursor === 3 ? '#ff0' : '#ccc';
+    ctx.fillText((sm.cursor === 3 ? '▶' : '  ') + '戻る', sx + 10, sy + 165);
 
     // Hint
     ctx.fillStyle = '#888';
