@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.6.0';
+const SUIKA_VERSION = 'v0.6.1';
 
 class SuikaGame {
   constructor() {
@@ -2102,6 +2102,8 @@ class SuikaGame {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, 400, 320);
 
+    const hasSubMenu = this.itemMenu || this.skillMenu || this.cmdConfig || this.settingsMenu || this.gemMenu || this.equipMenu;
+
     // Main menu panel (always visible, left side — DQ style)
     const mx = 8, my = 8, mw = 110, mh = 240;
     ctx.fillStyle = 'rgba(0,0,60,0.95)';
@@ -2118,6 +2120,21 @@ class SuikaGame {
       const prefix = i === this.menuCursor ? '▶' : '  ';
       ctx.fillText(prefix + items[i], mx + 6, my + 18 + i * 18);
     }
+
+    // Info window: Gold + Play time (small, right-top area — grayed when sub-menu open)
+    const ix = 130, iy = 8, iw = 130, ih = 38;
+    ctx.fillStyle = hasSubMenu ? 'rgba(0,0,40,0.6)' : 'rgba(0,0,60,0.95)';
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.strokeStyle = hasSubMenu ? '#446' : '#88f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(ix, iy, iw, ih);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = hasSubMenu ? '#888' : '#fd0';
+    ctx.fillText(`💰 ${this.gold || 0} G`, ix + 6, iy + 15);
+    const hours = Math.floor(this.playTime / 3600);
+    const mins = Math.floor((this.playTime % 3600) / 60);
+    ctx.fillStyle = hasSubMenu ? '#666' : '#aaa';
+    ctx.fillText(`⏱ ${hours}:${String(mins).padStart(2, '0')}`, ix + 6, iy + 31);
 
     // Password display overlay (full screen)
     if (this.passwordDisplay) {
@@ -2143,7 +2160,7 @@ class SuikaGame {
       return;
     }
 
-    // Sub-menu windows (stacked on top of main menu — DQ style)
+    // Sub-menu windows (stacked on top — DQ style)
     if (this.itemMenu) {
       this.drawItemMenu(ctx);
     } else if (this.skillMenu) {
@@ -2156,17 +2173,18 @@ class SuikaGame {
       this.drawGemMenu(ctx);
     } else if (this.equipMenu) {
       this.drawEquipMenu(ctx);
-    } else {
-      // Default: status panel (right side)
+    } else if (this.menuCursor === 4) {
+      // Status shown only when cursor is on ステータス
       this._drawStatusPanel(ctx);
     }
   }
 
   _drawStatusPanel(ctx) {
-    const sx = 130, sy = 10, sw = 260, sh = 300;
-    ctx.fillStyle = 'rgba(0,0,60,0.92)';
+    const sx = 130, sy = 52, sw = 260, sh = 258;
+    ctx.fillStyle = 'rgba(0,0,60,0.95)';
     ctx.fillRect(sx, sy, sw, sh);
     ctx.strokeStyle = '#88f';
+    ctx.lineWidth = 2;
     ctx.strokeRect(sx, sy, sw, sh);
 
     ctx.font = '11px sans-serif';
@@ -2198,16 +2216,9 @@ class SuikaGame {
         }
         if (eqStr) { ctx.fillStyle = '#8cf'; ctx.fillText(eqStr, sx + 10, py); py += 13; }
       }
-      py += 10;
+      py += 8;
       ctx.font = '11px sans-serif';
     }
-    ctx.fillStyle = '#fd0';
-    ctx.fillText(`所持金: ${this.gold || 0} G`, sx + 10, py + 5);
-    // Play time
-    const hours = Math.floor(this.playTime / 3600);
-    const mins = Math.floor((this.playTime % 3600) / 60);
-    ctx.fillStyle = '#aaa';
-    ctx.fillText(`プレイ時間: ${hours}:${String(mins).padStart(2, '0')}`, sx + 10, py + 20);
   }
 
   drawGemMenu(ctx) {
