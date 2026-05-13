@@ -1268,10 +1268,13 @@ class SuikaGame {
     if (!this.battleEngine || !this.battleUI) return;
     const bState = this.battleEngine.getState();
 
-    // Sync fast-forward state (OK held = speed up animations + reduce delays)
-    this.battleEngine.fastForward = this.input.isOKHeld();
+    // Fast-forward only during non-player turns (enemy actions / waiting)
+    const isPlayerTurn = bState.state === 'playerTurn';
+    const fastForward = !isPlayerTurn && this.input.isOKHeld();
+    this.battleEngine.fastForward = fastForward;
+    this.battleUI._fastForward = fastForward;
 
-    if (bState.state === 'playerTurn') {
+    if (isPlayerTurn) {
       const action = this.battleUI.update(bState);
       if (action) {
         this.audio.play(8); // SE: command confirm
@@ -2569,28 +2572,6 @@ class SuikaGame {
         const equipped = (p.equip && p.equip[i] >= 0) ? this.paramAll.getItem(p.equip[i]) : null;
         const eqName = equipped ? equipped.name.trim() : 'なし';
         ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
-      }
-    } else if (eq.phase === 'item') {
-      ctx.fillText('勾玉を選択:', sx + 10, sy + 20);
-
-      const gems = this.eventManager.inventory
-        .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
-        .filter(e => e.item && e.idx >= 110 && e.idx <= 126);
-      const available = gems.filter(g => this.getGemRestriction(g.idx, eq.chrIdx) !== 2);
-      available.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
-
-      for (let i = 0; i < Math.min(10, available.length); i++) {
-        const g = available[i];
-        const isCurrent = i === eq.itemCursor;
-        ctx.fillStyle = isCurrent ? '#ff0' : '#fff';
-        let label = g.item.name ? g.item.name.trim() : 'はずす';
-        if (g.idx >= 110) {
-          const progress = this.getGemProgress(p, g.idx);
-          label += ` (${progress.learned}/${progress.total})`;
-          const restriction = this.getGemRestriction(g.idx, eq.chrIdx);
-          if (restriction === 1) label += ' ★';
-        }
-        ctx.fillText((isCurrent ? '▶' : '  ') + label, sx + 10, sy + 40 + i * 20);
       }
     } else if (eq.phase === 'item') {
       const kindMap = [1, 2, 3, 4, 4];

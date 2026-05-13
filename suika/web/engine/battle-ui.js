@@ -462,8 +462,8 @@ export class BattleUI {
   update(battleState) {
     this.effect.update();
 
-    // Fast-forward: advance animations faster when OK is held (don't skip)
-    const fastForward = this.input.isOKHeld();
+    // Fast-forward: advance animations faster (controlled by main.js)
+    const fastForward = !!this._fastForward;
     const animSpeed = fastForward ? 3 : 1;
 
     // Advance attack animation
@@ -490,7 +490,7 @@ export class BattleUI {
       const eSpacing = enemyCount <= 2 ? 80 : 60;
       const eStartX = 200 - (enemyCount - 1) * eSpacing / 2;
       let eX, eY;
-      const targetEIdx = this._lastTarget || this.targetCursor || 0;
+      const targetEIdx = this._lastTarget !== undefined ? this._lastTarget : (this.targetCursor || 0);
       if (this._enemyScreenPos && this._enemyScreenPos[targetEIdx]) {
         eX = this._enemyScreenPos[targetEIdx].x;
         eY = this._enemyScreenPos[targetEIdx].y;
@@ -543,9 +543,9 @@ export class BattleUI {
         if (newMsg.includes('の攻撃')) {
           this.effect.triggerSkillAnim(SKILL_ANIM_TYPE.SLASH, targetX, targetY);
           if (isPlayerActing) {
-            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 14 };
+            this.attackAnim = { who: 'player', idx: curUnit.index, frame: 0, maxFrame: 10 };
           } else {
-            this.attackAnim = { who: 'enemy', idx: curUnit.index, frame: 0, maxFrame: 14 };
+            this.attackAnim = { who: 'enemy', idx: curUnit.index, frame: 0, maxFrame: 10 };
           }
         }
         if (newMsg.includes('強攻撃')) {
@@ -712,6 +712,7 @@ export class BattleUI {
         const cmd = this._pendingCmd || CMD.ATTACK;
         this._pendingCmd = null;
         this.phase = 'command';
+        this._lastTarget = realIdx; // Store real enemy index for effect positioning
         return { cmd, target: realIdx };
       }
       if (this.input.isCancel()) {
@@ -768,6 +769,7 @@ export class BattleUI {
           }
         }
         this.phase = 'command';
+        this._lastTarget = realIdx; // Store real enemy index for effect positioning
         return { cmd: CMD.SKILL, target: realIdx, extra: this.selectedSkill };
       }
       if (this.input.isCancel()) { this.phase = 'skill'; }
@@ -1006,9 +1008,8 @@ export class BattleUI {
       let animOffsetZ = 0;
       if (this.attackAnim && this.attackAnim.who === 'player' && this.attackAnim.idx === i) {
         const t = this.attackAnim.frame / this.attackAnim.maxFrame;
-        if (t < 0.4) animOffsetZ = t / 0.4 * 200;       // move forward
-        else if (t < 0.55) animOffsetZ = 200;            // hold briefly
-        else animOffsetZ = (1 - (t - 0.55) / 0.45) * 200; // return quickly
+        if (t < 0.5) animOffsetZ = t / 0.5 * 200;       // move forward (fast)
+        else animOffsetZ = (1 - (t - 0.5) / 0.5) * 200; // return immediately
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
@@ -1096,9 +1097,8 @@ export class BattleUI {
       let animOffsetZ = 0;
       if (this.attackAnim && this.attackAnim.who === 'enemy' && this.attackAnim.idx === i) {
         const t = this.attackAnim.frame / this.attackAnim.maxFrame;
-        if (t < 0.4) animOffsetZ = -(t / 0.4 * 200);       // move toward player (negative Z)
-        else if (t < 0.55) animOffsetZ = -200;              // hold briefly
-        else animOffsetZ = -((1 - (t - 0.55) / 0.45) * 200); // return quickly
+        if (t < 0.5) animOffsetZ = -(t / 0.5 * 200);       // move toward player
+        else animOffsetZ = -((1 - (t - 0.5) / 0.5) * 200); // return immediately
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
@@ -1488,8 +1488,6 @@ export class BattleUI {
     this.cursor = 0;
     this.subCursor = 0;
     this._pendingCmd = null;
-    // Preserve targetCursor as _lastTarget for effect positioning
-    this._lastTarget = this.targetCursor || 0;
   }
 
   // Cosmic starfield for space battle backgrounds
