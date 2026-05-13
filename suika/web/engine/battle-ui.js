@@ -881,22 +881,6 @@ export class BattleUI {
     // Draw enemy 3D models
     this.drawEnemyModels(battleState);
 
-    // Attack slash effect (drawn over enemies)
-    if (this.effect.flash > 0 && this.effect.flashColor === '#f44') {
-      // Draw slash lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-      ctx.lineWidth = 2;
-      const cx = 200, cy = 110;
-      for (let s = 0; s < 3; s++) {
-        const angle = (this.effect.flash * 0.5 + s * 2.1);
-        const len = 30 + this.effect.flash * 5;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
-        ctx.lineTo(cx - Math.cos(angle) * len, cy - Math.sin(angle) * len);
-        ctx.stroke();
-      }
-    }
-
     // Flash overlay
     if (this.effect.flash > 0) {
       ctx.fillStyle = this.effect.flashColor;

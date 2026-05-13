@@ -87,9 +87,11 @@ function calcWeaponDamage(attacker, defender, power, bonus, ignoreDefense) {
 }
 
 function isHit(attacker, defender) {
-  const hitRate = attacker.dex * 2;
-  const evadeRate = defender.agi;
-  return rand(hitRate + evadeRate) < hitRate;
+  // Original: attacker.dex + rand(dex*2) >= defender.dex/2 + rand(dex)
+  // Attacker has significant advantage (hit rate ~75-85% with equal DEX)
+  const atkRoll = attacker.dex + rand(attacker.dex * 2);
+  const defRoll = Math.floor(defender.dex / 2) + rand(defender.dex);
+  return atkRoll >= defRoll;
 }
 
 function calcItemHeal(effect) {

@@ -20,7 +20,7 @@ import { PasswordSystem } from './engine/password.js';
 import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 
-const SUIKA_VERSION = 'v0.5.2';
+const SUIKA_VERSION = 'v0.5.3';
 
 class SuikaGame {
   constructor() {
@@ -108,6 +108,12 @@ class SuikaGame {
       try {
         const paramBuf = await this.loader.fetchBinary('data/param._da');
         this.paramAll.load(paramBuf);
+        // Override item[1] (いちご): no ATK bonus, small DEX bonus only
+        const ichigo = this.paramAll.getItem(1);
+        if (ichigo) {
+          ichigo.str = 0;
+          ichigo.dex = 2; // small evasion boost
+        }
         // Setup initial player party (only protagonist at start, matching original)
         if (this.paramAll.chrParams.length >= 1) {
           const p0 = this.paramAll.chrParams[0].clone();
@@ -117,7 +123,7 @@ class SuikaGame {
         }
         // Initial gold (matching original: 1000G)
         this.gold = 1000;
-        // Initial items: 3x item[1] (healing herb)
+        // Initial items: 3x item[1] (いちご)
         this.eventManager.inventory = [1, 1, 1];
       } catch (e) {
         console.warn('Param data load failed:', e.message);
@@ -2584,22 +2590,55 @@ class SuikaGame {
         ctx.fillText((i === eq.slot ? '▶' : '  ') + `${slots[i]}: ${eqName}`, sx + 10, sy + 40 + i * 20);
       }
     } else if (eq.phase === 'item') {
+      const p = this.playerParams[eq.chrIdx];
       const kindMap = [1, 2, 3, 4, 4];
       const slotKind = kindMap[eq.slot] || 1;
       const equippable = this.eventManager.inventory
         .map((idx, i) => ({ invIdx: i, item: this.paramAll.getItem(idx), idx }))
         .filter(e => e.item && e.item.kind === slotKind);
-      equippable.unshift({ invIdx: -1, item: { name: 'はずす' }, idx: -1 });
+      equippable.unshift({ invIdx: -1, item: { name: 'はずす', str: 0, int_: 0, def: 0, agi: 0, dex: 0 }, idx: -1 });
 
       ctx.fillStyle = '#adf';
       ctx.fillText('装備するアイテム:', sx + 10, sy + 20);
-      const maxShow = 10;
+      const maxShow = 7;
       const startIdx = Math.max(0, (eq.itemCursor || 0) - maxShow + 1);
       for (let i = 0; i < maxShow && startIdx + i < equippable.length; i++) {
         const idx = startIdx + i;
         const e = equippable[idx];
         ctx.fillStyle = idx === eq.itemCursor ? '#ff0' : '#fff';
-        ctx.fillText((idx === eq.itemCursor ? '▶' : '  ') + (e.item.name || '').trim(), sx + 10, sy + 42 + i * 20);
+        ctx.fillText((idx === eq.itemCursor ? '▶' : '  ') + (e.item.name || '').trim(), sx + 10, sy + 42 + i * 18);
+      }
+
+      // Stat comparison for selected item
+      const selected = equippable[eq.itemCursor || 0];
+      if (selected) {
+        const currentEquipIdx = (p.equip && p.equip[eq.slot] >= 0) ? p.equip[eq.slot] : -1;
+        const currentItem = currentEquipIdx >= 0 ? this.paramAll.getItem(currentEquipIdx) : null;
+        const curStats = { str: currentItem ? currentItem.str : 0, def: currentItem ? currentItem.def : 0, agi: currentItem ? currentItem.agi : 0, dex: currentItem ? currentItem.dex : 0 };
+        const newStats = { str: selected.item.str || 0, def: selected.item.def || 0, agi: selected.item.agi || 0, dex: selected.item.dex || 0 };
+
+        const statY = sy + 180;
+        ctx.fillStyle = '#aaa';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('能力変化:', sx + 10, statY);
+
+        const labels = [['攻撃', 'str'], ['防御', 'def'], ['素早', 'agi'], ['命中', 'dex']];
+        for (let i = 0; i < labels.length; i++) {
+          const [label, key] = labels[i];
+          const diff = newStats[key] - curStats[key];
+          ctx.fillStyle = '#ccc';
+          ctx.fillText(`${label}:`, sx + 10, statY + 18 + i * 16);
+          if (diff > 0) {
+            ctx.fillStyle = '#4f4';
+            ctx.fillText(`+${diff}`, sx + 60, statY + 18 + i * 16);
+          } else if (diff < 0) {
+            ctx.fillStyle = '#f44';
+            ctx.fillText(`${diff}`, sx + 60, statY + 18 + i * 16);
+          } else {
+            ctx.fillStyle = '#888';
+            ctx.fillText('--', sx + 60, statY + 18 + i * 16);
+          }
+        }
       }
     }
   }
