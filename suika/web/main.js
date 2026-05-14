@@ -21,13 +21,14 @@ import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.6.2';
+const SUIKA_VERSION = 'v0.6.3';
 
 class SuikaGame {
   constructor() {
     this.canvas = document.getElementById('game');
-    this.ctx = this.canvas.getContext('2d');
     this.renderer = new Renderer();
+    this.renderer.create(this.canvas);
+    this.ctx = this.renderer.ctx; // Use offscreen canvas for all drawing
     this.input = new Input(this.canvas);
     this.touchUI = new TouchUI(this.input);
     this.loop = new GameLoop(90);
@@ -80,7 +81,6 @@ class SuikaGame {
   }
 
   async init() {
-    this.renderer.create(this.canvas);
     this.showLoadingScreen('初期化中...');
 
     try {
@@ -411,6 +411,7 @@ class SuikaGame {
     this.ctx.font = '14px sans-serif';
     this.ctx.textAlign = 'center';
     this.ctx.fillText(msg, 200, 160);
+    this.renderer.present();
   }
 
   update(dt) {
@@ -450,7 +451,8 @@ class SuikaGame {
       case 'credits': this.credits.draw(); break;
       case 'opening': this.drawOpening(); break;
     }
-    // Touch UI overlay (DOM-based, no canvas draw needed)
+    // Present offscreen buffer to visible canvas
+    this.renderer.present();
   }
 
   updateTitle() {

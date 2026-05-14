@@ -56,13 +56,24 @@ export class Renderer {
   }
 
   create(canvas) {
-    this.ctx = canvas.getContext('2d');
+    // Use offscreen canvas for double-buffering (prevents flickering)
+    this._visibleCanvas = canvas;
+    this._visibleCtx = canvas.getContext('2d');
+    this._offscreen = document.createElement('canvas');
+    this._offscreen.width = canvas.width;
+    this._offscreen.height = canvas.height;
+    this.ctx = this._offscreen.getContext('2d');
     this.width = canvas.width;
     this.height = canvas.height;
     this.centerX = this.width / 2;
     this.centerY = this.height / 2;
     this.multX = this.width * 1e-6;
     this.multY = this.height * 1e-6;
+  }
+
+  // Copy offscreen buffer to visible canvas (call once per frame after all drawing)
+  present() {
+    this._visibleCtx.drawImage(this._offscreen, 0, 0);
   }
 
   setRenderState(key, value) {
