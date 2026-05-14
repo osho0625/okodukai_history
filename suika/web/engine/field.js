@@ -673,6 +673,16 @@ export class Field {
       }
       const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
       this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0, item.walkPhase !== undefined ? item.walkPhase : -1);
+      // Debug: mark model 32 (hamburger) with a red dot
+      if (item.model === this.models[32]) {
+        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
+        if (screenPos.x > 0 && screenPos.x < 400 && screenPos.y > 0 && screenPos.y < 320) {
+          this.renderer.ctx.fillStyle = '#f00';
+          this.renderer.ctx.beginPath();
+          this.renderer.ctx.arc(screenPos.x, screenPos.y, 6, 0, Math.PI * 2);
+          this.renderer.ctx.fill();
+        }
+      }
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
         const npc = this.area.npcs[item.npcIdx];
