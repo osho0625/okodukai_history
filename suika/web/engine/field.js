@@ -75,7 +75,10 @@ export class Field {
   }
 
   movePlayer(direction, dt) {
-    if (direction < 0) return false;
+    if (direction < 0) {
+      this._isWalking = false;
+      return false;
+    }
 
     const angle = this.cameraVect - direction * (Math.PI / 4);
     this.playerVect = angle;
@@ -96,11 +99,13 @@ export class Field {
         // Hit a wall — check for wall events on BOTH the wall cell AND player's current cell
         this._checkWallEventOnMove(newPos);  // wall cell
         this._checkWallEventOnMove(this.playerPos); // player's cell (facing wall)
+        this._isWalking = false;
         return false;
       }
     }
 
     this.playerPos.set(newPos);
+    this._isWalking = true;
 
     // Check scope events (area transitions)
     this._checkScopes();
@@ -624,7 +629,13 @@ export class Field {
         if (!model || model.vertices.length === 0) continue;
         const camDx = trail.x - camX;
         const camDz = trail.z - camZ;
-        drawList.push({ px: trail.x, pz: trail.z, py: 0, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35 });
+        // Party members bob when player is walking
+        let partyY = 0;
+        if (this._isWalking) {
+          const walkPhase = this.frameCount * 0.5 + (pi + 1) * 1.2;
+          partyY = Math.abs(Math.sin(walkPhase)) * 8;
+        }
+        drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35 });
       }
     }
 
@@ -635,7 +646,13 @@ export class Field {
       if (pModel && pModel.vertices.length > 0) {
         const camDx = this.playerPos.x - camX;
         const camDz = this.playerPos.z - camZ;
-        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: 0, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40 });
+        // Walk animation: bob up/down when moving
+        let playerY = 0;
+        if (this._isWalking) {
+          const walkPhase = this.frameCount * 0.5;
+          playerY = Math.abs(Math.sin(walkPhase)) * 8; // bounce height
+        }
+        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40 });
       }
     }
 
