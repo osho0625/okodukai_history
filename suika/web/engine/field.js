@@ -690,22 +690,24 @@ export class Field {
       // Debug: mark model 32 (hamburger) with a red dot
       if (item.model === this.models[32]) {
         const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
-        if (screenPos.x > 0 && screenPos.x < 400 && screenPos.y > 0 && screenPos.y < 320) {
-          this.renderer.ctx.fillStyle = '#f00';
-          this.renderer.ctx.beginPath();
-          this.renderer.ctx.arc(screenPos.x, screenPos.y, 6, 0, Math.PI * 2);
-          this.renderer.ctx.fill();
-        }
+        // Force draw marker regardless of screen bounds
+        this.renderer.ctx.fillStyle = '#f00';
+        this.renderer.ctx.font = 'bold 14px sans-serif';
+        this.renderer.ctx.textAlign = 'center';
+        // Clamp to screen for visibility
+        const sx = Math.max(10, Math.min(390, screenPos.x));
+        const sy = Math.max(10, Math.min(310, screenPos.y));
+        this.renderer.ctx.fillText('🍔', sx, sy);
       }
       // Also mark ANY model idx 32 by checking vertex count match
       if (item.model && item.model.vertices && item.model.vertices.length === 40 && item.model.surfaces && item.model.surfaces.length === 27) {
         const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
-        if (screenPos.x > 0 && screenPos.x < 400 && screenPos.y > 0 && screenPos.y < 320) {
-          this.renderer.ctx.fillStyle = '#0ff';
-          this.renderer.ctx.beginPath();
-          this.renderer.ctx.arc(screenPos.x, screenPos.y, 4, 0, Math.PI * 2);
-          this.renderer.ctx.fill();
-        }
+        const sx = Math.max(10, Math.min(390, screenPos.x));
+        const sy = Math.max(10, Math.min(310, screenPos.y));
+        this.renderer.ctx.fillStyle = '#0ff';
+        this.renderer.ctx.beginPath();
+        this.renderer.ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+        this.renderer.ctx.fill();
       }
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
@@ -721,6 +723,13 @@ export class Field {
           }
         }
       }
+    }
+    // Debug: show hamburger count on screen
+    if (this._debugLogged) {
+      this.renderer.ctx.fillStyle = '#ff0';
+      this.renderer.ctx.font = '10px sans-serif';
+      this.renderer.ctx.textAlign = 'left';
+      this.renderer.ctx.fillText(`🍔x${drawList.filter(d => d.model === this.models[32]).length}`, 5, 310);
     }
   }
 
