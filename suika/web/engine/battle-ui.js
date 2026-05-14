@@ -461,6 +461,7 @@ export class BattleUI {
 
   update(battleState) {
     this.effect.update();
+    this._frameCount = (this._frameCount || 0) + 1;
 
     // Fast-forward: advance animations faster (controlled by main.js)
     const fastForward = !!this._fastForward;
@@ -999,6 +1000,13 @@ export class BattleUI {
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
+
+      // Idle bounce animation (players bob when not attacking)
+      if (!playerAnim && p.alive) {
+        const bounceFrame = Math.floor((this._frameCount || 0) + i * 4) / 4 % 4;
+        pos.y = (bounceFrame === 1 || bounceFrame === 3) ? 5 : 0;
+      }
+
       const rot = new Vec3(0, Math.PI / 2, 0); // face right (toward enemies)
       const scl = new Vec3(1, 1, 1);
 
@@ -1089,6 +1097,13 @@ export class BattleUI {
       }
 
       const pos = new Vec3(posX, 0, posZ + animOffsetZ);
+
+      // Idle bounce animation (enemies bob up and down)
+      if (!enemyAnim && e.alive) {
+        const bounceFrame = Math.floor((this._frameCount || 0) + i * 3) / 4 % 4;
+        pos.y = (bounceFrame === 1 || bounceFrame === 3) ? 5 : 0;
+      }
+
       const rot = new Vec3(0, Math.PI, 0); // face player
       const scl = new Vec3(0.9, 0.9, 0.9); // slightly smaller to prevent oversized appearance
 
