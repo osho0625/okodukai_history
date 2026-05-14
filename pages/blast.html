@@ -201,62 +201,62 @@ const PUYO_IMGS = [
 // 本家Block Blast準拠のピース定義（重み付き）
 // 大ピース（よく出る）、中ピース（普通）、小ピース（たまに出る）
 const PIECE_DEFS = [
-  // 1セル（weight: 3 — たまに出る、救済用）
-  { shape: [[1]], weight: 3 },
-  // 2セル横・縦（weight: 4 — 救済用）
-  { shape: [[1,1]], weight: 4 },
-  { shape: [[1],[1]], weight: 4 },
-  // 2セル斜め（weight: 2）
-  { shape: [[1,0],[0,1]], weight: 2 },
-  { shape: [[0,1],[1,0]], weight: 2 },
-  // 3セル横・縦（weight: 8 — よく出る、ライン作りやすい）
-  { shape: [[1,1,1]], weight: 8 },
-  { shape: [[1],[1],[1]], weight: 8 },
-  // 3セル斜め（weight: 2）
-  { shape: [[1,0,0],[0,1,0],[0,0,1]], weight: 2 },
-  { shape: [[0,0,1],[0,1,0],[1,0,0]], weight: 2 },
-  // L字2x2（weight: 7）
-  { shape: [[1,1],[1,0]], weight: 7 },
-  { shape: [[1,1],[0,1]], weight: 7 },
-  { shape: [[0,1],[1,1]], weight: 7 },
-  { shape: [[1,0],[1,1]], weight: 7 },
-  // L字3x2（weight: 6）
-  { shape: [[1,1,1],[1,0,0]], weight: 6 },
-  { shape: [[1,1,1],[0,0,1]], weight: 6 },
-  { shape: [[1,0,0],[1,1,1]], weight: 6 },
-  { shape: [[0,0,1],[1,1,1]], weight: 6 },
-  { shape: [[1,1],[0,1],[0,1]], weight: 6 },
-  { shape: [[1,1],[1,0],[1,0]], weight: 6 },
-  { shape: [[1,0],[1,0],[1,1]], weight: 6 },
-  { shape: [[0,1],[0,1],[1,1]], weight: 6 },
+  // 1セル（weight: 1 — ごくまれ）
+  { shape: [[1]], weight: 1 },
+  // 2セル横・縦（weight: 1 — ごくまれ）
+  { shape: [[1,1]], weight: 1 },
+  { shape: [[1],[1]], weight: 1 },
+  // 2セル斜め（weight: 1）
+  { shape: [[1,0],[0,1]], weight: 1 },
+  { shape: [[0,1],[1,0]], weight: 1 },
+  // 3セル横・縦（weight: 2 — たまに）
+  { shape: [[1,1,1]], weight: 2 },
+  { shape: [[1],[1],[1]], weight: 2 },
+  // 3セル斜め（weight: 1）
+  { shape: [[1,0,0],[0,1,0],[0,0,1]], weight: 1 },
+  { shape: [[0,0,1],[0,1,0],[1,0,0]], weight: 1 },
+  // L字2x2（weight: 4 — 減）
+  { shape: [[1,1],[1,0]], weight: 4 },
+  { shape: [[1,1],[0,1]], weight: 4 },
+  { shape: [[0,1],[1,1]], weight: 4 },
+  { shape: [[1,0],[1,1]], weight: 4 },
+  // L字3x2（weight: 4 — 減）
+  { shape: [[1,1,1],[1,0,0]], weight: 4 },
+  { shape: [[1,1,1],[0,0,1]], weight: 4 },
+  { shape: [[1,0,0],[1,1,1]], weight: 4 },
+  { shape: [[0,0,1],[1,1,1]], weight: 4 },
+  { shape: [[1,1],[0,1],[0,1]], weight: 4 },
+  { shape: [[1,1],[1,0],[1,0]], weight: 4 },
+  { shape: [[1,0],[1,0],[1,1]], weight: 4 },
+  { shape: [[0,1],[0,1],[1,1]], weight: 4 },
   // 2x2正方形（weight: 7）
   { shape: [[1,1],[1,1]], weight: 7 },
-  // 4セル横・縦（weight: 5）
-  { shape: [[1,1,1,1]], weight: 5 },
-  { shape: [[1],[1],[1],[1]], weight: 5 },
+  // 4セル横・縦（weight: 9 — 増）
+  { shape: [[1,1,1,1]], weight: 9 },
+  { shape: [[1],[1],[1],[1]], weight: 9 },
   // T字（weight: 5）
   { shape: [[1,1,1],[0,1,0]], weight: 5 },
   { shape: [[0,1,0],[1,1,1]], weight: 5 },
   { shape: [[1,0],[1,1],[1,0]], weight: 5 },
   { shape: [[0,1],[1,1],[0,1]], weight: 5 },
-  // S/Z字（weight: 4）
-  { shape: [[0,1,1],[1,1,0]], weight: 4 },
-  { shape: [[1,1,0],[0,1,1]], weight: 4 },
-  { shape: [[1,0],[1,1],[0,1]], weight: 4 },
-  { shape: [[0,1],[1,1],[1,0]], weight: 4 },
-  // 5セル横・縦（weight: 3 — 減らした）
-  { shape: [[1,1,1,1,1]], weight: 3 },
-  { shape: [[1],[1],[1],[1],[1]], weight: 3 },
-  // 5セルL字（weight: 3 — 減らした）
-  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 3 },
-  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 3 },
-  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 3 },
-  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 3 },
-  // 3x3正方形（weight: 2 — かなり減らした）
-  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 2 },
-  // 2x3 / 3x2 長方形（weight: 3 — 減らした）
-  { shape: [[1,1,1],[1,1,1]], weight: 3 },
-  { shape: [[1,1],[1,1],[1,1]], weight: 3 },
+  // S/Z字（weight: 5）
+  { shape: [[0,1,1],[1,1,0]], weight: 5 },
+  { shape: [[1,1,0],[0,1,1]], weight: 5 },
+  { shape: [[1,0],[1,1],[0,1]], weight: 5 },
+  { shape: [[0,1],[1,1],[1,0]], weight: 5 },
+  // 5セル横・縦（weight: 10 — 増）
+  { shape: [[1,1,1,1,1]], weight: 10 },
+  { shape: [[1],[1],[1],[1],[1]], weight: 10 },
+  // 5セルL字（weight: 4 — L字なので減）
+  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 4 },
+  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 4 },
+  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 4 },
+  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 4 },
+  // 3x3正方形（weight: 5）
+  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 5 },
+  // 2x3 / 3x2 長方形（weight: 9 — 増）
+  { shape: [[1,1,1],[1,1,1]], weight: 9 },
+  { shape: [[1,1],[1,1],[1,1]], weight: 9 },
 ];
 
 // 重み付きランダム選択
