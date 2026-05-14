@@ -303,25 +303,10 @@ export class Renderer {
     const verts = model.vertices;
     const numVerts = verts.length;
 
-    // Determine leg threshold (lower 40% of model height = legs)
-    const legThreshold = walkPhase >= 0 ? (model.topY || 50) * 0.4 : -1;
-
-    // Transform all vertices to screen space
+    // Transform all vertices to screen space (no vertex deformation)
     for (let i = 0; i < numVerts; i++) {
       let v = new Vec3(verts[i].x, verts[i].y, verts[i].z);
       if (flags & 1) v.x = -v.x; // mirror
-
-      // Walk animation: offset leg vertices left/right to simulate stepping
-      if (walkPhase >= 0 && v.y < legThreshold) {
-        // Determine which leg (front vs back in local Z)
-        const legSide = v.z > 0 ? 1 : -1;
-        // Simple 3-frame offset: shift Z position of leg vertices
-        const frame = Math.floor(walkPhase) % 3; // 0, 1, 2
-        const offsets = [0, 1, -1]; // center, forward, backward
-        const shift = offsets[frame] * legSide * 15; // 15 units max shift
-        v.z += shift;
-      }
-
       this.calcBuffer[i].set(this.get3DPos(wvpMat, v));
     }
 

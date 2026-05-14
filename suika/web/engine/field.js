@@ -104,19 +104,26 @@ export class Field {
       }
     }
 
-    // NPC collision check — trigger event when walking into an NPC
+    // NPC collision/proximity check — trigger event when walking into or adjacent to NPC
     if (this.area && this.area.npcs) {
       const newBx = MapData.getXBlock(newPos.x);
       const newBz = MapData.getZBlock(newPos.z);
       for (const npc of this.area.npcs) {
-        if (npc.xPos === newBx && npc.zPos === newBz && npc.event > 0 && npc.event < 0xFFFF) {
-          if (this._checkIf(npc.ifFlag)) {
-            if (this.onWallEvent) this.onWallEvent(npc.event);
-            this._isWalking = false;
-            return false;
-          }
+        if (npc.event <= 0 || npc.event >= 0xFFFF) continue;
+        if (!this._checkIf(npc.ifFlag)) continue;
+        // Check same cell OR adjacent cell (for NPCs on walls)
+        const dx2 = Math.abs(npc.xPos - newBx);
+        const dz2 = Math.abs(npc.zPos - newBz);
+        if (dx2 <= 1 && dz2 <= 1 && (dx2 + dz2) <= 1) {
+          // Only trigger once per NPC (prevent re-trigger)
+          const npcKey = `npc_${npc.xPos}_${npc.zPos}_${npc.event}`;
+          if (this._lastNpcEvent === npcKey) continue;
+          this._lastNpcEvent = npcKey;
+          if (this.onWallEvent) this.onWallEvent(npc.event);
+          return true; // Allow movement but trigger event
         }
       }
+      this._lastNpcEvent = null;
     }
 
     this.playerPos.set(newPos);
@@ -645,12 +652,13 @@ export class Field {
           const hitVal = this.area.map.hit[this.area.map.getPtr(npc.xPos, npc.zPos)] || 0;
           if (hitVal >= 3) npcBaseY = 200; // Wall height
         }
-        // NPC idle animation: 3-frame sway
-        const npcFrame = Math.floor((this.frameCount + ni * 3) / 4) % 3;
-        const py = npcBaseY + (npcFrame === 1 ? 3 : (npcFrame === 2 ? -2 : 0));
+        // NPC idle animation: gentle Y sway (no vertex deformation)
+        const npcFrame = Math.floor((this.frameCount + ni * 3) / 5) % 4;
+        const pySway = (npcFrame === 1 || npcFrame === 3) ? 3 : 0;
+        const py = npcBaseY + pySway;
         const camDx = px - camX;
         const camDz = pz - camZ;
-        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni, walkPhase: npcFrame });
+        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni, walkPhase: -1 });
       }
     }
 
@@ -673,14 +681,13 @@ export class Field {
         if (!model || model.vertices.length === 0) continue;
         const camDx = trail.x - camX;
         const camDz = trail.z - camZ;
-        // Party members walk when player is walking (3-frame)
+        // Party members bounce when player is walking
         let partyY = 0;
-        let partyWalkPhase = -1;
         if (this._isWalking) {
-          partyWalkPhase = Math.floor((this.frameCount + (pi + 1) * 2) / 2) % 3;
-          partyY = partyWalkPhase !== 0 ? 4 : 0;
+          const frame = Math.floor((this.frameCount + (pi + 1) * 2) / 2) % 4;
+          partyY = (frame === 1 || frame === 3) ? 6 : 0;
         }
-        drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, walkPhase: partyWalkPhase });
+        drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, walkPhase: -1 });
       }
     }
 
@@ -691,14 +698,14 @@ export class Field {
       if (pModel && pModel.vertices.length > 0) {
         const camDx = this.playerPos.x - camX;
         const camDz = this.playerPos.z - camZ;
-        // Walk animation: 3-frame discrete stepping
+        // Walk animation: simple Y bounce (3-frame: down, up, down)
         let playerY = 0;
         let walkPhase = -1;
         if (this._isWalking) {
-          walkPhase = Math.floor(this.frameCount / 2) % 3; // changes every 2 frames
-          playerY = walkPhase === 1 ? 4 : (walkPhase === 2 ? 4 : 0); // slight bounce on step frames
+          const frame = Math.floor(this.frameCount / 2) % 4;
+          playerY = (frame === 1 || frame === 3) ? 6 : 0; // bounce on odd frames
         }
-        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40, walkPhase });
+        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40, walkPhase: -1 });
       }
     }
 
