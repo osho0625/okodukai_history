@@ -299,14 +299,31 @@ export class Renderer {
   }
 
   // Draw a 3D model with painter's algorithm sorting
-  drawModel(model, wvpMat, worldMat, flags = 0, colorCode = 0) {
+  drawModel(model, wvpMat, worldMat, flags = 0, colorCode = 0, walkPhase = -1) {
     const verts = model.vertices;
     const numVerts = verts.length;
+
+    // Determine leg threshold (lower 40% of model height = legs)
+    const legThreshold = walkPhase >= 0 ? (model.topY || 50) * 0.4 : -1;
 
     // Transform all vertices to screen space
     for (let i = 0; i < numVerts; i++) {
       let v = new Vec3(verts[i].x, verts[i].y, verts[i].z);
       if (flags & 1) v.x = -v.x; // mirror
+
+      // Walk animation: rotate leg vertices around Y axis
+      if (walkPhase >= 0 && v.y < legThreshold) {
+        // Alternate legs: front/back based on X sign
+        const legSide = v.x > 0 ? 1 : -1;
+        const swing = Math.sin(walkPhase + legSide * 1.5) * 0.3;
+        const cosS = Math.cos(swing);
+        const sinS = Math.sin(swing);
+        const origZ = v.z;
+        const origY = v.y;
+        v.z = origZ * cosS - origY * sinS;
+        v.y = origZ * sinS + origY * cosS;
+      }
+
       this.calcBuffer[i].set(this.get3DPos(wvpMat, v));
     }
 

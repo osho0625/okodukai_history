@@ -631,11 +631,12 @@ export class Field {
         const camDz = trail.z - camZ;
         // Party members bob when player is walking
         let partyY = 0;
+        let partyWalkPhase = -1;
         if (this._isWalking) {
-          const walkPhase = this.frameCount * 0.5 + (pi + 1) * 1.2;
-          partyY = Math.abs(Math.sin(walkPhase)) * 8;
+          partyWalkPhase = this.frameCount * 0.5 + (pi + 1) * 1.2;
+          partyY = Math.abs(Math.sin(partyWalkPhase)) * 5;
         }
-        drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35 });
+        drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, walkPhase: partyWalkPhase });
       }
     }
 
@@ -648,11 +649,12 @@ export class Field {
         const camDz = this.playerPos.z - camZ;
         // Walk animation: bob up/down when moving
         let playerY = 0;
+        let walkPhase = -1;
         if (this._isWalking) {
-          const walkPhase = this.frameCount * 0.5;
-          playerY = Math.abs(Math.sin(walkPhase)) * 8; // bounce height
+          walkPhase = this.frameCount * 0.5;
+          playerY = Math.abs(Math.sin(walkPhase)) * 5; // slight bounce
         }
-        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40 });
+        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40, walkPhase });
       }
     }
 
@@ -670,7 +672,7 @@ export class Field {
         this.renderer.drawShadow(pos, item.shadow, this.cameraVect);
       }
       const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
-      this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0);
+      this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0, item.walkPhase !== undefined ? item.walkPhase : -1);
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
         const npc = this.area.npcs[item.npcIdx];

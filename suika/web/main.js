@@ -21,7 +21,7 @@ import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.6.9';
+const SUIKA_VERSION = 'v0.7.0';
 
 class SuikaGame {
   constructor() {
@@ -3081,6 +3081,12 @@ window._dumpMap = () => {
   }
   console.log(`Area ${g.currentArea}: ${map.xNum}x${map.zNum}, ${objs.length} map objects`);
   console.log(`NPCs: ${g.field.area.npcs.length}, Scopes: ${g.field.area.scopes.length}, WallEvents: ${g.field.area.wallEvents.length}`);
+  // Dump NPCs with ifFlag info
+  console.log('--- NPCs ---');
+  g.field.area.npcs.forEach((npc, i) => {
+    const flagMet = npc.ifFlag === 0 || npc.ifFlag === 0xFFFF || g.eventManager.flags.has(npc.ifFlag);
+    console.log(`NPC[${i}] kind:${npc.kind} pos:(${npc.xPos},${npc.zPos}) event:${npc.event} ifFlag:${npc.ifFlag} visible:${flagMet}`);
+  });
   console.table(objs.slice(0, 80));
   return objs;
 };
