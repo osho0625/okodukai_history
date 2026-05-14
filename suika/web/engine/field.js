@@ -557,6 +557,7 @@ export class Field {
     // 1. Collect map objects
     if (this.area) {
       const map = this.area.map;
+      let debugCount32 = 0;
       for (let z = 0; z < map.zNum; z++) {
         for (let x = 0; x < map.xNum; x++) {
           const idx = map.getPtr(x, z);
@@ -576,7 +577,13 @@ export class Field {
           const camDx = px - camX;
           const camDz = pz - camZ;
           drawList.push({ px, pz, py: 0, rotation, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 0 });
+          if (modelIdx === 32) debugCount32++;
         }
+      }
+      // One-time debug log
+      if (!this._debugLogged && debugCount32 > 0) {
+        this._debugLogged = true;
+        console.log(`[DEBUG] Model 32 (hamburger) in drawList: ${debugCount32} objects`);
       }
     }
 
@@ -680,6 +687,16 @@ export class Field {
           this.renderer.ctx.fillStyle = '#f00';
           this.renderer.ctx.beginPath();
           this.renderer.ctx.arc(screenPos.x, screenPos.y, 6, 0, Math.PI * 2);
+          this.renderer.ctx.fill();
+        }
+      }
+      // Also mark ANY model idx 32 by checking vertex count match
+      if (item.model && item.model.vertices && item.model.vertices.length === 40 && item.model.surfaces && item.model.surfaces.length === 27) {
+        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
+        if (screenPos.x > 0 && screenPos.x < 400 && screenPos.y > 0 && screenPos.y < 320) {
+          this.renderer.ctx.fillStyle = '#0ff';
+          this.renderer.ctx.beginPath();
+          this.renderer.ctx.arc(screenPos.x, screenPos.y, 4, 0, Math.PI * 2);
           this.renderer.ctx.fill();
         }
       }
