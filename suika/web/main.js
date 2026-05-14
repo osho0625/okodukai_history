@@ -21,7 +21,7 @@ import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.6.7';
+const SUIKA_VERSION = 'v0.6.8';
 
 class SuikaGame {
   constructor() {
@@ -3062,4 +3062,26 @@ class SuikaGame {
 
 const game = new SuikaGame();
 window._suikaGame = game; // Expose for navigation guard
+// Debug: dump map objects for current area
+window._dumpMap = () => {
+  const g = window._suikaGame;
+  if (!g.field || !g.field.area) return 'No area loaded';
+  const map = g.field.area.map;
+  const objs = [];
+  for (let z = 0; z < map.zNum; z++) {
+    for (let x = 0; x < map.xNum; x++) {
+      const v = map.mapModel[map.getPtr(x, z)];
+      if (v !== 0) {
+        const modelIdx = (v >> 2) + 19;
+        const model = g.models[modelIdx];
+        const hasVerts = model ? model.vertices.length : 0;
+        objs.push({ x, z, raw: v, modelType: v >> 2, rot: v & 3, modelIdx, verts: hasVerts });
+      }
+    }
+  }
+  console.log(`Area ${g.currentArea}: ${map.xNum}x${map.zNum}, ${objs.length} map objects`);
+  console.log(`NPCs: ${g.field.area.npcs.length}, Scopes: ${g.field.area.scopes.length}, WallEvents: ${g.field.area.wallEvents.length}`);
+  console.table(objs.slice(0, 80));
+  return objs;
+};
 game.init();
