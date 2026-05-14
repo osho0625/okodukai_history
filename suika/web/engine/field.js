@@ -351,6 +351,11 @@ export class Field {
     const pos = new Vec3();
     const rot = new Vec3();
 
+    // Collect visible objects with distance for sorting
+    const drawList = [];
+    const camX = this.playerPos.x + Math.sin(this.cameraVect) * -2000;
+    const camZ = this.playerPos.z + Math.cos(this.cameraVect) * -2000;
+
     for (let z = 0; z < map.zNum; z++) {
       for (let x = 0; x < map.xNum; x++) {
         const idx = map.getPtr(x, z);
@@ -365,19 +370,31 @@ export class Field {
         const model = this.models[modelIdx];
         if (!model || model.vertices.length === 0) continue;
 
-        pos.x = MapData.getXPos(x);
-        pos.y = 0;
-        pos.z = MapData.getZPos(z);
+        const px = MapData.getXPos(x);
+        const pz = MapData.getZPos(z);
 
         // Frustum culling
-        const dx = pos.x - this.playerPos.x;
-        const dz = pos.z - this.playerPos.z;
+        const dx = px - this.playerPos.x;
+        const dz = pz - this.playerPos.z;
         if (dx * dx + dz * dz > 3000 * 3000) continue;
 
-        rot.x = 0; rot.y = rotation; rot.z = 0;
-        const wvp = this.renderer.calcModel(model, pos, rot, scl);
-        this.renderer.drawModel(model, wvp, this.renderer.getTransform(3), 0, 0);
+        // Distance from camera for sorting (farther = draw first)
+        const camDx = px - camX;
+        const camDz = pz - camZ;
+        const dist = camDx * camDx + camDz * camDz;
+
+        drawList.push({ px, pz, rotation, model, dist });
       }
+    }
+
+    // Sort back-to-front (farther from camera drawn first)
+    drawList.sort((a, b) => b.dist - a.dist);
+
+    for (const item of drawList) {
+      pos.x = item.px; pos.y = 0; pos.z = item.pz;
+      rot.x = 0; rot.y = item.rotation; rot.z = 0;
+      const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
+      this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), 0, 0);
     }
   }
 
@@ -482,8 +499,6 @@ export class Field {
   }
 
   draw() {
-    this.frameCount++;
-    this.updateNpcMoves();
     this.setCamera();
 
     // Cat's eye effect: temporarily increase light range
@@ -491,7 +506,6 @@ export class Field {
       if (this.renderer.light) {
         this.renderer.light.range = (this.renderer.light.range || 500) + this.catsEyeCounter;
       }
-      this.catsEyeCounter--;
     }
 
     this.renderer.clear();
@@ -518,6 +532,15 @@ export class Field {
           this.renderer.drawShadow(pos, 35, this.cameraVect);
         }
       }
+    }
+  }
+
+  // Call from game update loop (not draw)
+  updateField() {
+    this.frameCount++;
+    this.updateNpcMoves();
+    if (this.catsEyeCounter && this.catsEyeCounter > 0) {
+      this.catsEyeCounter--;
     }
   }
 

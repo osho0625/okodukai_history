@@ -21,7 +21,7 @@ import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.6.3';
+const SUIKA_VERSION = 'v0.6.4';
 
 class SuikaGame {
   constructor() {
@@ -77,7 +77,7 @@ class SuikaGame {
     // Battle speed setting: 0=slow(1200/1600ms), 1=normal(600/800ms), 2=fast(300/400ms), 3=instant(50/100ms)
     this.battleSpeed = parseInt(localStorage.getItem('suika_battle_speed') || '0');
     // Encounter rate: 0=off, 1=low, 2=normal, 3=high
-    this.encounterRate = parseInt(localStorage.getItem('suika_encounter_rate') || '1');
+    this.encounterRate = parseInt(localStorage.getItem('suika_encounter_rate') || '2');
   }
 
   async init() {
@@ -931,6 +931,9 @@ class SuikaGame {
   }
 
   updateGame() {
+    // Update field state (NPC animation, counters)
+    this.field.updateField();
+
     // Compose shop takes priority
     if (this.composeShop && this.composeShop.visible) {
       this.composeShop.update();
@@ -1033,8 +1036,8 @@ class SuikaGame {
     const stealthMod = (this.stealthCounter && this.stealthCounter > 0) ? 2 : 1;
     if (this.stealthCounter > 0) this.stealthCounter--;
 
-    // Encounter rate multiplier: 0=off, 1=low(x4), 2=normal(x2), 3=high(x1)
-    const rateMod = [999, 4, 2, 1][this.encounterRate] || 4;
+    // Encounter rate multiplier: 0=off, 1=low(x6), 2=normal(x3), 3=high(x1.5)
+    const rateMod = [999, 6, 3, 1.5][this.encounterRate] || 3;
 
     for (const enc of this.field.area.enemies) {
       if (bx >= enc.xPos && bx < enc.xPos + enc.xSize &&
