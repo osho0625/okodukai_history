@@ -101,9 +101,10 @@ export class Renderer {
 
   setAmbient(color) {
     this.setRenderState(RS_AMBIENT, color);
-    this.ambPowR = color.r / 255;
-    this.ambPowG = color.g / 255;
-    this.ambPowB = color.b / 255;
+    // Ensure minimum ambient brightness (original game is brighter)
+    this.ambPowR = Math.max(0.35, color.r / 255);
+    this.ambPowG = Math.max(0.35, color.g / 255);
+    this.ambPowB = Math.max(0.35, color.b / 255);
   }
 
   setTransform(slot, mat) {
@@ -232,7 +233,8 @@ export class Renderer {
     const lightDir = this.light.direction.clone().normalize();
     let ratio = -normal.dot(lightDir);
     if (ratio < 0) ratio = 0;
-    return ratio;
+    // Boost minimum light to prevent overly dark polygons (matching original's brighter look)
+    return ratio * 0.7 + 0.3;
   }
 
   // Calculate fog ratio
