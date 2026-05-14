@@ -350,6 +350,10 @@ export class Renderer {
         if (!(material.flags & 0x10)) continue; // double-sided
         normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z;
       }
+      // For no-cull objects with back-facing normals, flip for correct lighting
+      if ((flags & 4) && normal.z < -0.1) {
+        normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z;
+      }
 
       // Calculate center Z for sorting
       let centerZ = 0;
@@ -377,7 +381,8 @@ export class Renderer {
       );
 
       let color;
-      if (flags & 2) {
+      if (flags & 2 || flags & 4) {
+        // Direct material color (no lighting) for flagged objects
         color = material.color.clone();
       } else {
         // Simplified world center (use screen center Z for fog)
