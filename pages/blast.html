@@ -231,9 +231,9 @@ const PIECE_DEFS = [
   { shape: [[0,1],[0,1],[1,1]], weight: 4 },
   // 2x2正方形（weight: 7）
   { shape: [[1,1],[1,1]], weight: 7 },
-  // 4セル横・縦（weight: 9 — 増）
-  { shape: [[1,1,1,1]], weight: 9 },
-  { shape: [[1],[1],[1],[1]], weight: 9 },
+  // 4セル横・縦（weight: 7）
+  { shape: [[1,1,1,1]], weight: 7 },
+  { shape: [[1],[1],[1],[1]], weight: 7 },
   // T字（weight: 5）
   { shape: [[1,1,1],[0,1,0]], weight: 5 },
   { shape: [[0,1,0],[1,1,1]], weight: 5 },
@@ -244,17 +244,17 @@ const PIECE_DEFS = [
   { shape: [[1,1,0],[0,1,1]], weight: 5 },
   { shape: [[1,0],[1,1],[0,1]], weight: 5 },
   { shape: [[0,1],[1,1],[1,0]], weight: 5 },
-  // 5セル横・縦（weight: 10 — 増）
-  { shape: [[1,1,1,1,1]], weight: 10 },
-  { shape: [[1],[1],[1],[1],[1]], weight: 10 },
-  // 5セルL字（weight: 4 — L字なので減）
-  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 4 },
-  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 4 },
-  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 4 },
-  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 4 },
-  // 3x3正方形（weight: 5）
-  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 5 },
-  // 2x3 / 3x2 長方形（weight: 9 — 増）
+  // 5セル横・縦（weight: 9）
+  { shape: [[1,1,1,1,1]], weight: 9 },
+  { shape: [[1],[1],[1],[1],[1]], weight: 9 },
+  // 5セルL字（weight: 7）
+  { shape: [[1,1,1],[1,0,0],[1,0,0]], weight: 7 },
+  { shape: [[1,1,1],[0,0,1],[0,0,1]], weight: 7 },
+  { shape: [[1,0,0],[1,0,0],[1,1,1]], weight: 7 },
+  { shape: [[0,0,1],[0,0,1],[1,1,1]], weight: 7 },
+  // 3x3正方形（weight: 7）
+  { shape: [[1,1,1],[1,1,1],[1,1,1]], weight: 7 },
+  // 2x3 / 3x2 長方形（weight: 9）
   { shape: [[1,1,1],[1,1,1]], weight: 9 },
   { shape: [[1,1],[1,1],[1,1]], weight: 9 },
 ];
@@ -376,8 +376,8 @@ function generatePieces() {
     return ps.filter(p => canFitAnywhere(p.shape)).length;
   }
 
-  // 段階的に条件を緩和: 3つ全部→2つ以上→1つ以上
-  for (let threshold = 3; threshold >= 1; threshold--) {
+  // 段階的に条件を緩和: 3つ全部→2つ以上（最低2つは必須）
+  for (let threshold = 3; threshold >= 2; threshold--) {
     for (let attempt = 0; attempt < 20; attempt++) {
       pieces = genSet();
       if (countFittable(pieces) >= threshold) {
@@ -386,7 +386,22 @@ function generatePieces() {
       }
     }
   }
-  // 全て失敗（ほぼありえないが安全策）
+  // 2つ置ける組み合わせが見つからない場合、さらに試行
+  for (let attempt = 0; attempt < 50; attempt++) {
+    pieces = genSet();
+    if (countFittable(pieces) >= 2) {
+      renderPieces();
+      return;
+    }
+  }
+  // 最終手段: 1つでも置ければOK
+  for (let attempt = 0; attempt < 20; attempt++) {
+    pieces = genSet();
+    if (countFittable(pieces) >= 1) {
+      renderPieces();
+      return;
+    }
+  }
   renderPieces();
 }
 
