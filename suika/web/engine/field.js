@@ -726,10 +726,11 @@ export class Field {
     }
     // Debug: show hamburger count on screen
     if (this._debugLogged) {
+      const hamburgers = drawList.filter(d => d.model && d.model.vertices && d.model.vertices.length === 40 && d.model.surfaces && d.model.surfaces.length === 27);
       this.renderer.ctx.fillStyle = '#ff0';
       this.renderer.ctx.font = '10px sans-serif';
       this.renderer.ctx.textAlign = 'left';
-      this.renderer.ctx.fillText(`🍔x${drawList.filter(d => d.model === this.models[32]).length}`, 5, 310);
+      this.renderer.ctx.fillText(`🍔x${hamburgers.length} idx=${this.models.indexOf(hamburgers[0]?.model)}`, 5, 310);
     }
   }
 
