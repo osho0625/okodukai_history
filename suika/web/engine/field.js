@@ -648,17 +648,27 @@ export class Field {
         if (dx * dx + dz * dz > 3000 * 3000) continue;
         // Check if NPC is on a wall tile — elevate Y to sit on top
         let npcBaseY = 0;
+        let isStaticNpc = false;
         if (this.area && this.area.map) {
           const hitVal = this.area.map.hit[this.area.map.getPtr(npc.xPos, npc.zPos)] || 0;
-          if (hitVal >= 3) npcBaseY = 200; // Wall height
+          if (hitVal >= 3) {
+            npcBaseY = 200; // Wall height
+            isStaticNpc = true; // NPCs on walls are static objects (hamburger, decorations)
+          }
         }
-        // NPC idle animation: gentle Y sway (no vertex deformation)
-        const npcFrame = Math.floor((this.frameCount + ni * 3) / 5) % 4;
-        const pySway = (npcFrame === 1 || npcFrame === 3) ? 3 : 0;
+        // Also treat small models (topY <= 100) as static
+        if ((model.topY || 999) <= 100) isStaticNpc = true;
+
+        // Animation: only for character NPCs, not static objects
+        let pySway = 0;
+        if (!isStaticNpc) {
+          const npcFrame = Math.floor((this.frameCount + ni * 3) / 5) % 4;
+          pySway = (npcFrame === 1 || npcFrame === 3) ? 3 : 0;
+        }
         const py = npcBaseY + pySway;
         const camDx = px - camX;
         const camDz = pz - camZ;
-        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni, walkPhase: -1 });
+        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: isStaticNpc ? 0 : 35, npcIdx: ni, walkPhase: -1 });
       }
     }
 
