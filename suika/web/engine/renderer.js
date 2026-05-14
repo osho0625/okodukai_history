@@ -339,14 +339,14 @@ export class Renderer {
       const material = model.materials[matIdx];
       if (!material) continue;
 
-      // Back-face culling
+      // Back-face culling (skip if flags & 4 = no cull)
       const v0 = this.calcBuffer[surf.vertIndices[0]];
       const v1 = this.calcBuffer[surf.vertIndices[1]];
       const v2 = this.calcBuffer[surf.vertIndices[2]];
       const normal = this.calcNormal(v0, v1, v2);
 
       if (flags & 1) { normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z; }
-      if (normal.z < -0.1) {
+      if (!(flags & 4) && normal.z < -0.1) {
         if (!(material.flags & 0x10)) continue; // double-sided
         normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z;
       }

@@ -576,7 +576,9 @@ export class Field {
           if (dx * dx + dz * dz > 3000 * 3000) continue;
           const camDx = px - camX;
           const camDz = pz - camZ;
-          drawList.push({ px, pz, py: 0, rotation, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 0 });
+          // Disable backface culling for small decorative objects (flags & 4)
+          const drawFlags = (model.topY || 999) <= 120 ? 4 : 0;
+          drawList.push({ px, pz, py: 0, rotation, model, dist: camDx * camDx + camDz * camDz, flags: drawFlags, shadow: 0 });
           if (modelIdx === 32) debugCount32++;
         }
       }
@@ -687,27 +689,18 @@ export class Field {
       }
       const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
       this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0, item.walkPhase !== undefined ? item.walkPhase : -1);
-      // Debug: mark model 32 (hamburger) with a red dot
-      if (item.model === this.models[32]) {
-        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
-        // Force draw marker regardless of screen bounds
-        this.renderer.ctx.fillStyle = '#f00';
-        this.renderer.ctx.font = 'bold 14px sans-serif';
-        this.renderer.ctx.textAlign = 'center';
-        // Clamp to screen for visibility
-        const sx = Math.max(10, Math.min(390, screenPos.x));
-        const sy = Math.max(10, Math.min(310, screenPos.y));
-        this.renderer.ctx.fillText('🍔', sx, sy);
-      }
-      // Also mark ANY model idx 32 by checking vertex count match
+      // Debug: mark model with vertex/surface count match (cyan circle)
       if (item.model && item.model.vertices && item.model.vertices.length === 40 && item.model.surfaces && item.model.surfaces.length === 27) {
         const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
         const sx = Math.max(10, Math.min(390, screenPos.x));
         const sy = Math.max(10, Math.min(310, screenPos.y));
-        this.renderer.ctx.fillStyle = '#0ff';
+        this.renderer.ctx.fillStyle = '#00ffff';
         this.renderer.ctx.beginPath();
         this.renderer.ctx.arc(sx, sy, 8, 0, Math.PI * 2);
         this.renderer.ctx.fill();
+        // Red square on top to confirm identity
+        this.renderer.ctx.fillStyle = '#ff0000';
+        this.renderer.ctx.fillRect(sx - 4, sy - 4, 8, 8);
       }
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
