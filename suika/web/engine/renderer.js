@@ -311,11 +311,12 @@ export class Renderer {
       let v = new Vec3(verts[i].x, verts[i].y, verts[i].z);
       if (flags & 1) v.x = -v.x; // mirror
 
-      // Walk animation: rotate leg vertices around Y axis
+      // Walk animation: swing leg vertices forward/backward along local Z axis
       if (walkPhase >= 0 && v.y < legThreshold) {
-        // Alternate legs: front/back based on X sign
-        const legSide = v.x > 0 ? 1 : -1;
-        const swing = Math.sin(walkPhase + legSide * 1.5) * 0.3;
+        // Split legs by Z sign (front leg vs back leg in local space)
+        const legSide = v.z > 0 ? 1 : -1;
+        const swing = Math.sin(walkPhase + legSide * 1.5) * 0.25;
+        // Rotate around X axis (tilt forward/backward)
         const cosS = Math.cos(swing);
         const sinS = Math.sin(swing);
         const origZ = v.z;
