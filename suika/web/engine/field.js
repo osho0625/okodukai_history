@@ -666,7 +666,14 @@ export class Field {
     }
 
     // Sort back-to-front (farther from camera drawn first)
-    drawList.sort((a, b) => b.dist - a.dist);
+    // For similar distances, draw taller objects first so smaller objects appear on top
+    drawList.sort((a, b) => {
+      const distDiff = b.dist - a.dist;
+      if (Math.abs(distDiff) < 60000) { // within ~1.2 grid cells
+        return (b.model.topY || 0) - (a.model.topY || 0);
+      }
+      return distDiff;
+    });
 
     // Draw all
     const pos = new Vec3();

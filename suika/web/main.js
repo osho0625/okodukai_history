@@ -21,7 +21,7 @@ import { QuizUI } from './engine/quiz.js';
 import { ComposeShop } from './engine/compose.js';
 import { CloudSave } from './engine/cloud-save.js';
 
-const SUIKA_VERSION = 'v0.7.2';
+const SUIKA_VERSION = 'v0.7.3';
 
 class SuikaGame {
   constructor() {
