@@ -586,6 +586,14 @@ export class Field {
       if (!this._debugLogged && debugCount32 > 0) {
         this._debugLogged = true;
         console.log(`[DEBUG] Model 32 (hamburger) in drawList: ${debugCount32} objects`);
+        // Log model 32 details
+        const m = this.models[32];
+        if (m) {
+          console.log(`[DEBUG] Model 32: ${m.vertices.length} verts, ${m.surfaces.length} surfs, ${m.materials.length} mats, topY=${m.topY}`);
+          console.log(`[DEBUG] First 3 verts:`, m.vertices.slice(0, 3).map(v => `(${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)})`));
+          console.log(`[DEBUG] Materials:`, m.materials.map(mat => `rgb(${mat.color.r},${mat.color.g},${mat.color.b}) flags=${mat.flags}`));
+          console.log(`[DEBUG] First 3 surfs:`, m.surfaces.slice(0, 3).map(s => `mat=${s.materialIndex} verts=[${s.vertIndices.slice(0,s.vertCount)}] cnt=${s.vertCount}`));
+        }
       }
     }
 
@@ -692,15 +700,18 @@ export class Field {
       // Debug: mark model with vertex/surface count match (cyan circle)
       if (item.model && item.model.vertices && item.model.vertices.length === 40 && item.model.surfaces && item.model.surfaces.length === 27) {
         const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
+        const screenBot = this.renderer.get3DPos(wvp, new Vec3(0, 0, 0));
+        const screenTop = this.renderer.get3DPos(wvp, new Vec3(0, 100, 0));
         const sx = Math.max(10, Math.min(390, screenPos.x));
         const sy = Math.max(10, Math.min(310, screenPos.y));
-        this.renderer.ctx.fillStyle = '#00ffff';
-        this.renderer.ctx.beginPath();
-        this.renderer.ctx.arc(sx, sy, 8, 0, Math.PI * 2);
-        this.renderer.ctx.fill();
-        // Red square on top to confirm identity
-        this.renderer.ctx.fillStyle = '#ff0000';
-        this.renderer.ctx.fillRect(sx - 4, sy - 4, 8, 8);
+        // Draw a visible orange rectangle as placeholder for the hamburger
+        const h = Math.abs(screenTop.y - screenBot.y);
+        const w = Math.max(8, h * 0.8);
+        this.renderer.ctx.fillStyle = '#e8a040';
+        this.renderer.ctx.fillRect(sx - w/2, sy - h/2, w, h);
+        this.renderer.ctx.strokeStyle = '#804020';
+        this.renderer.ctx.lineWidth = 1;
+        this.renderer.ctx.strokeRect(sx - w/2, sy - h/2, w, h);
       }
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
