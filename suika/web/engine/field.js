@@ -104,6 +104,21 @@ export class Field {
       }
     }
 
+    // NPC collision check — trigger event when walking into an NPC
+    if (this.area && this.area.npcs) {
+      const newBx = MapData.getXBlock(newPos.x);
+      const newBz = MapData.getZBlock(newPos.z);
+      for (const npc of this.area.npcs) {
+        if (npc.xPos === newBx && npc.zPos === newBz && npc.event > 0 && npc.event < 0xFFFF) {
+          if (this._checkIf(npc.ifFlag)) {
+            if (this.onWallEvent) this.onWallEvent(npc.event);
+            this._isWalking = false;
+            return false;
+          }
+        }
+      }
+    }
+
     this.playerPos.set(newPos);
     this._isWalking = true;
 
@@ -624,9 +639,15 @@ export class Field {
         const dx = px - this.playerPos.x;
         const dz = pz - this.playerPos.z;
         if (dx * dx + dz * dz > 3000 * 3000) continue;
+        // Check if NPC is on a wall tile — elevate Y to sit on top
+        let npcBaseY = 0;
+        if (this.area && this.area.map) {
+          const hitVal = this.area.map.hit[this.area.map.getPtr(npc.xPos, npc.zPos)] || 0;
+          if (hitVal >= 3) npcBaseY = 200; // Wall height
+        }
         // NPC idle animation: 3-frame sway
         const npcFrame = Math.floor((this.frameCount + ni * 3) / 4) % 3;
-        const py = npcFrame === 1 ? 3 : (npcFrame === 2 ? -2 : 0);
+        const py = npcBaseY + (npcFrame === 1 ? 3 : (npcFrame === 2 ? -2 : 0));
         const camDx = px - camX;
         const camDz = pz - camZ;
         drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni, walkPhase: npcFrame });
