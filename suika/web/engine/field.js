@@ -557,7 +557,6 @@ export class Field {
     // 1. Collect map objects
     if (this.area) {
       const map = this.area.map;
-      let debugCount32 = 0;
       for (let z = 0; z < map.zNum; z++) {
         for (let x = 0; x < map.xNum; x++) {
           const idx = map.getPtr(x, z);
@@ -579,20 +578,6 @@ export class Field {
           // Disable backface culling for small decorative objects (flags & 4)
           const drawFlags = (model.topY || 999) <= 120 ? 4 : 0;
           drawList.push({ px, pz, py: 0, rotation, model, dist: camDx * camDx + camDz * camDz, flags: drawFlags, shadow: 0 });
-          if (modelIdx === 32) debugCount32++;
-        }
-      }
-      // One-time debug log
-      if (!this._debugLogged && debugCount32 > 0) {
-        this._debugLogged = true;
-        console.log(`[DEBUG] Model 32 (hamburger) in drawList: ${debugCount32} objects`);
-        // Log model 32 details
-        const m = this.models[32];
-        if (m) {
-          console.log(`[DEBUG] Model 32: ${m.vertices.length} verts, ${m.surfaces.length} surfs, ${m.materials.length} mats, topY=${m.topY}`);
-          console.log(`[DEBUG] First 3 verts:`, m.vertices.slice(0, 3).map(v => `(${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)})`));
-          console.log(`[DEBUG] Materials:`, m.materials.map(mat => `rgb(${mat.color.r},${mat.color.g},${mat.color.b}) flags=${mat.flags}`));
-          console.log(`[DEBUG] First 3 surfs:`, m.surfaces.slice(0, 3).map(s => `mat=${s.materialIndex} verts=[${s.vertIndices.slice(0,s.vertCount)}] cnt=${s.vertCount}`));
         }
       }
     }
@@ -639,11 +624,12 @@ export class Field {
         const dx = px - this.playerPos.x;
         const dz = pz - this.playerPos.z;
         if (dx * dx + dz * dz > 3000 * 3000) continue;
-        const bobPhase = (this.frameCount * 0.08 + ni * 1.7) % (Math.PI * 2);
-        const py = Math.sin(bobPhase) * 3;
+        // NPC idle animation: 3-frame sway
+        const npcFrame = Math.floor((this.frameCount + ni * 3) / 4) % 3;
+        const py = npcFrame === 1 ? 3 : (npcFrame === 2 ? -2 : 0);
         const camDx = px - camX;
         const camDz = pz - camZ;
-        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni });
+        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni, walkPhase: npcFrame });
       }
     }
 
@@ -666,12 +652,12 @@ export class Field {
         if (!model || model.vertices.length === 0) continue;
         const camDx = trail.x - camX;
         const camDz = trail.z - camZ;
-        // Party members bob when player is walking
+        // Party members walk when player is walking (3-frame)
         let partyY = 0;
         let partyWalkPhase = -1;
         if (this._isWalking) {
-          partyWalkPhase = this.frameCount * 0.5 + (pi + 1) * 1.2;
-          partyY = Math.abs(Math.sin(partyWalkPhase)) * 5;
+          partyWalkPhase = Math.floor((this.frameCount + (pi + 1) * 2) / 2) % 3;
+          partyY = partyWalkPhase !== 0 ? 4 : 0;
         }
         drawList.push({ px: trail.x, pz: trail.z, py: partyY, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, walkPhase: partyWalkPhase });
       }
@@ -684,12 +670,12 @@ export class Field {
       if (pModel && pModel.vertices.length > 0) {
         const camDx = this.playerPos.x - camX;
         const camDz = this.playerPos.z - camZ;
-        // Walk animation: bob up/down when moving
+        // Walk animation: 3-frame discrete stepping
         let playerY = 0;
         let walkPhase = -1;
         if (this._isWalking) {
-          walkPhase = this.frameCount * 0.5;
-          playerY = Math.abs(Math.sin(walkPhase)) * 5; // slight bounce
+          walkPhase = Math.floor(this.frameCount / 2) % 3; // changes every 2 frames
+          playerY = walkPhase === 1 ? 4 : (walkPhase === 2 ? 4 : 0); // slight bounce on step frames
         }
         drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: playerY, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40, walkPhase });
       }
@@ -717,22 +703,6 @@ export class Field {
       }
       const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
       this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0, item.walkPhase !== undefined ? item.walkPhase : -1);
-      // Debug: mark model with vertex/surface count match (cyan circle)
-      if (item.model && item.model.vertices && item.model.vertices.length === 40 && item.model.surfaces && item.model.surfaces.length === 27) {
-        const screenPos = this.renderer.get3DPos(wvp, new Vec3(0, 50, 0));
-        const screenBot = this.renderer.get3DPos(wvp, new Vec3(0, 0, 0));
-        const screenTop = this.renderer.get3DPos(wvp, new Vec3(0, 100, 0));
-        const sx = Math.max(10, Math.min(390, screenPos.x));
-        const sy = Math.max(10, Math.min(310, screenPos.y));
-        // Draw a visible orange rectangle as placeholder for the hamburger
-        const h = Math.abs(screenTop.y - screenBot.y);
-        const w = Math.max(8, h * 0.8);
-        this.renderer.ctx.fillStyle = '#e8a040';
-        this.renderer.ctx.fillRect(sx - w/2, sy - h/2, w, h);
-        this.renderer.ctx.strokeStyle = '#804020';
-        this.renderer.ctx.lineWidth = 1;
-        this.renderer.ctx.strokeRect(sx - w/2, sy - h/2, w, h);
-      }
       // NPC talk indicator
       if (item.npcIdx !== undefined) {
         const npc = this.area.npcs[item.npcIdx];
@@ -747,14 +717,6 @@ export class Field {
           }
         }
       }
-    }
-    // Debug: show hamburger count on screen
-    if (this._debugLogged) {
-      const hamburgers = drawList.filter(d => d.model && d.model.vertices && d.model.vertices.length === 40 && d.model.surfaces && d.model.surfaces.length === 27);
-      this.renderer.ctx.fillStyle = '#ff0';
-      this.renderer.ctx.font = '10px sans-serif';
-      this.renderer.ctx.textAlign = 'left';
-      this.renderer.ctx.fillText(`🍔x${hamburgers.length} idx=${this.models.indexOf(hamburgers[0]?.model)}`, 5, 310);
     }
   }
 

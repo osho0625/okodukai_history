@@ -311,18 +311,15 @@ export class Renderer {
       let v = new Vec3(verts[i].x, verts[i].y, verts[i].z);
       if (flags & 1) v.x = -v.x; // mirror
 
-      // Walk animation: swing leg vertices forward/backward along local Z axis
+      // Walk animation: offset leg vertices left/right to simulate stepping
       if (walkPhase >= 0 && v.y < legThreshold) {
-        // Split legs by Z sign (front leg vs back leg in local space)
+        // Determine which leg (front vs back in local Z)
         const legSide = v.z > 0 ? 1 : -1;
-        const swing = Math.sin(walkPhase + legSide * 1.5) * 0.25;
-        // Rotate around X axis (tilt forward/backward)
-        const cosS = Math.cos(swing);
-        const sinS = Math.sin(swing);
-        const origZ = v.z;
-        const origY = v.y;
-        v.z = origZ * cosS - origY * sinS;
-        v.y = origZ * sinS + origY * cosS;
+        // Simple 3-frame offset: shift Z position of leg vertices
+        const frame = Math.floor(walkPhase) % 3; // 0, 1, 2
+        const offsets = [0, 1, -1]; // center, forward, backward
+        const shift = offsets[frame] * legSide * 15; // 15 units max shift
+        v.z += shift;
       }
 
       this.calcBuffer[i].set(this.get3DPos(wvpMat, v));
