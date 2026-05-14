@@ -528,23 +528,9 @@ export class Field {
     }
 
     this.drawGround();
-    this.drawMapObjects();
-    this.drawPlayer();
 
-    // Draw player shadow
-    this.renderer.drawShadow(this.playerPos, 40, this.cameraVect);
-
-    // Draw NPC shadows
-    if (this.area && this.area.npcs) {
-      for (const npc of this.area.npcs) {
-        const pos = new Vec3(MapData.getXPos(npc.xPos), 0, MapData.getZPos(npc.zPos));
-        const dx = pos.x - this.playerPos.x;
-        const dz = pos.z - this.playerPos.z;
-        if (dx * dx + dz * dz < 3000 * 3000) {
-          this.renderer.drawShadow(pos, 35, this.cameraVect);
-        }
-      }
-    }
+    // Draw all objects (map objects + characters) sorted by camera distance
+    this._drawAllSorted();
   }
 
   // Call from game update loop (not draw)
@@ -553,6 +539,135 @@ export class Field {
     this.updateNpcMoves();
     if (this.catsEyeCounter && this.catsEyeCounter > 0) {
       this.catsEyeCounter--;
+    }
+  }
+
+  // Draw all map objects + characters sorted by camera distance (painter's algorithm)
+  _drawAllSorted() {
+    const camX = this.playerPos.x + Math.sin(this.cameraVect) * -2000;
+    const camZ = this.playerPos.z + Math.cos(this.cameraVect) * -2000;
+    const scl = new Vec3(1, 1, 1);
+    const drawList = []; // { px, pz, py, rotation, model, dist, flags, shadow }
+
+    // 1. Collect map objects
+    if (this.area) {
+      const map = this.area.map;
+      for (let z = 0; z < map.zNum; z++) {
+        for (let x = 0; x < map.xNum; x++) {
+          const idx = map.getPtr(x, z);
+          const mapVal = map.mapModel[idx];
+          if (mapVal === 0) continue;
+          const modelType = mapVal >> 2;
+          const rotation = (mapVal & 3) * (Math.PI / 2);
+          const modelIdx = MapData.getMapModel(modelType);
+          if (modelIdx < 0 || modelIdx >= this.models.length) continue;
+          const model = this.models[modelIdx];
+          if (!model || model.vertices.length === 0) continue;
+          const px = MapData.getXPos(x);
+          const pz = MapData.getZPos(z);
+          const dx = px - this.playerPos.x;
+          const dz = pz - this.playerPos.z;
+          if (dx * dx + dz * dz > 3000 * 3000) continue;
+          const camDx = px - camX;
+          const camDz = pz - camZ;
+          drawList.push({ px, pz, py: 0, rotation, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 0 });
+        }
+      }
+    }
+
+    // 2. Collect NPCs
+    if (this.area && this.area.npcs) {
+      const CChrPrm = [
+        [0,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[10,0],[11,0],
+        [13,0],[15,0],[17,0],[19,0],[20,0],[2,0],[7,0],[35,0],[37,0],[39,0],
+        [41,0],[42,0],[46,0],[47,0],[48,0],[49,0],[50,0],[47,0],[51,0],[53,0],
+        [54,0],[8,0],[55,0],[3,0],[5,0],[54,0],[41,0],[42,0],[42,0],[42,0],
+        [42,0],[56,0],[39,0],[57,0]
+      ];
+      for (let ni = 0; ni < this.area.npcs.length; ni++) {
+        const npc = this.area.npcs[ni];
+        const kind = npc.kind;
+        if (kind >= CChrPrm.length) continue;
+        const modelIdx = CChrPrm[kind][0] + CChrPrm[kind][1] + 55;
+        if (modelIdx < 0 || modelIdx >= this.models.length) continue;
+        const model = this.models[modelIdx];
+        if (!model || model.vertices.length === 0) continue;
+        const px = npc._renderX !== undefined ? npc._renderX : MapData.getXPos(npc.xPos);
+        const pz = npc._renderZ !== undefined ? npc._renderZ : MapData.getZPos(npc.zPos);
+        const dx = px - this.playerPos.x;
+        const dz = pz - this.playerPos.z;
+        if (dx * dx + dz * dz > 3000 * 3000) continue;
+        const bobPhase = (this.frameCount * 0.08 + ni * 1.7) % (Math.PI * 2);
+        const py = Math.sin(bobPhase) * 3;
+        const camDx = px - camX;
+        const camDz = pz - camZ;
+        drawList.push({ px, pz, py, rotation: npc.vect * (Math.PI / 2), model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35, npcIdx: ni });
+      }
+    }
+
+    // 3. Collect party members
+    // Update party trail
+    if (this.partyTrail.length === 0 ||
+        Math.abs(this.partyTrail[0].x - this.playerPos.x) > 20 ||
+        Math.abs(this.partyTrail[0].z - this.playerPos.z) > 20) {
+      this.partyTrail.unshift({ x: this.playerPos.x, z: this.playerPos.z, vect: this.playerVect });
+      if (this.partyTrail.length > 20) this.partyTrail.pop();
+    }
+    if (this.partyModels.length > 0) {
+      for (let pi = 0; pi < this.partyModels.length; pi++) {
+        const trailIdx = Math.min((pi + 1) * 4, this.partyTrail.length - 1);
+        if (trailIdx < 0) continue;
+        const trail = this.partyTrail[trailIdx];
+        const modelIdx = this.partyModels[pi];
+        if (modelIdx < 0 || modelIdx >= this.models.length) continue;
+        const model = this.models[modelIdx];
+        if (!model || model.vertices.length === 0) continue;
+        const camDx = trail.x - camX;
+        const camDz = trail.z - camZ;
+        drawList.push({ px: trail.x, pz: trail.z, py: 0, rotation: trail.vect, model, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 35 });
+      }
+    }
+
+    // 4. Collect main player
+    const playerModelIdx = 55;
+    if (playerModelIdx < this.models.length) {
+      const pModel = this.models[playerModelIdx];
+      if (pModel && pModel.vertices.length > 0) {
+        const camDx = this.playerPos.x - camX;
+        const camDz = this.playerPos.z - camZ;
+        drawList.push({ px: this.playerPos.x, pz: this.playerPos.z, py: 0, rotation: this.playerVect, model: pModel, dist: camDx * camDx + camDz * camDz, flags: 0, shadow: 40 });
+      }
+    }
+
+    // Sort back-to-front (farther from camera drawn first)
+    drawList.sort((a, b) => b.dist - a.dist);
+
+    // Draw all
+    const pos = new Vec3();
+    const rot = new Vec3();
+    for (const item of drawList) {
+      pos.x = item.px; pos.y = item.py; pos.z = item.pz;
+      rot.x = 0; rot.y = item.rotation; rot.z = 0;
+      // Shadow first (under the model)
+      if (item.shadow > 0) {
+        this.renderer.drawShadow(pos, item.shadow, this.cameraVect);
+      }
+      const wvp = this.renderer.calcModel(item.model, pos, rot, scl);
+      this.renderer.drawModel(item.model, wvp, this.renderer.getTransform(3), item.flags, 0);
+      // NPC talk indicator
+      if (item.npcIdx !== undefined) {
+        const npc = this.area.npcs[item.npcIdx];
+        if (npc.event > 0 && npc.event < 0xFFFF) {
+          const headPos = this.renderer.get3DPos(wvp, new Vec3(0, item.model.topY + 30, 0));
+          if (headPos.x > 0 && headPos.x < 400 && headPos.y > 0 && headPos.y < 320) {
+            const pulse = Math.sin(this.frameCount * 0.15 + item.npcIdx) * 0.3 + 0.7;
+            this.renderer.ctx.fillStyle = `rgba(255,255,0,${pulse})`;
+            this.renderer.ctx.font = 'bold 12px sans-serif';
+            this.renderer.ctx.textAlign = 'center';
+            this.renderer.ctx.fillText('!', headPos.x, headPos.y - 5);
+          }
+        }
+      }
     }
   }
 
