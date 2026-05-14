@@ -162,18 +162,30 @@ export class Field {
     const bz = MapData.getZBlock(this.playerPos.z);
 
     for (const scope of this.area.scopes) {
-      if (scope.kind !== 1) continue; // only area transitions
       // Check ifFlag condition
       if (!this._checkIf(scope.ifFlag)) continue;
       if (bx >= scope.xPos && bx < scope.xPos + scope.xSize &&
           bz >= scope.zPos && bz < scope.zPos + scope.zSize) {
-        // Trigger area change
-        if (this.onAreaChange) {
-          this.onAreaChange(scope.targetArea, scope.targetX, scope.targetZ, scope.targetRot);
+
+        if (scope.kind === 1) {
+          // Area transition
+          if (this.onAreaChange) {
+            this.onAreaChange(scope.targetArea, scope.targetX, scope.targetZ, scope.targetRot);
+          }
+          return;
+        } else if (scope.kind === 2) {
+          // Event trigger (targetArea = event number)
+          // Only trigger once per position (prevent re-trigger while standing in scope)
+          const scopeKey = `${scope.xPos}_${scope.zPos}_${scope.targetArea}`;
+          if (this._lastScopeKey === scopeKey) continue;
+          this._lastScopeKey = scopeKey;
+          if (this.onWallEvent) this.onWallEvent(scope.targetArea);
+          return;
         }
-        return;
       }
     }
+    // Clear scope key when player leaves all scopes
+    this._lastScopeKey = null;
   }
 
   changeArea(area, x, z, rot) {
