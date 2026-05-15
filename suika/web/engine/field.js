@@ -104,27 +104,8 @@ export class Field {
       }
     }
 
-    // NPC collision/proximity check — trigger event when walking into or adjacent to NPC
-    if (this.area && this.area.npcs) {
-      const newBx = MapData.getXBlock(newPos.x);
-      const newBz = MapData.getZBlock(newPos.z);
-      for (const npc of this.area.npcs) {
-        if (npc.event <= 0 || npc.event >= 0xFFFF) continue;
-        if (!this._checkIf(npc.ifFlag)) continue;
-        // Check same cell OR adjacent cell (for NPCs on walls)
-        const dx2 = Math.abs(npc.xPos - newBx);
-        const dz2 = Math.abs(npc.zPos - newBz);
-        if (dx2 <= 1 && dz2 <= 1 && (dx2 + dz2) <= 1) {
-          // Only trigger once per NPC (prevent re-trigger)
-          const npcKey = `npc_${npc.xPos}_${npc.zPos}_${npc.event}`;
-          if (this._lastNpcEvent === npcKey) continue;
-          this._lastNpcEvent = npcKey;
-          if (this.onWallEvent) this.onWallEvent(npc.event);
-          return true; // Allow movement but trigger event
-        }
-      }
-      this._lastNpcEvent = null;
-    }
+    // NPC proximity — no auto-trigger (use Enter/A to talk)
+    // Hamburger chase etc. are handled by scope events (kind=2)
 
     this.playerPos.set(newPos);
     this._isWalking = true;
@@ -202,10 +183,11 @@ export class Field {
           return;
         } else if (scope.kind === 2) {
           // Event trigger (targetArea = event number)
-          // Only trigger once per position (prevent re-trigger while standing in scope)
-          const scopeKey = `${scope.xPos}_${scope.zPos}_${scope.targetArea}`;
+          // Only trigger once per player cell (original: m_nScEvX/Z check)
+          const scopeKey = `${bx}_${bz}`;
           if (this._lastScopeKey === scopeKey) continue;
           this._lastScopeKey = scopeKey;
+          console.log(`[SCOPE] kind=2 triggered at (${bx},${bz}), event=${scope.targetArea}`);
           if (this.onWallEvent) this.onWallEvent(scope.targetArea);
           return;
         }
@@ -240,6 +222,9 @@ export class Field {
     let bestNpc = null;
     let bestDist = Infinity;
 
+    const playerBx = MapData.getXBlock(this.playerPos.x);
+    const playerBz = MapData.getZBlock(this.playerPos.z);
+
     for (const npc of this.area.npcs) {
       if (npc.event === 0 || npc.event === 0xFFFF) continue;
       // Check ifFlag condition
@@ -259,15 +244,22 @@ export class Field {
       while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-      // Wide angle check (90 degrees each side)
-      if (Math.abs(angleDiff) < Math.PI * 0.55) {
-        // Wall check: verify no wall between player and NPC
-        if (this._hasWallBetween(this.playerPos.x, this.playerPos.z, nx, nz)) continue;
+      // Must be facing the NPC (90 degrees each side)
+      if (Math.abs(angleDiff) > Math.PI * 0.55) continue;
 
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestNpc = npc;
-        }
+      // Check if NPC is on a wall or adjacent to player (shop keepers, wall NPCs)
+      const npcOnWall = this.area.map && (this.area.map.hit[this.area.map.getPtr(npc.xPos, npc.zPos)] || 0) >= 3;
+      const isAdjacent = Math.abs(npc.xPos - playerBx) <= 1 && Math.abs(npc.zPos - playerBz) <= 1;
+
+      // For NPCs on walls: only need to be adjacent and facing them (no wall check)
+      // For NPCs on ground: check no wall between
+      if (!npcOnWall && !isAdjacent) {
+        if (this._hasWallBetween(this.playerPos.x, this.playerPos.z, nx, nz)) continue;
+      }
+
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestNpc = npc;
       }
     }
 
