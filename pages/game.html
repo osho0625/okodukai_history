@@ -612,10 +612,10 @@ async function submitNightPw() {
 // --- 難易度設定 ---
 let currentDifficulty = 'normal';
 const DIFFICULTY_SETTINGS = {
-  easy:    { colors: 4, initSpeed: 800, minSpeed: 400, accel: 15, cols: 6, rows: 13 },
-  normal:  { colors: 5, initSpeed: 800, minSpeed: 200, accel: 25, cols: 6, rows: 13 },
-  hard:    { colors: 6, initSpeed: 800, minSpeed: 150, accel: 25, cols: 6, rows: 13 },
-  special: { colors: 9, initSpeed: 800, minSpeed: 100, accel: 25, cols: 8, rows: 16 }
+  easy:    { colors: 4, initSpeed: 800, minSpeed: 400, accel: 15, cols: 6, rows: 13, accelInterval: 1250 },
+  normal:  { colors: 5, initSpeed: 800, minSpeed: 200, accel: 25, cols: 6, rows: 13, accelInterval: 1250 },
+  hard:    { colors: 6, initSpeed: 800, minSpeed: 150, accel: 25, cols: 6, rows: 13, accelInterval: 1250 },
+  special: { colors: 9, initSpeed: 800, minSpeed: 100, accel: 25, cols: 8, rows: 16, accelInterval: 1250 }
 };
 
 // 2段階加速: 150msまでは通常ペース、150ms以下はゆっくり加速（50000点で最速到達）
@@ -1489,7 +1489,13 @@ function calcScore(chainNum, clearResult) {
   // ボーナス合計（最低1）
   const bonus = Math.max(1, Math.min(999, cb + connectB + colorB));
 
-  return totalCleared * 10 * bonus;
+  // スピードボーナス: 速度が上がるほどスコアも上がる（初期速度との比率）
+  const settings = DIFFICULTY_SETTINGS[currentDifficulty] || DIFFICULTY_SETTINGS.normal;
+  const currentSpeed = calcDropInterval(score, settings);
+  const initSpeed = settings.initSpeed || 800;
+  const speedRatio = Math.max(1, initSpeed / Math.max(currentSpeed, 1));
+
+  return Math.round(totalCleared * 10 * bonus * speedRatio);
 }
 
 function showAllClearEffect() {
