@@ -1713,27 +1713,43 @@ document.addEventListener('keydown', e => {
 });
 
 // --- タッチスワイプ ---
-let touchX = 0, touchY = 0;
+let touchX = 0, touchY = 0, touchMoved = false;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   touchX = e.touches[0].clientX;
   touchY = e.touches[0].clientY;
+  touchMoved = false;
 });
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
+  if (touchMoved) return; // Already handled by move
   const dx = e.changedTouches[0].clientX - touchX;
   const dy = e.changedTouches[0].clientY - touchY;
   if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
     rotate();
   } else if (Math.abs(dy) > Math.abs(dx) && dy > 30) {
     hardDrop();
+  } else if (Math.abs(dx) >= 15) {
+    // Short flick: move once
+    if (dx > 0) moveRight(); else moveLeft();
   }
 });
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   const dx = e.touches[0].clientX - touchX;
-  if (dx > CELL * 0.7) { moveRight(); touchX = e.touches[0].clientX; }
-  if (dx < -CELL * 0.7) { moveLeft(); touchX = e.touches[0].clientX; }
+  const dy = e.touches[0].clientY - touchY;
+  // Only trigger move once per swipe (threshold = 1 cell width)
+  if (!touchMoved && Math.abs(dx) > CELL) {
+    if (dx > 0) moveRight(); else moveLeft();
+    touchMoved = true;
+    touchX = e.touches[0].clientX; // Reset for potential second move on long swipe
+    touchMoved = false; // Allow another move if they keep swiping far
+  }
+  // Down swipe during move = soft drop
+  if (dy > CELL * 1.5 && Math.abs(dy) > Math.abs(dx)) {
+    hardDrop();
+    touchMoved = true;
+  }
 });
 
 // --- ランキング ---
