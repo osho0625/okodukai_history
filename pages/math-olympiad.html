@@ -347,9 +347,10 @@ select {
       </select>
       <select id="difficulty-filter" onchange="renderProblemList()">
         <option value="all">すべての難易度</option>
-        <option value="1">★☆☆</option>
-        <option value="2">★★☆</option>
-        <option value="3">★★★</option>
+        <option value="1">★☆☆☆</option>
+        <option value="2">★★☆☆</option>
+        <option value="3">★★★☆</option>
+        <option value="4">★★★★</option>
       </select>
     </div>
     <div class="status-filters" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
@@ -740,9 +741,9 @@ function renderProblemList() {
   });
 
   const container = document.getElementById('problem-cards');
-  const DIFFICULTY_STARS = { 1: '★☆☆', 2: '★★☆', 3: '★★★' };
+  const DIFFICULTY_STARS = { 1: '★☆☆☆', 2: '★★☆☆', 3: '★★★☆', 4: '★★★★' };
   const showTime = currentGrade === 'grade5';
-  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+' };
+  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+', 4: '60分+' };
 
   container.innerHTML = filtered.map(p => {
     const status = getProblemStatus(p.id);

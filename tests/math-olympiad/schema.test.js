@@ -10,7 +10,7 @@ const GENRE_LABEL = {
 };
 
 const VALID_GENRES = Object.keys(GENRE_LABEL);
-const VALID_DIFFICULTIES = [1, 2, 3];
+const VALID_DIFFICULTIES = [1, 2, 3, 4];
 
 describe('math-olympiad-problems.json スキーマバリデーション', () => {
   it('問題データが配列で1問以上存在する', () => {
