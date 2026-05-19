@@ -137,6 +137,27 @@ select {
 .badge-pending { background: rgba(255,165,0,0.2); color: #ffa500; }
 .badge-reviewed { background: rgba(76,175,80,0.2); color: #4caf50; }
 
+/* Status filter buttons */
+.status-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.status-btn.active {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
+  color: #a8b8ff;
+}
+.status-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
 /* Error display */
 .error-msg {
   color: #ff6b6b;
@@ -331,6 +352,11 @@ select {
         <option value="3">★★★</option>
       </select>
     </div>
+    <div class="status-filters" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+      <button class="status-btn active" data-status="new" onclick="toggleStatusFilter('new', this)">未挑戦</button>
+      <button class="status-btn active" data-status="pending" onclick="toggleStatusFilter('pending', this)">提出済み</button>
+      <button class="status-btn active" data-status="reviewed" onclick="toggleStatusFilter('reviewed', this)">採点済み</button>
+    </div>
     <div id="problem-cards"></div>
     <button id="admin-btn" class="btn btn-secondary" style="width:100%; display:none;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
     <div id="list-error" class="error-msg"></div>
@@ -434,8 +460,8 @@ select {
       </div>
 
       <div class="form-group" style="margin-top: 16px;">
-        <label>点数（0〜100）</label>
-        <input type="number" id="review-score" min="0" max="100" placeholder="点数">
+        <label>点数（0〜10）</label>
+        <input type="number" id="review-score" min="0" max="10" placeholder="点数">
       </div>
       <div class="form-group">
         <label>コメント</label>
@@ -680,12 +706,36 @@ function getSelectedDifficulty() {
   return parseInt(document.getElementById('difficulty-filter').value) || 0;
 }
 
+// Status filter state (persisted in localStorage)
+let statusFilters = JSON.parse(localStorage.getItem('math_status_filters') || '{"new":true,"pending":true,"reviewed":true}');
+
+function toggleStatusFilter(status, btn) {
+  statusFilters[status] = !statusFilters[status];
+  // Ensure at least one is active
+  if (!statusFilters.new && !statusFilters.pending && !statusFilters.reviewed) {
+    statusFilters[status] = true;
+  }
+  btn.classList.toggle('active', statusFilters[status]);
+  localStorage.setItem('math_status_filters', JSON.stringify(statusFilters));
+  renderProblemList();
+}
+
+function restoreStatusFilterUI() {
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    const s = btn.getAttribute('data-status');
+    btn.classList.toggle('active', statusFilters[s]);
+  });
+}
+
 function renderProblemList() {
   const genre = getSelectedGenre();
   const difficulty = getSelectedDifficulty();
   const filtered = problems.filter(p => {
     if (genre !== 'all' && p.genre !== genre) return false;
     if (difficulty !== 0 && p.difficulty !== difficulty) return false;
+    // Status filter
+    const status = getProblemStatus(p.id);
+    if (!statusFilters[status]) return false;
     return true;
   });
 
@@ -698,13 +748,21 @@ function renderProblemList() {
     const status = getProblemStatus(p.id);
     const badgeClass = status === 'new' ? 'badge-new' : status === 'pending' ? 'badge-pending' : 'badge-reviewed';
     const badgeText = status === 'new' ? '未挑戦' : status === 'pending' ? '提出済み' : '採点済み';
-    const onclick = status === 'reviewed'
-      ? `showResult(${p.id})`
-      : `startProblem(${p.id})`;
+    // All statuses go to startProblem (which handles reviewed/pending display)
+    const onclick = `startProblem(${p.id})`;
     const timeHtml = showTime ? `<span>目安${DIFFICULTY_TIME[p.difficulty]}</span>` : '';
+    
+    // Show score for reviewed problems
+    let scoreHtml = '';
+    if (status === 'reviewed') {
+      const answer = userAnswers.find(a => a.problem_id === p.id && a.status === 'reviewed');
+      if (answer && answer.score !== null) {
+        scoreHtml = `<span style="color:#ffd700;font-weight:700;">${answer.score}/10</span>`;
+      }
+    }
 
     return `<div class="problem-card" onclick="${onclick}">
-      <div class="problem-card-title">${p.title}</div>
+      <div class="problem-card-title">${p.title} ${scoreHtml}</div>
       <div class="problem-card-meta">
         <span>${GENRE_LABEL[p.genre] || p.genre}</span>
         <span>${DIFFICULTY_STARS[p.difficulty]}</span>
@@ -714,6 +772,7 @@ function renderProblemList() {
     </div>`;
   }).join('');
 
+  restoreStatusFilterUI();
   clearError('list-error');
 }
 
@@ -737,10 +796,20 @@ function clearProblemSession() {
 }
 
 function startProblem(problemId) {
-  clearProblemSession();
   currentProblem = problems.find(p => p.id === problemId);
   if (!currentProblem) return;
-
+  
+  const status = getProblemStatus(problemId);
+  
+  // If reviewed, show result view
+  if (status === 'reviewed') {
+    showResult(problemId);
+    return;
+  }
+  
+  // Clear previous session
+  clearProblemSession();
+  
   // If pending, restore existing answer for editing
   const existing = userAnswers.find(a => a.problem_id === problemId);
   if (existing && existing.status === 'pending') {
@@ -1053,8 +1122,8 @@ async function submitReview() {
   const score = parseInt(document.getElementById('review-score').value);
   const comment = document.getElementById('review-comment').value.trim();
 
-  if (isNaN(score) || score < 0 || score > 100) {
-    showError('admin-error', '点数を0〜100で入力してください');
+  if (isNaN(score) || score < 0 || score > 10) {
+    showError('admin-error', '点数を0〜10で入力してください');
     return;
   }
 
@@ -1097,7 +1166,7 @@ function showResult(problemId) {
 }
 
 function renderResultView(answer, problem) {
-  document.getElementById('result-score').textContent = `${answer.score}点`;
+  document.getElementById('result-score').textContent = `${answer.score} / 10`;
   document.getElementById('result-comment').textContent = answer.admin_comment || '';
   document.getElementById('result-answer').innerHTML =
     DOMPurify.sanitize(problem.answer, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] });
