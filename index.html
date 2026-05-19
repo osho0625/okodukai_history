@@ -454,6 +454,26 @@ async function load() {
     (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
   } catch(e) {}
 
+  // チケット残数を取得
+  let ticketCountByOwner = {};
+  try {
+    const { data: tktData } = await client.from('tickets').select('owner').eq('status', 'unused');
+    (tktData || []).forEach(t => { ticketCountByOwner[t.owner] = (ticketCountByOwner[t.owner] || 0) + 1; });
+  } catch(e) {}
+
+  // チケット予約待ち（pending）を取得
+  let ticketPendingByOwner = {};
+  let ticketApprovedAll = [];
+  try {
+    const { data: tktPending } = await client.from('tickets').select('*').eq('status', 'pending').order('reserved_at', { ascending: true });
+    (tktPending || []).forEach(t => {
+      if (!ticketPendingByOwner[t.owner]) ticketPendingByOwner[t.owner] = [];
+      ticketPendingByOwner[t.owner].push(t);
+    });
+    const { data: tktApproved } = await client.from('tickets').select('*').in('status', ['approved']).order('reserved_at', { ascending: true });
+    ticketApprovedAll = tktApproved || [];
+  } catch(e) {}
+
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const hasPassword = c.require_password && c.password;
@@ -477,6 +497,7 @@ async function load() {
     // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
     let starsHtml = '';
+    let ticketHtml = '';
     if (!c.name.endsWith('が返すお金')) {
       const totalPts = pointsByChild[c.id] || 0;
       const sheetNum = totalPts > 0 ? Math.floor((totalPts - 1) / 400) + 1 : 1;
@@ -513,6 +534,16 @@ async function load() {
         }
         starsHtml = ' <span style="font-size:0.7em;">' + icons + '</span>';
       }
+
+      // チケット残数 + 予約待ち表示
+      const tktCount = ticketCountByOwner[c.name] || 0;
+      const tktPendingCount = (ticketPendingByOwner[c.name] || []).length;
+      if (tktCount > 0 || tktPendingCount > 0) {
+        let tktParts = [];
+        if (tktCount > 0) tktParts.push('🎫×' + tktCount);
+        if (tktPendingCount > 0) tktParts.push('⏳' + tktPendingCount + '件');
+        ticketHtml = '<div style="font-size:0.7em;color:#888;margin-top:2px;">' + tktParts.join(' ') + '</div>';
+      }
     }
 
     container.innerHTML += `
@@ -522,6 +553,7 @@ async function load() {
           <div style="flex:1;">
             <span class="child-name">${c.name}${starsHtml}${lock}</span>
             ${ptsHtml}
+            ${ticketHtml}
           </div>
           <span class="child-balance${displayNeg}">${balanceText}</span>
         </div>
@@ -543,6 +575,36 @@ async function load() {
       });
       approvalHtml += '</div>';
       container.innerHTML += approvalHtml;
+    }
+
+    // admin用: チケット予約承認UI
+    if (localStorage.getItem('deviceRole') === 'admin' && ticketPendingByOwner[c.name]) {
+      let tktHtml = '<div class="approval-section" data-child-ticket="' + c.name + '">';
+      ticketPendingByOwner[c.name].forEach(t => {
+        const rd = new Date(t.reserved_at);
+        const rdStr = (rd.getMonth()+1) + '/' + rd.getDate() + ' ' + rd.getHours() + ':' + String(rd.getMinutes()).padStart(2,'0');
+        tktHtml += '<div class="approval-item" id="tkt-approval-' + t.id + '">'
+          + '<div class="approval-info"><span class="approval-chore">🎫 No.' + t.ticket_no + ' ' + t.duration_minutes + '分</span><span class="approval-date">' + rdStr + '〜</span></div>'
+          + '<div class="approval-btns">'
+          + '<button class="approval-btn approve" onclick="approveTicketFromTop(\'' + t.id + '\')">承認</button>'
+          + '<button class="approval-btn reject" onclick="rejectTicketFromTop(\'' + t.id + '\')">却下</button>'
+          + '</div></div>';
+      });
+      tktHtml += '</div>';
+      container.innerHTML += tktHtml;
+    }
+
+    // 全ユーザー: 承認済み予約チケット表示
+    const myApproved = ticketApprovedAll.filter(t => t.owner === c.name);
+    if (myApproved.length > 0) {
+      let resHtml = '<div style="max-width:480px;margin:-4px auto 12px;padding:0 8px;">';
+      myApproved.forEach(t => {
+        const rd = new Date(t.reserved_at);
+        const rdStr = (rd.getMonth()+1) + '/' + rd.getDate() + ' ' + rd.getHours() + ':' + String(rd.getMinutes()).padStart(2,'0');
+        resHtml += '<div style="background:#e8f5e9;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:0.85em;color:#2e7d32;">🎫 ' + rdStr + '〜 あそびチケット（' + t.duration_minutes + '分）</div>';
+      });
+      resHtml += '</div>';
+      container.innerHTML += resHtml;
     }
   });
 
@@ -825,6 +887,28 @@ async function rejectFromTop(pointId, childId) {
   setTimeout(() => location.reload(), 300);
 }
 
+// --- チケット予約承認/却下（TOP画面admin用） ---
+async function approveTicketFromTop(ticketId) {
+  const { data, error } = await client.from('tickets').update({ status: 'approved' }).eq('id', ticketId).eq('status', 'pending').select();
+  if (error || !data || data.length === 0) { alert('承認に失敗しました'); return; }
+  const t = data[0];
+  try { await notifyDiscord('✅ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を承認しました'); } catch(e) {}
+  const el = document.getElementById('tkt-approval-' + ticketId);
+  if (el) el.remove();
+  setTimeout(() => location.reload(), 300);
+}
+
+async function rejectTicketFromTop(ticketId) {
+  if (!confirm('チケット予約を却下しますか？')) return;
+  const { data, error } = await client.from('tickets').update({ status: 'unused', reserved_at: null }).eq('id', ticketId).eq('status', 'pending').select();
+  if (error || !data || data.length === 0) { alert('却下に失敗しました'); return; }
+  const t = data[0];
+  try { await notifyDiscord('❌ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を却下しました'); } catch(e) {}
+  const el = document.getElementById('tkt-approval-' + ticketId);
+  if (el) el.remove();
+  setTimeout(() => location.reload(), 300);
+}
+
 async function giveAllowanceFromTop(targetChild, amount) {
   const repayChild = allChildren.find(c => c.name === targetChild.name + 'が返すお金');
   const hasRepay = !!repayChild;
@@ -852,6 +936,15 @@ async function giveAllowanceFromTop(targetChild, amount) {
   }
 }
 
+// チケット予約日時が過ぎたapprovedを自動used化
+async function autoConsumeTickets() {
+  try {
+    const now = new Date().toISOString();
+    await client.from('tickets').update({ status: 'used', used_at: now }).eq('status', 'approved').lte('reserved_at', now);
+  } catch(e) {}
+}
+
+autoConsumeTickets();
 load();
 loadPuyoCounts();
 loadPasswords();

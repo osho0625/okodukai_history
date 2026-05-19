@@ -112,11 +112,13 @@
 
 ### tickets（あそびチケット）
 - id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')
-- duration_minutes: INT CHECK 5-480, status: TEXT DEFAULT 'unused' CHECK IN ('unused','used')
-- created_at: TIMESTAMPTZ, used_at: TIMESTAMPTZ
-- CONSTRAINT chk_used_ticket_consistency (status/used_at整合性)
-- INDEX: idx_tickets_owner_status, idx_tickets_used_at, idx_tickets_status_ticket_no
+- duration_minutes: INT CHECK 5-480, status: TEXT DEFAULT 'unused' CHECK IN ('unused','pending','approved','used')
+- created_at: TIMESTAMPTZ, used_at: TIMESTAMPTZ, reserved_at: TIMESTAMPTZ
+- CONSTRAINT chk_ticket_status_consistency (status/used_at/reserved_at整合性)
+- INDEX: idx_tickets_owner_status, idx_tickets_used_at, idx_tickets_status_ticket_no, idx_tickets_status_reserved
 - RLS無効（deviceRole制御のみ）
+- 予約フロー: unused→pending(予約申請)→approved(承認)→used(予約日時到来で自動消化)
+- 却下/取消: pending→unused / approved→unused（予約日時前のみ）
 
 ## 端末権限（deviceRole）
 
@@ -324,6 +326,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | suika_encounter_rate | すいかエンカウント率（0〜3） | 永続 |
 | ticketCache_unused | オフライン表示用キャッシュ（未使用チケット） | 永続 |
 | ticketCache_used | オフライン表示用キャッシュ（使用済みチケット） | 永続 |
+| ticketCache_reserved | オフライン表示用キャッシュ（予約中チケット） | 永続 |
 | math_olympiad_user | 算数オリンピック ユーザー名（表示用） | 永続 |
 | math_olympiad_user_id | 算数オリンピック ユーザーUUID（DB識別子） | 永続 |
 
