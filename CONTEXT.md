@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/19 v1.66.0
+最終更新: 2026/05/19 v1.67.0
 
 ## プロジェクト概要
 
@@ -329,6 +329,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | ticketCache_reserved | オフライン表示用キャッシュ（予約中チケット） | 永続 |
 | math_olympiad_user | 算数オリンピック ユーザー名（表示用） | 永続 |
 | math_olympiad_user_id | 算数オリンピック ユーザーUUID（DB識別子） | 永続 |
+| math_hint_history | 算数オリンピック ヒント使用履歴（問題ID→使用回数） | 永続 |
 
 ## sessionStorage使用
 
@@ -344,7 +345,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.66.0
+- 現在: v1.67.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

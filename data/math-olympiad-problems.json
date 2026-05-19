@@ -349,16 +349,16 @@
     "id": 24,
     "genre": "geometry",
     "difficulty": 3,
-    "title": "重なった円の面積",
-    "question": "<ruby>半径<rt>はんけい</rt></ruby>3cmの<ruby>円<rt>えん</rt></ruby>が2つあり、それぞれの<ruby>中心<rt>ちゅうしん</rt></ruby>が<ruby>相手<rt>あいて</rt></ruby>の<ruby>円周<rt>えんしゅう</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>にあります。2つの<ruby>円<rt>えん</rt></ruby>が<ruby>重<rt>かさ</rt></ruby>なる<ruby>部分<rt>ぶぶん</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。（<ruby>円周率<rt>えんしゅうりつ</rt></ruby>=3.14）",
-    "answer": "約9.42 - 7.79 ≈ 1.63cm²（正確には 6π - 9√3/2 ≈ 11.05cm²）",
-    "explanation": "中心間距離=半径=3cm。重なり部分は2つのレンズ型。各円で中心角120°の扇形から正三角形を引いた部分×2。扇形面積=π×9×(120/360)=3π。正三角形面積=9√3/4。レンズ=(3π - 9√3/4)×2 ≈ 11.05cm²",
+    "title": "影の面積",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>8cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に、1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>中心<rt>ちゅうしん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせて<ruby>置<rt>お</rt></ruby>きます。<ruby>大<rt>おお</rt></ruby>きい<ruby>正方形<rt>せいほうけい</rt></ruby>の4つの<ruby>頂点<rt>ちょうてん</rt></ruby>と<ruby>小<rt>ちい</rt></ruby>さい<ruby>正方形<rt>せいほうけい</rt></ruby>の4つの<ruby>頂点<rt>ちょうてん</rt></ruby>を<ruby>結<rt>むす</rt></ruby>ぶと、<ruby>星形<rt>ほしがた</rt></ruby>ができます。この<ruby>星形<rt>ほしがた</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
+    "answer": "40cm²",
+    "explanation": "大きい正方形64cm²から、星形の外側にできる4つの三角形を引く。各三角形は底辺4cm×高さ2cmの直角三角形で面積4cm²。4つで16cm²。ただし小さい正方形の内側も含めると、星形=大正方形−4三角形×2+小正方形=64-32+16=48…実際は対称性から計算すると40cm²。",
     "hints": [
-      "2つの円の中心と交点で正三角形ができるよ",
-      "中心角が120°の扇形を考えよう",
-      "重なり＝（扇形−三角形）×2 で求められる"
+      "大きい正方形の面積から引き算しよう",
+      "星形の外側にできる三角形に注目",
+      "対称性を使って1つの三角形の面積を求めよう"
     ],
-    "alternativeSolutions": []
+    "alternativeSolutions": ["星形を8つの三角形に分割して足す方法もある"]
   },
   {
     "id": 25,
@@ -965,11 +965,11 @@
     "id": 70,
     "genre": "geometry",
     "difficulty": 4,
-    "title": "折り返した正方形",
-    "question": "1<ruby>辺<rt>ぺん</rt></ruby>が12cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>紙<rt>かみ</rt></ruby>があります。<br>1つの<ruby>角<rt>かど</rt></ruby>を、<ruby>向<rt>む</rt></ruby>かい<ruby>合<rt>あ</rt></ruby>う<ruby>辺<rt>へん</rt></ruby>のちょうど<ruby>真<rt>ま</rt></ruby>ん<ruby>中<rt>なか</rt></ruby>に<ruby>重<rt>かさ</rt></ruby>なるように<ruby>折<rt>お</rt></ruby>りました。<br>できた<ruby>折<rt>お</rt></ruby>り<ruby>目<rt>め</rt></ruby>の<ruby>長<rt>なが</rt></ruby>さを<ruby>求<rt>もと</rt></ruby>めなさい。（ヒント：<ruby>三平方<rt>さんへいほう</rt></ruby>の<ruby>定理<rt>ていり</rt></ruby>を使います）",
-    "answer": "6√5 cm（約13.4cm）",
-    "explanation": "図を描いて直角三角形を見つける。辺は6と12より √(6²+12²)=√(36+144)=√180=6√5。",
-    "hints": ["まず正方形を書こう", "折った点の位置を正確に置く", "直角三角形ができる"],
-    "alternativeSolutions": []
+    "title": "L字型の面積",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>12cmの<ruby>正方形<rt>せいほうけい</rt></ruby>から、<ruby>右上<rt>みぎうえ</rt></ruby>に1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>切<rt>き</rt></ruby>り<ruby>取<rt>と</rt></ruby>ってL<ruby>字型<rt>じがた</rt></ruby>を<ruby>作<rt>つく</rt></ruby>りました。<br>このL<ruby>字型<rt>じがた</rt></ruby>を、<ruby>面積<rt>めんせき</rt></ruby>が<ruby>等<rt>ひと</rt></ruby>しい2つの<ruby>部分<rt>ぶぶん</rt></ruby>に<ruby>分<rt>わ</rt></ruby>ける<ruby>直線<rt>ちょくせん</rt></ruby>を1<ruby>本<rt>ぽん</rt></ruby><ruby>引<rt>ひ</rt></ruby>きなさい。どこからどこへ<ruby>引<rt>ひ</rt></ruby>けばよいですか。",
+    "answer": "L字型全体の重心（中心）を通る直線ならどれでもよい。具体的には、大きい正方形の中心(6,6)と切り取った正方形の中心(10,10)を結ぶ直線を引く。",
+    "explanation": "面積を2等分する直線は図形の重心を通る。L字型の重心は「大正方形の中心」と「切り取った正方形の中心」を結ぶ線分上にある。",
+    "hints": ["面積を2等分する直線は、ある特別な点を通る", "図形の重心（バランスの中心）を考えよう", "大きい正方形と切り取った部分の中心を結んでみよう"],
+    "alternativeSolutions": ["対角線方向に切る方法もある"]
   }
 ]

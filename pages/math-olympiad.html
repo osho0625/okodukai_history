@@ -761,9 +761,24 @@ function renderProblemList() {
         scoreHtml = `<span style="color:#ffd700;font-weight:700;">${answer.score}/10</span>`;
       }
     }
+    
+    // Hint usage color coding
+    const hintCount = getHintCount(p.id);
+    let hintStyle = '';
+    let hintBadge = '';
+    if (hintCount >= 3) {
+      hintStyle = 'border-left: 3px solid #ff6b6b;';
+      hintBadge = '<span style="color:#ff6b6b;font-size:0.75em;">💡×3</span>';
+    } else if (hintCount === 2) {
+      hintStyle = 'border-left: 3px solid #ffa500;';
+      hintBadge = '<span style="color:#ffa500;font-size:0.75em;">💡×2</span>';
+    } else if (hintCount === 1) {
+      hintStyle = 'border-left: 3px solid #ffdd57;';
+      hintBadge = '<span style="color:#ffdd57;font-size:0.75em;">💡×1</span>';
+    }
 
-    return `<div class="problem-card" onclick="${onclick}">
-      <div class="problem-card-title">${p.title} ${scoreHtml}</div>
+    return `<div class="problem-card" style="${hintStyle}" onclick="${onclick}">
+      <div class="problem-card-title">${p.title} ${scoreHtml} ${hintBadge}</div>
       <div class="problem-card-meta">
         <span>${GENRE_LABEL[p.genre] || p.genre}</span>
         <span>${DIFFICULTY_STARS[p.difficulty]}</span>
@@ -841,11 +856,37 @@ function renderProblemView() {
 }
 
 // === Hint System (Task 6.2) ===
+
+// Persistent hint tracking (localStorage)
+function getHintHistory() {
+  return JSON.parse(localStorage.getItem('math_hint_history') || '{}');
+}
+
+function saveHintUsage(problemId, count) {
+  const history = getHintHistory();
+  history[problemId] = Math.max(history[problemId] || 0, count);
+  localStorage.setItem('math_hint_history', JSON.stringify(history));
+}
+
+function getHintCount(problemId) {
+  const history = getHintHistory();
+  return history[problemId] || 0;
+}
+
 function revealHint() {
   if (!currentProblem) return;
   if (hintsRevealed >= currentProblem.hints.length) return;
+  
+  // Confirmation dialog
+  const msg = hintsRevealed === 0
+    ? '⚠️ ヒントを見ると記録に残ります。\n本当にヒントを見ますか？'
+    : `⚠️ ヒント${hintsRevealed + 1}を見ますか？\n（ヒントを見た回数は記録されます）`;
+  if (!confirm(msg)) return;
+  
   hintsRevealed++;
   sessionStorage.setItem('math_hints_revealed', hintsRevealed);
+  // Save to persistent history
+  saveHintUsage(currentProblem.id, hintsRevealed);
   renderHints();
 }
 
