@@ -110,11 +110,16 @@ h1 { margin-bottom: 16px; color: #333; }
     <h3 style="margin-bottom:16px; font-size:1.1em; text-align:center;">🎫 予約する</h3>
     <div style="margin-bottom:12px;">
       <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:4px;">日付</label>
-      <input type="date" id="reserveDate" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+      <input type="date" id="reserveDate" onchange="updateTimeSlots()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
     </div>
-    <div style="margin-bottom:16px;">
+    <div id="timeSlotsArea" style="margin-bottom:12px;">
+      <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:8px;">いつ遊ぶ？</label>
+      <div id="timeSlots" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+    <div id="customTimeArea" style="display:none; margin-bottom:12px;">
       <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:4px;">開始時間</label>
       <input type="time" id="reserveTime" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+      <button onclick="showTimeSlots()" style="margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#eee; color:#555; font-size:0.85em; cursor:pointer;">← 時間帯から選ぶ</button>
     </div>
     <div style="display:flex; gap:8px;">
       <button onclick="cancelReserve()" style="flex:1; padding:12px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; background:#eee; color:#333;">キャンセル</button>
@@ -391,14 +396,71 @@ function renderHistory() {
 }
 
 // --- 予約ダイアログ ---
+const TIME_SLOTS = [
+  { id: 'morning', label: '🌅 朝ごはんのあと', time: '08:00' },
+  { id: 'lunch', label: '☀️ 昼ごはんのあと', time: '12:00' },
+  { id: 'dinner', label: '🌙 夜ごはんのあと', time: '19:00' }
+];
+let selectedSlot = null;
+let useCustomTime = false;
+
 function openReserveDialog(ticketId) {
   pendingTicketId = ticketId;
-  // デフォルト: 明日の10:00
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  document.getElementById('reserveDate').value = tomorrow.toISOString().split('T')[0];
-  document.getElementById('reserveTime').value = '10:00';
+  selectedSlot = null;
+  useCustomTime = false;
+  // デフォルト: 今日
+  const today = new Date();
+  document.getElementById('reserveDate').value = today.toISOString().split('T')[0];
+  document.getElementById('customTimeArea').style.display = 'none';
+  document.getElementById('timeSlotsArea').style.display = 'block';
+  updateTimeSlots();
   document.getElementById('reserveOverlay').style.display = 'flex';
+}
+
+function updateTimeSlots() {
+  const dateVal = document.getElementById('reserveDate').value;
+  const container = document.getElementById('timeSlots');
+  selectedSlot = null;
+
+  if (!dateVal) { container.innerHTML = ''; return; }
+
+  const d = new Date(dateVal + 'T00:00:00');
+  const dayOfWeek = d.getDay(); // 0=日, 6=土
+  const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+  let html = '';
+  TIME_SLOTS.forEach(slot => {
+    const disabled = !isWeekend && slot.id !== 'dinner';
+    const disabledAttr = disabled ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
+    const hint = disabled ? ' <span style="font-size:0.75em;color:#999;">（平日は選べません）</span>' : '';
+    html += `<button class="slot-btn" data-slot="${slot.id}" ${disabledAttr} onclick="selectSlot('${slot.id}')" style="padding:14px 16px; border:2px solid #ddd; border-radius:10px; background:#fff; font-size:1em; font-weight:600; cursor:pointer; text-align:left; transition:all 0.15s;">${slot.label}${hint}</button>`;
+  });
+  html += `<button onclick="showCustomTime()" style="padding:10px 16px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; font-size:0.9em; color:#666; cursor:pointer; text-align:center;">⏰ 時間で予約する</button>`;
+  container.innerHTML = html;
+}
+
+function selectSlot(slotId) {
+  selectedSlot = slotId;
+  useCustomTime = false;
+  document.querySelectorAll('.slot-btn').forEach(b => {
+    b.style.borderColor = b.dataset.slot === slotId ? '#4caf50' : '#ddd';
+    b.style.background = b.dataset.slot === slotId ? '#e8f5e9' : '#fff';
+  });
+}
+
+function showCustomTime() {
+  useCustomTime = true;
+  selectedSlot = null;
+  document.getElementById('timeSlotsArea').style.display = 'none';
+  document.getElementById('customTimeArea').style.display = 'block';
+  document.getElementById('reserveTime').value = '19:00';
+}
+
+function showTimeSlots() {
+  useCustomTime = false;
+  document.getElementById('customTimeArea').style.display = 'none';
+  document.getElementById('timeSlotsArea').style.display = 'block';
+  updateTimeSlots();
 }
 
 function cancelReserve() {
@@ -409,8 +471,17 @@ function cancelReserve() {
 async function submitReservation() {
   if (!pendingTicketId) return;
   const dateVal = document.getElementById('reserveDate').value;
-  const timeVal = document.getElementById('reserveTime').value;
-  if (!dateVal || !timeVal) { showError('日付と時間を入力してください'); return; }
+  if (!dateVal) { showError('日付を選んでください'); return; }
+
+  let timeVal;
+  if (useCustomTime) {
+    timeVal = document.getElementById('reserveTime').value;
+    if (!timeVal) { showError('時間を入力してください'); return; }
+  } else {
+    if (!selectedSlot) { showError('時間帯を選んでください'); return; }
+    const slot = TIME_SLOTS.find(s => s.id === selectedSlot);
+    timeVal = slot.time;
+  }
 
   const reservedAt = new Date(`${dateVal}T${timeVal}:00`);
   if (reservedAt <= new Date()) { showError('未来の日時を選んでください'); return; }
