@@ -156,7 +156,7 @@
     "title": "コインの組み合わせ",
     "question": "10<ruby>円玉<rt>えんだま</rt></ruby>3<ruby>枚<rt>まい</rt></ruby>、50<ruby>円玉<rt>えんだま</rt></ruby>2<ruby>枚<rt>まい</rt></ruby>、100<ruby>円玉<rt>えんだま</rt></ruby>1<ruby>枚<rt>まい</rt></ruby>があります。この<ruby>中<rt>なか</rt></ruby>から<ruby>何枚<rt>なんまい</rt></ruby>か<ruby>選<rt>えら</rt></ruby>んで「ちょうど130<ruby>円<rt>えん</rt></ruby>」を<ruby>作<rt>つく</rt></ruby>る<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
     "answer": "2通り",
-    "explanation": "①100円+10円×3=130円 ②50円×2+10円×3=150円（×）③50円+10円×3=80円（×）④100円+50円=150円（×）→ 正解は100+30と50+50+30の…実際は①100+10×3=130 ②50×2+10×3=180（×）。答えは1通り…いや、①100+30=130 ✓ ②50+50+30=130 ✓ で2通り",
+    "explanation": "①100円+10円×3=130円 ✓ ②50円×2+10円×3=130円 ✓ で2通り",
     "hints": [
       "100円玉を使う場合と使わない場合に分けよう",
       "100円を使うなら、残り30円を10円で作れる？",
@@ -223,5 +223,533 @@
       "切る人は均等に切らないと自分が損するよね"
     ],
     "alternativeSolutions": ["「移動ナイフ法」：ナイフをゆっくり動かし、1/3だと思った人が「ストップ」と言って取る方法もある"]
+  },
+
+  {
+    "id": 16,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "フィボナッチの仲間",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の<ruby>数列<rt>すうれつ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n1, 1, 2, 3, 5, 8, 13, □, ...",
+    "answer": "21",
+    "explanation": "前の2つの数を足すと次の数になる規則。8 + 13 = 21",
+    "hints": [
+      "となり合う2つの数に注目しよう",
+      "1+1=2, 1+2=3, 2+3=5 ... 規則が見えるかな？",
+      "前の2つを足すと次の数になるよ。8+13=？"
+    ],
+    "alternativeSolutions": ["フィボナッチ数列と呼ばれる有名な数列"]
+  },
+  {
+    "id": 17,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "魔方陣を完成させよう",
+    "question": "3×3の<ruby>魔方陣<rt>まほうじん</rt></ruby>を<ruby>完成<rt>かんせい</rt></ruby>させなさい。<ruby>縦<rt>たて</rt></ruby>・<ruby>横<rt>よこ</rt></ruby>・<ruby>斜<rt>なな</rt></ruby>めの<ruby>合計<rt>ごうけい</rt></ruby>がすべて<ruby>同<rt>おな</rt></ruby>じになるように、1〜9の数を1つずつ<ruby>入<rt>い</rt></ruby>れます。\n\n□ □ □\n□ 5 □\n□ □ □\n\n<ruby>真<rt>ま</rt></ruby>ん<ruby>中<rt>なか</rt></ruby>が5のとき、<ruby>各列<rt>かくれつ</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>はいくつ？",
+    "answer": "15",
+    "explanation": "1〜9の合計=45。3列で等分するので 45÷3=15。各縦・横・斜めの合計は15。",
+    "hints": [
+      "1から9までの合計を求めてみよう",
+      "3つの行の合計が全部同じなら、全体の合計÷3が1行の合計",
+      "45÷3=15 が各列の合計だよ"
+    ],
+    "alternativeSolutions": ["真ん中は必ず全体の平均値(=5)になることも覚えておこう"]
+  },
+  {
+    "id": 18,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "約数の個数チャンピオン",
+    "question": "1から50までの<ruby>整数<rt>せいすう</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、<ruby>約数<rt>やくすう</rt></ruby>の<ruby>個数<rt>こすう</rt></ruby>が<ruby>一番<rt>いちばん</rt></ruby><ruby>多<rt>おお</rt></ruby>い数はどれですか？",
+    "answer": "48（約数10個）",
+    "explanation": "48=2⁴×3 なので約数は(4+1)×(1+1)=10個。約数：1,2,3,4,6,8,12,16,24,48",
+    "hints": [
+      "約数が多い数は、いろいろな数で割り切れる数だよ",
+      "2や3をたくさんかけ合わせた数を探そう",
+      "36(9個)、48(10個)を比べてみよう"
+    ],
+    "alternativeSolutions": ["36の約数は9個(1,2,3,4,6,9,12,18,36)で2位"]
+  },
+  {
+    "id": 19,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "連続する整数の和",
+    "question": "<ruby>連続<rt>れんぞく</rt></ruby>する<ruby>整数<rt>せいすう</rt></ruby>の<ruby>和<rt>わ</rt></ruby>で100を<ruby>表<rt>あらわ</rt></ruby>す<ruby>方法<rt>ほうほう</rt></ruby>をすべて<ruby>見<rt>み</rt></ruby>つけなさい。（<ruby>例<rt>れい</rt></ruby>：1+2+3+...のように<ruby>連続<rt>れんぞく</rt></ruby>する数の<ruby>足<rt>た</rt></ruby>し<ruby>算<rt>ざん</rt></ruby>）",
+    "answer": "18+19+20+21+22=100、9+10+11+12+13+14+15+16=100",
+    "explanation": "連続n個の整数の和=n×(中央の値)。100=5×20（中央20、18〜22）、100=8×12.5（中央12.5、9〜16）。",
+    "hints": [
+      "連続する数の和は「個数×真ん中の数」で求められるよ",
+      "100を「個数×真ん中」の形に分解しよう",
+      "個数が奇数なら真ん中は整数。個数が偶数なら真ん中は○.5になるよ"
+    ],
+    "alternativeSolutions": ["個数を2,3,4,...と変えて全部調べる方法もある"]
+  },
+  {
+    "id": 20,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "各位の数字の和",
+    "question": "1から999までの<ruby>全<rt>すべ</rt></ruby>ての<ruby>整数<rt>せいすう</rt></ruby>の、<ruby>各位<rt>かくくらい</rt></ruby>の<ruby>数字<rt>すうじ</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>足<rt>た</rt></ruby>すといくつになりますか？\n（<ruby>例<rt>れい</rt></ruby>：123なら1+2+3=6を<ruby>足<rt>た</rt></ruby>す）",
+    "answer": "13500",
+    "explanation": "000〜999の各位について、0〜9が各100回ずつ現れる。各位の合計=(0+1+...+9)×100=4500。3桁分で4500×3=13500。",
+    "hints": [
+      "001〜999を全部3桁で考えよう（1→001）",
+      "百の位に0が出る回数、1が出る回数...を数えてみよう",
+      "各位で0〜9がそれぞれ100回ずつ現れるよ"
+    ],
+    "alternativeSolutions": ["1〜9(1桁)、10〜99(2桁)、100〜999(3桁)に分けて計算する方法もある"]
+  },
+  {
+    "id": 21,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "正方形の対角線",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>が6cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>対角線<rt>たいかくせん</rt></ruby>で<ruby>区切<rt>くぎ</rt></ruby>られた<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>はいくつですか？",
+    "answer": "18cm²",
+    "explanation": "正方形の面積=6×6=36cm²。対角線1本で2等分なので36÷2=18cm²",
+    "hints": [
+      "正方形の面積を先に求めよう",
+      "対角線1本で正方形はいくつに分かれる？",
+      "2つの同じ三角形に分かれるよ"
+    ],
+    "alternativeSolutions": ["三角形の面積=底辺×高さ÷2=6×6÷2=18cm²としても求められる"]
+  },
+  {
+    "id": 22,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "円の中の正方形",
+    "question": "<ruby>半径<rt>はんけい</rt></ruby>5cmの<ruby>円<rt>えん</rt></ruby>にぴったり<ruby>内接<rt>ないせつ</rt></ruby>する<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。（<ruby>正方形<rt>せいほうけい</rt></ruby>の4つの<ruby>頂点<rt>ちょうてん</rt></ruby>が<ruby>円周<rt>えんしゅう</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>にある）",
+    "answer": "50cm²",
+    "explanation": "正方形の対角線=円の直径=10cm。正方形の面積=対角線×対角線÷2=10×10÷2=50cm²",
+    "hints": [
+      "正方形の対角線と円の直径の関係を考えよう",
+      "正方形の対角線の長さは円の直径と同じだよ",
+      "正方形の面積=対角線×対角線÷2 で求められる"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 23,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "展開図の組み立て",
+    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>6つからなる<ruby>展開図<rt>てんかいず</rt></ruby>を<ruby>組<rt>く</rt></ruby>み<ruby>立<rt>た</rt></ruby>てて<ruby>立方体<rt>りっぽうたい</rt></ruby>を<ruby>作<rt>つく</rt></ruby>るとき、<ruby>展開図<rt>てんかいず</rt></ruby>として<ruby>正<rt>ただ</rt></ruby>しいものは<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何種類<rt>なんしゅるい</rt></ruby>ありますか？",
+    "answer": "11種類",
+    "explanation": "立方体の展開図は全部で11種類ある。「1-4-1型」「2-3-1型」「2-2-2型」「3-2-1型」「3-3型」などに分類できる。",
+    "hints": [
+      "6つの正方形を一列に並べたものは展開図になる？",
+      "T字型、十字型、L字型など、いろいろな形を試そう",
+      "4つが一列に並んで、残り2つがどこにつくかを考えると整理しやすい"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 24,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "重なった円の面積",
+    "question": "<ruby>半径<rt>はんけい</rt></ruby>3cmの<ruby>円<rt>えん</rt></ruby>が2つあり、それぞれの<ruby>中心<rt>ちゅうしん</rt></ruby>が<ruby>相手<rt>あいて</rt></ruby>の<ruby>円周<rt>えんしゅう</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>にあります。2つの<ruby>円<rt>えん</rt></ruby>が<ruby>重<rt>かさ</rt></ruby>なる<ruby>部分<rt>ぶぶん</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。（<ruby>円周率<rt>えんしゅうりつ</rt></ruby>=3.14）",
+    "answer": "約9.42 - 7.79 ≈ 1.63cm²（正確には 6π - 9√3/2 ≈ 11.05cm²）",
+    "explanation": "中心間距離=半径=3cm。重なり部分は2つのレンズ型。各円で中心角120°の扇形から正三角形を引いた部分×2。扇形面積=π×9×(120/360)=3π。正三角形面積=9√3/4。レンズ=(3π - 9√3/4)×2 ≈ 11.05cm²",
+    "hints": [
+      "2つの円の中心と交点で正三角形ができるよ",
+      "中心角が120°の扇形を考えよう",
+      "重なり＝（扇形−三角形）×2 で求められる"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 25,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "折り返しの角度",
+    "question": "<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>紙<rt>かみ</rt></ruby>（<ruby>縦<rt>たて</rt></ruby>8cm、<ruby>横<rt>よこ</rt></ruby>12cm）の<ruby>右下<rt>みぎした</rt></ruby>の<ruby>角<rt>かど</rt></ruby>を、<ruby>左<rt>ひだり</rt></ruby>の<ruby>辺<rt>へん</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>から3cmの<ruby>点<rt>てん</rt></ruby>に<ruby>合<rt>あ</rt></ruby>わせて<ruby>折<rt>お</rt></ruby>ります。<ruby>折<rt>お</rt></ruby>り<ruby>目<rt>め</rt></ruby>の<ruby>長<rt>なが</rt></ruby>さを<ruby>求<rt>もと</rt></ruby>めなさい。",
+    "answer": "15cm",
+    "explanation": "折り返しの性質から、折り目の両端の位置を求め、三平方の定理で長さを計算する。右下角(12,0)が左辺上の点(0,5)に移る折り返しの折り目は、この2点の垂直二等分線と長方形の辺の交点で決まる。",
+    "hints": [
+      "折り返すと元の点と移った点は折り目から等距離",
+      "折り目は2点の垂直二等分線上にある",
+      "座標を使って計算してみよう"
+    ],
+    "alternativeSolutions": []
+  },
+
+  {
+    "id": 26,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "帽子の色当て",
+    "question": "A、B、Cの3<ruby>人<rt>にん</rt></ruby>が<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>んでいます。<ruby>赤<rt>あか</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>2つと<ruby>白<rt>しろ</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>1つがあり、それぞれ1つずつかぶっています。Cは<ruby>前<rt>まえ</rt></ruby>の2<ruby>人<rt>り</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>が<ruby>見<rt>み</rt></ruby>え、BはAの<ruby>帽子<rt>ぼうし</rt></ruby>だけ<ruby>見<rt>み</rt></ruby>えます。Aは<ruby>誰<rt>だれ</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>も<ruby>見<rt>み</rt></ruby>えません。\n\nCが「わからない」と<ruby>言<rt>い</rt></ruby>い、Bも「わからない」と<ruby>言<rt>い</rt></ruby>いました。するとAが「わかった！」と<ruby>言<rt>い</rt></ruby>いました。Aの<ruby>帽子<rt>ぼうし</rt></ruby>は<ruby>何色<rt>なにいろ</rt></ruby>？",
+    "answer": "赤",
+    "explanation": "Cがわからない→AとBが両方白ではない。Bがわからない→Aが白ではない（Aが白ならBは自分が赤とわかるはず）。よってAは赤。",
+    "hints": [
+      "Cが「わからない」ということは、AとBの帽子がどんな組み合わせ？",
+      "Cがわからない＝AとBが両方白ではない。これをBも知っている",
+      "Bがわからない＝Aは白ではない。Aもこれに気づける"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 27,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "カレンダーの秘密",
+    "question": "カレンダーで<ruby>縦<rt>たて</rt></ruby>3つ、<ruby>横<rt>よこ</rt></ruby>3つの9つの数を<ruby>四角<rt>しかく</rt></ruby>く<ruby>囲<rt>かこ</rt></ruby>みます。9つの数の<ruby>合計<rt>ごうけい</rt></ruby>が126になるとき、<ruby>真<rt>ま</rt></ruby>ん<ruby>中<rt>なか</rt></ruby>の数はいくつですか？",
+    "answer": "14",
+    "explanation": "カレンダーの3×3の枠で、真ん中の数をnとすると、9つの数の合計=9n。126÷9=14。",
+    "hints": [
+      "カレンダーで横に並ぶ数の差は1、縦に並ぶ数の差は7だよ",
+      "真ん中の数をnとすると、周りの8つの数はnとの差で表せる",
+      "9つの数の合計は真ん中の数の9倍になるよ"
+    ],
+    "alternativeSolutions": ["具体的に書き出す：n-8, n-7, n-6, n-1, n, n+1, n+6, n+7, n+8。合計=9n"]
+  },
+  {
+    "id": 28,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "鳩の巣原理",
+    "question": "<ruby>引<rt>ひ</rt></ruby>き<ruby>出<rt>だ</rt></ruby>しの<ruby>中<rt>なか</rt></ruby>に<ruby>赤<rt>あか</rt></ruby>い<ruby>靴下<rt>くつした</rt></ruby>が5<ruby>足<rt>そく</rt></ruby>、<ruby>青<rt>あお</rt></ruby>い<ruby>靴下<rt>くつした</rt></ruby>が4<ruby>足<rt>そく</rt></ruby>、<ruby>黄色<rt>きいろ</rt></ruby>い<ruby>靴下<rt>くつした</rt></ruby>が3<ruby>足<rt>そく</rt></ruby>あります。<ruby>暗<rt>くら</rt></ruby>い<ruby>部屋<rt>へや</rt></ruby>で<ruby>靴下<rt>くつした</rt></ruby>を<ruby>取<rt>と</rt></ruby>り<ruby>出<rt>だ</rt></ruby>すとき、<ruby>同<rt>おな</rt></ruby>じ<ruby>色<rt>いろ</rt></ruby>の<ruby>靴下<rt>くつした</rt></ruby>が2<ruby>足<rt>そく</rt></ruby><ruby>揃<rt>そろ</rt></ruby>うことを<ruby>確実<rt>かくじつ</rt></ruby>にするには、<ruby>最低<rt>さいてい</rt></ruby><ruby>何足<rt>なんぞく</rt></ruby><ruby>取<rt>と</rt></ruby>り<ruby>出<rt>だ</rt></ruby>せばよいですか？",
+    "answer": "4足",
+    "explanation": "最悪の場合、最初の3足が全部違う色（赤・青・黄が1足ずつ）。4足目は必ずどれかの色と同じになる。",
+    "hints": [
+      "一番運が悪い場合を考えよう",
+      "3色あるから、最悪3足取っても全部バラバラかもしれない",
+      "4足目は必ず3色のどれかと同じ色になるよ（鳩の巣原理）"
+    ],
+    "alternativeSolutions": ["「色の種類+1」足取れば必ず同じ色が2足揃う"]
+  },
+  {
+    "id": 29,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "トーナメントの試合数",
+    "question": "32<ruby>人<rt>にん</rt></ruby>が<ruby>参加<rt>さんか</rt></ruby>するトーナメント<ruby>戦<rt>せん</rt></ruby>（<ruby>負<rt>ま</rt></ruby>けたら<ruby>終<rt>お</rt></ruby>わり）で、<ruby>優勝者<rt>ゆうしょうしゃ</rt></ruby>を<ruby>決<rt>き</rt></ruby>めるまでに<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何試合<rt>なんしあい</rt></ruby><ruby>必要<rt>ひつよう</rt></ruby>ですか？<ruby>理由<rt>りゆう</rt></ruby>も<ruby>説明<rt>せつめい</rt></ruby>してください。",
+    "answer": "31試合",
+    "explanation": "1試合で必ず1人脱落する。32人から1人の優勝者を決めるには31人が脱落する必要がある。よって31試合。",
+    "hints": [
+      "1試合で何人が負ける（脱落する）？",
+      "優勝者以外の全員が1回ずつ負ける必要がある",
+      "脱落する人数＝試合数 だよ"
+    ],
+    "alternativeSolutions": ["各ラウンドの試合数を足す：16+8+4+2+1=31"]
+  },
+  {
+    "id": 30,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "論理パズル：誰が何を飼っている？",
+    "question": "A、B、Cの3<ruby>人<rt>にん</rt></ruby>がそれぞれ<ruby>犬<rt>いぬ</rt></ruby>・<ruby>猫<rt>ねこ</rt></ruby>・<ruby>魚<rt>さかな</rt></ruby>のどれかを<ruby>飼<rt>か</rt></ruby>っています。\n① Aは「<ruby>私<rt>わたし</rt></ruby>は<ruby>犬<rt>いぬ</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っていません」と<ruby>言<rt>い</rt></ruby>った\n② Bは「<ruby>私<rt>わたし</rt></ruby>は<ruby>猫<rt>ねこ</rt></ruby>か<ruby>魚<rt>さかな</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っています」と<ruby>言<rt>い</rt></ruby>った\n③ 3<ruby>人<rt>にん</rt></ruby>のうち1<ruby>人<rt>にん</rt></ruby>だけがうそをついている\n\n<ruby>全<rt>すべ</rt></ruby>ての<ruby>場合<rt>ばあい</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べて、<ruby>誰<rt>だれ</rt></ruby>が<ruby>何<rt>なに</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っているか<ruby>答<rt>こた</rt></ruby>えなさい。",
+    "answer": "Bがうそつきの場合：A猫かA魚、B犬、C残り",
+    "explanation": "Aがうそつき→Aは犬。Bは本当→猫か魚。整合する。Bがうそつき→Bは犬。Aは本当→犬以外。整合する。どちらの場合もCの発言がないので、2通りの解がある。",
+    "hints": [
+      "うそつきが誰かを1人ずつ仮定してみよう",
+      "Aがうそつきなら、Aの発言の逆が本当→Aは犬を飼っている",
+      "Bがうそつきなら、Bの発言の逆→Bは犬を飼っている"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 31,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "握手の回数",
+    "question": "5<ruby>人<rt>にん</rt></ruby>が<ruby>全員<rt>ぜんいん</rt></ruby>と1<ruby>回<rt>かい</rt></ruby>ずつ<ruby>握手<rt>あくしゅ</rt></ruby>をします。<ruby>握手<rt>あくしゅ</rt></ruby>は<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何回<rt>なんかい</rt></ruby>？",
+    "answer": "10回",
+    "explanation": "5人から2人を選ぶ組み合わせ。5×4÷2=10回",
+    "hints": [
+      "1人目は残り4人と握手する。2人目は残り3人と...",
+      "4+3+2+1 を計算しよう",
+      "同じ握手を2回数えないように注意！ 5×4÷2=10"
+    ],
+    "alternativeSolutions": ["5人をA〜Eとして全部書き出す：AB,AC,AD,AE,BC,BD,BE,CD,CE,DE=10組"]
+  },
+  {
+    "id": 32,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "道順の数",
+    "question": "<ruby>碁盤<rt>ごばん</rt></ruby>の<ruby>目<rt>め</rt></ruby>のような<ruby>道<rt>みち</rt></ruby>があります。<ruby>左下<rt>ひだりした</rt></ruby>のA<ruby>地点<rt>ちてん</rt></ruby>から<ruby>右上<rt>みぎうえ</rt></ruby>のB<ruby>地点<rt>ちてん</rt></ruby>まで、<ruby>右<rt>みぎ</rt></ruby>か<ruby>上<rt>うえ</rt></ruby>にだけ<ruby>進<rt>すす</rt></ruby>みます。<ruby>右<rt>みぎ</rt></ruby>に3<ruby>回<rt>かい</rt></ruby>、<ruby>上<rt>うえ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby><ruby>進<rt>すす</rt></ruby>むとき、<ruby>道順<rt>みちじゅん</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "10通り",
+    "explanation": "右3回と上2回の合計5回の動きから、上に進む2回をどこに入れるか。₅C₂=5×4÷2=10通り",
+    "hints": [
+      "全部で5歩進むうち、「上」を2回選ぶ問題だよ",
+      "5歩のうちどの2歩を「上」にするか？",
+      "5×4÷(2×1)=10通り"
+    ],
+    "alternativeSolutions": ["各交差点に「そこへの行き方の数」を書き込んでいく方法もある"]
+  },
+  {
+    "id": 33,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "色の塗り分け",
+    "question": "<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>んだ4つの<ruby>部屋<rt>へや</rt></ruby>を、<ruby>赤<rt>あか</rt></ruby>・<ruby>青<rt>あお</rt></ruby>・<ruby>黄<rt>き</rt></ruby>の3<ruby>色<rt>しょく</rt></ruby>で<ruby>塗<rt>ぬ</rt></ruby>ります。<ruby>隣<rt>となり</rt></ruby>り<ruby>合<rt>あ</rt></ruby>う<ruby>部屋<rt>へや</rt></ruby>は<ruby>違<rt>ちが</rt></ruby>う<ruby>色<rt>いろ</rt></ruby>にするとき、<ruby>塗<rt>ぬ</rt></ruby>り<ruby>方<rt>かた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "24通り",
+    "explanation": "1番目：3通り。2番目：隣と違う色で2通り。3番目：2通り。4番目：2通り。3×2×2×2=24通り",
+    "hints": [
+      "1番目の部屋は何色でも良いから3通り",
+      "2番目は1番目と違う色だから2通り",
+      "同じように3番目、4番目も隣と違えばOK"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 34,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "チーム分け",
+    "question": "6<ruby>人<rt>にん</rt></ruby>を3<ruby>人<rt>にん</rt></ruby>ずつ2つのチームに<ruby>分<rt>わ</rt></ruby>けます。<ruby>分<rt>わ</rt></ruby>け<ruby>方<rt>かた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？（チームに<ruby>名前<rt>なまえ</rt></ruby>の<ruby>区別<rt>くべつ</rt></ruby>はない）",
+    "answer": "10通り",
+    "explanation": "6人から3人を選ぶ＝₆C₃=20通り。ただしチームA・Bの区別がないので÷2=10通り",
+    "hints": [
+      "まず6人から3人を選ぶ方法を考えよう",
+      "₆C₃ = 6×5×4÷(3×2×1) = 20通り",
+      "チームに名前がないから、同じ分け方を2回数えている。20÷2=10"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 35,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "階段の上り方",
+    "question": "<ruby>階段<rt>かいだん</rt></ruby>を1<ruby>段<rt>だん</rt></ruby>か2<ruby>段<rt>だん</rt></ruby>ずつ<ruby>上<rt>のぼ</rt></ruby>ります。10<ruby>段<rt>だん</rt></ruby>の<ruby>階段<rt>かいだん</rt></ruby>を<ruby>上<rt>のぼ</rt></ruby>る<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りありますか？",
+    "answer": "89通り",
+    "explanation": "n段目への上り方=（n-1段目への上り方）+（n-2段目への上り方）。1段:1, 2段:2, 3段:3, 4段:5, 5段:8, 6段:13, 7段:21, 8段:34, 9段:55, 10段:89",
+    "hints": [
+      "1段の上り方は1通り、2段は2通り。3段は？",
+      "n段目に来るには「n-1段目から1段上る」か「n-2段目から2段上る」",
+      "前の2つの数を足していくとフィボナッチ数列になるよ"
+    ],
+    "alternativeSolutions": ["1段を何回使うかで場合分けする方法もある（2段をk回使うとき、残り(10-2k)段を1段ずつ）"]
+  },
+  {
+    "id": 36,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "じゃんけんの場合の数",
+    "question": "4<ruby>人<rt>にん</rt></ruby>でじゃんけんを1<ruby>回<rt>かい</rt></ruby>します。「あいこ」になる<ruby>場合<rt>ばあい</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りありますか？（<ruby>各自<rt>かくじ</rt></ruby>グー・チョキ・パーのどれかを<ruby>出<rt>だ</rt></ruby>す）",
+    "answer": "39通り",
+    "explanation": "全部の出し方は3⁴=81通り。勝負がつくのは2種類の手だけが出る場合。例えばグーとチョキだけ（全員同じを除く）=2⁴-2=14通り。3種類の勝負で14×3=42通り。あいこ=81-42=39通り。",
+    "hints": [
+      "全部の出し方は3×3×3×3=81通り",
+      "「勝負がつく」場合を数えて、全体から引こう",
+      "勝負がつく＝ちょうど2種類の手が出て、勝ち負けがある場合"
+    ],
+    "alternativeSolutions": ["あいこを直接数える：全員同じ(3通り)+3種類全部出る(36通り)=39通り"]
+  },
+
+  {
+    "id": 37,
+    "genre": "word_problem",
+    "difficulty": 1,
+    "title": "電車のすれ違い",
+    "question": "<ruby>長<rt>なが</rt></ruby>さ100mの<ruby>電車<rt>でんしゃ</rt></ruby>Aが<ruby>時速<rt>じそく</rt></ruby>60kmで<ruby>走<rt>はし</rt></ruby>っています。<ruby>反対<rt>はんたい</rt></ruby><ruby>方向<rt>ほうこう</rt></ruby>から<ruby>長<rt>なが</rt></ruby>さ150mの<ruby>電車<rt>でんしゃ</rt></ruby>Bが<ruby>時速<rt>じそく</rt></ruby>90kmで<ruby>来<rt>き</rt></ruby>ます。すれ<ruby>違<rt>ちが</rt></ruby>い<ruby>始<rt>はじ</rt></ruby>めてから<ruby>終<rt>お</rt></ruby>わるまで<ruby>何秒<rt>なんびょう</rt></ruby>かかりますか？",
+    "answer": "6秒",
+    "explanation": "すれ違う距離=100+150=250m。相対速度=60+90=150km/h。秒速に変換：150×1000÷3600=250/6 m/秒。時間=250÷(250/6)=6秒",
+    "hints": [
+      "すれ違うのに必要な距離は2つの電車の長さの合計だよ",
+      "向かい合って走るとき、速さは足し算する",
+      "時速150kmを秒速に直して、250mを割ろう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 38,
+    "genre": "word_problem",
+    "difficulty": 1,
+    "title": "割合の問題",
+    "question": "ある<ruby>学校<rt>がっこう</rt></ruby>の5<ruby>年生<rt>ねんせい</rt></ruby>は120<ruby>人<rt>にん</rt></ruby>です。そのうち40%が<ruby>男子<rt>だんし</rt></ruby>です。<ruby>男子<rt>だんし</rt></ruby>のうち75%がサッカーが<ruby>好<rt>す</rt></ruby>きです。サッカーが<ruby>好<rt>す</rt></ruby>きな<ruby>男子<rt>だんし</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>？",
+    "answer": "36人",
+    "explanation": "男子=120×0.4=48人。サッカー好きな男子=48×0.75=36人",
+    "hints": [
+      "まず男子の人数を求めよう",
+      "120人の40%は？",
+      "48人の75%を計算しよう"
+    ],
+    "alternativeSolutions": ["120×0.4×0.75=36 と一気に計算してもOK"]
+  },
+  {
+    "id": 39,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "仕事算",
+    "question": "ある<ruby>仕事<rt>しごと</rt></ruby>をAさん1<ruby>人<rt>り</rt></ruby>ですると12<ruby>日<rt>にち</rt></ruby>、Bさん1<ruby>人<rt>り</rt></ruby>ですると18<ruby>日<rt>にち</rt></ruby>かかります。2<ruby>人<rt>り</rt></ruby>で<ruby>一緒<rt>いっしょ</rt></ruby>にすると<ruby>何日<rt>なんにち</rt></ruby>で<ruby>終<rt>お</rt></ruby>わりますか？",
+    "answer": "7.2日（7日と5分の1日）",
+    "explanation": "Aの1日の仕事量=1/12、Bの1日の仕事量=1/18。合わせて1/12+1/18=3/36+2/36=5/36。全体÷(5/36)=36/5=7.2日",
+    "hints": [
+      "全体の仕事量を「1」としよう",
+      "Aは1日に全体の何分の1を終わらせる？",
+      "2人の1日の仕事量を足して、全体を割ろう"
+    ],
+    "alternativeSolutions": ["全体を36（12と18の最小公倍数）とすると、A:3/日、B:2/日。合計5/日。36÷5=7.2日"]
+  },
+  {
+    "id": 40,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "濃度の問題",
+    "question": "10%の<ruby>食塩水<rt>しょくえんすい</rt></ruby>が200gあります。ここに<ruby>水<rt>みず</rt></ruby>を<ruby>加<rt>くわ</rt></ruby>えて6%の<ruby>食塩水<rt>しょくえんすい</rt></ruby>にしたい。<ruby>水<rt>みず</rt></ruby>を<ruby>何<rt>なん</rt></ruby>g<ruby>加<rt>くわ</rt></ruby>えればよいですか？",
+    "answer": "約133.3g（正確には400/3 g）",
+    "explanation": "食塩の量=200×0.1=20g（変わらない）。6%にするには：20÷(200+x)=0.06。200+x=333.3...。x≒133.3g",
+    "hints": [
+      "水を加えても食塩の量は変わらないよ",
+      "食塩は何g？",
+      "食塩20gが全体の6%になるように：20÷0.06=全体の重さ"
+    ],
+    "alternativeSolutions": ["天秤法：10%と0%を混ぜて6%にする。比率は(6-0):(10-6)=3:2。200gに対して水は200×2/3≒133.3g"]
+  },
+  {
+    "id": 41,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "年齢算",
+    "question": "<ruby>現在<rt>げんざい</rt></ruby>、お<ruby>父<rt>とう</rt></ruby>さんは38<ruby>歳<rt>さい</rt></ruby>、<ruby>子<rt>こ</rt></ruby>どもは10<ruby>歳<rt>さい</rt></ruby>です。お<ruby>父<rt>とう</rt></ruby>さんの<ruby>年齢<rt>ねんれい</rt></ruby>が<ruby>子<rt>こ</rt></ruby>どもの<ruby>年齢<rt>ねんれい</rt></ruby>のちょうど3<ruby>倍<rt>ばい</rt></ruby>になるのは<ruby>何年後<rt>なんねんご</rt></ruby>？",
+    "answer": "4年後",
+    "explanation": "x年後：(38+x)=3×(10+x)。38+x=30+3x。8=2x。x=4。確認：42歳と14歳→42÷14=3 ✓",
+    "hints": [
+      "x年後の2人の年齢を式で表そう",
+      "お父さん：38+x歳、子ども：10+x歳",
+      "38+x = 3×(10+x) を解こう"
+    ],
+    "alternativeSolutions": ["年齢の差は常に28歳。3倍のとき差=子どもの2倍。28÷2=14歳のとき。14-10=4年後"]
+  },
+  {
+    "id": 42,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "旅人算：池の周り",
+    "question": "1<ruby>周<rt>しゅう</rt></ruby>600mの<ruby>池<rt>いけ</rt></ruby>のまわりを、AとBが<ruby>同<rt>おな</rt></ruby>じ<ruby>地点<rt>ちてん</rt></ruby>から<ruby>同時<rt>どうじ</rt></ruby>に<ruby>出発<rt>しゅっぱつ</rt></ruby>します。<ruby>同<rt>おな</rt></ruby>じ<ruby>方向<rt>ほうこう</rt></ruby>に<ruby>歩<rt>ある</rt></ruby>くとAは<ruby>毎分<rt>まいふん</rt></ruby>80m、Bは<ruby>毎分<rt>まいふん</rt></ruby>50mです。Aが<ruby>初<rt>はじ</rt></ruby>めてBに<ruby>追<rt>お</rt></ruby>いつくのは<ruby>何分後<rt>なんぷんご</rt></ruby>？また、<ruby>反対方向<rt>はんたいほうこう</rt></ruby>に<ruby>歩<rt>ある</rt></ruby>くと<ruby>初<rt>はじ</rt></ruby>めて<ruby>出会<rt>であ</rt></ruby>うのは<ruby>何分後<rt>なんぷんご</rt></ruby>？",
+    "answer": "同じ方向：20分後、反対方向：約4.6分後（正確には60/13分後）",
+    "explanation": "同方向：追いつく＝1周分の差。600÷(80-50)=600÷30=20分。反対方向：出会う＝合わせて1周。600÷(80+50)=600÷130≒4.6分",
+    "hints": [
+      "同じ方向のとき、AがBに追いつく＝Aが1周分多く歩く",
+      "速さの差は80-50=30m/分。600m÷30=？",
+      "反対方向のとき、2人合わせて1周分歩けば出会う"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 43,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "ニュートン算",
+    "question": "<ruby>牧場<rt>ぼくじょう</rt></ruby>に<ruby>草<rt>くさ</rt></ruby>が<ruby>生<rt>は</rt></ruby>えています。<ruby>牛<rt>うし</rt></ruby>5<ruby>頭<rt>とう</rt></ruby>なら20<ruby>日<rt>にち</rt></ruby>で<ruby>食<rt>た</rt></ruby>べ<ruby>尽<rt>つ</rt></ruby>くし、<ruby>牛<rt>うし</rt></ruby>8<ruby>頭<rt>とう</rt></ruby>なら10<ruby>日<rt>にち</rt></ruby>で<ruby>食<rt>た</rt></ruby>べ<ruby>尽<rt>つ</rt></ruby>くします。<ruby>草<rt>くさ</rt></ruby>は<ruby>毎日<rt>まいにち</rt></ruby><ruby>同<rt>おな</rt></ruby>じ<ruby>量<rt>りょう</rt></ruby>だけ<ruby>生<rt>は</rt></ruby>えてきます。<ruby>牛<rt>うし</rt></ruby>10<ruby>頭<rt>とう</rt></ruby>なら<ruby>何日<rt>なんにち</rt></ruby>で<ruby>食<rt>た</rt></ruby>べ<ruby>尽<rt>つ</rt></ruby>くしますか？",
+    "answer": "7.5日",
+    "explanation": "牛1頭が1日に食べる量を1とする。5頭20日で食べた総量=100。8頭10日で食べた総量=80。最初の草+生えた草=食べた量なので、S+20r=100、S+10r=80。10r=20よりr=2、S=60。10頭でd日：60+2d=10d、8d=60、d=7.5日。",
+    "hints": [
+      "草は毎日生えてくるから「最初の草＋生えた草＝食べた草」",
+      "牛1頭が1日に食べる量を1として式を立てよう",
+      "2つの条件から連立方程式を作って、最初の草の量と毎日生える量を求めよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 44,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "時計の角度",
+    "question": "3<ruby>時<rt>じ</rt></ruby>20<ruby>分<rt>ぷん</rt></ruby>のとき、<ruby>時計<rt>とけい</rt></ruby>の<ruby>長針<rt>ちょうしん</rt></ruby>と<ruby>短針<rt>たんしん</rt></ruby>が<ruby>作<rt>つく</rt></ruby>る<ruby>角度<rt>かくど</rt></ruby>（<ruby>小<rt>ちい</rt></ruby>さい<ruby>方<rt>ほう</rt></ruby>）は<ruby>何度<rt>なんど</rt></ruby>ですか？",
+    "answer": "20度",
+    "explanation": "長針：20分→12時から120度の位置。短針：3時=90度、さらに20分で10度進む→100度。角度の差=120-100=20度。",
+    "hints": [
+      "長針は1分で6度動く。20分で何度？",
+      "短針は1時間で30度、1分で0.5度動くよ",
+      "12時の位置を0度として、それぞれの角度を求めよう"
+    ],
+    "alternativeSolutions": ["公式：|30H - 5.5M| = |30×3 - 5.5×20| = |90-110| = 20度"]
+  },
+  {
+    "id": 45,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "タイルの枚数",
+    "question": "<ruby>縦<rt>たて</rt></ruby>12cm、<ruby>横<rt>よこ</rt></ruby>18cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>を、<ruby>同<rt>おな</rt></ruby>じ<ruby>大<rt>おお</rt></ruby>きさの<ruby>正方形<rt>せいほうけい</rt></ruby>のタイルで<ruby>隙間<rt>すきま</rt></ruby>なく<ruby>敷<rt>し</rt></ruby>き<ruby>詰<rt>つ</rt></ruby>めます。できるだけ<ruby>大<rt>おお</rt></ruby>きなタイルを<ruby>使<rt>つか</rt></ruby>うとき、タイルは<ruby>何枚<rt>なんまい</rt></ruby><ruby>必要<rt>ひつよう</rt></ruby>ですか？",
+    "answer": "6枚",
+    "explanation": "最大の正方形の1辺=12と18の最大公約数=6cm。縦に12÷6=2枚、横に18÷6=3枚。合計2×3=6枚",
+    "hints": [
+      "正方形の1辺は、12と18の両方を割り切れる数だよ",
+      "できるだけ大きくするには最大公約数を使う",
+      "12と18の最大公約数は6。6cm角のタイルで何枚？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 46,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "曜日の計算",
+    "question": "<ruby>今日<rt>きょう</rt></ruby>が<ruby>水曜日<rt>すいようび</rt></ruby>のとき、100<ruby>日後<rt>にちご</rt></ruby>は<ruby>何曜日<rt>なんようび</rt></ruby>ですか？",
+    "answer": "金曜日",
+    "explanation": "100÷7=14あまり2。7日ごとに同じ曜日に戻るので、100日後は2日先の曜日。水曜→木曜→金曜。",
+    "hints": [
+      "1週間は7日。7日後は同じ曜日だよ",
+      "100を7で割ったあまりを求めよう",
+      "あまりが2だから、水曜日の2日後は？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 47,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "三角数",
+    "question": "ボウリングのピンのように、1<ruby>段目<rt>だんめ</rt></ruby>に1<ruby>個<rt>こ</rt></ruby>、2<ruby>段目<rt>だんめ</rt></ruby>に2<ruby>個<rt>こ</rt></ruby>、3<ruby>段目<rt>だんめ</rt></ruby>に3<ruby>個<rt>こ</rt></ruby>...と<ruby>並<rt>なら</rt></ruby>べていきます。10<ruby>段目<rt>だんめ</rt></ruby>まで<ruby>並<rt>なら</rt></ruby>べると、<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何個<rt>なんこ</rt></ruby>になりますか？",
+    "answer": "55個",
+    "explanation": "1+2+3+...+10 = 10×11÷2 = 55個",
+    "hints": [
+      "1+2+3+...+10 を計算しよう",
+      "1+10=11、2+9=11、3+8=11...ペアを作ると？",
+      "11が5ペアできるから 11×5=55"
+    ],
+    "alternativeSolutions": ["公式：n×(n+1)÷2 = 10×11÷2 = 55"]
+  },
+  {
+    "id": 48,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "ピザの切り分け",
+    "question": "<ruby>円形<rt>えんけい</rt></ruby>のピザに<ruby>直線<rt>ちょくせん</rt></ruby>で<ruby>切<rt>き</rt></ruby>り<ruby>込<rt>こ</rt></ruby>みを<ruby>入<rt>い</rt></ruby>れます。4<ruby>本<rt>ほん</rt></ruby>の<ruby>直線<rt>ちょくせん</rt></ruby>で<ruby>切<rt>き</rt></ruby>ったとき、ピースの<ruby>数<rt>かず</rt></ruby>を<ruby>最大<rt>さいだい</rt></ruby>にするには<ruby>何<rt>なん</rt></ruby>ピースにできますか？",
+    "answer": "11ピース",
+    "explanation": "n本の直線で最大ピース数=1+n(n+1)/2。4本のとき：1+4×5/2=1+10=11ピース。条件：どの2本も平行でなく、どの3本も1点で交わらない。",
+    "hints": [
+      "1本で最大2ピース、2本で最大4ピース、3本で最大7ピース...",
+      "n本目の直線は、既存のn-1本と交わって最大n個の新しいピースを作る",
+      "増える数は 1, 2, 3, 4 だよ。1+1+2+3+4=11"
+    ],
+    "alternativeSolutions": ["実際に図を描いて確かめる方法もある"]
+  },
+  {
+    "id": 49,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "嘘つき村と正直村",
+    "question": "<ruby>分<rt>わ</rt></ruby>かれ<ruby>道<rt>みち</rt></ruby>に<ruby>立<rt>た</rt></ruby>っている<ruby>人<rt>ひと</rt></ruby>がいます。この<ruby>人<rt>ひと</rt></ruby>は「<ruby>正直村<rt>しょうじきむら</rt></ruby>」（<ruby>必<rt>かなら</rt></ruby>ず<ruby>本当<rt>ほんとう</rt></ruby>を<ruby>言<rt>い</rt></ruby>う）か「うそつき<ruby>村<rt>むら</rt></ruby>」（<ruby>必<rt>かなら</rt></ruby>ずうそを<ruby>言<rt>い</rt></ruby>う）のどちらかの<ruby>住人<rt>じゅうにん</rt></ruby>です。1つだけ<ruby>質問<rt>しつもん</rt></ruby>して<ruby>正直村<rt>しょうじきむら</rt></ruby>への<ruby>道<rt>みち</rt></ruby>を<ruby>知<rt>し</rt></ruby>りたい。どんな<ruby>質問<rt>しつもん</rt></ruby>をすればよい？",
+    "answer": "「あなたの村はどちらの道ですか？」と聞き、指された方に進む",
+    "explanation": "正直村の人→本当のことを言う→正直村を指す。うそつき村の人→自分の村(うそつき村)を聞かれたらうそをつく→正直村を指す。どちらの場合も正直村を指す！",
+    "hints": [
+      "正直者に聞いても嘘つきに聞いても同じ答えになる質問を考えよう",
+      "「あなたの村」について聞くとどうなる？",
+      "正直者は本当の自分の村を指す。嘘つきは自分の村について嘘をつく→反対を指す"
+    ],
+    "alternativeSolutions": ["「もし私がもう1人の村の人に道を聞いたら、どちらを指しますか？」と聞いて、反対に進む方法もある"]
+  },
+  {
+    "id": 50,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "循環する余り",
+    "question": "2を<ruby>何回<rt>なんかい</rt></ruby>もかけていきます（2, 4, 8, 16, 32, ...）。2を10<ruby>回<rt>かい</rt></ruby>かけた数（2¹⁰=1024）を7で<ruby>割<rt>わ</rt></ruby>った<ruby>余<rt>あま</rt></ruby>りはいくつですか？",
+    "answer": "2",
+    "explanation": "2÷7→余り2、4÷7→余り4、8÷7→余り1、16÷7→余り2...余りは2,4,1の繰り返し（周期3）。10÷3=3あまり1。周期の1番目は2。",
+    "hints": [
+      "2, 4, 8, 16, 32, 64...を7で割った余りを順に書き出そう",
+      "余りが繰り返すパターンを見つけよう",
+      "2, 4, 1, 2, 4, 1, ... 周期3で繰り返す。10番目は？"
+    ],
+    "alternativeSolutions": ["直接計算：2¹⁰=1024。1024÷7=146あまり2"]
   }
 ]
