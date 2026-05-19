@@ -379,6 +379,33 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- チケット発行 -->
+<h2 onclick="toggleSection('ticketSection', this)"><span class="toggle">&#x25B6;</span> &#x1F3AB; チケット発行</h2>
+<div class="section-body" id="ticketSection">
+  <div class="card">
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:8px;">所有者</div>
+      <select id="ticketOwner" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+        <option value="">-- 選択してください --</option>
+        <option value="かいせい">かいせい</option>
+        <option value="はるちか">はるちか</option>
+        <option value="いろは">いろは</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:8px;">遊び時間（分）</div>
+      <input type="number" id="ticketDuration" placeholder="5〜480" min="5" max="480" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:8px;">枚数</div>
+      <input type="number" id="ticketQuantity" placeholder="1〜100" min="1" max="100" value="1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+    </div>
+    <button id="issueBtn" class="btn-add" onclick="issueTickets()" style="width:100%;">チケットを発行する</button>
+    <div class="msg" id="ticketIssueMsg" style="margin-top:8px;">✓ 発行しました</div>
+    <div id="ticketErrorMsg" style="display:none; margin-top:8px; font-size:0.9em;"></div>
+  </div>
+</div>
+
 <!-- バックアップ復元 -->
 <h2 onclick="toggleSection('restoreSection', this)"><span class="toggle">▶</span> 💾 バックアップ</h2>
 <div class="section-body" id="restoreSection">
@@ -1221,6 +1248,7 @@ const GAME_LIST = [
   { key: 'game_olimar', label: '🚀 オリマーの冒険（仮）' },
   { key: 'game_suika', label: '🍉 すいかが食べたい' },
   { key: 'game_suika_java', label: '☕ すいか（原作Java版）' },
+  { key: 'game_math_olympiad', label: '🧮 算数オリンピック' },
 ];
 
 async function loadGamePublishSettings() {
@@ -1257,6 +1285,65 @@ async function toggleGamePublish(key, isPublic) {
   } catch(e) {}
   settings[key] = isPublic;
   await client.from('game_settings').update({ game_publish: settings }).eq('id', 1);
+}
+
+// --- チケット発行 ---
+function notifyWithTimeout(msg) {
+  return Promise.race([
+    notifyDiscord(msg),
+    new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))
+  ]).catch(() => console.warn('Discord通知失敗/タイムアウト'));
+}
+
+function showTicketError(msg) {
+  const el = document.getElementById('ticketErrorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.color = '#e53935';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+async function issueTickets() {
+  if (localStorage.getItem('deviceRole') !== 'admin') {
+    showTicketError('権限がありません');
+    return;
+  }
+
+  const owner = document.getElementById('ticketOwner').value;
+  const duration = parseInt(document.getElementById('ticketDuration').value, 10);
+  const quantity = parseInt(document.getElementById('ticketQuantity').value, 10);
+
+  if (!owner) { showTicketError('所有者を選択してください'); return; }
+  if (!duration || duration < 5 || duration > 480) { showTicketError('時間は5〜480分で入力してください'); return; }
+  if (!quantity || quantity < 1 || quantity > 100) { showTicketError('枚数は1〜100で入力してください'); return; }
+
+  const btn = document.getElementById('issueBtn');
+  btn.disabled = true;
+
+  try {
+    const rows = Array.from({ length: quantity }, () => ({
+      owner,
+      duration_minutes: duration,
+      status: 'unused'
+    }));
+
+    const { data, error } = await client.from('tickets').insert(rows).select();
+
+    if (error) {
+      showTicketError('発行に失敗しました: ' + error.message);
+      return;
+    }
+
+    notifyWithTimeout(`🎫 ${owner}にチケットを${quantity}枚発行しました（${duration}分）`)
+      .catch(() => {});
+
+    const msg = document.getElementById('ticketIssueMsg');
+    msg.style.display = 'block';
+    msg.textContent = `✓ ${owner}に${quantity}枚発行しました`;
+    setTimeout(() => msg.style.display = 'none', 3000);
+  } finally {
+    btn.disabled = false;
+  }
 }
 </script>
 </body>

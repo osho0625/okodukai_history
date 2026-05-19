@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/13 v1.60.0
+最終更新: 2026/05/19 v1.61.0
 
 ## プロジェクト概要
 
@@ -34,7 +34,8 @@
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
-│   └── release-notes.html # リリースノート
+│   ├── release-notes.html # リリースノート
+│   └── ticket.html    # あそびチケット（一覧・使用・履歴）
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
@@ -53,7 +54,9 @@
 │   ├── efc_00-29.au    # 効果音
 │   ├── decompiled/     # 逆コンパイル済みJavaソース（参考用）
 │   └── ANALYSIS.md     # 解析ドキュメント
-└── .github/workflows/
+├── sql/
+│   └── create_tickets_table.sql # ticketsテーブルマイグレーション
+├── .github/workflows/
     └── backup.yml      # 毎日AM3:00 JST自動バックアップ
 ```
 
@@ -91,6 +94,14 @@
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
+
+### tickets（あそびチケット）
+- id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')
+- duration_minutes: INT CHECK 5-480, status: TEXT DEFAULT 'unused' CHECK IN ('unused','used')
+- created_at: TIMESTAMPTZ, used_at: TIMESTAMPTZ
+- CONSTRAINT chk_used_ticket_consistency (status/used_at整合性)
+- INDEX: idx_tickets_owner_status, idx_tickets_used_at, idx_tickets_status_ticket_no
+- RLS無効（deviceRole制御のみ）
 
 ## 端末権限（deviceRole）
 
@@ -157,6 +168,18 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 本家風スコア計算、ランキングTOP10（難易度別）
 - 操作ボタン配置カスタマイズ（⚙️アイコン、タップ入れ替え方式、localStorage保存）
 - 夜間制限（日〜木21時、金土22時〜4時）
+
+### あそびチケット（ticket.html）
+- 紙の「あそびチケット」をデジタル化。管理者（つじ）が発行、子供が使用
+- child.htmlの🎫アイコンからアクセス（?owner=名前）
+- 未使用タブ: チケットカード一覧（紙デザインCSS再現）、Admin=Owner別グループ表示
+- 履歴タブ: 使用済みチケット（used_at降順）
+- 使用フロー: 「使う」→確認ダイアログ→原子的UPDATE(status='unused'条件)→スタンプ演出(600ms)→再描画
+- 発行: admin.htmlの「🎫 チケット発行」セクション（Owner選択、時間5-480分、枚数1-100）
+- オフライン: localStorageキャッシュ表示、操作ボタン無効化
+- Discord通知: 使用時・発行時（3秒タイムアウト、失敗してもUX止めない）
+- XSSエスケープ: esc()関数で全DB値をサニタイズ
+- URL改ざん対策: VALID_OWNERSチェック
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
@@ -268,6 +291,8 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | suika_se_volume | すいかSE音量（0〜1） | 永続 |
 | suika_battle_speed | すいか戦闘速度（0〜3） | 永続 |
 | suika_encounter_rate | すいかエンカウント率（0〜3） | 永続 |
+| ticketCache_unused | オフライン表示用キャッシュ（未使用チケット） | 永続 |
+| ticketCache_used | オフライン表示用キャッシュ（使用済みチケット） | 永続 |
 
 ## sessionStorage使用
 
@@ -278,7 +303,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.47.0
+- 現在: v1.61.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -306,3 +331,12 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 - chore_typesのsort_orderカラムがない場合はidでフォールバック
 - 個人ページパスワード5回間違い→ゴキブリ発生（管理者PW5回間違いと同様）
 - game_rankingsのdifficultyカラムがnullの既存データはnormal扱い
+
+
+## Git ブランチ
+
+| ブランチ | 状態 | 内容 |
+|----------|------|------|
+| main | 最新 | TSJ260512までマージ済み |
+| TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
+| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック（spec作成中） |

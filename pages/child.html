@@ -215,6 +215,7 @@ h2 { margin-bottom: 12px; color: #333; }
 <h1 id="childName">-</h1>
 <div class="header-row">
   <div class="balance" id="childBalance">-</div>
+  <a class="settings-icon" id="ticketLink" href="#" style="font-size:1.4em;text-decoration:none;opacity:0.5;transition:opacity 0.2s;" title="あそびチケット">🎫</a>
   <a class="settings-icon" id="settingsLink" href="#">⚙️</a>
 </div>
 
@@ -572,6 +573,8 @@ async function load() {
     if (wrap) wrap.style.display = 'none';
     const approval = document.getElementById('approvalAccordion');
     if (approval) approval.style.display = 'none';
+    const ticketLnk = document.getElementById('ticketLink');
+    if (ticketLnk) ticketLnk.style.display = 'none';
   }
 
   const balEl = document.getElementById('childBalance');
@@ -626,6 +629,7 @@ async function load() {
 
   // 設定リンクを設定
   document.getElementById('settingsLink').href = `settings.html?id=${childId}`;
+  document.getElementById('ticketLink').href = `ticket.html?owner=${encodeURIComponent(child.name)}`;
 
   // 履歴を取得（入出金＋ポイント履歴を統合）
   const { data: tData } = await client
