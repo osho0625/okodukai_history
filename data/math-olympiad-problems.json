@@ -1,0 +1,227 @@
+[
+  {
+    "id": 1,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "数列の規則を見つけよう",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の数の<ruby>並<rt>なら</rt></ruby>びの<ruby>規則<rt>きそく</rt></ruby>を<ruby>見<rt>み</rt></ruby>つけて、□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n2, 5, 10, 17, □, ...",
+    "answer": "26",
+    "explanation": "差が 3, 5, 7, 9, ... と奇数で増えていく規則。17 + 9 = 26",
+    "hints": [
+      "となりの数の差を調べてみよう",
+      "差は 3, 5, 7, ... どんな規則かな？",
+      "差が2ずつ増えているよ。次の差は9だね"
+    ],
+    "alternativeSolutions": ["n番目の数 = n² + 1 と表せる。5番目は 5² + 1 = 26"]
+  },
+  {
+    "id": 2,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "折り紙の重なり",
+    "question": "<ruby>紙<rt>かみ</rt></ruby>を<ruby>半分<rt>はんぶん</rt></ruby>に1<ruby>回<rt>かい</rt></ruby><ruby>折<rt>お</rt></ruby>ります。さらに<ruby>半分<rt>はんぶん</rt></ruby>に<ruby>折<rt>お</rt></ruby>ります。これを<ruby>全部<rt>ぜんぶ</rt></ruby>で6<ruby>回<rt>かい</rt></ruby><ruby>折<rt>お</rt></ruby>ったら、<ruby>元<rt>もと</rt></ruby>の<ruby>紙<rt>かみ</rt></ruby>は<ruby>何枚<rt>なんまい</rt></ruby><ruby>重<rt>かさ</rt></ruby>なっていますか？",
+    "answer": "64枚",
+    "explanation": "1回折るごとに2倍になる。2⁶ = 64枚",
+    "hints": [
+      "1回折ると何枚重なる？",
+      "毎回2倍ずつ増えるよ",
+      "2×2×2×2×2×2 を計算しよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "不思議な計算",
+    "question": "1×1=1、11×11=121、111×111=12321。では 1111×1111 は？<ruby>規則<rt>きそく</rt></ruby>を<ruby>見<rt>み</rt></ruby>つけて<ruby>答<rt>こた</rt></ruby>えよう。",
+    "answer": "1234321",
+    "explanation": "1が n個のとき、答えは 1,2,3,...,n,...,3,2,1 と山型になる。1が4個なので 1234321",
+    "hints": [
+      "答えの数字の並びに注目しよう",
+      "1→121→12321 数字が山のように増えて減っている",
+      "1が4個なら、山の頂上は4になるよ"
+    ],
+    "alternativeSolutions": ["実際に筆算で確かめることもできる"]
+  },
+  {
+    "id": 4,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "三角形は何個？",
+    "question": "<ruby>点<rt>てん</rt></ruby>を4つ、どの3つも<ruby>一直線<rt>いっちょくせん</rt></ruby>にならないように<ruby>置<rt>お</rt></ruby>きます。この4<ruby>点<rt>てん</rt></ruby>を使って<ruby>作<rt>つく</rt></ruby>れる<ruby>三角形<rt>さんかくけい</rt></ruby>は<ruby>何個<rt>なんこ</rt></ruby>？",
+    "answer": "4個",
+    "explanation": "4点から3点を選ぶ組み合わせ。₄C₃ = 4通り",
+    "hints": [
+      "3点選べば三角形が1つできるよ",
+      "4つから3つを選ぶ方法は何通り？",
+      "書き出してみよう：ABC, ABD, ACD, BCD"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 5,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "箱の体積",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>10cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>紙<rt>かみ</rt></ruby>があります。<ruby>四隅<rt>よすみ</rt></ruby>から2cm×2cmの<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>切<rt>き</rt></ruby>り<ruby>取<rt>と</rt></ruby>り、<ruby>折<rt>お</rt></ruby>り<ruby>曲<rt>ま</rt></ruby>げて<ruby>箱<rt>はこ</rt></ruby>を<ruby>作<rt>つく</rt></ruby>ります。この<ruby>箱<rt>はこ</rt></ruby>の<ruby>体積<rt>たいせき</rt></ruby>は？",
+    "answer": "72cm³",
+    "explanation": "高さ2cm、底面は(10-4)×(10-4)=6×6=36cm²。体積=36×2=72cm³",
+    "hints": [
+      "箱の高さは切り取った正方形の辺の長さだよ",
+      "底面の1辺は 10 - 2 - 2 = 6cm",
+      "体積 = たて × よこ × 高さ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 6,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "立方体の色塗り",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>3cmの<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>表面<rt>ひょうめん</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>赤<rt>あか</rt></ruby>く<ruby>塗<rt>ぬ</rt></ruby>ります。これを1cm<ruby>角<rt>かく</rt></ruby>の<ruby>小<rt>ちい</rt></ruby>さな<ruby>立方体<rt>りっぽうたい</rt></ruby>に<ruby>切<rt>き</rt></ruby>り<ruby>分<rt>わ</rt></ruby>けると、<ruby>赤<rt>あか</rt></ruby>い<ruby>面<rt>めん</rt></ruby>が「ちょうど2つ」ある<ruby>小<rt>ちい</rt></ruby>さな<ruby>立方体<rt>りっぽうたい</rt></ruby>は<ruby>何個<rt>なんこ</rt></ruby>？",
+    "answer": "12個",
+    "explanation": "赤い面が2つ＝辺の上にある立方体（角を除く）。各辺に1個×12辺＝12個",
+    "hints": [
+      "赤い面が2つあるのは、立方体のどの位置にあるもの？",
+      "辺の上にあるもの（角を除く）が2面塗りだよ",
+      "立方体の辺は全部で12本。各辺に1個ずつ"
+    ],
+    "alternativeSolutions": ["全27個から、3面塗り(8個=角)と1面塗り(6個=面の中央)と0面塗り(1個=中心)を引く：27-8-6-1=12"]
+  },
+  {
+    "id": 7,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "うそつきは誰？",
+    "question": "A「Bはうそつきです」\nB「Cは<ruby>正直<rt>しょうじき</rt></ruby>です」\nC「Aはうそつきです」\n\n<ruby>正直者<rt>しょうじきもの</rt></ruby>は<ruby>必<rt>かなら</rt></ruby>ず<ruby>本当<rt>ほんとう</rt></ruby>のことを<ruby>言<rt>い</rt></ruby>い、うそつきは<ruby>必<rt>かなら</rt></ruby>ずうそを<ruby>言<rt>い</rt></ruby>います。うそつきは<ruby>誰<rt>だれ</rt></ruby>？",
+    "answer": "BとCがうそつき（Aが正直者）",
+    "explanation": "Aが正直→Bはうそつき→「Cは正直」はうそ→Cもうそつき→Cの「Aはうそつき」はうそ→Aは正直。矛盾なし。",
+    "hints": [
+      "Aが正直だと仮定してみよう",
+      "Aが正直ならBはうそつき。するとBの発言はうそ",
+      "Bの発言がうそなら、Cは正直ではない"
+    ],
+    "alternativeSolutions": ["Aがうそつきと仮定すると矛盾が生じることを示す方法もある"]
+  },
+  {
+    "id": 8,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "天秤で見つける",
+    "question": "8<ruby>個<rt>こ</rt></ruby>のボールがあり、1<ruby>個<rt>こ</rt></ruby>だけ<ruby>重<rt>おも</rt></ruby>いものが<ruby>混<rt>ま</rt></ruby>ざっています。<ruby>天秤<rt>てんびん</rt></ruby>を2<ruby>回<rt>かい</rt></ruby>だけ使って、<ruby>重<rt>おも</rt></ruby>いボールを<ruby>見<rt>み</rt></ruby>つける<ruby>方法<rt>ほうほう</rt></ruby>を<ruby>説明<rt>せつめい</rt></ruby>してください。",
+    "answer": "3個ずつ比べ、重い方の3個からさらに1個ずつ比べる",
+    "explanation": "1回目：3個vs3個。重い方に重いボールがある（つり合えば残り2個のどちらか）。2回目：重い方の3個から1個vs1個を比べる。重い方が答え（つり合えば残りの1個）。",
+    "hints": [
+      "8個を3グループに分けてみよう（3個、3個、2個）",
+      "1回目で3個vs3個を比べると、どちらが重いかわかる",
+      "2回目は候補を絞った中から1個vs1個"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 9,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "島渡りパズル",
+    "question": "<ruby>農夫<rt>のうふ</rt></ruby>がオオカミ、ヤギ、キャベツを<ruby>川<rt>かわ</rt></ruby>の<ruby>向<rt>む</rt></ruby>こうに<ruby>運<rt>はこ</rt></ruby>びたい。ボートには<ruby>農夫<rt>のうふ</rt></ruby>と1つしか<ruby>乗<rt>の</rt></ruby>れない。<ruby>農夫<rt>のうふ</rt></ruby>がいないと、オオカミはヤギを、ヤギはキャベツを<ruby>食<rt>た</rt></ruby>べてしまう。どうすれば<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>運<rt>はこ</rt></ruby>べる？",
+    "answer": "①ヤギを渡す→②戻る→③オオカミを渡す→④ヤギを持ち帰る→⑤キャベツを渡す→⑥戻る→⑦ヤギを渡す",
+    "explanation": "ポイントはヤギを一度持ち帰ること。ヤギは両方と相性が悪いので、オオカミとキャベツを先に向こう岸に揃える。",
+    "hints": [
+      "まず一番危険なヤギを最初に渡そう",
+      "オオカミを渡した後、ヤギを持ち帰るのがコツ",
+      "キャベツを渡してから、最後にヤギを渡す"
+    ],
+    "alternativeSolutions": ["③でキャベツを先に渡し、⑤でオオカミを渡す順番でもOK"]
+  },
+  {
+    "id": 10,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "並べ方は何通り？",
+    "question": "赤、青、黄の3色のボールを<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>べます。<ruby>並<rt>なら</rt></ruby>べ<ruby>方<rt>かた</rt></ruby>は<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "3×2×1 = 6通り。1番目に3通り、2番目に2通り、3番目に1通り。",
+    "hints": [
+      "1番目に置けるボールは何通り？",
+      "1番目を決めたら、2番目は残りから選ぶよ",
+      "3×2×1 を計算しよう"
+    ],
+    "alternativeSolutions": ["全部書き出す：赤青黄、赤黄青、青赤黄、青黄赤、黄赤青、黄青赤"]
+  },
+  {
+    "id": 11,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "コインの組み合わせ",
+    "question": "10<ruby>円玉<rt>えんだま</rt></ruby>3<ruby>枚<rt>まい</rt></ruby>、50<ruby>円玉<rt>えんだま</rt></ruby>2<ruby>枚<rt>まい</rt></ruby>、100<ruby>円玉<rt>えんだま</rt></ruby>1<ruby>枚<rt>まい</rt></ruby>があります。この<ruby>中<rt>なか</rt></ruby>から<ruby>何枚<rt>なんまい</rt></ruby>か<ruby>選<rt>えら</rt></ruby>んで「ちょうど130<ruby>円<rt>えん</rt></ruby>」を<ruby>作<rt>つく</rt></ruby>る<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "2通り",
+    "explanation": "①100円+10円×3=130円 ②50円×2+10円×3=150円（×）③50円+10円×3=80円（×）④100円+50円=150円（×）→ 正解は100+30と50+50+30の…実際は①100+10×3=130 ②50×2+10×3=180（×）。答えは1通り…いや、①100+30=130 ✓ ②50+50+30=130 ✓ で2通り",
+    "hints": [
+      "100円玉を使う場合と使わない場合に分けよう",
+      "100円を使うなら、残り30円を10円で作れる？",
+      "100円を使わないなら、50円を何枚使う？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 12,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "数字カードで偶数",
+    "question": "1, 2, 3, 4 のカードを1<ruby>回<rt>かい</rt></ruby>ずつ<ruby>使<rt>つか</rt></ruby>って4<ruby>桁<rt>けた</rt></ruby>の数を<ruby>作<rt>つく</rt></ruby>ります。<ruby>偶数<rt>ぐうすう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りできますか？",
+    "answer": "12通り",
+    "explanation": "偶数になるには1の位が偶数（2か4）。1の位が2のとき残り3枚の並べ方=3!=6通り。1の位が4のときも6通り。合計12通り。",
+    "hints": [
+      "偶数の条件は1の位が偶数であること",
+      "1の位を先に決めよう。2か4の2通り",
+      "1の位を決めたら、残り3枚の並べ方は 3×2×1 通り"
+    ],
+    "alternativeSolutions": ["全部の並べ方24通りのうち、奇数（1の位が1か3）は12通り。よって偶数も24-12=12通り"]
+  },
+  {
+    "id": 13,
+    "genre": "word_problem",
+    "difficulty": 1,
+    "title": "追いかけっこ",
+    "question": "お<ruby>兄<rt>にい</rt></ruby>ちゃんは<ruby>毎分<rt>まいふん</rt></ruby>80mで<ruby>歩<rt>ある</rt></ruby>き、<ruby>弟<rt>おとうと</rt></ruby>は<ruby>毎分<rt>まいふん</rt></ruby>60mで<ruby>歩<rt>ある</rt></ruby>きます。<ruby>弟<rt>おとうと</rt></ruby>が5<ruby>分<rt>ふん</rt></ruby><ruby>先<rt>さき</rt></ruby>に<ruby>出発<rt>しゅっぱつ</rt></ruby>しました。お<ruby>兄<rt>にい</rt></ruby>ちゃんは<ruby>何分<rt>なんぷん</rt></ruby>で<ruby>追<rt>お</rt></ruby>いつく？",
+    "answer": "15分",
+    "explanation": "弟の先行距離=60×5=300m。差が縮まる速さ=80-60=20m/分。追いつく時間=300÷20=15分",
+    "hints": [
+      "弟は5分間でどれだけ先に行っている？",
+      "お兄ちゃんは毎分何mずつ差を縮める？",
+      "先行距離÷差の縮まる速さ＝追いつく時間"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 14,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "水そうの問題",
+    "question": "<ruby>水<rt>みず</rt></ruby>そうに<ruby>毎分<rt>まいふん</rt></ruby>3Lずつ<ruby>水<rt>みず</rt></ruby>を<ruby>入<rt>い</rt></ruby>れます。<ruby>最初<rt>さいしょ</rt></ruby>に5L<ruby>入<rt>はい</rt></ruby>っています。20Lになるのは<ruby>何分後<rt>なんぷんご</rt></ruby>？もし<ruby>途中<rt>とちゅう</rt></ruby>で<ruby>毎分<rt>まいふん</rt></ruby>1L<ruby>漏<rt>も</rt></ruby>れていたら？",
+    "answer": "漏れなし：5分後、漏れあり：7.5分後",
+    "explanation": "漏れなし：(20-5)÷3=5分。漏れあり：実質毎分2L増加。(20-5)÷2=7.5分",
+    "hints": [
+      "あと何L必要？",
+      "漏れがないなら、必要量÷毎分の量",
+      "漏れがあるなら、実質の増加量は 3-1=2L/分"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 15,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "ケーキの分け方",
+    "question": "ケーキを3<ruby>人<rt>にん</rt></ruby>で<ruby>公平<rt>こうへい</rt></ruby>に<ruby>分<rt>わ</rt></ruby>けたい。ただし「<ruby>自分<rt>じぶん</rt></ruby>の<ruby>分<rt>ぶん</rt></ruby>が<ruby>一番<rt>いちばん</rt></ruby><ruby>少<rt>すく</rt></ruby>ない」と<ruby>誰<rt>だれ</rt></ruby>も<ruby>思<rt>おも</rt></ruby>わない<ruby>方法<rt>ほうほう</rt></ruby>を<ruby>考<rt>かんが</rt></ruby>えてください。",
+    "answer": "1人が3等分に切り、残り2人が先に選ぶ。切った人が最後に取る。",
+    "explanation": "切る人は自分が最後に取るので、できるだけ均等に切るインセンティブがある。選ぶ人は一番大きいと思うものを取れるので不満がない。",
+    "hints": [
+      "2人の場合「1人が切って、もう1人が選ぶ」方法があるよ",
+      "切る人は最後に取ることにしたらどうなる？",
+      "切る人は均等に切らないと自分が損するよね"
+    ],
+    "alternativeSolutions": ["「移動ナイフ法」：ナイフをゆっくり動かし、1/3だと思った人が「ストップ」と言って取る方法もある"]
+  }
+]

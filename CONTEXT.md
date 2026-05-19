@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/19 v1.61.0
+最終更新: 2026/05/19 v1.62.0
 
 ## プロジェクト概要
 
@@ -35,7 +35,8 @@
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
 │   ├── release-notes.html # リリースノート
-│   └── ticket.html    # あそびチケット（一覧・使用・履歴）
+│   ├── ticket.html    # あそびチケット（一覧・使用・履歴）
+│   └── math-olympiad.html # 算数オリンピック（思考力チャレンジ）
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
@@ -47,6 +48,8 @@
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
 ├── backups/            # 自動バックアップJSON
+├── data/
+│   └── math-olympiad-problems.json # 算数オリンピック問題データ（15問）
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 │   ├── web/            # HTML5版エンジン（main.js + engine/21モジュール）
 │   ├── data/           # ゲームデータ（モデル/ステージ/イベント/パラメータ）
@@ -55,7 +58,8 @@
 │   ├── decompiled/     # 逆コンパイル済みJavaソース（参考用）
 │   └── ANALYSIS.md     # 解析ドキュメント
 ├── sql/
-│   └── create_tickets_table.sql # ticketsテーブルマイグレーション
+│   ├── create_tickets_table.sql # ticketsテーブルマイグレーション
+│   └── math_olympiad_answers.sql # 算数オリンピックテーブルマイグレーション
 ├── .github/workflows/
     └── backup.yml      # 毎日AM3:00 JST自動バックアップ
 ```
@@ -87,10 +91,21 @@
 ### blast_rankings（ブロックブラストランキング）
 - id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
 
+### math_olympiad_answers（算数オリンピック回答）
+- id: UUID (PK), user_id: UUID NOT NULL, user_name: TEXT NOT NULL
+- problem_id: INT NOT NULL, answer_text: TEXT NOT NULL, thinking_note: TEXT DEFAULT ''
+- elapsed_seconds: INT NOT NULL, hints_used: INT DEFAULT 0
+- status: TEXT DEFAULT 'pending' CHECK IN ('pending', 'reviewed')
+- score: INT (nullable), admin_comment: TEXT (nullable)
+- submitted_at: TIMESTAMPTZ DEFAULT now(), reviewed_at: TIMESTAMPTZ (nullable)
+- UNIQUE(user_id, problem_id)
+- INDEX: idx_math_answers_user_id, idx_math_answers_status
+- RLS有効: SELECT/INSERT全許可、UPDATE=status='pending'のみ
+
 ### game_settings（各種設定、id=1の1行）
 - night_password: TEXT, night_limit_enabled: BOOLEAN
 - allowance_password: TEXT, admin_password: TEXT
-- game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,...})
+- game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,"game_math_olympiad":true,...})
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
@@ -183,8 +198,24 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版の6ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピックの7ゲームをカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
+
+### 算数オリンピック（pages/math-olympiad.html）
+- 思考力育成アプリ。算数オリンピック風の問題を1問ずつ提示
+- 単一HTML内6ビュー切り替え（SPA風）: 登録/問題一覧/回答/提出完了/結果/管理者採点
+- 問題データ: data/math-olympiad-problems.json（15問、5ジャンル×3問）
+- ジャンル: number_pattern/geometry/logic/combinatorics/word_problem
+- 難易度: Lv1(10分)/Lv2(20分)/Lv3(30分+)
+- ユーザー識別: user_id(UUID) + user_name（表示用）、localStorage管理
+- 回答提出: select→insert/update分離（upsert不使用）、pending中は上書き可、reviewed後は不可
+- 段階ヒント: 最大3段階、sessionStorage永続化
+- タイマー: バックグラウンド計測、sessionStorage永続化（6時間で期限切れ）
+- ドラフト保存: answer/thinking入力をsessionStorageに自動保存
+- 管理者採点: deviceRole=admin限定、テンプレートコメント5種
+- DOMPurify: rubyタグ対応（ALLOWED_TAGS: ruby, rt, br）
+- オフライン: sw.jsでHTML+JSONキャッシュ、提出はオンライン時のみ
+- game_settings.game_publish.game_math_olympiad で公開制御
 
 ### すいかが食べたい（pages/suika.html + suika/web/）
 - Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
@@ -293,17 +324,24 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | suika_encounter_rate | すいかエンカウント率（0〜3） | 永続 |
 | ticketCache_unused | オフライン表示用キャッシュ（未使用チケット） | 永続 |
 | ticketCache_used | オフライン表示用キャッシュ（使用済みチケット） | 永続 |
+| math_olympiad_user | 算数オリンピック ユーザー名（表示用） | 永続 |
+| math_olympiad_user_id | 算数オリンピック ユーザーUUID（DB識別子） | 永続 |
 
 ## sessionStorage使用
 
 | キー | 用途 |
 |------|------|
 | tripBoost | コケやすさ10倍（タブ閉じでリセット） |
+| math_timer_start | 算数オリンピック タイマー開始時刻 |
+| math_current_problem | 算数オリンピック 現在の問題ID |
+| math_hints_revealed | 算数オリンピック 表示済みヒント数 |
+| math_answer_draft | 算数オリンピック 回答ドラフト |
+| math_thinking_draft | 算数オリンピック 考え方メモドラフト |
 
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.61.0
+- 現在: v1.62.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -339,4 +377,4 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 |----------|------|------|
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
-| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック（spec作成中） |
+| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了 |
