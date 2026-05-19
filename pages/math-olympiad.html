@@ -266,7 +266,7 @@ select {
 <body>
 
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" onclick="goBack()">←</a>
   <h1>🧮 算数オリンピック</h1>
 </div>
 
@@ -285,17 +285,44 @@ select {
   </div>
 </div>
 
+<!-- View: Grade Select -->
+<div id="view-grade-select" class="view hidden">
+  <div class="container">
+    <div style="text-align:center; margin-bottom: 24px;">
+      <div style="font-size: 2.5em; margin-bottom: 12px;">📚</div>
+      <p style="color:#aaa;">どのもんだいにチャレンジする？</p>
+    </div>
+    <div class="grade-cards">
+      <div class="problem-card" onclick="selectGrade('grade1')" style="text-align:center;">
+        <div style="font-size:1.8em; margin-bottom:8px;">🌱</div>
+        <div class="problem-card-title">小学1年</div>
+        <div class="problem-card-meta" style="justify-content:center;">たしざん・ひきざん・かたち</div>
+      </div>
+      <div class="problem-card" onclick="selectGrade('grade3')" style="text-align:center;">
+        <div style="font-size:1.8em; margin-bottom:8px;">🌿</div>
+        <div class="problem-card-title">小学3年</div>
+        <div class="problem-card-meta" style="justify-content:center;">わり算・図形・きまり</div>
+      </div>
+      <div class="problem-card" onclick="selectGrade('grade5')" style="text-align:center;">
+        <div style="font-size:1.8em; margin-bottom:8px;">🌳</div>
+        <div class="problem-card-title">小学5年（オリンピック）</div>
+        <div class="problem-card-meta" style="justify-content:center;">思考力・論理・場合の数</div>
+      </div>
+    </div>
+    <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
+  </div>
+</div>
+
 <!-- View: Problem List -->
 <div id="view-problem-list" class="view hidden">
   <div class="container">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <button class="btn btn-secondary btn-small" onclick="showView('view-grade-select')">← 学年選択</button>
+      <span id="grade-label" style="font-weight:600;"></span>
+    </div>
     <div class="filters">
       <select id="genre-filter" onchange="renderProblemList()">
         <option value="all">すべてのジャンル</option>
-        <option value="number_pattern">数の規則</option>
-        <option value="geometry">図形</option>
-        <option value="logic">論理</option>
-        <option value="combinatorics">場合の数</option>
-        <option value="word_problem">文章題</option>
       </select>
       <select id="difficulty-filter" onchange="renderProblemList()">
         <option value="all">すべての難易度</option>
@@ -435,21 +462,81 @@ select {
 <script>
 // === Constants ===
 const GENRE_LABEL = {
+  // Grade 5 (olympiad)
   number_pattern: '数の規則',
   geometry: '図形',
   logic: '論理',
   combinatorics: '場合の数',
-  word_problem: '文章題'
+  word_problem: '文章題',
+  // Grade 1
+  addition: 'たしざん',
+  subtraction: 'ひきざん',
+  pattern: 'きまり',
+  number: 'かず',
+  money: 'おかね',
+  comparison: 'くらべる',
+  creative: 'つくる',
+  // Grade 3
+  division: 'わり算',
+  multiplication: 'かけ算',
+  time: '時間',
+  measurement: '長さ',
+  // Shared
+};
+
+const GRADE_CONFIG = {
+  grade1: { label: '小学1年', file: '../data/math-olympiad-grade1.json', icon: '🌱' },
+  grade3: { label: '小学3年', file: '../data/math-olympiad-grade3.json', icon: '🌿' },
+  grade5: { label: '小学5年（オリンピック）', file: '../data/math-olympiad-problems.json', icon: '🌳' }
 };
 
 const TIMER_EXPIRE_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 // === State ===
+let allProblemsCache = {}; // { grade1: [...], grade3: [...], grade5: [...] }
 let problems = [];
+let currentGrade = null;
 let userAnswers = [];
 let currentProblem = null;
 let timerStart = null;
 let hintsRevealed = 0;
+
+// === Navigation ===
+function goBack() {
+  const visible = document.querySelector('.view:not(.hidden)');
+  if (!visible) { history.back(); return; }
+  const id = visible.id;
+  
+  // From grade select or registration → go back to arcade (browser history)
+  if (id === 'view-grade-select' || id === 'view-registration') {
+    history.back();
+    return;
+  }
+  
+  // From problem list → back to grade select
+  if (id === 'view-problem-list') {
+    showView('view-grade-select');
+    return;
+  }
+  
+  // From solve → back to list (clear session)
+  if (id === 'view-problem-solve') {
+    clearProblemSession();
+    showView('view-problem-list');
+    renderProblemList();
+    return;
+  }
+  
+  // From admin review → back to grade select
+  if (id === 'view-admin-review') {
+    showView('view-grade-select');
+    return;
+  }
+  
+  // From all other views → back to problem list
+  showView('view-problem-list');
+  renderProblemList();
+}
 
 // === View Management (Task 4.1) ===
 function showView(viewId) {
@@ -482,44 +569,82 @@ function showFatalError(msg) {
 async function initApp() {
   if (isNightTime()) { showNightMessage(); return; }
 
+  // Preload all grade data
   try {
-    await loadProblems();
+    await loadAllProblems();
   } catch (e) {
-    return; // showFatalError already called in loadProblems
+    return;
   }
 
   await loadUserAnswers();
   bindDraftEvents();
   restoreTimerIfNeeded();
 
-  // Show admin button if admin
+  // Show admin buttons if admin
   if (isAdmin) {
     document.getElementById('admin-btn').style.display = 'block';
+    const adminBtnGrade = document.getElementById('admin-btn-grade');
+    if (adminBtnGrade) adminBtnGrade.style.display = 'block';
   }
 
   const userName = localStorage.getItem('math_olympiad_user');
   if (!userName) {
     showView('view-registration');
   } else {
-    showView('view-problem-list');
-    renderProblemList();
+    showView('view-grade-select');
   }
 }
 
+// === Grade Selection ===
+function selectGrade(grade) {
+  currentGrade = grade;
+  problems = allProblemsCache[grade] || [];
+  localStorage.setItem('math_olympiad_grade', grade);
+  
+  // Update genre filter options based on grade
+  updateGenreFilter();
+  
+  // Update grade label
+  const config = GRADE_CONFIG[grade];
+  document.getElementById('grade-label').textContent = config.icon + ' ' + config.label;
+  
+  showView('view-problem-list');
+  renderProblemList();
+}
+
+function updateGenreFilter() {
+  const select = document.getElementById('genre-filter');
+  const genres = [...new Set(problems.map(p => p.genre))];
+  select.innerHTML = '<option value="all">すべてのジャンル</option>';
+  genres.forEach(g => {
+    const label = GENRE_LABEL[g] || g;
+    select.innerHTML += '<option value="' + g + '">' + label + '</option>';
+  });
+}
+
 // === Data Loading (Task 4.2) ===
-async function loadProblems() {
-  try {
-    const res = await fetch('../data/math-olympiad-problems.json');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error('Invalid problem data');
+async function loadAllProblems() {
+  const grades = Object.keys(GRADE_CONFIG);
+  for (const grade of grades) {
+    try {
+      const res = await fetch(GRADE_CONFIG[grade].file);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('Invalid problem data for ' + grade);
+      }
+      allProblemsCache[grade] = data;
+    } catch (e) {
+      showFatalError('問題データを読み込めませんでした');
+      throw e;
     }
-    problems = data;
-  } catch (e) {
-    showFatalError('問題データを読み込めませんでした');
-    throw e;
   }
+  // Default to grade5 for backward compatibility
+  problems = allProblemsCache.grade5 || [];
+}
+
+async function loadProblems() {
+  await loadAllProblems();
 }
 
 async function loadUserAnswers() {
@@ -565,8 +690,9 @@ function renderProblemList() {
   });
 
   const container = document.getElementById('problem-cards');
-  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+' };
   const DIFFICULTY_STARS = { 1: '★☆☆', 2: '★★☆', 3: '★★★' };
+  const showTime = currentGrade === 'grade5';
+  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+' };
 
   container.innerHTML = filtered.map(p => {
     const status = getProblemStatus(p.id);
@@ -575,13 +701,14 @@ function renderProblemList() {
     const onclick = status === 'reviewed'
       ? `showResult(${p.id})`
       : `startProblem(${p.id})`;
+    const timeHtml = showTime ? `<span>目安${DIFFICULTY_TIME[p.difficulty]}</span>` : '';
 
     return `<div class="problem-card" onclick="${onclick}">
       <div class="problem-card-title">${p.title}</div>
       <div class="problem-card-meta">
-        <span>${GENRE_LABEL[p.genre]}</span>
+        <span>${GENRE_LABEL[p.genre] || p.genre}</span>
         <span>${DIFFICULTY_STARS[p.difficulty]}</span>
-        <span>目安${DIFFICULTY_TIME[p.difficulty]}</span>
+        ${timeHtml}
         <span class="badge ${badgeClass}">${badgeText}</span>
       </div>
     </div>`;
@@ -597,8 +724,7 @@ function registerUser() {
   const userId = localStorage.getItem('math_olympiad_user_id') || crypto.randomUUID();
   localStorage.setItem('math_olympiad_user', name);
   localStorage.setItem('math_olympiad_user_id', userId);
-  showView('view-problem-list');
-  renderProblemList();
+  showView('view-grade-select');
 }
 
 // === Problem Solve (Task 6.1) ===
@@ -704,8 +830,23 @@ function restoreTimerIfNeeded() {
     }
 
     hintsRevealed = Number(sessionStorage.getItem('math_hints_revealed') || '0');
-    currentProblem = problems.find(p => p.id === Number(savedProblem));
-    if (currentProblem) {
+    
+    // Search across all grades for the problem
+    const problemId = Number(savedProblem);
+    let foundGrade = null;
+    for (const [grade, probs] of Object.entries(allProblemsCache)) {
+      const found = probs.find(p => p.id === problemId);
+      if (found) {
+        currentProblem = found;
+        foundGrade = grade;
+        break;
+      }
+    }
+    
+    if (currentProblem && foundGrade) {
+      // Set the correct grade context
+      currentGrade = foundGrade;
+      problems = allProblemsCache[foundGrade];
       renderProblemView();
       renderHints();
       restoreDrafts();

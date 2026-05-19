@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1001,
+    "genre": "addition",
+    "difficulty": 1,
+    "title": "くだもの",
+    "question": "りんごが3こ、みかんが2こ。くだものはぜんぶでいくつ？",
+    "answer": "5こ",
+    "explanation": "りんご3こ と みかん2こ を たすと、3+2=5こ です。",
+    "hints": ["たしざんだよ", "3+2してみよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1002,
+    "genre": "subtraction",
+    "difficulty": 1,
+    "title": "ひきざん",
+    "question": "5から2をひくといくつ？ ほかのやり方でも<ruby>考<rt>かんが</rt></ruby>えてみよう。",
+    "answer": "3",
+    "explanation": "5-2=3 です。ゆびを5ほん出して2ほんおると3ほんのこります。",
+    "hints": ["5から2つへらそう"],
+    "alternativeSolutions": ["ゆびでかぞえる", "おはじきを使う"]
+  },
+  {
+    "id": 1003,
+    "genre": "pattern",
+    "difficulty": 1,
+    "title": "ならび",
+    "question": "○△○△○△ のつぎはなに？",
+    "answer": "○",
+    "explanation": "○と△がくりかえしています。△のつぎは○です。",
+    "hints": ["くり返しだよ"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1004,
+    "genre": "number",
+    "difficulty": 1,
+    "title": "いちばんおおきい",
+    "question": "1から10までで、いちばんおおきいかずは？",
+    "answer": "10",
+    "explanation": "1から10までならべると、さいごの10がいちばんおおきいかずです。",
+    "hints": ["さいごのかず"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1005,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "しかく",
+    "question": "しかくはいくつありますか？（<ruby>紙<rt>かみ</rt></ruby>に<ruby>四角<rt>しかく</rt></ruby>を<ruby>描<rt>か</rt></ruby>いて<ruby>数<rt>かぞ</rt></ruby>えてみよう）",
+    "answer": "かみに描いた四角の数（自由回答）",
+    "explanation": "しかくを1つずつかぞえましょう。見つけたかずがこたえです。",
+    "hints": ["1つずつかぞえよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1006,
+    "genre": "addition",
+    "difficulty": 1,
+    "title": "えんぴつ",
+    "question": "えんぴつが4ほんあります。2ほんもらうと、ぜんぶで？",
+    "answer": "6ほん",
+    "explanation": "もっている4ほん に もらった2ほん を たすと、4+2=6ほん です。",
+    "hints": ["4+2"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1007,
+    "genre": "number",
+    "difficulty": 1,
+    "title": "7をわける",
+    "question": "7をふたつのかずにわけると、どんなわけかたがある？",
+    "answer": "0と7、1と6、2と5、3と4",
+    "explanation": "7をふたつにわけるには、0+7、1+6、2+5、3+4 のくみあわせがあります。",
+    "hints": ["0と7からはじめよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1008,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "あめ",
+    "question": "3このあめを2<ruby>人<rt>にん</rt></ruby>でわけると、どうなる？",
+    "answer": "1こずつで、1こあまる",
+    "explanation": "3÷2=1あまり1。<ruby>同<rt>おな</rt></ruby>じかずずつわけると1こずつで、1こあまります。",
+    "hints": ["同じにできるかな？"],
+    "alternativeSolutions": ["はんぶんにわる（1.5こずつ）というかんがえかたもある"]
+  },
+  {
+    "id": 1009,
+    "genre": "number",
+    "difficulty": 1,
+    "title": "あいだの数",
+    "question": "10までのかずで、3よりおおきくて6よりちいさいかずは？",
+    "answer": "4と5",
+    "explanation": "3よりおおきい→4,5,6,7... 6よりちいさい→5,4,3... りょうほうにあるのは4と5です。",
+    "hints": ["4と5"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1010,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "かたち",
+    "question": "▲を2つあわせると、どんなかたちになる？",
+    "answer": "しかく（四角形）",
+    "explanation": "おなじ<ruby>三角形<rt>さんかくけい</rt></ruby>を2つあわせると、<ruby>四角形<rt>しかくけい</rt></ruby>になります。",
+    "hints": ["ならべてみよう"],
+    "alternativeSolutions": ["ならべかたによっては大きな三角形にもなるよ"]
+  },
+  {
+    "id": 1011,
+    "genre": "addition",
+    "difficulty": 2,
+    "title": "きょうだい",
+    "question": "きょうだいが2<ruby>人<rt>にん</rt></ruby>、そこに1<ruby>人<rt>にん</rt></ruby>きました。みんなで<ruby>何人<rt>なんにん</rt></ruby>？",
+    "answer": "3人",
+    "explanation": "2人+1人=3人 です。",
+    "hints": ["2+1"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1012,
+    "genre": "number",
+    "difficulty": 2,
+    "title": "まえとうしろ",
+    "question": "8のひとつまえのかずは？ ひとつあとのかずは？",
+    "answer": "まえ：7、あと：9",
+    "explanation": "かずのならびで、8のまえは7、あとは9です。",
+    "hints": ["7と9"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1013,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "おなじかたち",
+    "question": "おなじかたちをさがそう（<ruby>身<rt>み</rt></ruby>の<ruby>回<rt>まわ</rt></ruby>りで3つ<ruby>見<rt>み</rt></ruby>つけてみよう）",
+    "answer": "自由回答（例：まど、ほん、テレビ＝しかく）",
+    "explanation": "おへやの中にはおなじかたちのものがたくさんあります。しかく：まど、ほん、テレビ。まる：とけい、おさら。",
+    "hints": ["おへやを見てみよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1014,
+    "genre": "money",
+    "difficulty": 2,
+    "title": "1円",
+    "question": "1<ruby>円<rt>えん</rt></ruby>が5まい。ぜんぶでいくら？",
+    "answer": "5円",
+    "explanation": "1円×5まい＝5円 です。1を5かいたすと5になります。",
+    "hints": ["1を5こ"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1015,
+    "genre": "addition",
+    "difficulty": 2,
+    "title": "9をつくる",
+    "question": "9をつくるたしざんをできるだけたくさん<ruby>書<rt>か</rt></ruby>こう。",
+    "answer": "0+9、1+8、2+7、3+6、4+5",
+    "explanation": "9になるくみあわせを0からじゅんにさがすと、0+9、1+8、2+7、3+6、4+5 の5つあります。",
+    "hints": ["0+9から"],
+    "alternativeSolutions": ["3つのかずでつくる：1+2+6、1+3+5、2+3+4 なども"]
+  },
+  {
+    "id": 1016,
+    "genre": "subtraction",
+    "difficulty": 2,
+    "title": "まる",
+    "question": "まるを6こ<ruby>書<rt>か</rt></ruby>いて、2こけすといくつのこる？",
+    "answer": "4こ",
+    "explanation": "6こから2こけすと、6-2=4こ のこります。",
+    "hints": ["6-2"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1017,
+    "genre": "number",
+    "difficulty": 3,
+    "title": "ゆび",
+    "question": "かぞえてみよう。<ruby>手<rt>て</rt></ruby>のゆびはりょうてで<ruby>何本<rt>なんぼん</rt></ruby>？",
+    "answer": "10本",
+    "explanation": "かたてが5ほん。りょうてで5+5=10ほん です。",
+    "hints": ["片手は5本"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1018,
+    "genre": "comparison",
+    "difficulty": 3,
+    "title": "どちらがおおい",
+    "question": "あか3こ、あお3こ。どちらがおおい？",
+    "answer": "おなじ（どちらも3こ）",
+    "explanation": "あかもあおも3こなので、おなじかずです。どちらもおおくありません。",
+    "hints": ["同じだよ"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1019,
+    "genre": "number",
+    "difficulty": 3,
+    "title": "ぐうすう",
+    "question": "10までのかずで、ぐうすうをぜんぶ<ruby>言<rt>い</rt></ruby>ってみよう。",
+    "answer": "2、4、6、8、10",
+    "explanation": "ぐうすうは2でわりきれるかずです。2、4、6、8、10 の5つあります。",
+    "hints": ["2ずつ増える"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 1020,
+    "genre": "creative",
+    "difficulty": 3,
+    "title": "えをつくろう",
+    "question": "すきなかたちを3つえらんで、えをつくってみよう。",
+    "answer": "自由回答（○△□などをつかって絵をかく）",
+    "explanation": "○△□をくみあわせると、おうち（□+△）やおはな（○）などいろいろなえがつくれます。",
+    "hints": ["じゆうにかいていいよ"],
+    "alternativeSolutions": []
+  }
+]

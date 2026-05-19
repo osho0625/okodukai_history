@@ -1,0 +1,222 @@
+[
+  {
+    "id": 3001,
+    "genre": "number",
+    "difficulty": 1,
+    "title": "わり切れる数",
+    "question": "1から50までの<ruby>中<rt>なか</rt></ruby>で、2でも3でも<ruby>割<rt>わ</rt></ruby>り<ruby>切<rt>き</rt></ruby>れる<ruby>数<rt>かず</rt></ruby>はいくつありますか？",
+    "answer": "8個",
+    "explanation": "2でも3でも割り切れる数は6の倍数。6,12,18,24,30,36,42,48 の8個。",
+    "hints": ["2と3の両方で割り切れる数は？", "6の倍数を考えよう"],
+    "alternativeSolutions": ["50÷6=8あまり2 なので8個"]
+  },
+  {
+    "id": 3002,
+    "genre": "division",
+    "difficulty": 1,
+    "title": "あめを分ける",
+    "question": "12<ruby>個<rt>こ</rt></ruby>のあめを3人で<ruby>同<rt>おな</rt></ruby>じ<ruby>数<rt>かず</rt></ruby>ずつ分けます。<ruby>何個<rt>なんこ</rt></ruby>ずつになりますか？ <ruby>別<rt>べつ</rt></ruby>の分け方はありますか？",
+    "answer": "4個ずつ",
+    "explanation": "12÷3=4 で、4個ずつになります。",
+    "hints": ["わり算を使おう", "12÷3は？"],
+    "alternativeSolutions": ["2人なら6個ずつ、4人なら3個ずつ、6人なら2個ずつ"]
+  },
+  {
+    "id": 3003,
+    "genre": "pattern",
+    "difficulty": 1,
+    "title": "規則",
+    "question": "3, 6, 12, 24, ? <ruby>次<rt>つぎ</rt></ruby>の<ruby>数<rt>かず</rt></ruby>は？",
+    "answer": "48",
+    "explanation": "前の数を2倍すると次の数になる規則。24×2=48。",
+    "hints": ["何倍ずつ？", "前の数に注目"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3004,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "長方形",
+    "question": "たて4cm、よこ5cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>のまわりの<ruby>長<rt>なが</rt></ruby>さは？",
+    "answer": "18cm",
+    "explanation": "まわりの長さ＝（たて＋よこ）×2＝（4+5）×2＝18cm。",
+    "hints": ["たてが2本、よこが2本", "足してみよう"],
+    "alternativeSolutions": ["4+5+4+5=18cm"]
+  },
+  {
+    "id": 3005,
+    "genre": "time",
+    "difficulty": 1,
+    "title": "時計",
+    "question": "<ruby>時計<rt>とけい</rt></ruby>が2<ruby>時<rt>じ</rt></ruby>のとき、<ruby>長<rt>なが</rt></ruby>い<ruby>針<rt>はり</rt></ruby>と<ruby>短<rt>みじか</rt></ruby>い<ruby>針<rt>はり</rt></ruby>の<ruby>間<rt>あいだ</rt></ruby>の<ruby>小<rt>ちい</rt></ruby>さい<ruby>角<rt>かく</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>？",
+    "answer": "60度",
+    "explanation": "時計は1時間で30度。2時なので30×2=60度。",
+    "hints": ["1時間で30度"],
+    "alternativeSolutions": ["時計の全体は360度。12時間で360度なので1時間あたり30度。"]
+  },
+  {
+    "id": 3006,
+    "genre": "money",
+    "difficulty": 1,
+    "title": "お金",
+    "question": "10<ruby>円玉<rt>えんだま</rt></ruby>3<ruby>枚<rt>まい</rt></ruby>と50<ruby>円玉<rt>えんだま</rt></ruby>1<ruby>枚<rt>まい</rt></ruby>で<ruby>作<rt>つく</rt></ruby>れる<ruby>金額<rt>きんがく</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>書<rt>か</rt></ruby>いてください。",
+    "answer": "10円、20円、30円、50円、60円、70円、80円（0円を除く7通り）",
+    "explanation": "10円玉は0〜3枚（0,10,20,30円）、50円玉は0〜1枚（0,50円）。組み合わせから0円を除くと7通り。",
+    "hints": ["使う・使わないで分けよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3007,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "三角形",
+    "question": "<ruby>三角形<rt>さんかくけい</rt></ruby>を2つ<ruby>使<rt>つか</rt></ruby>って<ruby>作<rt>つく</rt></ruby>れる<ruby>図形<rt>ずけい</rt></ruby>をできるだけたくさん<ruby>考<rt>かんが</rt></ruby>えてください。",
+    "answer": "四角形（平行四辺形、長方形、正方形）、大きな三角形",
+    "explanation": "同じ三角形2つを辺でくっつけると、四角形や大きな三角形が作れます。",
+    "hints": ["回してみよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3008,
+    "genre": "division",
+    "difficulty": 1,
+    "title": "グループ分け",
+    "question": "24人を6人ずつのグループにすると<ruby>何<rt>なん</rt></ruby>グループ？",
+    "answer": "4グループ",
+    "explanation": "24÷6=4 で、4グループになります。",
+    "hints": ["24÷6"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3009,
+    "genre": "number",
+    "difficulty": 2,
+    "title": "□に入る数",
+    "question": "□に<ruby>入<rt>はい</rt></ruby>る<ruby>数<rt>かず</rt></ruby>は？ 7 + □ = 15",
+    "answer": "8",
+    "explanation": "□=15-7=8。たし算の逆でひき算を使います。",
+    "hints": ["15から7を引こう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3010,
+    "genre": "number",
+    "difficulty": 2,
+    "title": "100から1まで",
+    "question": "100から1までを<ruby>足<rt>た</rt></ruby>すといくつ？ <ruby>工夫<rt>くふう</rt></ruby>して<ruby>考<rt>かんが</rt></ruby>えてください。",
+    "answer": "5050",
+    "explanation": "1+100=101、2+99=101、...、50+51=101。101が50組あるので101×50=5050。",
+    "hints": ["端どうしを足そう"],
+    "alternativeSolutions": ["（1+100）×100÷2=5050 という公式でも求められる"]
+  },
+  {
+    "id": 3011,
+    "genre": "multiplication",
+    "difficulty": 2,
+    "title": "りんご",
+    "question": "りんごが5こずつ<ruby>入<rt>はい</rt></ruby>った<ruby>袋<rt>ふくろ</rt></ruby>が4つあります。<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何<rt>なん</rt></ruby>こ？",
+    "answer": "20こ",
+    "explanation": "5×4=20 で、全部で20こです。",
+    "hints": ["5×4"],
+    "alternativeSolutions": ["5+5+5+5=20 と足し算でも求められる"]
+  },
+  {
+    "id": 3012,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "並べ方",
+    "question": "1, 2, 3 を<ruby>並<rt>なら</rt></ruby>べてできる3けたの<ruby>数<rt>かず</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "最初に置く数が3通り、次が2通り、最後が1通り。3×2×1=6通り。（123,132,213,231,312,321）",
+    "hints": ["最初に置く数は？"],
+    "alternativeSolutions": ["全部書き出す：123,132,213,231,312,321"]
+  },
+  {
+    "id": 3013,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "正方形",
+    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>は<ruby>三角形<rt>さんかくけい</rt></ruby><ruby>何個<rt>なんこ</rt></ruby>に分けられる？ いくつか<ruby>方法<rt>ほうほう</rt></ruby>を<ruby>考<rt>かんが</rt></ruby>えてください。",
+    "answer": "2個（対角線1本）、4個（対角線2本）など",
+    "explanation": "対角線を1本引くと2つの三角形。対角線を2本引くと4つの三角形に分けられます。",
+    "hints": ["対角線を書いてみよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3014,
+    "genre": "measurement",
+    "difficulty": 2,
+    "title": "ひも",
+    "question": "1mのひもを25cmずつ<ruby>切<rt>き</rt></ruby>ると<ruby>何本<rt>なんぼん</rt></ruby>？",
+    "answer": "4本",
+    "explanation": "1m=100cm。100÷25=4 で、4本になります。",
+    "hints": ["1mは100cm"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3015,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "チーム分け",
+    "question": "9人を2チームに分けます。できるだけ<ruby>人数<rt>にんずう</rt></ruby>を<ruby>近<rt>ちか</rt></ruby>くすると？",
+    "answer": "4人と5人",
+    "explanation": "9÷2=4あまり1。できるだけ近くするには4人と5人に分けます。",
+    "hints": ["半分に近くしよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3016,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "交点",
+    "question": "5<ruby>本<rt>ほん</rt></ruby>の<ruby>線<rt>せん</rt></ruby>でできる<ruby>交点<rt>こうてん</rt></ruby>は<ruby>最大<rt>さいだい</rt></ruby>いくつ？（<ruby>線<rt>せん</rt></ruby>はまっすぐ）",
+    "answer": "10個",
+    "explanation": "2本の線から1つの交点ができる。5本から2本を選ぶ組み合わせ＝5×4÷2=10個。",
+    "hints": ["増え方を調べよう"],
+    "alternativeSolutions": ["1本目は0、2本目で+1、3本目で+2、4本目で+3、5本目で+4。合計0+1+2+3+4=10"]
+  },
+  {
+    "id": 3017,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "読書",
+    "question": "20ページの<ruby>本<rt>ほん</rt></ruby>を1<ruby>日<rt>にち</rt></ruby>3ページずつ<ruby>読<rt>よ</rt></ruby>むと<ruby>何日<rt>なんにち</rt></ruby>かかる？ <ruby>最後<rt>さいご</rt></ruby>の<ruby>日<rt>ひ</rt></ruby>は<ruby>何<rt>なん</rt></ruby>ページ？",
+    "answer": "7日かかる。最後の日は2ページ。",
+    "explanation": "20÷3=6あまり2。6日で18ページ読み、7日目に残り2ページを読みます。",
+    "hints": ["割り算とあまり"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 3018,
+    "genre": "number",
+    "difficulty": 3,
+    "title": "10になる組",
+    "question": "1〜9で<ruby>足<rt>た</rt></ruby>して10になる<ruby>組<rt>くみ</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>見<rt>み</rt></ruby>つけてください。",
+    "answer": "1+9、2+8、3+7、4+6（2つの数の組は4通り）",
+    "explanation": "2つの数の組み合わせで考えると、1+9、2+8、3+7、4+6 の4通り。5+5は同じ数なので使えません。",
+    "hints": ["1から順に"],
+    "alternativeSolutions": ["3つの数の組も含めると：1+2+7、1+3+6、1+4+5、2+3+5 なども"]
+  },
+  {
+    "id": 3019,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "大きな正方形",
+    "question": "<ruby>同<rt>おな</rt></ruby>じ<ruby>形<rt>かたち</rt></ruby>を4つ<ruby>使<rt>つか</rt></ruby>って<ruby>大<rt>おお</rt></ruby>きな<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>作<rt>つく</rt></ruby>れますか？",
+    "answer": "はい、作れます（例：小さな正方形4つ、直角三角形4つなど）",
+    "explanation": "小さな正方形を2×2に並べると大きな正方形になります。直角二等辺三角形4つでも作れます。",
+    "hints": ["並べてみよう"],
+    "alternativeSolutions": ["L字型のピースでも工夫すれば作れる場合がある"]
+  },
+  {
+    "id": 3020,
+    "genre": "number",
+    "difficulty": 3,
+    "title": "99+99",
+    "question": "99 + 99 を<ruby>筆算<rt>ひっさん</rt></ruby>なしで<ruby>工夫<rt>くふう</rt></ruby>して<ruby>計算<rt>けいさん</rt></ruby>してください。",
+    "answer": "198",
+    "explanation": "99は100-1なので、99+99=(100-1)+(100-1)=200-2=198。",
+    "hints": ["100に近い数"],
+    "alternativeSolutions": ["99×2=100×2-2=198 と考えてもよい"]
+  }
+]
