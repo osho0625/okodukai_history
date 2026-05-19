@@ -341,6 +341,12 @@ function renderTicketCard(ticket) {
     actionHtml = `<button onclick="cancelApproval('${ticket.id}')" style="display:block;width:100%;margin-top:12px;padding:10px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-weight:600;cursor:pointer;">承認取消</button>`;
   }
 
+  // Admin: 削除ボタン（全ステータスで表示）
+  let deleteHtml = '';
+  if (isAdmin) {
+    deleteHtml = `<button onclick="deleteTicket('${ticket.id}')" style="display:block;width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:none;color:#999;font-size:0.8em;cursor:pointer;">🗑 削除</button>`;
+  }
+
   return `
     <div class="ticket-card ${cardClass}" data-ticket-id="${ticket.id}">
       <div class="ticket-body">
@@ -371,6 +377,7 @@ function renderTicketCard(ticket) {
       ${st === 'used' ? '<div class="stamp-overlay">つかったよ</div>' : ''}
       ${statusHtml}
       ${actionHtml}
+      ${deleteHtml}
     </div>
   `;
 }
@@ -554,6 +561,14 @@ async function cancelApproval(ticketId) {
   if (error || !data || data.length === 0) { showError('取消に失敗しました'); return; }
   const t = data[0];
   notifyWithTimeout(`🔄 ${t.owner}のチケットNo.${t.ticket_no}承認を取り消しました`);
+  await loadTickets();
+  renderCurrentTab();
+}
+
+async function deleteTicket(ticketId) {
+  if (!confirm('このチケットを削除しますか？（元に戻せません）')) return;
+  const { error } = await client.from('tickets').delete().eq('id', ticketId);
+  if (error) { showError('削除に失敗しました'); return; }
   await loadTickets();
   renderCurrentTab();
 }
