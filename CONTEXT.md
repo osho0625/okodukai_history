@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/19 v1.65.0
+最終更新: 2026/05/19 v1.66.0
 
 ## プロジェクト概要
 
@@ -206,7 +206,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ### 算数オリンピック（pages/math-olympiad.html）
 - 思考力育成アプリ。算数オリンピック風の問題を1問ずつ提示
 - 単一HTML内6ビュー切り替え（SPA風）: 登録/問題一覧/回答/提出完了/結果/管理者採点
-- 問題データ: data/math-olympiad-problems.json（50問、5ジャンル×難易度3段階）
+- 問題データ: data/math-olympiad-problems.json（70問、5ジャンル×難易度4段階）
 - ジャンル: number_pattern/geometry/logic/combinatorics/word_problem
 - 難易度: Lv1(10分)/Lv2(20分)/Lv3(30分+)
 - ユーザー識別: user_id(UUID) + user_name（表示用）、localStorage管理
@@ -344,7 +344,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.65.0
+- 現在: v1.66.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
