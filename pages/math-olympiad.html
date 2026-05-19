@@ -1145,7 +1145,9 @@ function showReviewDetail(index) {
   document.getElementById('review-answer-text').textContent = review.answer_text;
   document.getElementById('review-thinking').textContent = review.thinking_note || '（なし）';
   document.getElementById('review-elapsed').textContent = minutes > 0 ? minutes + '分' + seconds + '秒' : seconds + '秒';
-  document.getElementById('review-hints').textContent = review.hints_used + '個';
+  document.getElementById('review-hints').innerHTML = review.hints_used > 0
+    ? '<span style="color:' + (review.hints_used >= 3 ? '#ff6b6b' : review.hints_used === 2 ? '#ffa500' : '#ffdd57') + ';font-weight:700;">💡 ' + review.hints_used + '個</span>'
+    : '0個（ヒントなし）';
   document.getElementById('review-score').value = '';
   document.getElementById('review-comment').value = '';
   document.getElementById('review-detail').classList.remove('hidden');
