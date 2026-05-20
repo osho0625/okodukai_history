@@ -309,9 +309,9 @@ select {
 <!-- View: Grade Select -->
 <div id="view-grade-select" class="view hidden">
   <div class="container">
-    <div id="total-score-area" style="text-align:center; margin-bottom:20px; display:none;">
-      <div style="font-size:0.85em; color:#aaa;">合計とくてん</div>
-      <div id="total-score-display" style="font-size:2em; font-weight:700; color:#ffd700;"></div>
+    <div id="total-score-area" style="margin-bottom:20px; display:none;">
+      <div style="font-size:0.85em; color:#aaa; text-align:center; margin-bottom:8px;">🏆 合計とくてん</div>
+      <div id="total-score-ranking" style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;"></div>
     </div>
     <div style="text-align:center; margin-bottom: 24px;">
       <div style="font-size: 2.5em; margin-bottom: 12px;">📚</div>
@@ -322,16 +322,22 @@ select {
         <div style="font-size:1.8em; margin-bottom:8px;">🌱</div>
         <div class="problem-card-title">小学1年</div>
         <div class="problem-card-meta" style="justify-content:center;">たしざん・ひきざん・かたち</div>
+        <div id="grade1-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
+        <div id="grade1-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
       </div>
       <div class="problem-card" onclick="selectGrade('grade3')" style="text-align:center;">
         <div style="font-size:1.8em; margin-bottom:8px;">🌿</div>
         <div class="problem-card-title">小学3年</div>
         <div class="problem-card-meta" style="justify-content:center;">わり算・図形・きまり</div>
+        <div id="grade3-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
+        <div id="grade3-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
       </div>
       <div class="problem-card" onclick="selectGrade('grade5')" style="text-align:center;">
         <div style="font-size:1.8em; margin-bottom:8px;">🌳</div>
         <div class="problem-card-title">小学5年（オリンピック）</div>
         <div class="problem-card-meta" style="justify-content:center;">思考力・論理・場合の数</div>
+        <div id="grade5-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
+        <div id="grade5-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
       </div>
     </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
@@ -777,14 +783,76 @@ function getTotalScore() {
 }
 
 function renderTotalScore() {
-  const total = getTotalScore();
   const area = document.getElementById('total-score-area');
-  const display = document.getElementById('total-score-display');
-  if (total > 0) {
+  if (allReviewedAnswers.length === 0) { area.style.display = 'none'; return; }
+  
+  // Per-user total scores (all grades combined)
+  const userScores = {};
+  allReviewedAnswers.forEach(a => {
+    if (a.score !== null) {
+      userScores[a.user_name] = (userScores[a.user_name] || 0) + a.score;
+    }
+  });
+  const sorted = Object.entries(userScores).sort((a, b) => b[1] - a[1]);
+  
+  if (sorted.length > 0) {
     area.style.display = 'block';
-    display.textContent = total + '点';
-  } else {
-    area.style.display = 'none';
+    const medals = ['🥇', '🥈', '🥉'];
+    document.getElementById('total-score-ranking').innerHTML = sorted.map((entry, i) => {
+      const medal = medals[i] || (i + 1) + '位';
+      const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#aaa';
+      return `<div style="text-align:center;"><div style="font-size:1.4em;">${medal}</div><div style="color:${color};font-weight:700;font-size:1.2em;">${entry[1]}点</div><div style="font-size:0.8em;color:#aaa;">${entry[0]}</div></div>`;
+    }).join('');
+  }
+  
+  // Per-grade rankings and stats
+  renderGradeStats();
+}
+
+function renderGradeStats() {
+  const gradeMap = { grade1: [1001, 1020], grade3: [3001, 3020], grade5: [1, 70] };
+  const userId = localStorage.getItem('math_olympiad_user_id');
+  
+  for (const [grade, [minId, maxId]] of Object.entries(gradeMap)) {
+    const gradeAnswers = allReviewedAnswers.filter(a => a.problem_id >= minId && a.problem_id <= maxId);
+    const gradeProblems = allProblemsCache[grade] || [];
+    
+    // Per-user scores for this grade
+    const userScores = {};
+    gradeAnswers.forEach(a => {
+      if (a.score !== null) {
+        userScores[a.user_name] = (userScores[a.user_name] || 0) + a.score;
+      }
+    });
+    const sorted = Object.entries(userScores).sort((a, b) => b[1] - a[1]);
+    
+    const rankingEl = document.getElementById(grade + '-ranking');
+    if (sorted.length > 0) {
+      const medals = ['🥇', '🥈', '🥉'];
+      rankingEl.innerHTML = sorted.slice(0, 3).map((entry, i) =>
+        `${medals[i] || ''}${entry[1]}点(${entry[0]})`
+      ).join(' ');
+    } else {
+      rankingEl.textContent = '';
+    }
+    
+    // Stats for current user
+    const statsEl = document.getElementById(grade + '-stats');
+    if (userId && gradeProblems.length > 0) {
+      // Count from allReviewedAnswers + pending from userAnswers
+      const myReviewed = gradeAnswers.filter(a => a.user_name === localStorage.getItem('math_olympiad_user')).length;
+      const myPending = userAnswers.filter(a => a.status === 'pending' && a.problem_id >= minId && a.problem_id <= maxId).length;
+      const total = gradeProblems.length;
+      const unanswered = total - myReviewed - myPending;
+      
+      const parts = [];
+      if (myReviewed > 0) parts.push(`✅${myReviewed}問採点済`);
+      if (myPending > 0) parts.push(`⏳${myPending}問採点待`);
+      if (unanswered > 0) parts.push(`📝${unanswered}問未回答`);
+      statsEl.textContent = parts.join(' ');
+    } else {
+      statsEl.textContent = '';
+    }
   }
 }
 
