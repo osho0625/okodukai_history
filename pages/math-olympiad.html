@@ -1473,7 +1473,8 @@ let aiApiKeys = null;
 async function loadAiApiKeys() {
   if (aiApiKeys) return aiApiKeys;
   try {
-    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+    const { data, error } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+    if (error) throw error;
     aiApiKeys = {};
     if (data) data.forEach(row => {
       if (row.key === 'gemini_api_key') aiApiKeys.gemini_api_key = row.value;
@@ -1481,6 +1482,7 @@ async function loadAiApiKeys() {
     });
     return aiApiKeys;
   } catch (e) {
+    console.error('APIキー読み込み失敗:', e);
     return {};
   }
 }
@@ -1535,8 +1537,9 @@ ${review.answer_text}
   if (keys.gemini_api_key) {
     try {
       result = await callGemini(keys.gemini_api_key, prompt);
-      status.textContent = '✅ Gemini';
+      if (result) status.textContent = '✅ Gemini';
     } catch (e) {
+      console.error('Gemini採点失敗:', e);
       status.textContent = 'Gemini失敗、Groq試行中...';
     }
   }
@@ -1580,12 +1583,19 @@ async function callGemini(apiKey, prompt) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { thinkingConfig: { thinkingBudget: 0 } }
     })
   });
-  if (!res.ok) throw new Error('Gemini API error: ' + res.status);
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error('Gemini API error:', res.status, errBody);
+    throw new Error('Gemini API error: ' + res.status);
+  }
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const textPart = parts.find(p => p.text !== undefined);
+  return textPart?.text || '';
 }
 
 async function callGroq(apiKey, prompt) {
