@@ -2,11 +2,11 @@
   {
     "id": 2001,
     "genre": "addition",
-    "difficulty": 1,
+    "difficulty": 2,
     "title": "たし算パズル",
-    "question": "□＋□＝12 になる<ruby>組<rt>くみ</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせを<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>見<rt>み</rt></ruby>つけよう。（0は<ruby>使<rt>つか</rt></ruby>わない）",
-    "answer": "1+11、2+10、3+9、4+8、5+7、6+6（6通り）",
-    "explanation": "1から順に相手の数を考えます。1+11、2+10、3+9、4+8、5+7、6+6 の6通りです。",
+    "question": "□＋□＝12 になる<ruby>組<rt>くみ</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせを<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>見<rt>み</rt></ruby>つけよう。（0は<ruby>使<rt>つか</rt></ruby>わない。□には1<ruby>以上<rt>いじょう</rt></ruby>の<ruby>整数<rt>せいすう</rt></ruby>が<ruby>入<rt>はい</rt></ruby>る。<ruby>順番<rt>じゅんばん</rt></ruby>がちがうだけのもの（<ruby>例<rt>れい</rt></ruby>：3+9と9+3）は<ruby>同<rt>おな</rt></ruby>じとする）",
+    "answer": "6通り",
+    "explanation": "1から順に相手の数を考えます。1+11、2+10、3+9、4+8、5+7、6+6 の6通りです。順番を入れかえただけのものは同じ組み合わせと数えます。",
     "hints": ["1から順に考えよう", "相手の数は12から引けばわかるよ"],
     "alternativeSolutions": []
   },
@@ -15,9 +15,9 @@
     "genre": "subtraction",
     "difficulty": 1,
     "title": "ひき算の工夫",
-    "question": "53−18 を<ruby>暗算<rt>あんざん</rt></ruby>で<ruby>計算<rt>けいさん</rt></ruby>しよう。<ruby>工夫<rt>くふう</rt></ruby>のしかたも<ruby>説明<rt>せつめい</rt></ruby>してね。",
+    "question": "53−18 を<ruby>暗算<rt>あんざん</rt></ruby>で<ruby>計算<rt>けいさん</rt></ruby>しよう。",
     "answer": "35",
-    "explanation": "53−18＝53−20＋2＝35。18を20にして引いて、引きすぎた2を足します。",
+    "explanation": "53−18＝53−20＋2＝35。18を20にして引いて、引きすぎた2を足す工夫ができます。",
     "hints": ["18を20にしてみよう", "引きすぎた分を足そう"],
     "alternativeSolutions": ["53−18＝(50−18)＋3＝32＋3＝35"]
   },
@@ -26,11 +26,11 @@
     "genre": "multiplication",
     "difficulty": 1,
     "title": "かけ算のきまり",
-    "question": "3×4 と 4×3 の<ruby>答<rt>こた</rt></ruby>えは<ruby>同<rt>おな</rt></ruby>じ？ <ruby>絵<rt>え</rt></ruby>で<ruby>説明<rt>せつめい</rt></ruby>してみよう。",
-    "answer": "同じ（どちらも12）",
+    "question": "3×4 と 4×3 の<ruby>答<rt>こた</rt></ruby>えは<ruby>同<rt>おな</rt></ruby>じ？ それとも<ruby>違<rt>ちが</rt></ruby>う？",
+    "answer": "同じ",
     "explanation": "3×4は「3が4つ」で12。4×3は「4が3つ」で12。かけ算は順番を変えても答えは同じです。",
     "hints": ["3×4は3が4つ分", "4×3は4が3つ分"],
-    "alternativeSolutions": ["3列4行のマスと4列3行のマスは同じ数"]
+    "alternativeSolutions": []
   },
   {
     "id": 2004,
@@ -146,12 +146,12 @@
   {
     "id": 2014,
     "genre": "geometry",
-    "difficulty": 2,
+    "difficulty": 1,
     "title": "直角",
-    "question": "<ruby>直角<rt>ちょっかく</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>？ <ruby>身<rt>み</rt></ruby>の<ruby>回<rt>まわ</rt></ruby>りで<ruby>直角<rt>ちょっかく</rt></ruby>を3つ<ruby>見<rt>み</rt></ruby>つけてみよう。",
-    "answer": "90度。例：本の角、机の角、窓の角",
-    "explanation": "直角は90度です。四角い物の角はほとんど直角です。",
-    "hints": ["四角い物を探そう"],
+    "question": "<ruby>直角<rt>ちょっかく</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>？",
+    "answer": "90度",
+    "explanation": "直角は90度です。身の回りでは、本の角や机の角、窓の角などが直角です。",
+    "hints": ["四角い物の角を思い出そう"],
     "alternativeSolutions": []
   },
   {
@@ -314,10 +314,10 @@
     "genre": "logic",
     "difficulty": 3,
     "title": "うそつき",
-    "question": "A「<ruby>私<rt>わたし</rt></ruby>は<ruby>犬<rt>いぬ</rt></ruby>が<ruby>好<rt>す</rt></ruby>き」B「Aは<ruby>猫<rt>ねこ</rt></ruby>が<ruby>好<rt>す</rt></ruby>き」。2人のうち1人がうそをついています。<ruby>本当<rt>ほんとう</rt></ruby>のことを<ruby>言<rt>い</rt></ruby>っているのはだれ？",
-    "answer": "A（Aが本当のことを言っている）",
-    "explanation": "Aが本当→犬が好き→Bの「猫が好き」はうそ→整合。Aがうそ→犬が好きではない→Bの「猫が好き」が本当かは不明。Aが自分のことを一番知っているので、Aが正直でBがうそ。",
-    "hints": ["Aが本当だとすると？", "Bが本当だとすると？"],
+    "question": "A「<ruby>私<rt>わたし</rt></ruby>は<ruby>犬<rt>いぬ</rt></ruby>が<ruby>好<rt>す</rt></ruby>き」B「Aは<ruby>犬<rt>いぬ</rt></ruby>が<ruby>好<rt>す</rt></ruby>きではない」。2人のうち1人だけがうそをついています。うそをついているのはだれ？",
+    "answer": "B",
+    "explanation": "Aが本当→犬が好き→Bの「犬が好きではない」はうそ→1人だけうそで整合。Aがうそ→犬が好きではない→Bの「犬が好きではない」は本当→うそつきが0人になり「1人だけうそ」に矛盾。よってBがうそつき。",
+    "hints": ["Aが本当だとすると？", "Aがうそだとすると矛盾する？"],
     "alternativeSolutions": []
   },
   {
@@ -369,10 +369,10 @@
     "genre": "geometry",
     "difficulty": 1,
     "title": "半分の形",
-    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>半分<rt>はんぶん</rt></ruby>に<ruby>切<rt>き</rt></ruby>ると、どんな<ruby>形<rt>かたち</rt></ruby>ができる？ 2<ruby>通<rt>とお</rt></ruby>り<ruby>考<rt>かんが</rt></ruby>えてみよう。",
-    "answer": "長方形（横に切る）と三角形（対角線で切る）",
-    "explanation": "横（または縦）に切ると長方形2つ。対角線で切ると直角三角形2つになります。",
-    "hints": ["まっすぐ切る方法と、ななめに切る方法"],
+    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>辺<rt>へん</rt></ruby>の<ruby>真<rt>ま</rt></ruby>ん<ruby>中<rt>なか</rt></ruby>どうしを<ruby>横<rt>よこ</rt></ruby>に<ruby>結<rt>むす</rt></ruby>んで<ruby>切<rt>き</rt></ruby>ると<ruby>何<rt>なに</rt></ruby>ができる？ <ruby>対角線<rt>たいかくせん</rt></ruby>で<ruby>切<rt>き</rt></ruby>ると<ruby>何<rt>なに</rt></ruby>ができる？",
+    "answer": "横に切ると長方形、対角線で切ると三角形",
+    "explanation": "辺の真ん中どうしを横に結んで切ると長方形が2つできます。対角線で切ると直角三角形が2つできます。",
+    "hints": ["横に切った形は何角形？", "ななめに切った形は何角形？"],
     "alternativeSolutions": []
   },
   {
