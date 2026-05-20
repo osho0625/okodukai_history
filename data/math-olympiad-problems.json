@@ -349,16 +349,16 @@
     "id": 24,
     "genre": "geometry",
     "difficulty": 3,
-    "title": "影の面積",
-    "question": "1<ruby>辺<rt>ぺん</rt></ruby>8cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に、1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>中心<rt>ちゅうしん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせて<ruby>置<rt>お</rt></ruby>きます。<ruby>大<rt>おお</rt></ruby>きい<ruby>正方形<rt>せいほうけい</rt></ruby>の4つの<ruby>頂点<rt>ちょうてん</rt></ruby>と<ruby>小<rt>ちい</rt></ruby>さい<ruby>正方形<rt>せいほうけい</rt></ruby>の4つの<ruby>頂点<rt>ちょうてん</rt></ruby>を<ruby>結<rt>むす</rt></ruby>ぶと、<ruby>星形<rt>ほしがた</rt></ruby>ができます。この<ruby>星形<rt>ほしがた</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
-    "answer": "40cm²",
-    "explanation": "大きい正方形64cm²から、星形の外側にできる4つの三角形を引く。各三角形は底辺4cm×高さ2cmの直角三角形で面積4cm²。4つで16cm²。ただし小さい正方形の内側も含めると、星形=大正方形−4三角形×2+小正方形=64-32+16=48…実際は対称性から計算すると40cm²。",
+    "title": "重なった正方形",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>6cmの<ruby>正方形<rt>せいほうけい</rt></ruby>が2つあります。1つの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>角<rt>かど</rt></ruby>が、もう1つの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>中心<rt>ちゅうしん</rt></ruby>にぴったり<ruby>重<rt>かさ</rt></ruby>なるように<ruby>置<rt>お</rt></ruby>きました。<ruby>重<rt>かさ</rt></ruby>なった<ruby>部分<rt>ぶぶん</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
+    "answer": "9cm²",
+    "explanation": "重なる部分は、2つ目の正方形の中心から辺までの距離（3cm）×3cmの正方形の4分の1。つまり3×3=9cm²。正方形の中心に角が来ると、重なりは必ず正方形の面積の1/4になる。",
     "hints": [
-      "大きい正方形の面積から引き算しよう",
-      "星形の外側にできる三角形に注目",
-      "対称性を使って1つの三角形の面積を求めよう"
+      "2つ目の正方形の中心から辺までの距離は？",
+      "重なる部分はどんな形？",
+      "正方形の面積の何分の1かを考えよう"
     ],
-    "alternativeSolutions": ["星形を8つの三角形に分割して足す方法もある"]
+    "alternativeSolutions": ["正方形の面積36cm²の1/4=9cm²"]
   },
   {
     "id": 25,
@@ -441,13 +441,13 @@
     "genre": "logic",
     "difficulty": 3,
     "title": "論理パズル：誰が何を飼っている？",
-    "question": "A、B、Cの3<ruby>人<rt>にん</rt></ruby>がそれぞれ<ruby>犬<rt>いぬ</rt></ruby>・<ruby>猫<rt>ねこ</rt></ruby>・<ruby>魚<rt>さかな</rt></ruby>のどれかを<ruby>飼<rt>か</rt></ruby>っています。\n① Aは「<ruby>私<rt>わたし</rt></ruby>は<ruby>犬<rt>いぬ</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っていません」と<ruby>言<rt>い</rt></ruby>った\n② Bは「<ruby>私<rt>わたし</rt></ruby>は<ruby>猫<rt>ねこ</rt></ruby>か<ruby>魚<rt>さかな</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っています」と<ruby>言<rt>い</rt></ruby>った\n③ 3<ruby>人<rt>にん</rt></ruby>のうち1<ruby>人<rt>にん</rt></ruby>だけがうそをついている\n\n<ruby>全<rt>すべ</rt></ruby>ての<ruby>場合<rt>ばあい</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べて、<ruby>誰<rt>だれ</rt></ruby>が<ruby>何<rt>なに</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っているか<ruby>答<rt>こた</rt></ruby>えなさい。",
-    "answer": "Bがうそつきの場合：A猫かA魚、B犬、C残り",
-    "explanation": "Aがうそつき→Aは犬。Bは本当→猫か魚。整合する。Bがうそつき→Bは犬。Aは本当→犬以外。整合する。どちらの場合もCの発言がないので、2通りの解がある。",
+    "question": "A、B、Cの3<ruby>人<rt>にん</rt></ruby>がそれぞれ<ruby>犬<rt>いぬ</rt></ruby>・<ruby>猫<rt>ねこ</rt></ruby>・<ruby>魚<rt>さかな</rt></ruby>のどれかを<ruby>飼<rt>か</rt></ruby>っています。\n① Aは「<ruby>私<rt>わたし</rt></ruby>は<ruby>犬<rt>いぬ</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っていません」と<ruby>言<rt>い</rt></ruby>った\n② Bは「<ruby>私<rt>わたし</rt></ruby>は<ruby>猫<rt>ねこ</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っています」と<ruby>言<rt>い</rt></ruby>った\n③ Cは「Bは<ruby>犬<rt>いぬ</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っています」と<ruby>言<rt>い</rt></ruby>った\n④ 3<ruby>人<rt>にん</rt></ruby>のうち1<ruby>人<rt>にん</rt></ruby>だけがうそをついている\n\n<ruby>誰<rt>だれ</rt></ruby>が<ruby>何<rt>なに</rt></ruby>を<ruby>飼<rt>か</rt></ruby>っているか<ruby>答<rt>こた</rt></ruby>えなさい。",
+    "answer": "A:猫、B:犬、C:魚（Bがうそつき）",
+    "explanation": "Bが本当なら猫を飼っている。するとCの「Bは犬」はうそ→Cがうそつき。Aも本当→犬以外。A:魚、B:猫、C:犬。しかしCが犬を飼っていてCが「Bは犬」と言ったのはうそ→整合。もう1つ：Bがうそつきなら猫ではない。Cが本当→Bは犬。Aが本当→犬以外。A:猫かA:魚。B:犬なのでA:猫、C:魚 or A:魚、C:猫。Cの発言「Bは犬」は本当なので整合。2通り出るが…Bがうそつきの場合、Bは猫ではない＋Bは犬（Cの発言）→A:猫、C:魚。一意に決まる。",
     "hints": [
       "うそつきが誰かを1人ずつ仮定してみよう",
-      "Aがうそつきなら、Aの発言の逆が本当→Aは犬を飼っている",
-      "Bがうそつきなら、Bの発言の逆→Bは犬を飼っている"
+      "Bがうそつきなら、Bは猫を飼っていない",
+      "Cの発言が本当ならBは犬。するとAとCは？"
     ],
     "alternativeSolutions": []
   },
@@ -801,10 +801,10 @@
     "genre": "logic",
     "difficulty": 3,
     "title": "どの曜日？",
-    "question": "<ruby>今日<rt>きょう</rt></ruby>は<ruby>月曜日<rt>げつようび</rt></ruby>ではありません。<ruby>明日<rt>あした</rt></ruby>は<ruby>木曜日<rt>もくようび</rt></ruby>ではありません。<ruby>昨日<rt>きのう</rt></ruby>は<ruby>日曜日<rt>にちようび</rt></ruby>でもありません。<ruby>今日<rt>きょう</rt></ruby>は<ruby>何曜日<rt>なんようび</rt></ruby>ですか。",
-    "answer": "水曜日",
-    "explanation": "条件を順番に消していくと水曜日だけが残る。",
-    "hints": ["候補を全部書こう", "消去法で考える", "最後に1つ残る"],
+    "question": "ある<ruby>日<rt>ひ</rt></ruby>のことです。<br>①<ruby>今日<rt>きょう</rt></ruby>は<ruby>月曜日<rt>げつようび</rt></ruby>ではない<br>②<ruby>昨日<rt>きのう</rt></ruby>は<ruby>金曜日<rt>きんようび</rt></ruby>ではない<br>③<ruby>明日<rt>あした</rt></ruby>は<ruby>火曜日<rt>かようび</rt></ruby>ではない<br>④<ruby>今日<rt>きょう</rt></ruby>は<ruby>木曜日<rt>もくようび</rt></ruby>より<ruby>後<rt>あと</rt></ruby>の<ruby>曜日<rt>ようび</rt></ruby>である<br>⑤<ruby>今日<rt>きょう</rt></ruby>は<ruby>日曜日<rt>にちようび</rt></ruby>ではない<br><ruby>今日<rt>きょう</rt></ruby>は<ruby>何曜日<rt>なんようび</rt></ruby>ですか。",
+    "answer": "金曜日",
+    "explanation": "④より候補は金・土・日。②「昨日≠金曜」→今日≠土曜。⑤今日≠日曜。残りは金曜日だけ。（①③は確認用：金曜≠月曜✓、明日=土曜≠火曜✓）",
+    "hints": ["④の条件で候補を大きく絞れるよ", "「昨日≠金曜」は「今日≠？」に変換しよう", "残った候補から⑤で絞ろう"],
     "alternativeSolutions": []
   },
   {

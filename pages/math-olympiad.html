@@ -1539,19 +1539,18 @@ async function aiGrade() {
 
   const keys = await loadAiApiKeys();
   const prompt = `あなたは小学生向け算数コンテストの採点官です。以下の問題と解答を採点してください。
+あなた自身で問題を解いて正解を導き出し、それと受験者の解答を比較して採点してください。
 
 【問題】
 ${problem.question.replace(/<[^>]+>/g, '')}
-
-【模範解答】
-${problem.answer}
 
 【受験者の解答】
 ${review.answer_text}
 
 【採点ルール】
 - 10点満点で採点する
-- 模範解答と完全に同じ表現でなくても、問題の意図を正しく理解し本質的に正しい回答であれば満点（10点）とする
+- まずあなた自身で問題を解き、正解を確認する
+- 受験者の解答が問題の意図を正しく理解し本質的に正しければ満点（10点）とする
 - 表現が違っても論理的に同じ結論に達していれば正解とする
 - 小学生の回答なので、言葉遣いや表現の稚拙さは減点しない
 - 答えの方向性は合っているが不完全な場合は部分点を与える
@@ -1617,20 +1616,33 @@ ${review.answer_text}
 }
 
 async function callGemini(apiKey, prompt) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
-    })
-  });
-  if (!res.ok) {
-    const errBody = await res.text().catch(() => '');
-    console.error('Gemini API error:', res.status, errBody);
-    throw new Error('Gemini API error: ' + res.status);
+  // Try gemini-2.0-flash first, fallback to 2.5-flash-lite
+  const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body = model.includes('2.5') 
+        ? { contents: [{ parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }
+        : { contents: [{ parts: [{ text: prompt }] }] };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        console.warn('Gemini ' + model + ' failed:', res.status);
+        continue;
+      }
+      const data = await res.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find(p => p.text !== undefined);
+      if (textPart?.text) return textPart.text;
+    } catch (e) {
+      console.warn('Gemini ' + model + ' error:', e);
+      continue;
+    }
   }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  throw new Error('All Gemini models failed');
 }
 
 async function callGroq(apiKey, prompt) {
@@ -1699,7 +1711,6 @@ async function sendAiChat() {
 
   const systemContext = `あなたは小学生向け算数コンテストの採点官です。以下の問題について会話しています。
 問題: ${problem ? problem.question.replace(/<[^>]+>/g, '') : ''}
-模範解答: ${problem ? problem.answer : ''}
 受験者の解答: ${review ? review.answer_text : ''}
 現在の採点: ${document.getElementById('review-score').value || '未採点'}点
 コメント: ${document.getElementById('review-comment').value || 'なし'}
