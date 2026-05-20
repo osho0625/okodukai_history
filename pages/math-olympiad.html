@@ -461,6 +461,14 @@ select {
   <div class="container">
     <div class="score-display" id="result-score"></div>
     <div class="result-section">
+      <div class="result-label">あなたの回答</div>
+      <div id="result-my-answer"></div>
+    </div>
+    <div id="result-my-thinking-section" class="result-section" style="display:none;">
+      <div class="result-label">あなたの考え方</div>
+      <div id="result-my-thinking"></div>
+    </div>
+    <div class="result-section">
       <div class="result-label">先生のコメント</div>
       <div id="result-comment"></div>
     </div>
@@ -1758,6 +1766,17 @@ function showResult(problemId) {
 
 function renderResultView(answer, problem) {
   document.getElementById('result-score').textContent = `${answer.score} / 10`;
+  
+  // Show user's own answer and thinking
+  document.getElementById('result-my-answer').textContent = answer.answer_text || '';
+  const thinkingSection = document.getElementById('result-my-thinking-section');
+  if (answer.thinking_note) {
+    thinkingSection.style.display = 'block';
+    document.getElementById('result-my-thinking').textContent = answer.thinking_note;
+  } else {
+    thinkingSection.style.display = 'none';
+  }
+  
   document.getElementById('result-comment').textContent = answer.admin_comment || '';
   document.getElementById('result-answer').innerHTML =
     DOMPurify.sanitize(problem.answer, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] });
