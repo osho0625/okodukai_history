@@ -1557,13 +1557,14 @@ ${review.answer_text}
 - 完全に間違っている場合でも、考え方の一部が正しければ部分点を与える
 
 【採点コメントのルール】
+- 最初の1行目に「正解！」「惜しい！」「残念…」のいずれかを書く
 - 小学生にも分かる言葉で書く
 - 良い点を先に褒める
 - 間違っている場合は「どこが違うか」「どう考えれば正解にたどり着けるか」を具体的に説明する
 
-回答形式:
-点数: X/10
-コメント: （採点コメント）`;
+回答は必ず以下の形式で書いてください（形式を厳守）:
+点数: X
+コメント: （最初に正解！/惜しい！/残念…から始める採点コメント）`;
 
   let result = null;
 
@@ -1597,14 +1598,23 @@ ${review.answer_text}
   }
 
   // Parse result and fill in score/comment
-  const scoreMatch = result.match(/点数[：:]\s*(\d+)/);
-  const commentMatch = result.match(/コメント[：:]\s*([\s\S]*)/);
+  const scoreMatch = result.match(/点数[：:]\s*(\d+)/) || result.match(/(\d+)\s*[\/／]\s*10/) || result.match(/(\d+)\s*点/);
+  const commentMatch = result.match(/コメント[：:]\s*([\s\S]*)/) || result.match(/(?:正解|惜しい|残念)([\s\S]*)/);
   
   if (scoreMatch) {
-    document.getElementById('review-score').value = parseInt(scoreMatch[1]);
+    const score = parseInt(scoreMatch[1]);
+    if (score >= 0 && score <= 10) {
+      document.getElementById('review-score').value = score;
+    }
   }
   if (commentMatch) {
-    document.getElementById('review-comment').value = commentMatch[1].trim();
+    // If matched via コメント:, use group 1. If matched via 正解/惜しい/残念, include the match
+    let comment = commentMatch[1] ? commentMatch[1].trim() : '';
+    if (!comment && result.includes('コメント')) {
+      comment = result.split(/コメント[：:]/)[1]?.trim() || result;
+    }
+    if (!comment) comment = result;
+    document.getElementById('review-comment').value = comment;
   } else {
     document.getElementById('review-comment').value = result;
   }
