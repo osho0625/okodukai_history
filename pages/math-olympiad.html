@@ -426,10 +426,6 @@ select {
       <p style="color:#aaa;">難易度を選んでね</p>
     </div>
     <div class="grade-cards">
-      <div class="problem-card" onclick="selectDifficulty('all')" style="text-align:center;">
-        <div class="problem-card-title">📋 すべての難易度</div>
-        <div class="problem-card-meta" style="justify-content:center;">全問題を表示</div>
-      </div>
       <div class="problem-card" onclick="selectDifficulty(1)" style="text-align:center;">
         <div class="problem-card-title">★☆☆☆ かんたん</div>
         <div class="problem-card-meta" style="justify-content:center;" id="diff1-count"></div>
@@ -445,6 +441,10 @@ select {
       <div class="problem-card" onclick="selectDifficulty(4)" style="text-align:center;">
         <div class="problem-card-title">★★★★ 超むずかしい</div>
         <div class="problem-card-meta" style="justify-content:center;" id="diff4-count"></div>
+      </div>
+      <div class="problem-card" onclick="selectDifficulty('all')" style="text-align:center;">
+        <div class="problem-card-title">📋 すべての難易度</div>
+        <div class="problem-card-meta" style="justify-content:center;">全問題を表示</div>
       </div>
     </div>
   </div>
