@@ -537,6 +537,13 @@ select {
       <button class="btn btn-small" style="background:linear-gradient(135deg,#4285f4,#34a853);" onclick="aiGrade()" id="ai-grade-btn">🤖 AI自動採点</button>
       <span id="ai-grade-status" style="font-size:0.8em; color:#aaa; margin-left:8px;"></span>
     </div>
+    <div id="ai-chat-area" style="display:none; margin-bottom:16px;">
+      <div id="ai-chat-messages" style="max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px; font-size:0.85em;"></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="ai-chat-input" placeholder="AIに質問・反論..." style="flex:1;">
+        <button class="btn btn-small" onclick="sendAiChat()">送信</button>
+      </div>
+    </div>
     <div class="form-group">
       <label>コメント</label>
       <div class="template-btns">
@@ -1190,6 +1197,13 @@ function bindDraftEvents() {
       sessionStorage.setItem('math_thinking_draft', this.value);
     });
   }
+  // AI chat enter key
+  const chatInput = document.getElementById('ai-chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); sendAiChat(); }
+    });
+  }
 }
 
 function restoreDrafts() {
@@ -1592,6 +1606,9 @@ ${review.answer_text}
     document.getElementById('review-comment').value = result;
   }
 
+  // Show chat for follow-up conversation
+  showAiChat(result);
+
   btn.disabled = false;
 }
 
@@ -1631,6 +1648,88 @@ async function callGroq(apiKey, prompt) {
   if (!res.ok) throw new Error('Groq API error: ' + res.status);
   const data = await res.json();
   return data.choices?.[0]?.message?.content || '';
+}
+
+// AI Chat conversation
+let aiChatHistory = [];
+
+function showAiChat(initialResponse) {
+  aiChatHistory = [
+    { role: 'assistant', content: initialResponse }
+  ];
+  const chatArea = document.getElementById('ai-chat-area');
+  chatArea.style.display = 'block';
+  renderAiChatMessages();
+}
+
+function renderAiChatMessages() {
+  const container = document.getElementById('ai-chat-messages');
+  container.innerHTML = aiChatHistory.map(msg => {
+    const isUser = msg.role === 'user';
+    const align = isUser ? 'text-align:right;' : '';
+    const bg = isUser ? 'background:rgba(102,126,234,0.2);' : 'background:rgba(255,255,255,0.05);';
+    const label = isUser ? '👤' : '🤖';
+    return `<div style="${align}margin-bottom:6px;"><div style="display:inline-block;${bg}border-radius:8px;padding:6px 10px;max-width:90%;text-align:left;">${label} ${msg.content.replace(/\n/g, '<br>')}</div></div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendAiChat() {
+  const input = document.getElementById('ai-chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  aiChatHistory.push({ role: 'user', content: msg });
+  renderAiChatMessages();
+
+  const keys = await loadAiApiKeys();
+  
+  // Build context for the conversation
+  const review = pendingReviews.find(r => r.id === currentReviewId) ||
+    reviewedAnswersList.find(r => r.id === currentReviewId);
+  let problem = null;
+  if (review) {
+    for (const probs of Object.values(allProblemsCache)) {
+      problem = probs.find(p => p.id === review.problem_id);
+      if (problem) break;
+    }
+  }
+
+  const systemContext = `あなたは小学生向け算数コンテストの採点官です。以下の問題について会話しています。
+問題: ${problem ? problem.question.replace(/<[^>]+>/g, '') : ''}
+模範解答: ${problem ? problem.answer : ''}
+受験者の解答: ${review ? review.answer_text : ''}
+現在の採点: ${document.getElementById('review-score').value || '未採点'}点
+コメント: ${document.getElementById('review-comment').value || 'なし'}
+
+管理者からの質問や反論に対して、採点の根拠を説明したり、点数を修正する提案をしてください。
+もし点数を変更すべきと判断した場合は「修正提案: X点」と明記してください。`;
+
+  const fullPrompt = systemContext + '\n\n会話履歴:\n' + 
+    aiChatHistory.map(m => (m.role === 'user' ? '管理者: ' : 'AI: ') + m.content).join('\n');
+
+  let reply = '';
+  try {
+    if (keys.gemini_api_key) {
+      reply = await callGemini(keys.gemini_api_key, fullPrompt);
+    } else if (keys.groq_api_key) {
+      reply = await callGroq(keys.groq_api_key, fullPrompt);
+    } else {
+      reply = 'APIキーが設定されていません';
+    }
+  } catch (e) {
+    reply = 'エラーが発生しました: ' + e.message;
+  }
+
+  aiChatHistory.push({ role: 'assistant', content: reply });
+  renderAiChatMessages();
+
+  // Auto-update score if AI suggests a change
+  const scoreChange = reply.match(/修正提案[：:]\s*(\d+)点/);
+  if (scoreChange) {
+    document.getElementById('review-score').value = parseInt(scoreChange[1]);
+  }
 }
 
 // === Admin Management Functions ===
