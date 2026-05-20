@@ -32,3 +32,7 @@ CREATE POLICY "math_battle_dispute_votes_all" ON math_battle_dispute_votes FOR A
 -- Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE math_battle_disputes;
 ALTER PUBLICATION supabase_realtime ADD TABLE math_battle_dispute_votes;
+
+
+-- プレイヤーにadminフラグ追加
+ALTER TABLE math_battle_players ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;

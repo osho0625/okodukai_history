@@ -310,6 +310,7 @@ let aiApiKeys = null;
 let isRoomHost = false; // この端末が部屋を作ったかどうか
 let battleUserName = ''; // この対戦で使う名前
 let battleUserId = ''; // この対戦で使うID
+let roomHasAdmin = false; // ルーム内にadminがいるか
 
 // === Utilities ===
 function showView(id) {
@@ -462,7 +463,8 @@ async function joinAsPlayer(roomId) {
   const { data, error } = await client.from('math_battle_players').insert({
     room_id: roomId,
     user_id: getUserId(),
-    user_name: getUserName()
+    user_name: getUserName(),
+    is_admin: isAdmin
   }).select().single();
 
   if (error && error.code === '23505') {
@@ -841,6 +843,11 @@ let allFinishedPolling = null;
 async function showMyResults() {
   showView('view-my-results');
 
+  // Check if room has admin player
+  const { data: players } = await client.from('math_battle_players')
+    .select('is_admin').eq('room_id', currentRoom.id);
+  roomHasAdmin = players ? players.some(p => p.is_admin) : false;
+
   const { data } = await client.from('math_battle_answers')
     .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
   myAnswersData = data || [];
@@ -850,7 +857,7 @@ async function showMyResults() {
 
   renderMyResultsList();
   startWaitingForOthers();
-  subscribeToDisputes();
+  if (roomHasAdmin) subscribeToDisputes();
 }
 
 function renderMyResultsList() {
@@ -859,13 +866,16 @@ function renderMyResultsList() {
     const problem = findProblem(a.problem_id);
     const title = problem ? problem.title : '問題' + a.problem_id;
     const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
-    return `<div class="card" onclick="openChat(${i})">
+    const chatHint = roomHasAdmin
+      ? '<div style="font-size:0.75em;color:#667eea;margin-top:4px;">💬 タップして採点に異議を申し立てる</div>'
+      : '';
+    return `<div class="card" ${roomHasAdmin ? `onclick="openChat(${i})"` : ''} style="${roomHasAdmin ? 'cursor:pointer;' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-weight:600;font-size:0.9em;">${title}</span>
         <span style="color:${scoreColor};font-weight:700;">${a.score ?? '?'}/10</span>
       </div>
       <div style="font-size:0.8em;color:#aaa;margin-top:4px;">${a.ai_comment || ''}</div>
-      <div style="font-size:0.75em;color:#667eea;margin-top:4px;">💬 タップして採点に異議を申し立てる</div>
+      ${chatHint}
     </div>`;
   }).join('');
 }
@@ -1225,6 +1235,7 @@ function cleanupRoom() {
   currentRoom = null;
   currentPlayerId = null;
   isRoomHost = false;
+  roomHasAdmin = false;
   battleUserName = '';
   battleUserId = '';
   battleProblems = [];
