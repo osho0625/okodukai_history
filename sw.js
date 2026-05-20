@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v91';
+const CACHE_NAME = 'okozukai-v92';
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,7 @@ const ASSETS = [
   './pages/ticket.html',
   './pages/math-olympiad.html',
   './pages/math-battle.html',
-  './data/math-olympiad-problems.json',
+  './data/math-olympiad-grade5.json',
   './data/math-olympiad-grade1.json',
   './data/math-olympiad-grade3.json',
   './js/common.js',
