@@ -383,10 +383,45 @@ select {
 </div>
 
 <!-- View: Problem List -->
+<div id="view-difficulty-select" class="view hidden">
+  <div class="container">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <button class="btn btn-secondary btn-small" onclick="showView('view-grade-select')">← 学年選択</button>
+      <span id="difficulty-grade-label" style="font-weight:600;"></span>
+    </div>
+    <div style="text-align:center; margin-bottom:20px;">
+      <p style="color:#aaa;">難易度を選んでね</p>
+    </div>
+    <div class="grade-cards">
+      <div class="problem-card" onclick="selectDifficulty('all')" style="text-align:center;">
+        <div class="problem-card-title">📋 すべての難易度</div>
+        <div class="problem-card-meta" style="justify-content:center;">全問題を表示</div>
+      </div>
+      <div class="problem-card" onclick="selectDifficulty(1)" style="text-align:center;">
+        <div class="problem-card-title">★☆☆☆ かんたん</div>
+        <div class="problem-card-meta" style="justify-content:center;" id="diff1-count"></div>
+      </div>
+      <div class="problem-card" onclick="selectDifficulty(2)" style="text-align:center;">
+        <div class="problem-card-title">★★☆☆ ふつう</div>
+        <div class="problem-card-meta" style="justify-content:center;" id="diff2-count"></div>
+      </div>
+      <div class="problem-card" onclick="selectDifficulty(3)" style="text-align:center;">
+        <div class="problem-card-title">★★★☆ むずかしい</div>
+        <div class="problem-card-meta" style="justify-content:center;" id="diff3-count"></div>
+      </div>
+      <div class="problem-card" onclick="selectDifficulty(4)" style="text-align:center;">
+        <div class="problem-card-title">★★★★ 超むずかしい</div>
+        <div class="problem-card-meta" style="justify-content:center;" id="diff4-count"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View: Problem List -->
 <div id="view-problem-list" class="view hidden">
   <div class="container">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-      <button class="btn btn-secondary btn-small" onclick="showView('view-grade-select')">← 学年選択</button>
+      <button class="btn btn-secondary btn-small" onclick="showView('view-difficulty-select')">← 難易度選択</button>
       <span id="grade-label" style="font-weight:600;"></span>
     </div>
     <div class="filters">
@@ -625,8 +660,14 @@ function goBack() {
     return;
   }
   
-  // From problem list → back to grade select
+  // From problem list → back to difficulty select
   if (id === 'view-problem-list') {
+    showView('view-difficulty-select');
+    return;
+  }
+  
+  // From difficulty select → back to grade select
+  if (id === 'view-difficulty-select') {
     showView('view-grade-select');
     return;
   }
@@ -750,6 +791,26 @@ function selectGrade(grade) {
   // Update grade label
   const config = GRADE_CONFIG[grade];
   document.getElementById('grade-label').textContent = config.icon + ' ' + config.label;
+  document.getElementById('difficulty-grade-label').textContent = config.icon + ' ' + config.label;
+  
+  // Show difficulty counts
+  for (let d = 1; d <= 4; d++) {
+    const count = problems.filter(p => p.difficulty === d).length;
+    const el = document.getElementById('diff' + d + '-count');
+    if (el) el.textContent = count > 0 ? count + '問' : 'なし';
+  }
+  
+  showView('view-difficulty-select');
+}
+
+function selectDifficulty(difficulty) {
+  // Set the difficulty filter
+  const filterEl = document.getElementById('difficulty-filter');
+  if (difficulty === 'all') {
+    filterEl.value = 'all';
+  } else {
+    filterEl.value = String(difficulty);
+  }
   
   showView('view-problem-list');
   renderProblemList();
