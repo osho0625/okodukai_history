@@ -1704,7 +1704,7 @@ async function sendAiChat() {
 コメント: ${document.getElementById('review-comment').value || 'なし'}
 
 管理者からの質問や反論に対して、採点の根拠を説明したり、点数を修正する提案をしてください。
-もし点数を変更すべきと判断した場合は「修正提案: X点」と明記してください。`;
+もし点数を変更すべきと判断した場合は「修正提案: X点」と明記し、続けて「修正コメント: （新しい採点コメント）」も書いてください。`;
 
   const fullPrompt = systemContext + '\n\n会話履歴:\n' + 
     aiChatHistory.map(m => (m.role === 'user' ? '管理者: ' : 'AI: ') + m.content).join('\n');
@@ -1725,10 +1725,15 @@ async function sendAiChat() {
   aiChatHistory.push({ role: 'assistant', content: reply });
   renderAiChatMessages();
 
-  // Auto-update score if AI suggests a change
+  // Auto-update score and comment if AI suggests a change
   const scoreChange = reply.match(/修正提案[：:]\s*(\d+)点/);
   if (scoreChange) {
     document.getElementById('review-score').value = parseInt(scoreChange[1]);
+    // Also update comment if provided
+    const commentChange = reply.match(/修正コメント[：:]\s*([\s\S]*?)(?=\n修正|$)/);
+    if (commentChange) {
+      document.getElementById('review-comment').value = commentChange[1].trim();
+    }
   }
 }
 
