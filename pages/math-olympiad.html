@@ -125,6 +125,20 @@ select {
 .problem-card-title { font-size: 1em; font-weight: 600; margin-bottom: 6px; }
 .problem-card-meta { font-size: 0.8em; color: #aaa; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
+/* Grade card 2-column layout */
+.grade-card-layout {
+  display: flex; align-items: stretch; text-align: left; gap: 12px;
+}
+.grade-card-left {
+  flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  min-width: 80px;
+}
+.grade-card-right {
+  flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+}
+.grade-ranking { font-size: 0.75em; color: #aaa; line-height: 1.4; }
+.grade-stats { font-size: 0.7em; color: #888; }
+
 /* Status badges */
 .badge {
   display: inline-block;
@@ -318,26 +332,38 @@ select {
       <p style="color:#aaa;">どのもんだいにチャレンジする？</p>
     </div>
     <div class="grade-cards">
-      <div class="problem-card" onclick="selectGrade('grade1')" style="text-align:center;">
-        <div style="font-size:1.8em; margin-bottom:8px;">🌱</div>
-        <div class="problem-card-title">小学1年</div>
-        <div class="problem-card-meta" style="justify-content:center;">たしざん・ひきざん・かたち</div>
-        <div id="grade1-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
-        <div id="grade1-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade1')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌱</div>
+          <div class="problem-card-title">小学1年</div>
+          <div class="problem-card-meta">たしざん・ひきざん・かたち</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade1-ranking" class="grade-ranking"></div>
+          <div id="grade1-stats" class="grade-stats"></div>
+        </div>
       </div>
-      <div class="problem-card" onclick="selectGrade('grade3')" style="text-align:center;">
-        <div style="font-size:1.8em; margin-bottom:8px;">🌿</div>
-        <div class="problem-card-title">小学3年</div>
-        <div class="problem-card-meta" style="justify-content:center;">わり算・図形・きまり</div>
-        <div id="grade3-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
-        <div id="grade3-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade3')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌿</div>
+          <div class="problem-card-title">小学3年</div>
+          <div class="problem-card-meta">わり算・図形・きまり</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade3-ranking" class="grade-ranking"></div>
+          <div id="grade3-stats" class="grade-stats"></div>
+        </div>
       </div>
-      <div class="problem-card" onclick="selectGrade('grade5')" style="text-align:center;">
-        <div style="font-size:1.8em; margin-bottom:8px;">🌳</div>
-        <div class="problem-card-title">小学5年（オリンピック）</div>
-        <div class="problem-card-meta" style="justify-content:center;">思考力・論理・場合の数</div>
-        <div id="grade5-ranking" style="font-size:0.75em; color:#aaa; margin-top:6px;"></div>
-        <div id="grade5-stats" style="font-size:0.7em; color:#888; margin-top:4px;"></div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade5')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌳</div>
+          <div class="problem-card-title">小学5年</div>
+          <div class="problem-card-meta">思考力・論理・場合の数</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade5-ranking" class="grade-ranking"></div>
+          <div id="grade5-stats" class="grade-stats"></div>
+        </div>
       </div>
     </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
