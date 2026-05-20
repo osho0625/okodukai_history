@@ -230,7 +230,47 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
-<!-- View: Results -->
+<!-- View: My Results (自分の採点結果確認 + チャット) -->
+<div id="view-my-results" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:4px;">📝 あなたの採点結果</h2>
+    <div id="my-total-score" style="text-align:center; font-size:1.4em; font-weight:700; color:#ffd700; margin-bottom:12px;"></div>
+    <div id="waiting-others-msg" style="text-align:center; color:#aaa; font-size:0.85em; margin-bottom:16px;"></div>
+    <div id="my-results-list"></div>
+    <div id="dispute-notifications" style="margin-top:16px;"></div>
+    <button class="btn" style="width:100%; margin-top:16px;" onclick="goToFinalResults()" id="go-final-btn" disabled>🏆 最終結果を見る</button>
+  </div>
+</div>
+
+<!-- View: Chat (個別問題のAIチャット) -->
+<div id="view-chat" class="view hidden">
+  <div class="container">
+    <button class="btn btn-secondary btn-small" style="margin-bottom:12px;" onclick="backToMyResults()">← 結果一覧に戻る</button>
+    <h3 id="chat-problem-title" style="margin-bottom:8px;"></h3>
+    <div id="chat-question" class="question-area" style="font-size:0.9em; max-height:120px; overflow-y:auto;"></div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px;">
+        <div style="font-size:0.75em; color:#aaa;">あなたの回答</div>
+        <div id="chat-my-answer" style="font-size:0.9em; margin-top:4px;"></div>
+      </div>
+      <div style="text-align:center; padding:10px;">
+        <div style="font-size:0.75em; color:#aaa;">点数</div>
+        <div id="chat-current-score" style="font-size:1.5em; font-weight:700; color:#ffd700;"></div>
+      </div>
+    </div>
+    <div id="chat-messages" style="max-height:250px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px; font-size:0.85em;"></div>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="chat-input" placeholder="採点に不満があれば入力..." style="flex:1;">
+      <button class="btn btn-small" onclick="sendBattleChat()" id="chat-send-btn">送信</button>
+    </div>
+    <div id="chat-propose-area" style="display:none; margin-top:12px; background:rgba(102,126,234,0.1); border-radius:10px; padding:12px;">
+      <p style="font-size:0.9em; margin-bottom:8px;">🔔 AIが点数変更を提案しました。全員の承認が必要です。</p>
+      <button class="btn btn-small" onclick="submitDispute()" id="propose-btn">みんなに承認を求める</button>
+    </div>
+  </div>
+</div>
+
+<!-- View: Results (最終結果) -->
 <div id="view-results" class="view hidden">
   <div class="container">
     <h2 style="text-align:center; margin-bottom:20px;">🏆 バトル結果</h2>
@@ -660,8 +700,8 @@ async function finishBattle() {
   // AI grade my answers
   await gradeMyAnswers();
 
-  // Check if all players finished
-  await checkAllFinished();
+  // 採点完了 → 自分の結果確認画面へ（全員完了を待たない）
+  showMyResults();
 }
 
 // === AI Grading ===
@@ -701,7 +741,9 @@ async function gradeMyAnswers() {
         result = await callGroq(keys.groq_api_key, prompt);
       }
     } catch (e) {
-      console.error('AI grading error:', e);
+      if (keys.groq_api_key) {
+        try { result = await callGroq(keys.groq_api_key, prompt); } catch (e2) {}
+      }
     }
 
     let score = 0;
@@ -722,13 +764,16 @@ async function gradeMyAnswers() {
   }
 
   // Update total score
+  await updateMyTotalScore();
+}
+
+async function updateMyTotalScore() {
   const { data: allMyAnswers } = await client.from('math_battle_answers')
     .select('score').eq('room_id', currentRoom.id).eq('user_id', getUserId());
   const totalScore = (allMyAnswers || []).reduce((sum, a) => sum + (a.score || 0), 0);
-  const totalElapsed = Math.floor((Date.now() - battleStartTime) / 1000);
 
   await client.from('math_battle_players')
-    .update({ total_score: totalScore, total_elapsed_seconds: totalElapsed })
+    .update({ total_score: totalScore })
     .eq('id', currentPlayerId);
 }
 
@@ -789,45 +834,332 @@ function updateScoringProgress(done, total) {
   document.getElementById('scoring-progress').textContent = `${done} / ${total} 問採点完了`;
 }
 
-// === Check All Finished ===
-async function checkAllFinished() {
-  const { data: players } = await client.from('math_battle_players')
-    .select('*').eq('room_id', currentRoom.id);
+// === My Results View ===
+let myAnswersData = [];
+let allFinishedPolling = null;
 
-  const allDone = players && players.every(p => p.finished);
-  if (allDone) {
-    // Mark room as finished (host does this, but anyone can)
-    await client.from('math_battle_rooms')
-      .update({ status: 'finished', finished_at: new Date().toISOString() })
-      .eq('id', currentRoom.id);
-    showResults();
+async function showMyResults() {
+  showView('view-my-results');
+
+  const { data } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+  myAnswersData = data || [];
+
+  const totalScore = myAnswersData.reduce((sum, a) => sum + (a.score || 0), 0);
+  document.getElementById('my-total-score').textContent = `${totalScore} / ${battleProblems.length * 10} 点`;
+
+  renderMyResultsList();
+  startWaitingForOthers();
+  subscribeToDisputes();
+}
+
+function renderMyResultsList() {
+  const container = document.getElementById('my-results-list');
+  container.innerHTML = myAnswersData.map((a, i) => {
+    const problem = findProblem(a.problem_id);
+    const title = problem ? problem.title : '問題' + a.problem_id;
+    const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
+    return `<div class="card" onclick="openChat(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:600;font-size:0.9em;">${title}</span>
+        <span style="color:${scoreColor};font-weight:700;">${a.score ?? '?'}/10</span>
+      </div>
+      <div style="font-size:0.8em;color:#aaa;margin-top:4px;">${a.ai_comment || ''}</div>
+      <div style="font-size:0.75em;color:#667eea;margin-top:4px;">💬 タップして採点に異議を申し立てる</div>
+    </div>`;
+  }).join('');
+}
+
+function startWaitingForOthers() {
+  checkOthersFinished();
+  allFinishedPolling = setInterval(checkOthersFinished, 5000);
+}
+
+async function checkOthersFinished() {
+  const { data: players } = await client.from('math_battle_players')
+    .select('user_name, finished').eq('room_id', currentRoom.id);
+  if (!players) return;
+
+  const notFinished = players.filter(p => !p.finished);
+  const msgEl = document.getElementById('waiting-others-msg');
+  const btn = document.getElementById('go-final-btn');
+
+  if (notFinished.length === 0) {
+    msgEl.textContent = '✅ 全員の採点が完了しました！';
+    btn.disabled = false;
+    if (allFinishedPolling) { clearInterval(allFinishedPolling); allFinishedPolling = null; }
   } else {
-    // Wait for others, poll every 5 seconds
-    const waitInterval = setInterval(async () => {
-      const { data: p2 } = await client.from('math_battle_players')
-        .select('*').eq('room_id', currentRoom.id);
-      const done = p2 && p2.every(p => p.finished);
-      if (done) {
-        clearInterval(waitInterval);
-        await client.from('math_battle_rooms')
-          .update({ status: 'finished', finished_at: new Date().toISOString() })
-          .eq('id', currentRoom.id);
-        showResults();
-      }
-    }, 5000);
+    const names = notFinished.map(p => p.user_name).join('、');
+    msgEl.textContent = `⏳ ${names} がまだ解答中...`;
+    btn.disabled = true;
   }
 }
 
-// === Results ===
+async function goToFinalResults() {
+  if (allFinishedPolling) { clearInterval(allFinishedPolling); allFinishedPolling = null; }
+  await showResults();
+}
+
+// === AI Chat for Disputes ===
+let chatAnswerIndex = null;
+let chatHistory = [];
+let proposedScore = null;
+
+function openChat(index) {
+  chatAnswerIndex = index;
+  chatHistory = [];
+  proposedScore = null;
+  const answer = myAnswersData[index];
+  const problem = findProblem(answer.problem_id);
+
+  document.getElementById('chat-problem-title').textContent = problem ? problem.title : '問題' + answer.problem_id;
+  document.getElementById('chat-question').innerHTML = problem
+    ? DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] }) : '';
+  document.getElementById('chat-my-answer').textContent = answer.answer_text;
+  document.getElementById('chat-current-score').textContent = answer.score + '点';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-input').value = '';
+  document.getElementById('chat-propose-area').style.display = 'none';
+
+  if (answer.ai_comment) {
+    chatHistory.push({ role: 'assistant', content: answer.ai_comment });
+    renderChatMessages();
+  }
+
+  showView('view-chat');
+  document.getElementById('chat-input').onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendBattleChat(); }
+  };
+}
+
+function backToMyResults() {
+  showView('view-my-results');
+  renderMyResultsList();
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = chatHistory.map(msg => {
+    const isUser = msg.role === 'user';
+    const align = isUser ? 'text-align:right;' : '';
+    const bg = isUser ? 'background:rgba(102,126,234,0.2);' : 'background:rgba(255,255,255,0.05);';
+    const label = isUser ? '👤' : '🤖';
+    return `<div style="${align}margin-bottom:6px;"><div style="display:inline-block;${bg}border-radius:8px;padding:6px 10px;max-width:90%;text-align:left;">${label} ${msg.content.replace(/\n/g, '<br>')}</div></div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendBattleChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  chatHistory.push({ role: 'user', content: msg });
+  renderChatMessages();
+
+  const answer = myAnswersData[chatAnswerIndex];
+  const problem = findProblem(answer.problem_id);
+  const keys = await loadAiApiKeys();
+
+  const systemContext = `あなたは小学生向け算数コンテストの採点官です。対戦モードで採点結果に異議が出ています。
+
+【問題】
+${problem ? problem.question.replace(/<[^>]+>/g, '') : ''}
+
+【受験者の解答】
+${answer.answer_text}
+
+【現在の採点】${answer.score}点
+
+受験者からの質問や反論に対して、採点の根拠を説明してください。
+もし受験者の主張が正当で点数を変更すべきと判断した場合は「修正提案: X点」と明記してください。
+安易に点数を変えず、正当な理由がある場合のみ変更を提案してください。`;
+
+  const fullPrompt = systemContext + '\n\n会話:\n' +
+    chatHistory.map(m => (m.role === 'user' ? '受験者: ' : 'AI: ') + m.content).join('\n');
+
+  let reply = '';
+  try {
+    if (keys.gemini_api_key) {
+      reply = await callGemini(keys.gemini_api_key, fullPrompt);
+    }
+    if (!reply && keys.groq_api_key) {
+      reply = await callGroq(keys.groq_api_key, fullPrompt);
+    }
+  } catch (e) {
+    if (keys.groq_api_key) {
+      try { reply = await callGroq(keys.groq_api_key, fullPrompt); } catch (e2) {}
+    }
+    if (!reply) reply = 'エラーが発生しました';
+  }
+
+  chatHistory.push({ role: 'assistant', content: reply });
+  renderChatMessages();
+
+  // Check if AI proposed a score change
+  const scoreChange = reply.match(/修正提案[：:]\s*(\d+)点?/);
+  if (scoreChange) {
+    const newScore = parseInt(scoreChange[1]);
+    if (newScore !== answer.score && newScore >= 0 && newScore <= 10) {
+      proposedScore = newScore;
+      document.getElementById('chat-propose-area').style.display = 'block';
+      document.getElementById('chat-propose-area').innerHTML = `
+        <p style="font-size:0.9em; margin-bottom:8px;">🔔 AIが <strong>${answer.score}点 → ${newScore}点</strong> への変更を提案しました。</p>
+        <p style="font-size:0.8em; color:#aaa; margin-bottom:8px;">全員の承認が必要です。</p>
+        <button class="btn btn-small" onclick="submitDispute()">みんなに承認を求める</button>
+      `;
+    }
+  }
+}
+
+// === Dispute System ===
+async function submitDispute() {
+  if (proposedScore === null || chatAnswerIndex === null) return;
+  const answer = myAnswersData[chatAnswerIndex];
+
+  const { data: inserted, error } = await client.from('math_battle_disputes').insert({
+    room_id: currentRoom.id,
+    answer_id: answer.id,
+    requester_user_id: getUserId(),
+    requester_user_name: getUserName(),
+    original_score: answer.score,
+    proposed_score: proposedScore,
+    reason: chatHistory.filter(m => m.role === 'assistant').pop()?.content?.substring(0, 300) || ''
+  }).select().single();
+
+  if (error) { alert('送信に失敗しました'); return; }
+
+  // Self-approve
+  await client.from('math_battle_dispute_votes').insert({
+    dispute_id: inserted.id,
+    voter_user_id: getUserId(),
+    voter_user_name: getUserName(),
+    vote: 'approve'
+  });
+
+  document.getElementById('chat-propose-area').innerHTML = `
+    <p style="font-size:0.9em; color:#4caf50;">✅ 承認リクエストを送信しました。全員が承認すると点数が変わります。</p>
+  `;
+  proposedScore = null;
+}
+
+// === Dispute Notifications ===
+let disputePolling = null;
+
+function subscribeToDisputes() {
+  checkDisputes();
+  disputePolling = setInterval(checkDisputes, 5000);
+}
+
+async function checkDisputes() {
+  if (!currentRoom) return;
+  const { data: disputes } = await client.from('math_battle_disputes')
+    .select('*, math_battle_dispute_votes(*)')
+    .eq('room_id', currentRoom.id)
+    .eq('status', 'pending');
+
+  if (!disputes || disputes.length === 0) {
+    document.getElementById('dispute-notifications').innerHTML = '';
+    return;
+  }
+
+  const { data: players } = await client.from('math_battle_players')
+    .select('user_id').eq('room_id', currentRoom.id);
+  const totalPlayers = players ? players.length : 1;
+
+  const container = document.getElementById('dispute-notifications');
+  container.innerHTML = '<h3 style="font-size:0.95em; margin-bottom:8px;">🔔 採点変更リクエスト</h3>' +
+    disputes.map(d => {
+      const votes = d.math_battle_dispute_votes || [];
+      const approveCount = votes.filter(v => v.vote === 'approve').length;
+      const myVote = votes.find(v => v.voter_user_id === getUserId());
+      const isRequester = d.requester_user_id === getUserId();
+
+      let actionHtml = '';
+      if (myVote) {
+        actionHtml = `<span style="color:#4caf50; font-size:0.85em;">✅ 投票済み</span>`;
+      } else if (!isRequester) {
+        actionHtml = `
+          <button class="btn btn-small" style="margin-right:6px;" onclick="voteDispute('${d.id}', 'approve')">👍 承認</button>
+          <button class="btn btn-secondary btn-small" onclick="voteDispute('${d.id}', 'reject')">👎 却下</button>
+        `;
+      } else {
+        actionHtml = `<span style="color:#aaa; font-size:0.85em;">承認待ち...</span>`;
+      }
+
+      return `<div style="background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:12px; margin-bottom:8px;">
+        <div style="font-size:0.9em; font-weight:600;">${d.requester_user_name} が採点変更を申請</div>
+        <div style="font-size:0.85em; color:#ffa500; margin:4px 0;">${d.original_score}点 → ${d.proposed_score}点</div>
+        <div style="font-size:0.8em; color:#ccc; margin-bottom:8px;">${d.reason.substring(0, 100)}...</div>
+        <div style="font-size:0.8em; color:#aaa; margin-bottom:6px;">承認: ${approveCount}/${totalPlayers}人</div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+
+  // Check if any dispute got fully approved or rejected
+  for (const d of disputes) {
+    const votes = d.math_battle_dispute_votes || [];
+    const approveCount = votes.filter(v => v.vote === 'approve').length;
+    const rejectCount = votes.filter(v => v.vote === 'reject').length;
+
+    if (approveCount >= totalPlayers) {
+      await applyDisputeScoreChange(d);
+    } else if (rejectCount > 0) {
+      await client.from('math_battle_disputes')
+        .update({ status: 'rejected' }).eq('id', d.id);
+    }
+  }
+}
+
+async function voteDispute(disputeId, vote) {
+  await client.from('math_battle_dispute_votes').insert({
+    dispute_id: disputeId,
+    voter_user_id: getUserId(),
+    voter_user_name: getUserName(),
+    vote: vote
+  });
+  await checkDisputes();
+}
+
+async function applyDisputeScoreChange(dispute) {
+  await client.from('math_battle_answers')
+    .update({ score: dispute.proposed_score })
+    .eq('id', dispute.answer_id);
+
+  await client.from('math_battle_disputes')
+    .update({ status: 'approved' }).eq('id', dispute.id);
+
+  // Update requester's total score
+  const { data: requesterAnswers } = await client.from('math_battle_answers')
+    .select('score').eq('room_id', currentRoom.id).eq('user_id', dispute.requester_user_id);
+  const newTotal = (requesterAnswers || []).reduce((sum, a) => sum + (a.score || 0), 0);
+  await client.from('math_battle_players')
+    .update({ total_score: newTotal })
+    .eq('room_id', currentRoom.id)
+    .eq('user_id', dispute.requester_user_id);
+
+  // Refresh if I'm the requester
+  if (dispute.requester_user_id === getUserId()) {
+    const { data } = await client.from('math_battle_answers')
+      .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+    myAnswersData = data || [];
+    const totalScore = myAnswersData.reduce((sum, a) => sum + (a.score || 0), 0);
+    document.getElementById('my-total-score').textContent = `${totalScore} / ${battleProblems.length * 10} 点`;
+    renderMyResultsList();
+  }
+}
+
+// === Final Results ===
 async function showResults() {
   showView('view-results');
+  if (disputePolling) { clearInterval(disputePolling); disputePolling = null; }
 
   const { data: players } = await client.from('math_battle_players')
     .select('*').eq('room_id', currentRoom.id).order('total_score', { ascending: false });
 
   if (!players || players.length === 0) return;
 
-  // Sort by score desc, then by time asc
   players.sort((a, b) => {
     if (b.total_score !== a.total_score) return b.total_score - a.total_score;
     return a.total_elapsed_seconds - b.total_elapsed_seconds;
@@ -849,7 +1181,6 @@ async function showResults() {
     </div>`;
   }).join('');
 
-  // Show per-problem detail for current user
   const { data: myAnswers } = await client.from('math_battle_answers')
     .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
 
