@@ -15,11 +15,11 @@
     "genre": "division",
     "difficulty": 1,
     "title": "あめを分ける",
-    "question": "12<ruby>個<rt>こ</rt></ruby>のあめを3人で<ruby>同<rt>おな</rt></ruby>じ<ruby>数<rt>かず</rt></ruby>ずつ分けます。<ruby>何個<rt>なんこ</rt></ruby>ずつになりますか？ <ruby>別<rt>べつ</rt></ruby>の分け方はありますか？",
-    "answer": "4個ずつ",
-    "explanation": "12÷3=4 で、4個ずつになります。",
+    "question": "12<ruby>個<rt>こ</rt></ruby>のあめを3人で<ruby>同<rt>おな</rt></ruby>じ<ruby>数<rt>かず</rt></ruby>ずつ分けます。1人<ruby>何個<rt>なんこ</rt></ruby>ずつになりますか？",
+    "answer": "4個",
+    "explanation": "12÷3=4 で、1人4個ずつになります。",
     "hints": ["わり算を使おう", "12÷3は？"],
-    "alternativeSolutions": ["2人なら6個ずつ、4人なら3個ずつ、6人なら2個ずつ"]
+    "alternativeSolutions": []
   },
   {
     "id": 3003,
@@ -59,22 +59,22 @@
     "genre": "money",
     "difficulty": 1,
     "title": "お金",
-    "question": "10<ruby>円玉<rt>えんだま</rt></ruby>3<ruby>枚<rt>まい</rt></ruby>と50<ruby>円玉<rt>えんだま</rt></ruby>1<ruby>枚<rt>まい</rt></ruby>で<ruby>作<rt>つく</rt></ruby>れる<ruby>金額<rt>きんがく</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>書<rt>か</rt></ruby>いてください。",
-    "answer": "10円、20円、30円、50円、60円、70円、80円（0円を除く7通り）",
-    "explanation": "10円玉は0〜3枚（0,10,20,30円）、50円玉は0〜1枚（0,50円）。組み合わせから0円を除くと7通り。",
-    "hints": ["使う・使わないで分けよう"],
+    "question": "10<ruby>円玉<rt>えんだま</rt></ruby>3<ruby>枚<rt>まい</rt></ruby>と50<ruby>円玉<rt>えんだま</rt></ruby>1<ruby>枚<rt>まい</rt></ruby>があります。1<ruby>枚<rt>まい</rt></ruby><ruby>以上<rt>いじょう</rt></ruby><ruby>使<rt>つか</rt></ruby>って<ruby>作<rt>つく</rt></ruby>れる<ruby>金額<rt>きんがく</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りありますか？",
+    "answer": "7通り",
+    "explanation": "10円玉は0〜3枚（0,10,20,30円）、50円玉は0〜1枚（0,50円）。組み合わせは4×2=8通り。1枚も使わない0円を除くと7通り。（10,20,30,50,60,70,80円）",
+    "hints": ["使う・使わないで分けよう", "0円は含めないよ"],
     "alternativeSolutions": []
   },
   {
     "id": 3007,
     "genre": "geometry",
-    "difficulty": 1,
+    "difficulty": 2,
     "title": "三角形",
-    "question": "<ruby>三角形<rt>さんかくけい</rt></ruby>を2つ<ruby>使<rt>つか</rt></ruby>って<ruby>作<rt>つく</rt></ruby>れる<ruby>図形<rt>ずけい</rt></ruby>をできるだけたくさん<ruby>考<rt>かんが</rt></ruby>えてください。",
-    "answer": "四角形（平行四辺形、長方形、正方形）、大きな三角形",
-    "explanation": "同じ三角形2つを辺でくっつけると、四角形や大きな三角形が作れます。",
-    "hints": ["回してみよう"],
-    "alternativeSolutions": []
+    "question": "<ruby>同<rt>おな</rt></ruby>じ<ruby>大<rt>おお</rt></ruby>きさの<ruby>直角二等辺三角形<rt>ちょっかくにとうへんさんかくけい</rt></ruby>を2つ、<ruby>辺<rt>へん</rt></ruby>どうしをぴったりくっつけて<ruby>作<rt>つく</rt></ruby>れる<ruby>図形<rt>ずけい</rt></ruby>の<ruby>名前<rt>なまえ</rt></ruby>を1つ<ruby>答<rt>こた</rt></ruby>えてください。",
+    "answer": "正方形",
+    "explanation": "直角二等辺三角形2つの斜辺どうしをくっつけると正方形になります。",
+    "hints": ["一番長い辺どうしをくっつけてみよう"],
+    "alternativeSolutions": ["長方形", "三角形"]
   },
   {
     "id": 3008,
@@ -136,10 +136,10 @@
     "genre": "geometry",
     "difficulty": 2,
     "title": "正方形",
-    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>は<ruby>三角形<rt>さんかくけい</rt></ruby><ruby>何個<rt>なんこ</rt></ruby>に分けられる？ いくつか<ruby>方法<rt>ほうほう</rt></ruby>を<ruby>考<rt>かんが</rt></ruby>えてください。",
-    "answer": "2個（対角線1本）、4個（対角線2本）など",
-    "explanation": "対角線を1本引くと2つの三角形。対角線を2本引くと4つの三角形に分けられます。",
-    "hints": ["対角線を書いてみよう"],
+    "question": "<ruby>正方形<rt>せいほうけい</rt></ruby>に<ruby>対角線<rt>たいかくせん</rt></ruby>を2<ruby>本<rt>ほん</rt></ruby><ruby>引<rt>ひ</rt></ruby>くと、<ruby>三角形<rt>さんかくけい</rt></ruby>は<ruby>何個<rt>なんこ</rt></ruby>できますか？",
+    "answer": "4個",
+    "explanation": "正方形の対角線2本を引くと、4つの直角二等辺三角形に分かれます。",
+    "hints": ["対角線を書いてみよう", "真ん中で何個に分かれる？"],
     "alternativeSolutions": []
   },
   {
@@ -169,10 +169,10 @@
     "genre": "geometry",
     "difficulty": 3,
     "title": "交点",
-    "question": "5<ruby>本<rt>ほん</rt></ruby>の<ruby>線<rt>せん</rt></ruby>でできる<ruby>交点<rt>こうてん</rt></ruby>は<ruby>最大<rt>さいだい</rt></ruby>いくつ？（<ruby>線<rt>せん</rt></ruby>はまっすぐ）",
+    "question": "まっすぐな<ruby>線<rt>せん</rt></ruby>を5<ruby>本<rt>ほん</rt></ruby><ruby>引<rt>ひ</rt></ruby>きます。どの2<ruby>本<rt>ほん</rt></ruby>も<ruby>必<rt>かなら</rt></ruby>ず<ruby>交<rt>まじ</rt></ruby>わり、3<ruby>本<rt>ほん</rt></ruby><ruby>以上<rt>いじょう</rt></ruby>が<ruby>同<rt>おな</rt></ruby>じ<ruby>点<rt>てん</rt></ruby>で<ruby>交<rt>まじ</rt></ruby>わらないとき、<ruby>交点<rt>こうてん</rt></ruby>はいくつできますか？",
     "answer": "10個",
-    "explanation": "2本の線から1つの交点ができる。5本から2本を選ぶ組み合わせ＝5×4÷2=10個。",
-    "hints": ["増え方を調べよう"],
+    "explanation": "2本の線から1つの交点ができます。5本から2本を選ぶ組み合わせ＝5×4÷2=10個。",
+    "hints": ["増え方を調べよう", "1本増えるごとに何個増える？"],
     "alternativeSolutions": ["1本目は0、2本目で+1、3本目で+2、4本目で+3、5本目で+4。合計0+1+2+3+4=10"]
   },
   {
@@ -189,24 +189,24 @@
   {
     "id": 3018,
     "genre": "number",
-    "difficulty": 3,
+    "difficulty": 2,
     "title": "10になる組",
-    "question": "1〜9で<ruby>足<rt>た</rt></ruby>して10になる<ruby>組<rt>くみ</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>見<rt>み</rt></ruby>つけてください。",
-    "answer": "1+9、2+8、3+7、4+6（2つの数の組は4通り）",
-    "explanation": "2つの数の組み合わせで考えると、1+9、2+8、3+7、4+6 の4通り。5+5は同じ数なので使えません。",
-    "hints": ["1から順に"],
-    "alternativeSolutions": ["3つの数の組も含めると：1+2+7、1+3+6、1+4+5、2+3+5 なども"]
+    "question": "1〜9の<ruby>中<rt>なか</rt></ruby>から<ruby>異<rt>こと</rt></ruby>なる2つの<ruby>数<rt>かず</rt></ruby>を<ruby>選<rt>えら</rt></ruby>んで<ruby>足<rt>た</rt></ruby>すと10になる<ruby>組<rt>くみ</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせは<ruby>何通<rt>なんとお</rt></ruby>りありますか？",
+    "answer": "4通り",
+    "explanation": "1+9、2+8、3+7、4+6 の4通り。5+5は同じ数なので使えません。",
+    "hints": ["1から順にためそう", "同じ数は使えないよ"],
+    "alternativeSolutions": []
   },
   {
     "id": 3019,
     "genre": "geometry",
-    "difficulty": 3,
+    "difficulty": 2,
     "title": "大きな正方形",
-    "question": "<ruby>同<rt>おな</rt></ruby>じ<ruby>形<rt>かたち</rt></ruby>を4つ<ruby>使<rt>つか</rt></ruby>って<ruby>大<rt>おお</rt></ruby>きな<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>作<rt>つく</rt></ruby>れますか？",
-    "answer": "はい、作れます（例：小さな正方形4つ、直角三角形4つなど）",
-    "explanation": "小さな正方形を2×2に並べると大きな正方形になります。直角二等辺三角形4つでも作れます。",
-    "hints": ["並べてみよう"],
-    "alternativeSolutions": ["L字型のピースでも工夫すれば作れる場合がある"]
+    "question": "<ruby>同<rt>おな</rt></ruby>じ<ruby>大<rt>おお</rt></ruby>きさの<ruby>小<rt>ちい</rt></ruby>さな<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>並<rt>なら</rt></ruby>べて<ruby>大<rt>おお</rt></ruby>きな<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>作<rt>つく</rt></ruby>るには、<ruby>最低<rt>さいてい</rt></ruby><ruby>何個<rt>なんこ</rt></ruby><ruby>必要<rt>ひつよう</rt></ruby>ですか？",
+    "answer": "4個",
+    "explanation": "小さな正方形を2×2に並べると大きな正方形になります。1個では元のまま、2個や3個では正方形になりません。",
+    "hints": ["2×2に並べてみよう"],
+    "alternativeSolutions": []
   },
   {
     "id": 3020,
@@ -356,10 +356,10 @@
     "genre": "number",
     "difficulty": 2,
     "title": "かけて36",
-    "question": "かけて36になる2つの<ruby>数<rt>かず</rt></ruby>の<ruby>組<rt>くみ</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>見<rt>み</rt></ruby>つけてください。",
-    "answer": "1×36、2×18、3×12、4×9、6×6（5組）",
-    "explanation": "36の約数の組み合わせを探します。1×36、2×18、3×12、4×9、6×6 の5組。",
-    "hints": ["1から順にかけてみよう"],
+    "question": "かけて36になる2つの<ruby>整数<rt>せいすう</rt></ruby>の<ruby>組<rt>くみ</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせは<ruby>何通<rt>なんとお</rt></ruby>りありますか？（<ruby>順番<rt>じゅんばん</rt></ruby>は<ruby>区別<rt>くべつ</rt></ruby>しません。1<ruby>以上<rt>いじょう</rt></ruby>の<ruby>数<rt>かず</rt></ruby>で<ruby>考<rt>かんが</rt></ruby>えます）",
+    "answer": "5通り",
+    "explanation": "1×36、2×18、3×12、4×9、6×6 の5通り。",
+    "hints": ["1から順にかけてみよう", "同じ組は1回だけ数えるよ"],
     "alternativeSolutions": []
   },
   {
@@ -376,12 +376,12 @@
   {
     "id": 3035,
     "genre": "geometry",
-    "difficulty": 3,
+    "difficulty": 2,
     "title": "サイコロ",
-    "question": "サイコロの<ruby>向<rt>む</rt></ruby>かい<ruby>合<rt>あ</rt></ruby>う<ruby>面<rt>めん</rt></ruby>の<ruby>数<rt>かず</rt></ruby>を<ruby>足<rt>た</rt></ruby>すと、いつもいくつ？",
+    "question": "ふつうのサイコロは1〜6の<ruby>目<rt>め</rt></ruby>があり、1の<ruby>裏<rt>うら</rt></ruby>は6、2の<ruby>裏<rt>うら</rt></ruby>は5、3の<ruby>裏<rt>うら</rt></ruby>は4です。<ruby>向<rt>む</rt></ruby>かい<ruby>合<rt>あ</rt></ruby>う<ruby>面<rt>めん</rt></ruby>の<ruby>数<rt>かず</rt></ruby>を<ruby>足<rt>た</rt></ruby>すと、いつもいくつになりますか？",
     "answer": "7",
-    "explanation": "サイコロは向かい合う面の和が7になるように作られています。1と6、2と5、3と4。",
-    "hints": ["1の裏は？", "2の裏は？"],
+    "explanation": "1+6=7、2+5=7、3+4=7。どの組も7になります。",
+    "hints": ["それぞれ足してみよう"],
     "alternativeSolutions": ["全部の面の合計は1+2+3+4+5+6=21。3組あるので21÷3=7"]
   },
   {
