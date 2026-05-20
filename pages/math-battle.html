@@ -263,6 +263,7 @@ let problemStartTime = null;
 let subscription = null;
 let playerSubscription = null;
 let aiApiKeys = null;
+let isRoomHost = false; // この端末が部屋を作ったかどうか
 
 // === Utilities ===
 function showView(id) {
@@ -360,6 +361,7 @@ async function createRoom() {
 
     if (error) throw error;
     currentRoom = data;
+    isRoomHost = true;
 
     // Join as player
     await joinAsPlayer(data.id);
@@ -443,14 +445,15 @@ function renderPlayers(players) {
   const container = document.getElementById('waiting-players');
   container.innerHTML = players.map(p => {
     const isMe = p.user_id === getUserId();
-    const isHost = p.user_id === currentRoom.created_by;
-    const badge = isHost ? '👑' : '';
+    const hostPlayer = isRoomHost ? getUserId() : currentRoom.created_by;
+    const isPlayerHost = p.user_id === hostPlayer;
+    const badge = isPlayerHost ? '👑' : '';
     const meTag = isMe ? ' <span style="color:#667eea;">(あなた)</span>' : '';
     return `<div class="player-item"><span class="name">${badge} ${p.user_name}${meTag}</span><span class="status">参加中</span></div>`;
   }).join('');
 
   // Enable start button only for host with 2+ players
-  const isHost = currentRoom.created_by === getUserId();
+  const isHost = isRoomHost;
   const startBtn = document.getElementById('start-battle-btn');
   startBtn.disabled = !(isHost && players.length >= 2);
   document.getElementById('start-hint').style.display = isHost ? 'block' : 'none';
@@ -483,7 +486,7 @@ function subscribeToRoom() {
 
 // === Start Battle ===
 async function startBattle() {
-  if (currentRoom.created_by !== getUserId()) return;
+  if (!isRoomHost) return;
 
   try {
     const { error } = await client.from('math_battle_rooms')
@@ -868,6 +871,7 @@ function cleanupRoom() {
   cleanupSubscriptions();
   currentRoom = null;
   currentPlayerId = null;
+  isRoomHost = false;
   battleProblems = [];
   battleIndex = 0;
   stopBattleTimer();
