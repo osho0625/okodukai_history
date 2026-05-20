@@ -228,7 +228,7 @@ async function loadTickets() {
 
 async function loadUnusedTickets() {
   let query = client.from('tickets').select('*').eq('status', 'unused');
-  if (!isAdmin) query = query.eq('owner', currentOwner);
+  if (currentOwner) query = query.eq('owner', currentOwner);
   query = query.order('ticket_no', { ascending: true });
   const { data, error } = await query;
   if (error) { showLoadErrorOnce(); return; }
@@ -237,7 +237,7 @@ async function loadUnusedTickets() {
 
 async function loadReservedTickets() {
   let query = client.from('tickets').select('*').in('status', ['pending', 'approved']);
-  if (!isAdmin) query = query.eq('owner', currentOwner);
+  if (currentOwner) query = query.eq('owner', currentOwner);
   query = query.order('reserved_at', { ascending: true });
   const { data, error } = await query;
   if (error) { showLoadErrorOnce(); return; }
@@ -246,7 +246,7 @@ async function loadReservedTickets() {
 
 async function loadUsedTickets() {
   let query = client.from('tickets').select('*').eq('status', 'used');
-  if (!isAdmin) query = query.eq('owner', currentOwner);
+  if (currentOwner) query = query.eq('owner', currentOwner);
   query = query.order('used_at', { ascending: false });
   const { data, error } = await query;
   if (error) { showLoadErrorOnce(); return; }
@@ -286,7 +286,8 @@ function renderUnusedTickets() {
     container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 20px;">未使用のチケットはありません</div>';
     return;
   }
-  if (isAdmin) {
+  if (isAdmin && !currentOwner) {
+    // Admin直アクセス（ownerなし）: Owner別グループ表示
     const grouped = groupByOwner(unusedTickets);
     container.innerHTML = Object.entries(grouped)
       .map(([owner, tix]) => renderOwnerGroup(owner, tix)).join('');
