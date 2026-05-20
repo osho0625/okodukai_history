@@ -519,6 +519,10 @@ select {
       <label>点数（0〜10）</label>
       <input type="number" id="review-score" min="0" max="10" placeholder="点数">
     </div>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-small" style="background:linear-gradient(135deg,#4285f4,#34a853);" onclick="aiGrade()" id="ai-grade-btn">🤖 AI自動採点</button>
+      <span id="ai-grade-status" style="font-size:0.8em; color:#aaa; margin-left:8px;"></span>
+    </div>
     <div class="form-group">
       <label>コメント</label>
       <div class="template-btns">
@@ -1415,6 +1419,141 @@ async function submitReview() {
   } catch (e) {
     showError('admin-detail-error', '採点保存に失敗しました');
   }
+}
+
+// === AI Grading ===
+let aiApiKeys = null;
+
+async function loadAiApiKeys() {
+  if (aiApiKeys) return aiApiKeys;
+  try {
+    const { data } = await client.from('game_settings').select('gemini_api_key,groq_api_key').eq('id', 1).maybeSingle();
+    aiApiKeys = data || {};
+    return aiApiKeys;
+  } catch (e) {
+    return {};
+  }
+}
+
+async function aiGrade() {
+  const btn = document.getElementById('ai-grade-btn');
+  const status = document.getElementById('ai-grade-status');
+  btn.disabled = true;
+  status.textContent = '採点中...';
+
+  // Get current review data
+  const review = pendingReviews.find(r => r.id === currentReviewId) ||
+    reviewedAnswersList.find(r => r.id === currentReviewId);
+  if (!review) { status.textContent = 'エラー'; btn.disabled = false; return; }
+
+  // Find problem
+  let problem = null;
+  for (const probs of Object.values(allProblemsCache)) {
+    problem = probs.find(p => p.id === review.problem_id);
+    if (problem) break;
+  }
+  if (!problem) { status.textContent = '問題が見つかりません'; btn.disabled = false; return; }
+
+  const keys = await loadAiApiKeys();
+  const prompt = `あなたは小学生向け算数コンテストの採点官です。以下の問題と解答を採点してください。
+
+【問題】
+${problem.question.replace(/<[^>]+>/g, '')}
+
+【模範解答】
+${problem.answer}
+
+【受験者の解答】
+${review.answer_text}
+
+以下の観点で10点満点で採点してください。
+- 答えが過不足なく正しいか（10点）
+- 答えが足りない、もしくは間違っている場合、部分点を与える
+
+採点では、
+- どこが間違っているか
+- どう直せば満点か
+を小学生にも分かる言葉で説明してください。
+
+回答形式:
+点数: X/10
+コメント: （採点コメント）`;
+
+  let result = null;
+
+  // Try Gemini first
+  if (keys.gemini_api_key) {
+    try {
+      result = await callGemini(keys.gemini_api_key, prompt);
+      status.textContent = '✅ Gemini';
+    } catch (e) {
+      status.textContent = 'Gemini失敗、Groq試行中...';
+    }
+  }
+
+  // Fallback to Groq
+  if (!result && keys.groq_api_key) {
+    try {
+      result = await callGroq(keys.groq_api_key, prompt);
+      status.textContent = '✅ Groq';
+    } catch (e) {
+      status.textContent = '❌ AI採点失敗';
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  if (!result) {
+    status.textContent = '❌ APIキー未設定';
+    btn.disabled = false;
+    return;
+  }
+
+  // Parse result and fill in score/comment
+  const scoreMatch = result.match(/点数[：:]\s*(\d+)/);
+  const commentMatch = result.match(/コメント[：:]\s*([\s\S]*)/);
+  
+  if (scoreMatch) {
+    document.getElementById('review-score').value = parseInt(scoreMatch[1]);
+  }
+  if (commentMatch) {
+    document.getElementById('review-comment').value = commentMatch[1].trim();
+  } else {
+    document.getElementById('review-comment').value = result;
+  }
+
+  btn.disabled = false;
+}
+
+async function callGemini(apiKey, prompt) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }]
+    })
+  });
+  if (!res.ok) throw new Error('Gemini API error: ' + res.status);
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function callGroq(apiKey, prompt) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3
+    })
+  });
+  if (!res.ok) throw new Error('Groq API error: ' + res.status);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
 }
 
 // === Admin Management Functions ===
