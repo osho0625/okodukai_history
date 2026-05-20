@@ -12,7 +12,9 @@
       "差は 3, 5, 7, ... どんな規則かな？",
       "差が2ずつ増えているよ。次の差は9だね"
     ],
-    "alternativeSolutions": ["n番目の数 = n² + 1 と表せる。5番目は 5² + 1 = 26"]
+    "alternativeSolutions": [
+      "n番目の数 = n² + 1 と表せる。5番目は 5² + 1 = 26"
+    ]
   },
   {
     "id": 2,
@@ -42,7 +44,9 @@
       "1→121→12321 数字が山のように増えて減っている",
       "1が4個なら、山の頂上は4になるよ"
     ],
-    "alternativeSolutions": ["実際に筆算で確かめることもできる"]
+    "alternativeSolutions": [
+      "実際に筆算で確かめることもできる"
+    ]
   },
   {
     "id": 4,
@@ -87,7 +91,9 @@
       "辺の上にあるもの（角を除く）が2面塗りだよ",
       "立方体の辺は全部で12本。各辺に1個ずつ"
     ],
-    "alternativeSolutions": ["全27個から、3面塗り(8個=角)と1面塗り(6個=面の中央)と0面塗り(1個=中心)を引く：27-8-6-1=12"]
+    "alternativeSolutions": [
+      "全27個から、3面塗り(8個=角)と1面塗り(6個=面の中央)と0面塗り(1個=中心)を引く：27-8-6-1=12"
+    ]
   },
   {
     "id": 7,
@@ -102,7 +108,9 @@
       "Aが正直ならBはうそつき。するとBの発言はうそ",
       "Bの発言がうそなら、Cは正直ではない"
     ],
-    "alternativeSolutions": ["Aがうそつきと仮定すると矛盾が生じることを示す方法もある"]
+    "alternativeSolutions": [
+      "Aがうそつきと仮定すると矛盾が生じることを示す方法もある"
+    ]
   },
   {
     "id": 8,
@@ -132,7 +140,9 @@
       "オオカミを渡した後、ヤギを持ち帰るのがコツ",
       "キャベツを渡してから、最後にヤギを渡す"
     ],
-    "alternativeSolutions": ["③でキャベツを先に渡し、⑤でオオカミを渡す順番でもOK"]
+    "alternativeSolutions": [
+      "③でキャベツを先に渡し、⑤でオオカミを渡す順番でもOK"
+    ]
   },
   {
     "id": 10,
@@ -147,7 +157,9 @@
       "1番目を決めたら、2番目は残りから選ぶよ",
       "3×2×1 を計算しよう"
     ],
-    "alternativeSolutions": ["全部書き出す：赤青黄、赤黄青、青赤黄、青黄赤、黄赤青、黄青赤"]
+    "alternativeSolutions": [
+      "全部書き出す：赤青黄、赤黄青、青赤黄、青黄赤、黄赤青、黄青赤"
+    ]
   },
   {
     "id": 11,
@@ -177,7 +189,9 @@
       "1の位を先に決めよう。2か4の2通り",
       "1の位を決めたら、残り3枚の並べ方は 3×2×1 通り"
     ],
-    "alternativeSolutions": ["全部の並べ方24通りのうち、奇数（1の位が1か3）は12通り。よって偶数も24-12=12通り"]
+    "alternativeSolutions": [
+      "全部の並べ方24通りのうち、奇数（1の位が1か3）は12通り。よって偶数も24-12=12通り"
+    ]
   },
   {
     "id": 13,
@@ -199,13 +213,13 @@
     "genre": "word_problem",
     "difficulty": 2,
     "title": "水そうの問題",
-    "question": "<ruby>水<rt>みず</rt></ruby>そうに<ruby>毎分<rt>まいふん</rt></ruby>3Lずつ<ruby>水<rt>みず</rt></ruby>を<ruby>入<rt>い</rt></ruby>れます。<ruby>最初<rt>さいしょ</rt></ruby>に5L<ruby>入<rt>はい</rt></ruby>っています。20Lになるのは<ruby>何分後<rt>なんぷんご</rt></ruby>？もし<ruby>途中<rt>とちゅう</rt></ruby>で<ruby>毎分<rt>まいふん</rt></ruby>1L<ruby>漏<rt>も</rt></ruby>れていたら？",
-    "answer": "漏れなし：5分後、漏れあり：7.5分後",
-    "explanation": "漏れなし：(20-5)÷3=5分。漏れあり：実質毎分2L増加。(20-5)÷2=7.5分",
+    "question": "<ruby>水<rt>みず</rt></ruby>そうに<ruby>毎分<rt>まいふん</rt></ruby>3Lずつ<ruby>水<rt>みず</rt></ruby>を<ruby>入<rt>い</rt></ruby>れます。<ruby>最初<rt>さいしょ</rt></ruby>に5L<ruby>入<rt>はい</rt></ruby>っています。\n\n① <ruby>水<rt>みず</rt></ruby>そうが20Lになるのは<ruby>何分後<rt>なんぷんご</rt></ruby>ですか？\n② <ruby>最初<rt>さいしょ</rt></ruby>から<ruby>水<rt>みず</rt></ruby>を<ruby>入<rt>い</rt></ruby>れると<ruby>同時<rt>どうじ</rt></ruby>に、<ruby>毎分<rt>まいふん</rt></ruby>1Lずつ<ruby>漏<rt>も</rt></ruby>れているとすると、20Lになるのは<ruby>何分後<rt>なんぷんご</rt></ruby>ですか？",
+    "answer": "① 5分後、② 7.5分後",
+    "explanation": "① あと必要な量=20-5=15L。15÷3=5分。② 水を入れるのと同時に漏れるので、実質毎分の増加量=3-1=2L/分。15÷2=7.5分。",
     "hints": [
       "あと何L必要？",
-      "漏れがないなら、必要量÷毎分の量",
-      "漏れがあるなら、実質の増加量は 3-1=2L/分"
+      "① 必要量÷毎分の量",
+      "② 漏れがあるとき、実質の増加量は 3-1=2L/分"
     ],
     "alternativeSolutions": []
   },
@@ -222,9 +236,10 @@
       "切る人は最後に取ることにしたらどうなる？",
       "切る人は均等に切らないと自分が損するよね"
     ],
-    "alternativeSolutions": ["「移動ナイフ法」：ナイフをゆっくり動かし、1/3だと思った人が「ストップ」と言って取る方法もある"]
+    "alternativeSolutions": [
+      "「移動ナイフ法」：ナイフをゆっくり動かし、1/3だと思った人が「ストップ」と言って取る方法もある"
+    ]
   },
-
   {
     "id": 16,
     "genre": "number_pattern",
@@ -238,7 +253,9 @@
       "1+1=2, 1+2=3, 2+3=5 ... 規則が見えるかな？",
       "前の2つを足すと次の数になるよ。8+13=？"
     ],
-    "alternativeSolutions": ["フィボナッチ数列と呼ばれる有名な数列"]
+    "alternativeSolutions": [
+      "フィボナッチ数列と呼ばれる有名な数列"
+    ]
   },
   {
     "id": 17,
@@ -253,7 +270,9 @@
       "3つの行の合計が全部同じなら、全体の合計÷3が1行の合計",
       "45÷3=15 が各列の合計だよ"
     ],
-    "alternativeSolutions": ["真ん中は必ず全体の平均値(=5)になることも覚えておこう"]
+    "alternativeSolutions": [
+      "真ん中は必ず全体の平均値(=5)になることも覚えておこう"
+    ]
   },
   {
     "id": 18,
@@ -268,7 +287,9 @@
       "2や3をたくさんかけ合わせた数を探そう",
       "36(9個)、48(10個)を比べてみよう"
     ],
-    "alternativeSolutions": ["36の約数は9個(1,2,3,4,6,9,12,18,36)で2位"]
+    "alternativeSolutions": [
+      "36の約数は9個(1,2,3,4,6,9,12,18,36)で2位"
+    ]
   },
   {
     "id": 19,
@@ -283,7 +304,9 @@
       "100を「個数×真ん中」の形に分解しよう",
       "個数が奇数なら真ん中は整数。個数が偶数なら真ん中は○.5になるよ"
     ],
-    "alternativeSolutions": ["個数を2,3,4,...と変えて全部調べる方法もある"]
+    "alternativeSolutions": [
+      "個数を2,3,4,...と変えて全部調べる方法もある"
+    ]
   },
   {
     "id": 20,
@@ -298,7 +321,9 @@
       "百の位に0が出る回数、1が出る回数...を数えてみよう",
       "各位で0〜9がそれぞれ100回ずつ現れるよ"
     ],
-    "alternativeSolutions": ["1〜9(1桁)、10〜99(2桁)、100〜999(3桁)に分けて計算する方法もある"]
+    "alternativeSolutions": [
+      "1〜9(1桁)、10〜99(2桁)、100〜999(3桁)に分けて計算する方法もある"
+    ]
   },
   {
     "id": 21,
@@ -313,7 +338,9 @@
       "対角線1本で正方形はいくつに分かれる？",
       "2つの同じ三角形に分かれるよ"
     ],
-    "alternativeSolutions": ["三角形の面積=底辺×高さ÷2=6×6÷2=18cm²としても求められる"]
+    "alternativeSolutions": [
+      "三角形の面積=底辺×高さ÷2=6×6÷2=18cm²としても求められる"
+    ]
   },
   {
     "id": 22,
@@ -358,7 +385,9 @@
       "重なる部分はどんな形？",
       "正方形の面積の何分の1かを考えよう"
     ],
-    "alternativeSolutions": ["正方形の面積36cm²の1/4=9cm²"]
+    "alternativeSolutions": [
+      "正方形の面積36cm²の1/4=9cm²"
+    ]
   },
   {
     "id": 25,
@@ -375,7 +404,6 @@
     ],
     "alternativeSolutions": []
   },
-
   {
     "id": 26,
     "genre": "logic",
@@ -404,7 +432,9 @@
       "真ん中の数をnとすると、周りの8つの数はnとの差で表せる",
       "9つの数の合計は真ん中の数の9倍になるよ"
     ],
-    "alternativeSolutions": ["具体的に書き出す：n-8, n-7, n-6, n-1, n, n+1, n+6, n+7, n+8。合計=9n"]
+    "alternativeSolutions": [
+      "具体的に書き出す：n-8, n-7, n-6, n-1, n, n+1, n+6, n+7, n+8。合計=9n"
+    ]
   },
   {
     "id": 28,
@@ -419,7 +449,9 @@
       "3色あるから、最悪3足取っても全部バラバラかもしれない",
       "4足目は必ず3色のどれかと同じ色になるよ（鳩の巣原理）"
     ],
-    "alternativeSolutions": ["「色の種類+1」足取れば必ず同じ色が2足揃う"]
+    "alternativeSolutions": [
+      "「色の種類+1」足取れば必ず同じ色が2足揃う"
+    ]
   },
   {
     "id": 29,
@@ -434,7 +466,9 @@
       "優勝者以外の全員が1回ずつ負ける必要がある",
       "脱落する人数＝試合数 だよ"
     ],
-    "alternativeSolutions": ["各ラウンドの試合数を足す：16+8+4+2+1=31"]
+    "alternativeSolutions": [
+      "各ラウンドの試合数を足す：16+8+4+2+1=31"
+    ]
   },
   {
     "id": 30,
@@ -464,7 +498,9 @@
       "4+3+2+1 を計算しよう",
       "同じ握手を2回数えないように注意！ 5×4÷2=10"
     ],
-    "alternativeSolutions": ["5人をA〜Eとして全部書き出す：AB,AC,AD,AE,BC,BD,BE,CD,CE,DE=10組"]
+    "alternativeSolutions": [
+      "5人をA〜Eとして全部書き出す：AB,AC,AD,AE,BC,BD,BE,CD,CE,DE=10組"
+    ]
   },
   {
     "id": 32,
@@ -479,7 +515,9 @@
       "5歩のうちどの2歩を「上」にするか？",
       "5×4÷(2×1)=10通り"
     ],
-    "alternativeSolutions": ["各交差点に「そこへの行き方の数」を書き込んでいく方法もある"]
+    "alternativeSolutions": [
+      "各交差点に「そこへの行き方の数」を書き込んでいく方法もある"
+    ]
   },
   {
     "id": 33,
@@ -524,7 +562,9 @@
       "n段目に来るには「n-1段目から1段上る」か「n-2段目から2段上る」",
       "前の2つの数を足していくとフィボナッチ数列になるよ"
     ],
-    "alternativeSolutions": ["1段を何回使うかで場合分けする方法もある（2段をk回使うとき、残り(10-2k)段を1段ずつ）"]
+    "alternativeSolutions": [
+      "1段を何回使うかで場合分けする方法もある（2段をk回使うとき、残り(10-2k)段を1段ずつ）"
+    ]
   },
   {
     "id": 36,
@@ -539,9 +579,10 @@
       "「勝負がつく」場合を数えて、全体から引こう",
       "勝負がつく＝ちょうど2種類の手が出て、勝ち負けがある場合"
     ],
-    "alternativeSolutions": ["あいこを直接数える：全員同じ(3通り)+3種類全部出る(36通り)=39通り"]
+    "alternativeSolutions": [
+      "あいこを直接数える：全員同じ(3通り)+3種類全部出る(36通り)=39通り"
+    ]
   },
-
   {
     "id": 37,
     "genre": "word_problem",
@@ -570,7 +611,9 @@
       "120人の40%は？",
       "48人の75%を計算しよう"
     ],
-    "alternativeSolutions": ["120×0.4×0.75=36 と一気に計算してもOK"]
+    "alternativeSolutions": [
+      "120×0.4×0.75=36 と一気に計算してもOK"
+    ]
   },
   {
     "id": 39,
@@ -585,7 +628,9 @@
       "Aは1日に全体の何分の1を終わらせる？",
       "2人の1日の仕事量を足して、全体を割ろう"
     ],
-    "alternativeSolutions": ["全体を36（12と18の最小公倍数）とすると、A:3/日、B:2/日。合計5/日。36÷5=7.2日"]
+    "alternativeSolutions": [
+      "全体を36（12と18の最小公倍数）とすると、A:3/日、B:2/日。合計5/日。36÷5=7.2日"
+    ]
   },
   {
     "id": 40,
@@ -600,7 +645,9 @@
       "食塩は何g？",
       "食塩20gが全体の6%になるように：20÷0.06=全体の重さ"
     ],
-    "alternativeSolutions": ["天秤法：10%と0%を混ぜて6%にする。比率は(6-0):(10-6)=3:2。200gに対して水は200×2/3≒133.3g"]
+    "alternativeSolutions": [
+      "天秤法：10%と0%を混ぜて6%にする。比率は(6-0):(10-6)=3:2。200gに対して水は200×2/3≒133.3g"
+    ]
   },
   {
     "id": 41,
@@ -615,7 +662,9 @@
       "お父さん：38+x歳、子ども：10+x歳",
       "38+x = 3×(10+x) を解こう"
     ],
-    "alternativeSolutions": ["年齢の差は常に28歳。3倍のとき差=子どもの2倍。28÷2=14歳のとき。14-10=4年後"]
+    "alternativeSolutions": [
+      "年齢の差は常に28歳。3倍のとき差=子どもの2倍。28÷2=14歳のとき。14-10=4年後"
+    ]
   },
   {
     "id": 42,
@@ -660,7 +709,9 @@
       "短針は1時間で30度、1分で0.5度動くよ",
       "12時の位置を0度として、それぞれの角度を求めよう"
     ],
-    "alternativeSolutions": ["公式：|30H - 5.5M| = |30×3 - 5.5×20| = |90-110| = 20度"]
+    "alternativeSolutions": [
+      "公式：|30H - 5.5M| = |30×3 - 5.5×20| = |90-110| = 20度"
+    ]
   },
   {
     "id": 45,
@@ -705,7 +756,9 @@
       "1+10=11、2+9=11、3+8=11...ペアを作ると？",
       "11が5ペアできるから 11×5=55"
     ],
-    "alternativeSolutions": ["公式：n×(n+1)÷2 = 10×11÷2 = 55"]
+    "alternativeSolutions": [
+      "公式：n×(n+1)÷2 = 10×11÷2 = 55"
+    ]
   },
   {
     "id": 48,
@@ -720,7 +773,9 @@
       "n本目の直線は、既存のn-1本と交わって最大n個の新しいピースを作る",
       "増える数は 1, 2, 3, 4 だよ。1+1+2+3+4=11"
     ],
-    "alternativeSolutions": ["実際に図を描いて確かめる方法もある"]
+    "alternativeSolutions": [
+      "実際に図を描いて確かめる方法もある"
+    ]
   },
   {
     "id": 49,
@@ -735,7 +790,9 @@
       "「あなたの村」について聞くとどうなる？",
       "正直者は本当の自分の村を指す。嘘つきは自分の村について嘘をつく→反対を指す"
     ],
-    "alternativeSolutions": ["「もし私がもう1人の村の人に道を聞いたら、どちらを指しますか？」と聞いて、反対に進む方法もある"]
+    "alternativeSolutions": [
+      "「もし私がもう1人の村の人に道を聞いたら、どちらを指しますか？」と聞いて、反対に進む方法もある"
+    ]
   },
   {
     "id": 50,
@@ -750,7 +807,9 @@
       "余りが繰り返すパターンを見つけよう",
       "2, 4, 1, 2, 4, 1, ... 周期3で繰り返す。10番目は？"
     ],
-    "alternativeSolutions": ["直接計算：2¹⁰=1024。1024÷7=146あまり2"]
+    "alternativeSolutions": [
+      "直接計算：2¹⁰=1024。1024÷7=146あまり2"
+    ]
   },
   {
     "id": 51,
@@ -760,7 +819,11 @@
     "question": "A「Bがうそつきだ」\nB「Cがうそつきだ」\nC「Aは<ruby>正直<rt>しょうじき</rt></ruby>だ」\n\n3<ruby>人<rt>にん</rt></ruby>のうち、うそつきは1<ruby>人<rt>にん</rt></ruby>だけです。だれですか。",
     "answer": "B",
     "explanation": "Bがうそつきなら「Cがうそつき」がうそなのでCは正直。Aの「Bがうそつき」も正しくなり、条件に合う。",
-    "hints": ["1人ずつ、うそつきだと仮定してみよう", "矛盾が起きない人を探そう", "Bをうそつきにすると成立する"],
+    "hints": [
+      "1人ずつ、うそつきだと仮定してみよう",
+      "矛盾が起きない人を探そう",
+      "Bをうそつきにすると成立する"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -771,7 +834,11 @@
     "question": "となりの<ruby>部屋<rt>へや</rt></ruby>に<ruby>電球<rt>でんきゅう</rt></ruby>が1つあります。この<ruby>部屋<rt>へや</rt></ruby>にはスイッチが3つあり、どれか1つだけがその<ruby>電球<rt>でんきゅう</rt></ruby>につながっています。となりの<ruby>部屋<rt>へや</rt></ruby>には1<ruby>回<rt>かい</rt></ruby>しか<ruby>入<rt>はい</rt></ruby>れません。どうすればどのスイッチか<ruby>分<rt>わ</rt></ruby>かりますか。",
     "answer": "1つ目をしばらくONにして切り、2つ目をONにして部屋へ行く。明るければ2つ目、消えていて熱ければ1つ目、冷たければ3つ目。",
     "explanation": "光っているかだけでなく、電球の熱さも使う。",
-    "hints": ["見るだけではなく触ることもできる", "熱さを利用しよう", "時間差を使う"],
+    "hints": [
+      "見るだけではなく触ることもできる",
+      "熱さを利用しよう",
+      "時間差を使う"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -782,7 +849,11 @@
     "question": "AはBより<ruby>左<rt>ひだり</rt></ruby>、CはAより<ruby>右<rt>みぎ</rt></ruby>、DはBより<ruby>左<rt>ひだり</rt></ruby>です。<ruby>左<rt>ひだり</rt></ruby>から<ruby>並<rt>なら</rt></ruby>べるとどうなりますか。",
     "answer": "D, B, A, C",
     "explanation": "AはBの右、CはAの右、DはBの左なので D→B→A→C。",
-    "hints": ["Bを基準にすると考えやすい", "左右を図にしよう", "1つずつ置いてみよう"],
+    "hints": [
+      "Bを基準にすると考えやすい",
+      "左右を図にしよう",
+      "1つずつ置いてみよう"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -793,7 +864,11 @@
     "question": "<ruby>片面<rt>かためん</rt></ruby>に<ruby>数字<rt>すうじ</rt></ruby>、もう<ruby>片面<rt>かためん</rt></ruby>に<ruby>色<rt>いろ</rt></ruby>が<ruby>書<rt>か</rt></ruby>かれたカードがあります。「<ruby>表<rt>おもて</rt></ruby>が<ruby>偶数<rt>ぐうすう</rt></ruby>なら、<ruby>裏<rt>うら</rt></ruby>は<ruby>赤<rt>あか</rt></ruby>」というルールを<ruby>確<rt>たし</rt></ruby>かめるには、「4」「7」「<ruby>赤<rt>あか</rt></ruby>」「<ruby>青<rt>あお</rt></ruby>」のどのカードをめくればよいですか。",
     "answer": "4 と 青",
     "explanation": "4の裏が赤か確認する必要がある。青の裏が偶数だとルール違反なので確認が必要。",
-    "hints": ["ルール違反を見つけたい", "「偶数」と「赤でない」を見る", "4 と 青 が必要"],
+    "hints": [
+      "ルール違反を見つけたい",
+      "「偶数」と「赤でない」を見る",
+      "4 と 青 が必要"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -804,7 +879,11 @@
     "question": "ある<ruby>日<rt>ひ</rt></ruby>のことです。<br>①<ruby>今日<rt>きょう</rt></ruby>は<ruby>月曜日<rt>げつようび</rt></ruby>ではない<br>②<ruby>昨日<rt>きのう</rt></ruby>は<ruby>金曜日<rt>きんようび</rt></ruby>ではない<br>③<ruby>明日<rt>あした</rt></ruby>は<ruby>火曜日<rt>かようび</rt></ruby>ではない<br>④<ruby>今日<rt>きょう</rt></ruby>は<ruby>木曜日<rt>もくようび</rt></ruby>より<ruby>後<rt>あと</rt></ruby>の<ruby>曜日<rt>ようび</rt></ruby>である<br>⑤<ruby>今日<rt>きょう</rt></ruby>は<ruby>日曜日<rt>にちようび</rt></ruby>ではない<br><ruby>今日<rt>きょう</rt></ruby>は<ruby>何曜日<rt>なんようび</rt></ruby>ですか。",
     "answer": "金曜日",
     "explanation": "④より候補は金・土・日。②「昨日≠金曜」→今日≠土曜。⑤今日≠日曜。残りは金曜日だけ。（①③は確認用：金曜≠月曜✓、明日=土曜≠火曜✓）",
-    "hints": ["④の条件で候補を大きく絞れるよ", "「昨日≠金曜」は「今日≠？」に変換しよう", "残った候補から⑤で絞ろう"],
+    "hints": [
+      "④の条件で候補を大きく絞れるよ",
+      "「昨日≠金曜」は「今日≠？」に変換しよう",
+      "残った候補から⑤で絞ろう"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -815,7 +894,11 @@
     "question": "<ruby>白<rt>しろ</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>2つ、<ruby>黒<rt>くろ</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>2つがあります。AとBはそれぞれ1つずつかぶり、<ruby>自分<rt>じぶん</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>は<ruby>見<rt>み</rt></ruby>えません。<ruby>相手<rt>あいて</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>だけ<ruby>見<rt>み</rt></ruby>えます。Aが「<ruby>分<rt>わ</rt></ruby>からない」と<ruby>言<rt>い</rt></ruby>ったあと、Bが<ruby>自分<rt>じぶん</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>の<ruby>色<rt>いろ</rt></ruby>を<ruby>当<rt>あ</rt></ruby>てました。Bの<ruby>帽子<rt>ぼうし</rt></ruby>は<ruby>何色<rt>なにいろ</rt></ruby>ですか。",
     "answer": "相手と同じ色",
     "explanation": "Aが分からないと言ったことで、2人が違う色ではないと分かる。Bは自分が相手と同じ色だと判断できる。",
-    "hints": ["Aの発言がヒント", "「分からない」で情報が増える", "Bは相手と同じ色と分かる"],
+    "hints": [
+      "Aの発言がヒント",
+      "「分からない」で情報が増える",
+      "Bは相手と同じ色と分かる"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -826,7 +909,11 @@
     "question": "「りんご」「みかん」「りんごとみかん」とラベルがついた3つの<ruby>箱<rt>はこ</rt></ruby>があります。<br>しかし、どのラベルも<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>間違<rt>まちが</rt></ruby>っています。<br>1つの<ruby>箱<rt>はこ</rt></ruby>から1<ruby>個<rt>こ</rt></ruby>だけ<ruby>取<rt>と</rt></ruby>って<ruby>見<rt>み</rt></ruby>るとき、どうすれば3つすべての<ruby>中身<rt>なかみ</rt></ruby>がわかりますか。",
     "answer": "「りんごとみかん」と書かれた箱から1個取る",
     "explanation": "その箱は混合ではない。1個見れば単独の中身が分かり、残りも「全部ラベルが間違い」という条件から一意に決まる。",
-    "hints": ["全部ラベルが間違っていることが重要", "まず「りんごとみかん」の箱に注目", "そこは混合ではありえない"],
+    "hints": [
+      "全部ラベルが間違っていることが重要",
+      "まず「りんごとみかん」の箱に注目",
+      "そこは混合ではありえない"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -837,7 +924,11 @@
     "question": "9<ruby>枚<rt>まい</rt></ruby>のコインのうち1<ruby>枚<rt>まい</rt></ruby>だけ<ruby>重<rt>おも</rt></ruby>さが<ruby>違<rt>ちが</rt></ruby>います。<br>そのコインが<ruby>重<rt>おも</rt></ruby>いか<ruby>軽<rt>かる</rt></ruby>いかはわかりません。<br><ruby>天秤<rt>てんびん</rt></ruby>を2<ruby>回<rt>かい</rt></ruby>だけ使って、そのコインを<ruby>必<rt>かなら</rt></ruby>ず<ruby>見<rt>み</rt></ruby>つけることはできますか。",
     "answer": "できない",
     "explanation": "状態は18通り（9枚×重い/軽い）。天秤2回では最大3²=9通りしか区別できず不足する。",
-    "hints": ["場合の数を数えよう", "1回の天秤で結果は3通り", "情報量が足りるか考える"],
+    "hints": [
+      "場合の数を数えよう",
+      "1回の天秤で結果は3通り",
+      "情報量が足りるか考える"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -848,7 +939,11 @@
     "question": "10<ruby>人<rt>にん</rt></ruby>が<ruby>集<rt>あつ</rt></ruby>まり、みんなが1<ruby>回<rt>かい</rt></ruby>ずつ<ruby>握手<rt>あくしゅ</rt></ruby>しました。<br>そのあと1<ruby>人<rt>にん</rt></ruby>が<ruby>帰<rt>かえ</rt></ruby>り、<ruby>残<rt>のこ</rt></ruby>りの<ruby>人<rt>ひと</rt></ruby>でまた<ruby>全員<rt>ぜんいん</rt></ruby>が1<ruby>回<rt>かい</rt></ruby>ずつ<ruby>握手<rt>あくしゅ</rt></ruby>しました。<br><ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何回<rt>なんかい</rt></ruby>の<ruby>握手<rt>あくしゅ</rt></ruby>になりましたか。",
     "answer": "81回",
     "explanation": "最初は 10×9÷2 = 45回。次は 9×8÷2 = 36回。合計 81回。",
-    "hints": ["n人の握手は n×(n-1)÷2", "最初の10人を計算", "次に9人を足す"],
+    "hints": [
+      "n人の握手は n×(n-1)÷2",
+      "最初の10人を計算",
+      "次に9人を足す"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -859,7 +954,11 @@
     "question": "100を、2つ<ruby>以上<rt>いじょう</rt></ruby>の<ruby>連続<rt>れんぞく</rt></ruby>する<ruby>自然数<rt>しぜんすう</rt></ruby>の<ruby>和<rt>わ</rt></ruby>で<ruby>表<rt>あらわ</rt></ruby>す<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りありますか。",
     "answer": "2通り",
     "explanation": "18+19+20+21+22=100、9+10+11+12+13+14+15+16=100 の2通り。",
-    "hints": ["短いものから試そう", "平均を考えるとよい", "個数×平均=100 になる組を探す"],
+    "hints": [
+      "短いものから試そう",
+      "平均を考えるとよい",
+      "個数×平均=100 になる組を探す"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -870,7 +969,11 @@
     "question": "A・B・Cの3<ruby>人<rt>にん</rt></ruby>がいます。<br>A「Bはうそつきだ」<br>B「Cはうそつきだ」<br>C「AとBはちがうタイプだ」<br><ruby>真実<rt>しんじつ</rt></ruby>を<ruby>言<rt>い</rt></ruby>う<ruby>人<rt>ひと</rt></ruby>と、いつもうそをつく<ruby>人<rt>ひと</rt></ruby>だけだとすると、それぞれどちらですか。",
     "answer": "A:うそつき、B:真実、C:うそつき",
     "explanation": "場合分けするとこれだけが矛盾しない。",
-    "hints": ["Aが真実だと仮定してみる", "矛盾が出たら逆を試す", "表を書いて整理"],
+    "hints": [
+      "Aが真実だと仮定してみる",
+      "矛盾が出たら逆を試す",
+      "表を書いて整理"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -881,7 +984,11 @@
     "question": "<ruby>半径<rt>はんけい</rt></ruby>10cmの<ruby>円<rt>えん</rt></ruby>に、3つの<ruby>点<rt>てん</rt></ruby>A,B,Cがあります。<br>ABは<ruby>直径<rt>ちょっけい</rt></ruby>で、AC=12cm、BC=16cmです。<br><ruby>三角形<rt>さんかくけい</rt></ruby>ABCの<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
     "answer": "96 cm²",
     "explanation": "ABは直径なので∠Cは90°（直径に対する円周角）。直角三角形なので 12×16÷2=96。",
-    "hints": ["直径を見ると何か思い出さない？", "直径に対する角は直角になる", "直角三角形の面積を求めよう"],
+    "hints": [
+      "直径を見ると何か思い出さない？",
+      "直径に対する角は直角になる",
+      "直角三角形の面積を求めよう"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -892,7 +999,11 @@
     "question": "4×4のマス<ruby>目<rt>め</rt></ruby>があります。<ruby>左下<rt>ひだりした</rt></ruby>から<ruby>右上<rt>みぎうえ</rt></ruby>へ、<ruby>右<rt>みぎ</rt></ruby>か<ruby>上<rt>うえ</rt></ruby>にしか<ruby>進<rt>すす</rt></ruby>めません。<br>ただし、<ruby>中央<rt>ちゅうおう</rt></ruby>の2×2のマスは<ruby>通<rt>とお</rt></ruby>れません。<br><ruby>進<rt>すす</rt></ruby>み<ruby>方<rt>かた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>りありますか。",
     "answer": "8通り",
     "explanation": "図を書いて、通れない部分を避けて場合分けすると8通り。",
-    "hints": ["まず普通なら何通りか考える", "通れない場所を書き込む", "左右に分けて数える"],
+    "hints": [
+      "まず普通なら何通りか考える",
+      "通れない場所を書き込む",
+      "左右に分けて数える"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -903,7 +1014,11 @@
     "question": "1<ruby>辺<rt>ぺん</rt></ruby>が6cmの<ruby>正六角形<rt>せいろっかっけい</rt></ruby>があります。<br>すべての<ruby>対角線<rt>たいかくせん</rt></ruby>を<ruby>引<rt>ひ</rt></ruby>いたとき、できる<ruby>小<rt>ちい</rt></ruby>さい<ruby>正六角形<rt>せいろっかっけい</rt></ruby>の1<ruby>辺<rt>ぺん</rt></ruby>は<ruby>何<rt>なん</rt></ruby>cmですか。",
     "answer": "2 cm",
     "explanation": "相似を使う典型問題。大きい正六角形を分割すると比は 1:3 になり、6÷3=2。",
-    "hints": ["全部線を書こう", "相似な図形を探す", "辺の比を見る"],
+    "hints": [
+      "全部線を書こう",
+      "相似な図形を探す",
+      "辺の比を見る"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -914,7 +1029,11 @@
     "question": "4<ruby>人<rt>にん</rt></ruby>が<ruby>夜<rt>よる</rt></ruby>に<ruby>橋<rt>はし</rt></ruby>を<ruby>渡<rt>わた</rt></ruby>ります。<br>かかる<ruby>時間<rt>じかん</rt></ruby>はそれぞれ1<ruby>分<rt>ぷん</rt></ruby>、2<ruby>分<rt>ふん</rt></ruby>、7<ruby>分<rt>ふん</rt></ruby>、10<ruby>分<rt>ぷん</rt></ruby>。<br><ruby>懐中電灯<rt>かいちゅうでんとう</rt></ruby>は1つしかなく、2<ruby>人<rt>にん</rt></ruby>までしか<ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>渡<rt>わた</rt></ruby>れません。<br>2<ruby>人<rt>にん</rt></ruby>で<ruby>渡<rt>わた</rt></ruby>ると<ruby>遅<rt>おそ</rt></ruby>い<ruby>人<rt>ひと</rt></ruby>の<ruby>時間<rt>じかん</rt></ruby>がかかります。<br><ruby>最短<rt>さいたん</rt></ruby>で<ruby>何分<rt>なんぷん</rt></ruby>ですか。",
     "answer": "17分",
     "explanation": "速い人を往復役に使う。(1,2)=2 →1戻る=1 →(7,10)=10 →2戻る=2 →(1,2)=2、合計17分。",
-    "hints": ["速い人をどう使う？", "一番遅い2人をどう渡す？", "戻る人を工夫する"],
+    "hints": [
+      "速い人をどう使う？",
+      "一番遅い2人をどう渡す？",
+      "戻る人を工夫する"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -925,7 +1044,11 @@
     "question": "<ruby>紙<rt>かみ</rt></ruby>に4つの<ruby>点<rt>てん</rt></ruby>を<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>形<rt>かたち</rt></ruby>に<ruby>書<rt>か</rt></ruby>きました。<br>ペンを<ruby>紙<rt>かみ</rt></ruby>から<ruby>離<rt>はな</rt></ruby>さず、<ruby>同<rt>おな</rt></ruby>じ<ruby>線<rt>せん</rt></ruby>を2<ruby>回<rt>かい</rt></ruby><ruby>通<rt>とお</rt></ruby>らず、<ruby>全部<rt>ぜんぶ</rt></ruby>の<ruby>点<rt>てん</rt></ruby>を<ruby>通<rt>とお</rt></ruby>るように3<ruby>本<rt>ぽん</rt></ruby>の<ruby>直線<rt>ちょくせん</rt></ruby>だけでつなげます。できますか。",
     "answer": "できる",
     "explanation": "点の外まで線を延ばす発想が必要。枠の外を使えば可能。",
-    "hints": ["点の内側だけ見ていない？", "紙はもっと広い", "外にはみ出してよい"],
+    "hints": [
+      "点の内側だけ見ていない？",
+      "紙はもっと広い",
+      "外にはみ出してよい"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -936,7 +1059,11 @@
     "question": "1<ruby>辺<rt>ぺん</rt></ruby>が12cmの<ruby>正三角形<rt>せいさんかくけい</rt></ruby>があります。<br>3つの<ruby>辺<rt>へん</rt></ruby>の<ruby>中点<rt>ちゅうてん</rt></ruby>を<ruby>結<rt>むす</rt></ruby>んでできる<ruby>小<rt>ちい</rt></ruby>さい<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は、もとの<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>何分<rt>なんぶん</rt></ruby>のいくつですか。",
     "answer": "4分の1",
     "explanation": "中点を結ぶと辺の長さは半分になる。面積は辺の比の2乗なので 1/2 × 1/2 = 1/4。",
-    "hints": ["辺の長さはどうなる？", "相似な図形になる", "面積は長さの2乗で変わる"],
+    "hints": [
+      "辺の長さはどうなる？",
+      "相似な図形になる",
+      "面積は長さの2乗で変わる"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -947,7 +1074,11 @@
     "question": "<ruby>底辺<rt>ていへん</rt></ruby>10cm、<ruby>高<rt>たか</rt></ruby>さ8cmの<ruby>三角形<rt>さんかくけい</rt></ruby>があります。<br><ruby>底辺<rt>ていへん</rt></ruby><ruby>上<rt>じょう</rt></ruby>の<ruby>点<rt>てん</rt></ruby>Pで<ruby>三角形<rt>さんかくけい</rt></ruby>を2つに<ruby>分<rt>わ</rt></ruby>けたところ、<ruby>片方<rt>かたほう</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>がもう<ruby>片方<rt>かたほう</rt></ruby>の2<ruby>倍<rt>ばい</rt></ruby>になりました。<br>Pは<ruby>底辺<rt>ていへん</rt></ruby>の<ruby>端<rt>はし</rt></ruby>から<ruby>何<rt>なん</rt></ruby>cmのところですか。",
     "answer": "10/3 cm（約3.3cm）",
     "explanation": "高さが同じなので面積比＝底辺比。1:2 だから底辺10を 1:2 に分けて 10/3。",
-    "hints": ["高さは同じ？", "面積比は何の比？", "底辺を分ければよい"],
+    "hints": [
+      "高さは同じ？",
+      "面積比は何の比？",
+      "底辺を分ければよい"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -958,8 +1089,14 @@
     "question": "たて6cm、<ruby>横<rt>よこ</rt></ruby>10cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>があります。<ruby>左下<rt>ひだりした</rt></ruby>の<ruby>角<rt>かど</rt></ruby>から<ruby>右辺<rt>うへん</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>から2cmの<ruby>点<rt>てん</rt></ruby>へ<ruby>直線<rt>ちょくせん</rt></ruby>を<ruby>引<rt>ひ</rt></ruby>きます。<br>この<ruby>直線<rt>ちょくせん</rt></ruby>で<ruby>長方形<rt>ちょうほうけい</rt></ruby>が2つに<ruby>分<rt>わ</rt></ruby>かれます。<ruby>大<rt>おお</rt></ruby>きい<ruby>方<rt>ほう</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
     "answer": "40cm²",
     "explanation": "直線で切ると三角形と台形ができる。三角形の面積=底辺10×高さ4÷2=20cm²（右辺の上から2cm=下から4cmの点なので高さ4cm）。長方形全体=60cm²。大きい方=60-20=40cm²。",
-    "hints": ["直線で切ると三角形と台形ができる", "三角形の底辺と高さを求めよう", "長方形全体から引き算"],
-    "alternativeSolutions": ["台形の面積を直接計算：(6+4)×10÷2=50…ではなく、台形の公式を正しく使う"]
+    "hints": [
+      "直線で切ると三角形と台形ができる",
+      "三角形の底辺と高さを求めよう",
+      "長方形全体から引き算"
+    ],
+    "alternativeSolutions": [
+      "台形の面積を直接計算：(6+4)×10÷2=50…ではなく、台形の公式を正しく使う"
+    ]
   },
   {
     "id": 70,
@@ -969,8 +1106,14 @@
     "question": "1<ruby>辺<rt>ぺん</rt></ruby>12cmの<ruby>正方形<rt>せいほうけい</rt></ruby>から、<ruby>右上<rt>みぎうえ</rt></ruby>に1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>正方形<rt>せいほうけい</rt></ruby>を<ruby>切<rt>き</rt></ruby>り<ruby>取<rt>と</rt></ruby>ってL<ruby>字型<rt>じがた</rt></ruby>を<ruby>作<rt>つく</rt></ruby>りました。<br>このL<ruby>字型<rt>じがた</rt></ruby>を、<ruby>面積<rt>めんせき</rt></ruby>が<ruby>等<rt>ひと</rt></ruby>しい2つの<ruby>部分<rt>ぶぶん</rt></ruby>に<ruby>分<rt>わ</rt></ruby>ける<ruby>直線<rt>ちょくせん</rt></ruby>を1<ruby>本<rt>ぽん</rt></ruby><ruby>引<rt>ひ</rt></ruby>きなさい。どこからどこへ<ruby>引<rt>ひ</rt></ruby>けばよいですか。",
     "answer": "L字型全体の重心（中心）を通る直線ならどれでもよい。具体的には、大きい正方形の中心(6,6)と切り取った正方形の中心(10,10)を結ぶ直線を引く。",
     "explanation": "面積を2等分する直線は図形の重心を通る。L字型の重心は「大正方形の中心」と「切り取った正方形の中心」を結ぶ線分上にある。",
-    "hints": ["面積を2等分する直線は、ある特別な点を通る", "図形の重心（バランスの中心）を考えよう", "大きい正方形と切り取った部分の中心を結んでみよう"],
-    "alternativeSolutions": ["対角線方向に切る方法もある"]
+    "hints": [
+      "面積を2等分する直線は、ある特別な点を通る",
+      "図形の重心（バランスの中心）を考えよう",
+      "大きい正方形と切り取った部分の中心を結んでみよう"
+    ],
+    "alternativeSolutions": [
+      "対角線方向に切る方法もある"
+    ]
   },
   {
     "id": 71,
@@ -980,7 +1123,11 @@
     "question": "A、B、C、Dの4<ruby>人<rt>にん</rt></ruby>が<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>座<rt>すわ</rt></ruby>ります。AはBの<ruby>右<rt>みぎ</rt></ruby>、Cは<ruby>一番左<rt>いちばんひだり</rt></ruby>ではありません。DはAの<ruby>隣<rt>となり</rt></ruby>です。Aが2<ruby>番目<rt>ばんめ</rt></ruby>のとき、<ruby>並<rt>なら</rt></ruby>び<ruby>方<rt>かた</rt></ruby>を<ruby>答<rt>こた</rt></ruby>えなさい。",
     "answer": "C A D B",
     "explanation": "Aが2番目。BはAの左に座れないので右側（3番目か4番目）。DはAの隣なので3番目。残るCが1番目。Bは4番目。",
-    "hints": ["Aを先に置こう", "DはAの隣", "条件を1つずつ使おう"],
+    "hints": [
+      "Aを先に置こう",
+      "DはAの隣",
+      "条件を1つずつ使おう"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -991,7 +1138,10 @@
     "question": "3つのスイッチがあり、<ruby>隣<rt>となり</rt></ruby>の<ruby>部屋<rt>へや</rt></ruby>の3つの<ruby>電球<rt>でんきゅう</rt></ruby>につながっています。<ruby>部屋<rt>へや</rt></ruby>には1<ruby>回<rt>かい</rt></ruby>しか<ruby>入<rt>はい</rt></ruby>れません。どのスイッチがどの<ruby>電球<rt>でんきゅう</rt></ruby>かわかる<ruby>方法<rt>ほうほう</rt></ruby>は？",
     "answer": "1つをつける→しばらく待つ→消す→別の1つをつけて部屋へ入る",
     "explanation": "点灯中＝2つ目のスイッチ、熱い消灯＝1つ目のスイッチ、冷たい消灯＝残り。",
-    "hints": ["電気は光るだけじゃない", "熱も使える"],
+    "hints": [
+      "電気は光るだけじゃない",
+      "熱も使える"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1002,7 +1152,11 @@
     "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n3, 7, 13, 21, □",
     "answer": "31",
     "explanation": "差は4, 6, 8, 10と2ずつ増える。21+10=31。",
-    "hints": ["差を見よう", "差がどう変わっているか", "次の差は10"],
+    "hints": [
+      "差を見よう",
+      "差がどう変わっているか",
+      "次の差は10"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1013,7 +1167,11 @@
     "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n1, 4, 9, 16, 25, □",
     "answer": "36",
     "explanation": "1²=1, 2²=4, 3²=9, 4²=16, 5²=25, 6²=36。同じ数を2回かけた数（平方数）の列。",
-    "hints": ["何かの2乗になっている", "1×1, 2×2, 3×3...", "次は6×6"],
+    "hints": [
+      "何かの2乗になっている",
+      "1×1, 2×2, 3×3...",
+      "次は6×6"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1024,8 +1182,13 @@
     "question": "りんご、ぶどう、オレンジの3<ruby>種類<rt>しゅるい</rt></ruby>のジュースから2<ruby>種類<rt>しゅるい</rt></ruby><ruby>選<rt>えら</rt></ruby>ぶ<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
     "answer": "3通り",
     "explanation": "りんご+ぶどう、りんご+オレンジ、ぶどう+オレンジの3通り。",
-    "hints": ["順番は関係ない", "全部書き出してみよう"],
-    "alternativeSolutions": ["₃C₂ = 3"]
+    "hints": [
+      "順番は関係ない",
+      "全部書き出してみよう"
+    ],
+    "alternativeSolutions": [
+      "₃C₂ = 3"
+    ]
   },
   {
     "id": 76,
@@ -1035,8 +1198,13 @@
     "question": "<ruby>階段<rt>かいだん</rt></ruby>を1<ruby>段<rt>だん</rt></ruby>か2<ruby>段<rt>だん</rt></ruby>ずつ<ruby>上<rt>のぼ</rt></ruby>ります。4<ruby>段<rt>だん</rt></ruby>の<ruby>階段<rt>かいだん</rt></ruby>の<ruby>上<rt>のぼ</rt></ruby>り<ruby>方<rt>かた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
     "answer": "5通り",
     "explanation": "1111, 112, 121, 211, 22 の5通り。",
-    "hints": ["書き出そう", "2段を使う回数で分ける"],
-    "alternativeSolutions": ["フィボナッチ数列：1段=1通り、2段=2通り、3段=3通り、4段=5通り"]
+    "hints": [
+      "書き出そう",
+      "2段を使う回数で分ける"
+    ],
+    "alternativeSolutions": [
+      "フィボナッチ数列：1段=1通り、2段=2通り、3段=3通り、4段=5通り"
+    ]
   },
   {
     "id": 77,
@@ -1046,7 +1214,10 @@
     "question": "<ruby>底辺<rt>ていへん</rt></ruby>8cm、<ruby>高<rt>たか</rt></ruby>さ5cmの<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？",
     "answer": "20cm²",
     "explanation": "三角形の面積＝底辺×高さ÷2＝8×5÷2＝20cm²",
-    "hints": ["三角形の面積の公式を使おう", "底辺×高さ÷2"],
+    "hints": [
+      "三角形の面積の公式を使おう",
+      "底辺×高さ÷2"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1057,7 +1228,10 @@
     "question": "<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>辺<rt>へん</rt></ruby>は<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何本<rt>なんぼん</rt></ruby>？",
     "answer": "12本",
     "explanation": "上の面に4本、下の面に4本、縦に4本。合計12本。",
-    "hints": ["面ではなく辺を数える", "上・下・縦に分けて考えよう"],
+    "hints": [
+      "面ではなく辺を数える",
+      "上・下・縦に分けて考えよう"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1068,7 +1242,10 @@
     "question": "Aは<ruby>毎分<rt>まいふん</rt></ruby>70m、Bは<ruby>毎分<rt>まいふん</rt></ruby>50mで<ruby>歩<rt>ある</rt></ruby>きます。Bが100m<ruby>先<rt>さき</rt></ruby>にいます。Aは<ruby>何分<rt>なんぷん</rt></ruby>で<ruby>追<rt>お</rt></ruby>いつきますか？",
     "answer": "5分",
     "explanation": "差が縮まる速さ＝70-50＝20m/分。100÷20＝5分。",
-    "hints": ["差の速さを求めよう", "100mの差を何分で縮める？"],
+    "hints": [
+      "差の速さを求めよう",
+      "100mの差を何分で縮める？"
+    ],
     "alternativeSolutions": []
   },
   {
@@ -1079,47 +1256,1180 @@
     "question": "20%の<ruby>食塩水<rt>しょくえんすい</rt></ruby>100gに<ruby>水<rt>みず</rt></ruby>を<ruby>何<rt>なん</rt></ruby>g<ruby>入<rt>い</rt></ruby>れると10%になりますか？",
     "answer": "100g",
     "explanation": "食塩の量＝100×0.2＝20g（変わらない）。10%にするには全体＝20÷0.1＝200g。水を200-100＝100g加える。",
-    "hints": ["食塩の量は変わらない", "食塩20gが全体の10%になるには？", "全体200g必要→水は100g"],
+    "hints": [
+      "食塩の量は変わらない",
+      "食塩20gが全体の10%になるには？",
+      "全体200g必要→水は100g"
+    ],
     "alternativeSolutions": []
   },
-  {"id": 81,"genre": "logic","difficulty": 1,"title": "じゃんけんの結果","question": "AはBに<ruby>勝<rt>か</rt></ruby>ち、BはCに<ruby>勝<rt>か</rt></ruby>ちました。Aは<ruby>必<rt>かなら</rt></ruby>ずCに<ruby>勝<rt>か</rt></ruby>つといえますか？","answer": "言えない","explanation": "じゃんけんはグー・チョキ・パーで循環するので、必ずとは言えない。","hints": ["グー・チョキ・パーを書いてみよう"],"alternativeSolutions": []},
-  {"id": 82,"genre": "logic","difficulty": 2,"title": "うそつき兄弟","question": "<ruby>兄<rt>あに</rt></ruby>は「<ruby>弟<rt>おとうと</rt></ruby>はうそつき」と<ruby>言<rt>い</rt></ruby>い、<ruby>弟<rt>おとうと</rt></ruby>は「<ruby>兄<rt>あに</rt></ruby>は<ruby>正直者<rt>しょうじきもの</rt></ruby>」と<ruby>言<rt>い</rt></ruby>いました。どちらがうそつき？","answer": "弟","explanation": "兄が正直なら弟はうそつき。弟の「兄は正直者」はうそ→矛盾。兄が正直なら弟はうそつきで、弟の発言「兄は正直者」は…本当になる。うそつきは必ずうそを言うので矛盾。逆に兄がうそつきなら「弟はうそつき」がうそ→弟は正直。弟の「兄は正直者」は正直者の発言→本当→矛盾。再考：兄正直→弟うそつき→弟の「兄は正直」はうそ→兄は正直でない→矛盾。兄うそつき→弟正直→弟の「兄は正直」→矛盾。実は弟がうそつきで成立。","hints": ["兄が正直と仮定してみよう"],"alternativeSolutions": []},
-  {"id": 83,"genre": "logic","difficulty": 3,"title": "コイン3枚","question": "3<ruby>枚<rt>まい</rt></ruby>のコインのうち1<ruby>枚<rt>まい</rt></ruby>だけ<ruby>重<rt>おも</rt></ruby>いです。<ruby>天秤<rt>てんびん</rt></ruby>を1<ruby>回<rt>かい</rt></ruby>使って<ruby>見<rt>み</rt></ruby>つけるには？","answer": "1枚対1枚を比べる","explanation": "重い方がそのコイン。つり合えば残りの1枚が重い。","hints": ["2枚を比較する", "つり合ったらどうなる？"],"alternativeSolutions": []},
-  {"id": 84,"genre": "number_pattern","difficulty": 1,"title": "倍々ゲーム","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 4, 8, 16, □","answer": "32","explanation": "毎回2倍になる。16×2=32。","hints": ["前の数×2"],"alternativeSolutions": []},
-  {"id": 85,"genre": "number_pattern","difficulty": 2,"title": "足して増える","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n5, 8, 12, 17, □","answer": "23","explanation": "差は3, 4, 5, 6と1ずつ増える。17+6=23。","hints": ["差を見よう", "差がどう変わる？"],"alternativeSolutions": []},
-  {"id": 86,"genre": "number_pattern","difficulty": 3,"title": "平方数列","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 4, 9, 16, 25, 36, □","answer": "49","explanation": "1²,2²,3²,4²,5²,6²,7²=49。平方数の列。","hints": ["7×7は？"],"alternativeSolutions": []},
-  {"id": 87,"genre": "combinatorics","difficulty": 1,"title": "アイス選び","question": "バニラ、チョコ、いちごから1つ<ruby>選<rt>えら</rt></ruby>ぶ<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "3通り","explanation": "そのまま3通り。","hints": ["それぞれ1つずつ"],"alternativeSolutions": []},
-  {"id": 88,"genre": "combinatorics","difficulty": 2,"title": "並べ替え","question": "A, B, Cの3<ruby>文字<rt>もじ</rt></ruby>を<ruby>並<rt>なら</rt></ruby>べる<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "6通り","explanation": "3×2×1=6通り。ABC,ACB,BAC,BCA,CAB,CBA。","hints": ["3×2×1"],"alternativeSolutions": []},
-  {"id": 89,"genre": "combinatorics","difficulty": 3,"title": "道順","question": "<ruby>右<rt>みぎ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby>、<ruby>上<rt>うえ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby><ruby>進<rt>すす</rt></ruby>む<ruby>道順<rt>みちじゅん</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "6通り","explanation": "4歩のうち「上」を2歩選ぶ。₄C₂=6通り。","hints": ["4歩中2歩を選ぶ"],"alternativeSolutions": []},
-  {"id": 90,"genre": "geometry","difficulty": 1,"title": "長方形の面積","question": "たて4cm、よこ7cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？","answer": "28cm²","explanation": "4×7=28cm²","hints": ["たて×よこ"],"alternativeSolutions": []},
-  {"id": 91,"genre": "geometry","difficulty": 2,"title": "正方形の周り","question": "1<ruby>辺<rt>ぺん</rt></ruby>5cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>周<rt>まわ</rt></ruby>りの<ruby>長<rt>なが</rt></ruby>さは？","answer": "20cm","explanation": "5×4=20cm","hints": ["4辺とも同じ長さ"],"alternativeSolutions": []},
-  {"id": 92,"genre": "geometry","difficulty": 3,"title": "立方体の面","question": "<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>面<rt>めん</rt></ruby>はいくつ？","answer": "6面","explanation": "上下2面＋前後左右4面＝6面。","hints": ["上下＋側面"],"alternativeSolutions": []},
-  {"id": 93,"genre": "word_problem","difficulty": 1,"title": "買い物","question": "120<ruby>円<rt>えん</rt></ruby>のジュースを3<ruby>本<rt>ぽん</rt></ruby><ruby>買<rt>か</rt></ruby>うといくら？","answer": "360円","explanation": "120×3=360円","hints": ["かけ算"],"alternativeSolutions": []},
-  {"id": 94,"genre": "word_problem","difficulty": 2,"title": "速さ","question": "<ruby>毎分<rt>まいふん</rt></ruby>80mで10<ruby>分<rt>ぷん</rt></ruby><ruby>歩<rt>ある</rt></ruby>くと<ruby>何<rt>なん</rt></ruby>m？","answer": "800m","explanation": "80×10=800m","hints": ["速さ×時間"],"alternativeSolutions": []},
-  {"id": 95,"genre": "word_problem","difficulty": 3,"title": "割合","question": "200<ruby>円<rt>えん</rt></ruby>の25%はいくら？","answer": "50円","explanation": "200×0.25=50円","hints": ["25%は4分の1"],"alternativeSolutions": []},
-  {"id": 96,"genre": "logic","difficulty": 2,"title": "カードの裏表","question": "「<ruby>片面<rt>かためん</rt></ruby>が<ruby>赤<rt>あか</rt></ruby>なら<ruby>裏<rt>うら</rt></ruby>は<ruby>青<rt>あお</rt></ruby>」というルールがあります。<ruby>赤<rt>あか</rt></ruby>が<ruby>見<rt>み</rt></ruby>えたら<ruby>裏<rt>うら</rt></ruby>は<ruby>何色<rt>なにいろ</rt></ruby>？","answer": "青","explanation": "ルール通り、赤の裏は青。","hints": ["ルールをそのまま使う"],"alternativeSolutions": []},
-  {"id": 97,"genre": "number_pattern","difficulty": 2,"title": "奇数列","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 3, 5, 7, □","answer": "9","explanation": "奇数が順番に並んでいる。7+2=9。","hints": ["2ずつ増える"],"alternativeSolutions": []},
-  {"id": 98,"genre": "combinatorics","difficulty": 2,"title": "サンドイッチ","question": "パン2<ruby>種類<rt>しゅるい</rt></ruby>、<ruby>中身<rt>なかみ</rt></ruby>3<ruby>種類<rt>しゅるい</rt></ruby>。<ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせは<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "6通り","explanation": "2×3=6通り。","hints": ["パンの数×中身の数"],"alternativeSolutions": []},
-  {"id": 99,"genre": "geometry","difficulty": 2,"title": "三角形の角","question": "<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>内角<rt>ないかく</rt></ruby>の<ruby>和<rt>わ</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>？","answer": "180度","explanation": "三角形の内角の和は必ず180度。","hints": ["どんな三角形でも同じ"],"alternativeSolutions": []},
-  {"id": 100,"genre": "word_problem","difficulty": 3,"title": "仕事算","question": "ある<ruby>仕事<rt>しごと</rt></ruby>を、Aさんは1<ruby>人<rt>り</rt></ruby>で6<ruby>日<rt>にち</rt></ruby>、Bさんは1<ruby>人<rt>り</rt></ruby>で3<ruby>日<rt>にち</rt></ruby>で<ruby>終<rt>お</rt></ruby>わらせます。2<ruby>人<rt>り</rt></ruby>でやると<ruby>何日<rt>なんにち</rt></ruby>？","answer": "2日","explanation": "Aは1日に1/6、Bは1日に1/3。合わせて1/6+1/3=1/6+2/6=3/6=1/2。全体÷(1/2)=2日。","hints": ["1日にどれだけ進む？", "2人分を足す"],"alternativeSolutions": []},
-  {"id": 101,"genre": "logic","difficulty": 1,"title": "左右の順番","question": "AはBの<ruby>左<rt>ひだり</rt></ruby>。BはCの<ruby>左<rt>ひだり</rt></ruby>。AはCのどちら<ruby>側<rt>がわ</rt></ruby>？","answer": "左","explanation": "A→B→Cの順なので、AはCの左。","hints": ["順番に並べてみよう"],"alternativeSolutions": []},
-  {"id": 102,"genre": "logic","difficulty": 3,"title": "帽子問題","question": "<ruby>赤<rt>あか</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>2つ、<ruby>白<rt>しろ</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>1つがあります。A、B、Cが<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>び、<ruby>後<rt>うし</rt></ruby>ろの<ruby>人<rt>ひと</rt></ruby>ほど<ruby>前<rt>まえ</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>が<ruby>見<rt>み</rt></ruby>えます。Cが「わからない」、Bも「わからない」と<ruby>言<rt>い</rt></ruby>った<ruby>後<rt>あと</rt></ruby>、Aは<ruby>自分<rt>じぶん</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>の<ruby>色<rt>いろ</rt></ruby>がわかりました。<ruby>何色<rt>なにいろ</rt></ruby>？","answer": "赤","explanation": "Cがわからない→AとBが両方白ではない。Bがわからない→Aは白ではない（Aが白ならBは赤とわかるはず）。よってAは赤。","hints": ["Cの「わからない」から何がわかる？", "Bの「わからない」から何がわかる？"],"alternativeSolutions": []},
-  {"id": 103,"genre": "number_pattern","difficulty": 1,"title": "10ずつ","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n10, 20, 30, □","answer": "40","explanation": "10ずつ増える。30+10=40。","hints": ["+10"],"alternativeSolutions": []},
-  {"id": 104,"genre": "number_pattern","difficulty": 3,"title": "立方数","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 8, 27, 64, □","answer": "125","explanation": "1³=1, 2³=8, 3³=27, 4³=64, 5³=125。立方数の列。","hints": ["同じ数を3回かける", "5×5×5"],"alternativeSolutions": []},
-  {"id": 105,"genre": "combinatorics","difficulty": 1,"title": "さいころ","question": "サイコロ1<ruby>個<rt>こ</rt></ruby>を<ruby>振<rt>ふ</rt></ruby>ったとき、<ruby>出<rt>で</rt></ruby>る<ruby>目<rt>め</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "6通り","explanation": "1〜6の6通り。","hints": ["1から6まで"],"alternativeSolutions": []},
-  {"id": 106,"genre": "combinatorics","difficulty": 3,"title": "コイン3枚の表裏","question": "コイン3<ruby>枚<rt>まい</rt></ruby>を<ruby>同時<rt>どうじ</rt></ruby>に<ruby>投<rt>な</rt></ruby>げたとき、<ruby>表裏<rt>おもてうら</rt></ruby>の<ruby>出方<rt>でかた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "8通り","explanation": "各コインが表か裏の2通り。2×2×2=8通り。","hints": ["2×2×2"],"alternativeSolutions": []},
-  {"id": 107,"genre": "geometry","difficulty": 1,"title": "円の直径","question": "<ruby>半径<rt>はんけい</rt></ruby>2cmの<ruby>円<rt>えん</rt></ruby>の<ruby>直径<rt>ちょっけい</rt></ruby>は？","answer": "4cm","explanation": "直径＝半径×2＝2×2＝4cm","hints": ["半径の2倍"],"alternativeSolutions": []},
-  {"id": 108,"genre": "geometry","difficulty": 3,"title": "円の面積","question": "<ruby>半径<rt>はんけい</rt></ruby>3cmの<ruby>円<rt>えん</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？（<ruby>円周率<rt>えんしゅうりつ</rt></ruby>=3.14）","answer": "28.26cm²","explanation": "半径×半径×円周率＝3×3×3.14＝28.26cm²","hints": ["半径×半径×3.14"],"alternativeSolutions": []},
-  {"id": 109,"genre": "word_problem","difficulty": 1,"title": "時間の計算","question": "2<ruby>時間<rt>じかん</rt></ruby>は<ruby>何分<rt>なんぷん</rt></ruby>？","answer": "120分","explanation": "1時間=60分。60×2=120分。","hints": ["1時間=60分"],"alternativeSolutions": []},
-  {"id": 110,"genre": "word_problem","difficulty": 2,"title": "割引","question": "1000<ruby>円<rt>えん</rt></ruby>の20%<ruby>引<rt>び</rt></ruby>きはいくら？","answer": "800円","explanation": "1000×0.2=200円引き。1000-200=800円。","hints": ["20%はいくら？", "元の値段から引く"],"alternativeSolutions": []},
-  {"id": 111,"genre": "logic","difficulty": 2,"title": "電球パズル","question": "<ruby>電球<rt>でんきゅう</rt></ruby>が5<ruby>個<rt>こ</rt></ruby><ruby>全部<rt>ぜんぶ</rt></ruby><ruby>消<rt>き</rt></ruby>えています。1つだけつけました。<ruby>何個<rt>なんこ</rt></ruby>ついていますか？","answer": "1個","explanation": "1つつけたので1個。","hints": ["そのまま"],"alternativeSolutions": []},
-  {"id": 112,"genre": "number_pattern","difficulty": 2,"title": "偶数列","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 4, 6, 8, □","answer": "10","explanation": "偶数が順番に並んでいる。8+2=10。","hints": ["2ずつ増える"],"alternativeSolutions": []},
-  {"id": 113,"genre": "combinatorics","difficulty": 2,"title": "2文字の並べ替え","question": "AとBの2<ruby>文字<rt>もじ</rt></ruby>を<ruby>並<rt>なら</rt></ruby>べ<ruby>替<rt>か</rt></ruby>える<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？","answer": "2通り","explanation": "AB, BAの2通り。","hints": ["全部書き出す"],"alternativeSolutions": []},
-  {"id": 114,"genre": "geometry","difficulty": 2,"title": "長方形の周","question": "<ruby>縦<rt>たて</rt></ruby>3cm、<ruby>横<rt>よこ</rt></ruby>8cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>周<rt>まわ</rt></ruby>りの<ruby>長<rt>なが</rt></ruby>さは？","answer": "22cm","explanation": "(3+8)×2=22cm","hints": ["(縦+横)×2"],"alternativeSolutions": []},
-  {"id": 115,"genre": "word_problem","difficulty": 3,"title": "距離の計算","question": "<ruby>時速<rt>じそく</rt></ruby>60kmで2<ruby>時間<rt>じかん</rt></ruby><ruby>走<rt>はし</rt></ruby>ると<ruby>何<rt>なん</rt></ruby>km？","answer": "120km","explanation": "60×2=120km","hints": ["速さ×時間=距離"],"alternativeSolutions": []},
-  {"id": 116,"genre": "logic","difficulty": 3,"title": "数当て","question": "1〜10の<ruby>整数<rt>せいすう</rt></ruby>で、<ruby>偶数<rt>ぐうすう</rt></ruby>かつ5より<ruby>大<rt>おお</rt></ruby>きい数は<ruby>何個<rt>なんこ</rt></ruby>ありますか？","answer": "3個","explanation": "6, 8, 10の3個。","hints": ["偶数を書き出す", "5より大きいものを選ぶ"],"alternativeSolutions": []},
-  {"id": 117,"genre": "number_pattern","difficulty": 3,"title": "n²+1の列","question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 5, 10, 17, □","answer": "26","explanation": "1²+1=2, 2²+1=5, 3²+1=10, 4²+1=17, 5²+1=26。","hints": ["差を見ると3,5,7,9...", "n²+1の形"],"alternativeSolutions": []},
-  {"id": 118,"genre": "combinatorics","difficulty": 3,"title": "円卓の席順","question": "4<ruby>人<rt>にん</rt></ruby>を<ruby>円<rt>えん</rt></ruby>テーブルに<ruby>座<rt>すわ</rt></ruby>らせる<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？（<ruby>回転<rt>かいてん</rt></ruby>して<ruby>同<rt>おな</rt></ruby>じになるものは1つと<ruby>数<rt>かぞ</rt></ruby>える）","answer": "6通り","explanation": "円順列＝(4-1)!=3!=6通り。1人を固定して残り3人の並べ方。","hints": ["1人を固定する", "残り3人の並べ方"],"alternativeSolutions": []},
-  {"id": 119,"genre": "geometry","difficulty": 3,"title": "立方体の体積","question": "1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>体積<rt>たいせき</rt></ruby>は？","answer": "64cm³","explanation": "4×4×4=64cm³","hints": ["辺×辺×辺"],"alternativeSolutions": []},
-  {"id": 120,"genre": "word_problem","difficulty": 3,"title": "割引の計算","question": "120<ruby>円<rt>えん</rt></ruby>の<ruby>品物<rt>しなもの</rt></ruby>を5<ruby>個<rt>こ</rt></ruby><ruby>買<rt>か</rt></ruby>い、<ruby>全体<rt>ぜんたい</rt></ruby>から10%<ruby>引<rt>び</rt></ruby>きにしてもらいました。いくら？","answer": "540円","explanation": "120×5=600円。600×0.1=60円引き。600-60=540円。","hints": ["まず合計を出す", "10%を引く"],"alternativeSolutions": []}
+  {
+    "id": 81,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "じゃんけんの結果",
+    "question": "AはBに<ruby>勝<rt>か</rt></ruby>ち、BはCに<ruby>勝<rt>か</rt></ruby>ちました。Aは<ruby>必<rt>かなら</rt></ruby>ずCに<ruby>勝<rt>か</rt></ruby>つといえますか？",
+    "answer": "言えない",
+    "explanation": "じゃんけんはグー・チョキ・パーで循環するので、必ずとは言えない。",
+    "hints": [
+      "グー・チョキ・パーを書いてみよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 82,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "うそつき兄弟",
+    "question": "兄は「弟はうそつきだ」と言い、弟は「兄も私も正直者だ」と言いました。正直者は必ず本当のことを言い、うそつきは必ずうそを言います。うそつきはどちら？",
+    "answer": "弟",
+    "explanation": "兄が正直者と仮定→「弟はうそつき」が本当→弟はうそつき。弟の「兄も私も正直者」はうそ→少なくとも1人はうそつき→弟がうそつきなので矛盾なし。兄がうそつきと仮定→「弟はうそつき」がうそ→弟は正直者。弟の「兄も私も正直者」は本当→兄も正直者→矛盾。よって兄が正直者、弟がうそつき。",
+    "hints": [
+      "兄が正直者だと仮定してみよう",
+      "弟の発言が本当かうそか確認"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 83,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "コイン3枚",
+    "question": "3<ruby>枚<rt>まい</rt></ruby>のコインのうち1<ruby>枚<rt>まい</rt></ruby>だけ<ruby>重<rt>おも</rt></ruby>いです。<ruby>天秤<rt>てんびん</rt></ruby>を1<ruby>回<rt>かい</rt></ruby>使って<ruby>見<rt>み</rt></ruby>つけるには？",
+    "answer": "1枚対1枚を比べる",
+    "explanation": "重い方がそのコイン。つり合えば残りの1枚が重い。",
+    "hints": [
+      "2枚を比較する",
+      "つり合ったらどうなる？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 84,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "倍々ゲーム",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 4, 8, 16, □",
+    "answer": "32",
+    "explanation": "毎回2倍になる。16×2=32。",
+    "hints": [
+      "前の数×2"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 85,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "足して増える",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n5, 8, 12, 17, □",
+    "answer": "23",
+    "explanation": "差は3, 4, 5, 6と1ずつ増える。17+6=23。",
+    "hints": [
+      "差を見よう",
+      "差がどう変わる？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 86,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "平方数列",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 4, 9, 16, 25, 36, □",
+    "answer": "49",
+    "explanation": "1²,2²,3²,4²,5²,6²,7²=49。平方数の列。",
+    "hints": [
+      "7×7は？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 87,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "アイス選び",
+    "question": "バニラ、チョコ、いちごから1つ<ruby>選<rt>えら</rt></ruby>ぶ<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "3通り",
+    "explanation": "そのまま3通り。",
+    "hints": [
+      "それぞれ1つずつ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 88,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "並べ替え",
+    "question": "A, B, Cの3<ruby>文字<rt>もじ</rt></ruby>を<ruby>並<rt>なら</rt></ruby>べる<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "3×2×1=6通り。ABC,ACB,BAC,BCA,CAB,CBA。",
+    "hints": [
+      "3×2×1"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 89,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "道順",
+    "question": "<ruby>右<rt>みぎ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby>、<ruby>上<rt>うえ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby><ruby>進<rt>すす</rt></ruby>む<ruby>道順<rt>みちじゅん</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "4歩のうち「上」を2歩選ぶ。₄C₂=6通り。",
+    "hints": [
+      "4歩中2歩を選ぶ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 90,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "長方形の面積",
+    "question": "たて4cm、よこ7cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？",
+    "answer": "28cm²",
+    "explanation": "4×7=28cm²",
+    "hints": [
+      "たて×よこ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 91,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "正方形の周り",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>5cmの<ruby>正方形<rt>せいほうけい</rt></ruby>の<ruby>周<rt>まわ</rt></ruby>りの<ruby>長<rt>なが</rt></ruby>さは？",
+    "answer": "20cm",
+    "explanation": "5×4=20cm",
+    "hints": [
+      "4辺とも同じ長さ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 92,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "立方体の面",
+    "question": "<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>面<rt>めん</rt></ruby>はいくつ？",
+    "answer": "6面",
+    "explanation": "上下2面＋前後左右4面＝6面。",
+    "hints": [
+      "上下＋側面"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 93,
+    "genre": "word_problem",
+    "difficulty": 1,
+    "title": "買い物",
+    "question": "120<ruby>円<rt>えん</rt></ruby>のジュースを3<ruby>本<rt>ぽん</rt></ruby><ruby>買<rt>か</rt></ruby>うといくら？",
+    "answer": "360円",
+    "explanation": "120×3=360円",
+    "hints": [
+      "かけ算"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 94,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "速さ",
+    "question": "<ruby>毎分<rt>まいふん</rt></ruby>80mで10<ruby>分<rt>ぷん</rt></ruby><ruby>歩<rt>ある</rt></ruby>くと<ruby>何<rt>なん</rt></ruby>m？",
+    "answer": "800m",
+    "explanation": "80×10=800m",
+    "hints": [
+      "速さ×時間"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 95,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "割合",
+    "question": "200<ruby>円<rt>えん</rt></ruby>の25%はいくら？",
+    "answer": "50円",
+    "explanation": "200×0.25=50円",
+    "hints": [
+      "25%は4分の1"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 96,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "カードの裏表",
+    "question": "「<ruby>片面<rt>かためん</rt></ruby>が<ruby>赤<rt>あか</rt></ruby>なら<ruby>裏<rt>うら</rt></ruby>は<ruby>青<rt>あお</rt></ruby>」というルールがあります。<ruby>赤<rt>あか</rt></ruby>が<ruby>見<rt>み</rt></ruby>えたら<ruby>裏<rt>うら</rt></ruby>は<ruby>何色<rt>なにいろ</rt></ruby>？",
+    "answer": "青",
+    "explanation": "ルール通り、赤の裏は青。",
+    "hints": [
+      "ルールをそのまま使う"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 97,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "奇数列",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 3, 5, 7, □",
+    "answer": "9",
+    "explanation": "奇数が順番に並んでいる。7+2=9。",
+    "hints": [
+      "2ずつ増える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 98,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "サンドイッチ",
+    "question": "パン2<ruby>種類<rt>しゅるい</rt></ruby>、<ruby>中身<rt>なかみ</rt></ruby>3<ruby>種類<rt>しゅるい</rt></ruby>。<ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせは<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "2×3=6通り。",
+    "hints": [
+      "パンの数×中身の数"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 99,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "三角形の角",
+    "question": "<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>内角<rt>ないかく</rt></ruby>の<ruby>和<rt>わ</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>？",
+    "answer": "180度",
+    "explanation": "三角形の内角の和は必ず180度。",
+    "hints": [
+      "どんな三角形でも同じ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 100,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "仕事算",
+    "question": "ある<ruby>仕事<rt>しごと</rt></ruby>を、Aさんは1<ruby>人<rt>り</rt></ruby>で6<ruby>日<rt>にち</rt></ruby>、Bさんは1<ruby>人<rt>り</rt></ruby>で3<ruby>日<rt>にち</rt></ruby>で<ruby>終<rt>お</rt></ruby>わらせます。2<ruby>人<rt>り</rt></ruby>でやると<ruby>何日<rt>なんにち</rt></ruby>？",
+    "answer": "2日",
+    "explanation": "Aは1日に1/6、Bは1日に1/3。合わせて1/6+1/3=1/6+2/6=3/6=1/2。全体÷(1/2)=2日。",
+    "hints": [
+      "1日にどれだけ進む？",
+      "2人分を足す"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 101,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "左右の順番",
+    "question": "AはBの<ruby>左<rt>ひだり</rt></ruby>。BはCの<ruby>左<rt>ひだり</rt></ruby>。AはCのどちら<ruby>側<rt>がわ</rt></ruby>？",
+    "answer": "左",
+    "explanation": "A→B→Cの順なので、AはCの左。",
+    "hints": [
+      "順番に並べてみよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 102,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "帽子問題",
+    "question": "<ruby>赤<rt>あか</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>1つ、<ruby>白<rt>しろ</rt></ruby>い<ruby>帽子<rt>ぼうし</rt></ruby>2つがあります。A、B、Cが<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>び、<ruby>後<rt>うし</rt></ruby>ろの<ruby>人<rt>ひと</rt></ruby>ほど<ruby>前<rt>まえ</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>が<ruby>見<rt>み</rt></ruby>えます。Cが「わからない」、Bも「わからない」と<ruby>言<rt>い</rt></ruby>った<ruby>後<rt>あと</rt></ruby>、Aは<ruby>自分<rt>じぶん</rt></ruby>の<ruby>帽子<rt>ぼうし</rt></ruby>の<ruby>色<rt>いろ</rt></ruby>がわかりました。<ruby>何色<rt>なにいろ</rt></ruby>？",
+    "answer": "白",
+    "explanation": "赤1白2。Cがわからない→AとBが両方白ではない（もし両方白ならCは赤とわかる）。Bがわからない→Aは赤ではない（Aが赤なら「両方白ではない」が満たされ、Bは自分が白とわかるはず）。よってAは白。",
+    "hints": [
+      "Cの「わからない」から何がわかる？",
+      "Bの「わからない」から何がわかる？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 103,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "10ずつ",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n10, 20, 30, □",
+    "answer": "40",
+    "explanation": "10ずつ増える。30+10=40。",
+    "hints": [
+      "+10"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 104,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "立方数",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n1, 8, 27, 64, □",
+    "answer": "125",
+    "explanation": "1³=1, 2³=8, 3³=27, 4³=64, 5³=125。立方数の列。",
+    "hints": [
+      "同じ数を3回かける",
+      "5×5×5"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 105,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "さいころ",
+    "question": "サイコロ1<ruby>個<rt>こ</rt></ruby>を<ruby>振<rt>ふ</rt></ruby>ったとき、<ruby>出<rt>で</rt></ruby>る<ruby>目<rt>め</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "6通り",
+    "explanation": "1〜6の6通り。",
+    "hints": [
+      "1から6まで"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 106,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "コイン3枚の表裏",
+    "question": "コイン3<ruby>枚<rt>まい</rt></ruby>を<ruby>同時<rt>どうじ</rt></ruby>に<ruby>投<rt>な</rt></ruby>げたとき、<ruby>表裏<rt>おもてうら</rt></ruby>の<ruby>出方<rt>でかた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "8通り",
+    "explanation": "各コインが表か裏の2通り。2×2×2=8通り。",
+    "hints": [
+      "2×2×2"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 107,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "円の直径",
+    "question": "<ruby>半径<rt>はんけい</rt></ruby>2cmの<ruby>円<rt>えん</rt></ruby>の<ruby>直径<rt>ちょっけい</rt></ruby>は？",
+    "answer": "4cm",
+    "explanation": "直径＝半径×2＝2×2＝4cm",
+    "hints": [
+      "半径の2倍"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 108,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "円の面積",
+    "question": "<ruby>半径<rt>はんけい</rt></ruby>3cmの<ruby>円<rt>えん</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？（<ruby>円周率<rt>えんしゅうりつ</rt></ruby>=3.14）",
+    "answer": "28.26cm²",
+    "explanation": "半径×半径×円周率＝3×3×3.14＝28.26cm²",
+    "hints": [
+      "半径×半径×3.14"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 109,
+    "genre": "word_problem",
+    "difficulty": 1,
+    "title": "時間の計算",
+    "question": "2<ruby>時間<rt>じかん</rt></ruby>は<ruby>何分<rt>なんぷん</rt></ruby>？",
+    "answer": "120分",
+    "explanation": "1時間=60分。60×2=120分。",
+    "hints": [
+      "1時間=60分"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 110,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "割引",
+    "question": "1000<ruby>円<rt>えん</rt></ruby>の20%<ruby>引<rt>び</rt></ruby>きはいくら？",
+    "answer": "800円",
+    "explanation": "1000×0.2=200円引き。1000-200=800円。",
+    "hints": [
+      "20%はいくら？",
+      "元の値段から引く"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 111,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "電球パズル",
+    "question": "<ruby>電球<rt>でんきゅう</rt></ruby>が5<ruby>個<rt>こ</rt></ruby><ruby>全部<rt>ぜんぶ</rt></ruby><ruby>消<rt>き</rt></ruby>えています。1つだけつけました。<ruby>何個<rt>なんこ</rt></ruby>ついていますか？",
+    "answer": "1個",
+    "explanation": "1つつけたので1個。",
+    "hints": [
+      "そのまま"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 112,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "偶数列",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 4, 6, 8, □",
+    "answer": "10",
+    "explanation": "偶数が順番に並んでいる。8+2=10。",
+    "hints": [
+      "2ずつ増える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 113,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "2文字の並べ替え",
+    "question": "AとBの2<ruby>文字<rt>もじ</rt></ruby>を<ruby>並<rt>なら</rt></ruby>べ<ruby>替<rt>か</rt></ruby>える<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "2通り",
+    "explanation": "AB, BAの2通り。",
+    "hints": [
+      "全部書き出す"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 114,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "長方形の周",
+    "question": "<ruby>縦<rt>たて</rt></ruby>3cm、<ruby>横<rt>よこ</rt></ruby>8cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>周<rt>まわ</rt></ruby>りの<ruby>長<rt>なが</rt></ruby>さは？",
+    "answer": "22cm",
+    "explanation": "(3+8)×2=22cm",
+    "hints": [
+      "(縦+横)×2"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 115,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "距離の計算",
+    "question": "<ruby>時速<rt>じそく</rt></ruby>60kmで2<ruby>時間<rt>じかん</rt></ruby><ruby>走<rt>はし</rt></ruby>ると<ruby>何<rt>なん</rt></ruby>km？",
+    "answer": "120km",
+    "explanation": "60×2=120km",
+    "hints": [
+      "速さ×時間=距離"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 116,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "数当て",
+    "question": "1〜10の<ruby>整数<rt>せいすう</rt></ruby>で、<ruby>偶数<rt>ぐうすう</rt></ruby>かつ5より<ruby>大<rt>おお</rt></ruby>きい数は<ruby>何個<rt>なんこ</rt></ruby>ありますか？",
+    "answer": "3個",
+    "explanation": "6, 8, 10の3個。",
+    "hints": [
+      "偶数を書き出す",
+      "5より大きいものを選ぶ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 117,
+    "genre": "number_pattern",
+    "difficulty": 3,
+    "title": "n²+1の列",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数は？\n\n2, 5, 10, 17, □",
+    "answer": "26",
+    "explanation": "1²+1=2, 2²+1=5, 3²+1=10, 4²+1=17, 5²+1=26。",
+    "hints": [
+      "差を見ると3,5,7,9...",
+      "n²+1の形"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 118,
+    "genre": "combinatorics",
+    "difficulty": 3,
+    "title": "円卓の席順",
+    "question": "4<ruby>人<rt>にん</rt></ruby>を<ruby>円<rt>えん</rt></ruby>テーブルに<ruby>座<rt>すわ</rt></ruby>らせる<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？（<ruby>回転<rt>かいてん</rt></ruby>して<ruby>同<rt>おな</rt></ruby>じになるものは1つと<ruby>数<rt>かぞ</rt></ruby>える）",
+    "answer": "6通り",
+    "explanation": "円順列＝(4-1)!=3!=6通り。1人を固定して残り3人の並べ方。",
+    "hints": [
+      "1人を固定する",
+      "残り3人の並べ方"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 119,
+    "genre": "geometry",
+    "difficulty": 3,
+    "title": "立方体の体積",
+    "question": "1<ruby>辺<rt>ぺん</rt></ruby>4cmの<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>体積<rt>たいせき</rt></ruby>は？",
+    "answer": "64cm³",
+    "explanation": "4×4×4=64cm³",
+    "hints": [
+      "辺×辺×辺"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 120,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "割引の計算",
+    "question": "120<ruby>円<rt>えん</rt></ruby>の<ruby>品物<rt>しなもの</rt></ruby>を5<ruby>個<rt>こ</rt></ruby><ruby>買<rt>か</rt></ruby>い、<ruby>全体<rt>ぜんたい</rt></ruby>から10%<ruby>引<rt>び</rt></ruby>きにしてもらいました。いくら？",
+    "answer": "540円",
+    "explanation": "120×5=600円。600×0.1=60円引き。600-60=540円。",
+    "hints": [
+      "まず合計を出す",
+      "10%を引く"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 121,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "並び順①",
+    "question": "A、B、Cの3人が並んでいます。AはBより左、CはAより右です。いちばん左にいるのは誰ですか？",
+    "answer": "A",
+    "explanation": "AはBより左、さらにCはAより右なのでAが左。",
+    "hints": [
+      "位置関係を図にしよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 122,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "うそつき村①",
+    "question": "正直者は本当のことだけ、うそつきはうそだけ言います。Aが『Bはうそつきだ』と言いました。Bが『私たちは同じ種類だ』と言いました。AとBは？",
+    "answer": "Aは正直者、Bはうそつき",
+    "explanation": "Bが同じ種類と言っているので、それがうそ→違う種類。",
+    "hints": [
+      "Bの発言から考える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 123,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "箱のラベル",
+    "question": "『りんご』『みかん』『両方』と書かれた3つの箱があります。全部ラベルが間違っています。1個だけ中を見て全部正しく直すには、どの箱を見ればよい？",
+    "answer": "『両方』の箱",
+    "explanation": "そこが必ず片方だけなので基準になる。",
+    "hints": [
+      "全部間違いに注目"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 124,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "帽子①",
+    "question": "赤帽子2つ、白帽子3つがあります。3人が前を向いて並び、後ろの人から順に見えます。最初の2人が『わからない』と言ったあと、最後の人が自分の帽子を当てました。何色？",
+    "answer": "白",
+    "explanation": "有名な論理問題。赤2つなら前2人でわかるため。",
+    "hints": [
+      "『わからない』も情報"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 125,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "仲間はずれ",
+    "question": "犬、猫、鳥、りんご の中で仲間はずれは？",
+    "answer": "りんご",
+    "explanation": "動物ではない。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 126,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "電球とスイッチ",
+    "question": "3つのスイッチと3つの電球があります。部屋に1回しか入れません。対応を調べるには？",
+    "answer": "1つON→待つ→OFF、別の1つONで入る",
+    "explanation": "光と熱を使う。",
+    "hints": [
+      "熱も使える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 127,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "左右②",
+    "question": "AはBの右、BはCの右です。左から並べると？",
+    "answer": "C B A",
+    "explanation": "順番を逆にする。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 128,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "コイン偽物",
+    "question": "9枚のコインの中に1枚だけ重い偽物があります。天秤を2回だけ使って見つけるには？",
+    "answer": "3枚ずつ比較する",
+    "explanation": "3分割→さらに3分割。",
+    "hints": [
+      "まず3つに分ける"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 129,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "曜日の論理",
+    "question": "昨日が月曜日でないなら、今日は火曜日ではありません。今日は火曜日なら、昨日は何曜日？",
+    "answer": "月曜日",
+    "explanation": "対偶を使う。",
+    "hints": [
+      "逆ではなく対偶"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 130,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "100人の帽子",
+    "question": "100人が一列に並び、前の人の帽子だけ見えます。事前相談あり。最大何人助けられる？",
+    "answer": "99人",
+    "explanation": "偶奇情報を使う有名問題。",
+    "hints": [
+      "最初の1人が情報を伝える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 131,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "席順②",
+    "question": "A、B、C、Dが横一列に座ります。AはBの左、DはCの右、BはCの左です。左から並べると？",
+    "answer": "A B C D",
+    "explanation": "条件をすべてつなげると1通り。",
+    "hints": [
+      "大小関係みたいに並べよう"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 132,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "うそつき村②",
+    "question": "A『Bは正直者』、B『Cはうそつき』、C『Aとうそつきは同じ』。うそつきは1人だけです。誰？",
+    "answer": "C",
+    "explanation": "AとBが正しければCだけが矛盾。",
+    "hints": [
+      "1人ずつ仮定"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 133,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "3つの箱",
+    "question": "赤玉だけ、青玉だけ、混合の3箱があります。全部ラベルが間違っています。1回だけ取り出して全部直すにはどの箱？",
+    "answer": "『混合』の箱",
+    "explanation": "必ず単色箱なので判定できる。",
+    "hints": [
+      "全部間違い"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 134,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "家族の人数",
+    "question": "ある家族は子どもが3人います。「男の子が少なくとも1人いる」とわかっているとき、「3人全員が女の子」である可能性はありますか？",
+    "answer": "ない（0%）",
+    "explanation": "「男の子が少なくとも1人いる」という条件があるので、全員女の子はありえない。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 135,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "ドア問題",
+    "question": "2つのドア。1つは出口、1つは行き止まり。守衛は1人は正直、1人はうそつき。1回だけ質問して出口を見つけるには？",
+    "answer": "『もう1人はどちらを出口と言う？』と聞く",
+    "explanation": "両方とも間違った方を指す。",
+    "hints": [
+      "有名問題"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 136,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "順番",
+    "question": "AはBより前、BはCより前。最後は誰？",
+    "answer": "C",
+    "explanation": "順番そのまま。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 137,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "橋を渡る",
+    "question": "1分、2分、7分、10分の4人が橋を渡る。懐中電灯は1つ。最短は？",
+    "answer": "17分",
+    "explanation": "1&2、1戻る、7&10、2戻る、1&2。",
+    "hints": [
+      "速い人を戻す"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 138,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "カード推理",
+    "question": "1〜5のカードを1枚選んだ。『偶数ではない』『3より大きい』。何？",
+    "answer": "5",
+    "explanation": "候補は4,5→偶数でないので5。",
+    "hints": [
+      "条件を絞る"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 139,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "毒入りワイン",
+    "question": "1000本のワインのうち1本だけ毒入り。10匹のネズミで1回で見つける方法は？",
+    "answer": "2進数を使う",
+    "explanation": "10ビットで1024通り表現可能。",
+    "hints": [
+      "0と1で考える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 140,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "左右③",
+    "question": "AはBの左、CはAの右、BはCの左。左から並べると？",
+    "answer": "A B C",
+    "explanation": "条件を整理するとA→B→C。",
+    "hints": [
+      "図にする"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 141,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "席順③",
+    "question": "A、B、C、Dが並んでいます。Aは端ではなく、BはAの左、DはCの右です。Aが3番目なら左から並べると？",
+    "answer": "B C A D",
+    "explanation": "A=3番目、Bは左、DはCの右より決まる。",
+    "hints": [
+      "Aを先に置く"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 142,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "うそつき村③",
+    "question": "A『Bはうそつき』、B『Cはうそつき』、C『AとBは同じ種類』。うそつきは何人？",
+    "answer": "1人",
+    "explanation": "A正直→Bうそ→C正直で成立。",
+    "hints": [
+      "Aを正直と仮定"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 143,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "カード裏返し",
+    "question": "表に 3, 8, 赤, 青 の4枚。『偶数なら裏は青』を確かめるには最低何枚めくる？",
+    "answer": "2枚",
+    "explanation": "8 と 赤 を確認する。",
+    "hints": [
+      "反例を探す"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 144,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "兄弟",
+    "question": "ある家に兄弟が3人います。太郎は次男ではありません。次郎は長男ではありません。三郎は末っ子です。長男は誰？",
+    "answer": "太郎",
+    "explanation": "三郎は末っ子、次郎は長男でない。",
+    "hints": [
+      "消去法"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 145,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "帽子②",
+    "question": "赤い帽子3つ、白い帽子2つがあります。3人が前を向いて一列に並び、後ろの人ほど前の人の帽子が見えます。一番後ろから順に聞いて、最初の2人が『わからない』と言った後、一番前の人が自分の帽子の色を当てました。何色？",
+    "answer": "赤",
+    "explanation": "白は2つしかない。一番後ろが「わからない」→前2人が両方白ではない。真ん中の人はこれを知っている。もし前の人が白なら、「両方白ではない」ので自分は赤とわかるはず。真ん中が「わからない」→前の人は白ではない→前の人は赤。",
+    "hints": [
+      "前の人の情報も条件"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 146,
+    "genre": "logic",
+    "difficulty": 1,
+    "title": "大小",
+    "question": "A>B、B>C なら A と C はどちらが大きい？",
+    "answer": "A",
+    "explanation": "大小関係の基本。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 147,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "ジュースの推理",
+    "question": "りんご、オレンジ、ぶどうのどれかを飲んだ。『赤くない』『柑橘ではない』。何を飲んだ？",
+    "answer": "ぶどう",
+    "explanation": "りんごは赤、オレンジは柑橘。",
+    "hints": [
+      "条件を消していく"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 148,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "天秤②",
+    "question": "8個の球のうち1つだけ重い。天秤を2回で見つけるには最初どう分ける？",
+    "answer": "3・3・2",
+    "explanation": "まず3対3で比較。",
+    "hints": [
+      "均等が基本"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 149,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "曜日②",
+    "question": "明後日が金曜日なら、今日は何曜日？",
+    "answer": "水曜日",
+    "explanation": "2日前。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 150,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "囚人の電球",
+    "question": "100人の囚人が順番にランダムに1つの部屋に呼ばれます。部屋には電球が1つあり、ON/OFFを切り替えられます。全員が少なくとも1回は部屋に入ったことを、ある1人が確実に宣言できる戦略は？",
+    "answer": "リーダー方式",
+    "explanation": "リーダー方式：1人だけが「カウント役」になる。他の人は初めて電球がOFFの時だけONにする。カウント役はONを見たらOFFに戻し、99回数えたら全員訪問済みと宣言する。",
+    "hints": [
+      "役割分担"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 151,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "数当て①",
+    "question": "1〜9の数字を1つ考えています。『5より大きい』『偶数ではない』。考えられる数字は？",
+    "answer": "7または9",
+    "explanation": "6,7,8,9 のうち奇数。",
+    "hints": [
+      "条件を1つずつ使う"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 152,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "席替え④",
+    "question": "5人 A,B,C,D,E が横一列に並びます。AはBのすぐ左隣、CはDのすぐ左隣、Eは真ん中（3番目）です。左から並べると？",
+    "answer": "A B E C D",
+    "explanation": "Eが3番目。ABが隣り合い（A左B右）、CDが隣り合い（C左D右）。ABが左側(1,2番目)、CDが右側(4,5番目)に入る。よって A B E C D。",
+    "hints": [
+      "Eの位置を先に決める",
+      "ABペアとCDペアを配置"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 153,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "動物推理",
+    "question": "『羽がある』『4本足ではない』『空を飛ぶ』。最も合うのは？",
+    "answer": "鳥",
+    "explanation": "条件一致。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 154,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "毒入りジュース",
+    "question": "8本のジュースのうち1本だけ毒入りです。飲むと翌日にわかります。3人だけで1日で特定するには？",
+    "answer": "2進数で担当を分ける",
+    "explanation": "3人で8通り表現できる。",
+    "hints": [
+      "YES/NO を使う"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 155,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "兄弟②",
+    "question": "3人兄弟がいます。太郎は次郎より年上です。三郎は次郎より年上ですが太郎より年下です。真ん中は誰？",
+    "answer": "三郎",
+    "explanation": "太郎 > 三郎 > 次郎の順。真ん中は三郎。",
+    "hints": [
+      "大小関係を書く"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 156,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "コイン並べ",
+    "question": "10枚のコインがあります。毎回ちょうど3枚だけ裏返せます。表1枚だけの状態から全部表にできますか？",
+    "answer": "できる",
+    "explanation": "表でないコイン（裏のコイン）を3枚ずつ裏返していけばよい。最初：表1枚裏9枚→裏3枚を返す→表4枚裏6枚→裏3枚を返す→表7枚裏3枚→裏3枚を返す→表10枚。3回で全部表にできる。",
+    "hints": [
+      "裏のコインだけを選んで返す"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 157,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "曜日③",
+    "question": "昨日が木曜日なら、明日は何曜日？",
+    "answer": "土曜日",
+    "explanation": "今日は金曜。",
+    "hints": [],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 158,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "橋と懐中電灯②",
+    "question": "1分、3分、6分、8分の4人が橋を渡ります。懐中電灯は1つ。最短は？",
+    "answer": "18分",
+    "explanation": "1&3→1戻る→6&8→3戻る→1&3。",
+    "hints": [
+      "遅い2人を一緒に"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 159,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "カード推理②",
+    "question": "1〜10のカードから1枚選びました。『3の倍数である』『偶数である』の両方を満たすカードは何？",
+    "answer": "6",
+    "explanation": "1〜10で3の倍数：3,6,9。そのうち偶数：6のみ。",
+    "hints": [
+      "両方満たす"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 160,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "天秤③",
+    "question": "12個の球のうち1つだけ重さが違います。天秤3回で見つけられますか？",
+    "answer": "見つけられる",
+    "explanation": "有名な天秤問題。",
+    "hints": [
+      "左右比較を記録"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 161,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "順番推理",
+    "question": "A、B、C、Dの4人が一列に並んでいます。AはBより前、CはDより後、BはDより後、AはDより前です。先頭は誰？",
+    "answer": "A",
+    "explanation": "AはDより前、DはBより前、DはCより前。よってA→D→B,Cの順。先頭はA。",
+    "hints": [
+      "矢印で整理",
+      "AとDの関係に注目"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 162,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "うそつき村⑤",
+    "question": "A『BとCは同じ種類』、B『Aはうそつき』、C『Bは正直者』。うそつきは何人？",
+    "answer": "1人",
+    "explanation": "BとCが正直、Aだけうそ。",
+    "hints": [
+      "Bを基準に考える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 163,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "電球100個",
+    "question": "100個の電球が最初全部消えています。1回目は全部、2回目は2の倍数、3回目は3の倍数…100回目まで切り替える。最後につくのは何個？",
+    "answer": "10個",
+    "explanation": "平方数だけ奇数回切り替わる。",
+    "hints": [
+      "約数の個数"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 164,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "数の条件",
+    "question": "1〜20のうち、『偶数』『3の倍数ではない』数は何個？",
+    "answer": "7個",
+    "explanation": "2,4,8,10,14,16,20。",
+    "hints": [
+      "消していく"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 165,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "コップ並べ",
+    "question": "表向き5個、裏向き5個のコップがあります。目を閉じたまま2グループに分け、表の数を同じにするには？",
+    "answer": "5個取って裏返す",
+    "explanation": "5個を適当に取り出す。取った中にx個の表があるとする。残りグループには(5-x)個の表がある。取った5個を全部裏返すと、表だったx個は裏に、裏だった(5-x)個は表になる。裏返し後の表の数=(5-x)個。残りグループの表も(5-x)個。よって等しくなる。",
+    "hints": [
+      "見えなくてもできる"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 166,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "兄弟③",
+    "question": "AはBより年下。CはAより年上。DはBより年上。最年少は？",
+    "answer": "A",
+    "explanation": "A<B、A<C。",
+    "hints": [
+      "若い順を書く"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 167,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "島の住人",
+    "question": "正直者とうそつきだけが住む島にAとBの2人がいます。Aが『私たち2人は両方ともうそつきだ』と言いました。Aは正直者？うそつき？",
+    "answer": "うそつき",
+    "explanation": "Aが正直者なら「両方うそつき」が本当→A自身もうそつき→矛盾。よってAはうそつき。（Bについてはこの情報だけでは不明）",
+    "hints": [
+      "本当だとどうなる？"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 168,
+    "genre": "logic",
+    "difficulty": 4,
+    "title": "最短ルート",
+    "question": "3×3マスを右か上だけで進みます。最短ルートは何通り？",
+    "answer": "20通り",
+    "explanation": "6歩中3歩を選ぶ。",
+    "hints": [
+      "組み合わせ"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 169,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "帽子③",
+    "question": "ある島に何人かの人がいて、全員が赤か白どちらかの帽子をかぶっています。各人は他の全員の帽子が見えますが自分のは見えません。『自分の帽子の色がわかった人は立ってください』と同時に聞かれ、これを繰り返します。3回目で初めて全員が立ちました。島には何人いますか？（帽子の色は少なくとも1つは赤）",
+    "answer": "3人",
+    "explanation": "1人だけ赤なら→その人以外は赤が見えるので自分は白とわかる。赤の人は「白しか見えない」ので1回目でわかる→1回目で全員立つ。2人赤なら→2回目で全員立つ（1回目で立たない＝赤は1人ではない→2人とわかる）。同様に3回目で全員立つ→赤が3人。全員で3人。",
+    "hints": [
+      "1人だけ赤なら1回目でわかる",
+      "2人赤なら2回目",
+      "帰納法で考える"
+    ],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 170,
+    "genre": "logic",
+    "difficulty": 5,
+    "title": "最後の論理問題",
+    "question": "ある数は『2で割ると1余る』『3で割ると2余る』『5で割ると4余る』。最も小さい数は？",
+    "answer": "29",
+    "explanation": "すべて『1足りない』ので30-1。",
+    "hints": [
+      "1足りない形"
+    ],
+    "alternativeSolutions": []
+  }
 ]

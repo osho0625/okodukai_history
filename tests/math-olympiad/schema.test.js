@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import problems from '../../data/math-olympiad-problems.json';
+import problems from '../../data/math-olympiad-grade5.json';
 
 const GENRE_LABEL = {
   number_pattern: '数の規則',
