@@ -971,5 +971,115 @@
     "explanation": "面積を2等分する直線は図形の重心を通る。L字型の重心は「大正方形の中心」と「切り取った正方形の中心」を結ぶ線分上にある。",
     "hints": ["面積を2等分する直線は、ある特別な点を通る", "図形の重心（バランスの中心）を考えよう", "大きい正方形と切り取った部分の中心を結んでみよう"],
     "alternativeSolutions": ["対角線方向に切る方法もある"]
+  },
+  {
+    "id": 71,
+    "genre": "logic",
+    "difficulty": 2,
+    "title": "席替えの論理",
+    "question": "A、B、C、Dの4<ruby>人<rt>にん</rt></ruby>が<ruby>一列<rt>いちれつ</rt></ruby>に<ruby>座<rt>すわ</rt></ruby>ります。AはBの<ruby>右<rt>みぎ</rt></ruby>、Cは<ruby>一番左<rt>いちばんひだり</rt></ruby>ではありません。DはAの<ruby>隣<rt>となり</rt></ruby>です。Aが2<ruby>番目<rt>ばんめ</rt></ruby>のとき、<ruby>並<rt>なら</rt></ruby>び<ruby>方<rt>かた</rt></ruby>を<ruby>答<rt>こた</rt></ruby>えなさい。",
+    "answer": "C A D B",
+    "explanation": "Aが2番目。BはAの左に座れないので右側（3番目か4番目）。DはAの隣なので3番目。残るCが1番目。Bは4番目。",
+    "hints": ["Aを先に置こう", "DはAの隣", "条件を1つずつ使おう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 72,
+    "genre": "logic",
+    "difficulty": 3,
+    "title": "スイッチ3つ",
+    "question": "3つのスイッチがあり、<ruby>隣<rt>となり</rt></ruby>の<ruby>部屋<rt>へや</rt></ruby>の3つの<ruby>電球<rt>でんきゅう</rt></ruby>につながっています。<ruby>部屋<rt>へや</rt></ruby>には1<ruby>回<rt>かい</rt></ruby>しか<ruby>入<rt>はい</rt></ruby>れません。どのスイッチがどの<ruby>電球<rt>でんきゅう</rt></ruby>かわかる<ruby>方法<rt>ほうほう</rt></ruby>は？",
+    "answer": "1つをつける→しばらく待つ→消す→別の1つをつけて部屋へ入る",
+    "explanation": "点灯中＝2つ目のスイッチ、熱い消灯＝1つ目のスイッチ、冷たい消灯＝残り。",
+    "hints": ["電気は光るだけじゃない", "熱も使える"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 73,
+    "genre": "number_pattern",
+    "difficulty": 1,
+    "title": "差の規則",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n3, 7, 13, 21, □",
+    "answer": "31",
+    "explanation": "差は4, 6, 8, 10と2ずつ増える。21+10=31。",
+    "hints": ["差を見よう", "差がどう変わっているか", "次の差は10"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 74,
+    "genre": "number_pattern",
+    "difficulty": 2,
+    "title": "平方数",
+    "question": "<ruby>次<rt>つぎ</rt></ruby>の□に<ruby>入<rt>はい</rt></ruby>る数を<ruby>答<rt>こた</rt></ruby>えなさい。\n\n1, 4, 9, 16, 25, □",
+    "answer": "36",
+    "explanation": "1²=1, 2²=4, 3²=9, 4²=16, 5²=25, 6²=36。同じ数を2回かけた数（平方数）の列。",
+    "hints": ["何かの2乗になっている", "1×1, 2×2, 3×3...", "次は6×6"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 75,
+    "genre": "combinatorics",
+    "difficulty": 1,
+    "title": "ジュース選び",
+    "question": "りんご、ぶどう、オレンジの3<ruby>種類<rt>しゅるい</rt></ruby>のジュースから2<ruby>種類<rt>しゅるい</rt></ruby><ruby>選<rt>えら</rt></ruby>ぶ<ruby>方法<rt>ほうほう</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "3通り",
+    "explanation": "りんご+ぶどう、りんご+オレンジ、ぶどう+オレンジの3通り。",
+    "hints": ["順番は関係ない", "全部書き出してみよう"],
+    "alternativeSolutions": ["₃C₂ = 3"]
+  },
+  {
+    "id": 76,
+    "genre": "combinatorics",
+    "difficulty": 2,
+    "title": "階段4段",
+    "question": "<ruby>階段<rt>かいだん</rt></ruby>を1<ruby>段<rt>だん</rt></ruby>か2<ruby>段<rt>だん</rt></ruby>ずつ<ruby>上<rt>のぼ</rt></ruby>ります。4<ruby>段<rt>だん</rt></ruby>の<ruby>階段<rt>かいだん</rt></ruby>の<ruby>上<rt>のぼ</rt></ruby>り<ruby>方<rt>かた</rt></ruby>は<ruby>何通<rt>なんとお</rt></ruby>り？",
+    "answer": "5通り",
+    "explanation": "1111, 112, 121, 211, 22 の5通り。",
+    "hints": ["書き出そう", "2段を使う回数で分ける"],
+    "alternativeSolutions": ["フィボナッチ数列：1段=1通り、2段=2通り、3段=3通り、4段=5通り"]
+  },
+  {
+    "id": 77,
+    "genre": "geometry",
+    "difficulty": 1,
+    "title": "三角形の面積",
+    "question": "<ruby>底辺<rt>ていへん</rt></ruby>8cm、<ruby>高<rt>たか</rt></ruby>さ5cmの<ruby>三角形<rt>さんかくけい</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>は？",
+    "answer": "20cm²",
+    "explanation": "三角形の面積＝底辺×高さ÷2＝8×5÷2＝20cm²",
+    "hints": ["三角形の面積の公式を使おう", "底辺×高さ÷2"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 78,
+    "genre": "geometry",
+    "difficulty": 2,
+    "title": "立方体の辺",
+    "question": "<ruby>立方体<rt>りっぽうたい</rt></ruby>の<ruby>辺<rt>へん</rt></ruby>は<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何本<rt>なんぼん</rt></ruby>？",
+    "answer": "12本",
+    "explanation": "上の面に4本、下の面に4本、縦に4本。合計12本。",
+    "hints": ["面ではなく辺を数える", "上・下・縦に分けて考えよう"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 79,
+    "genre": "word_problem",
+    "difficulty": 2,
+    "title": "追いつき算",
+    "question": "Aは<ruby>毎分<rt>まいふん</rt></ruby>70m、Bは<ruby>毎分<rt>まいふん</rt></ruby>50mで<ruby>歩<rt>ある</rt></ruby>きます。Bが100m<ruby>先<rt>さき</rt></ruby>にいます。Aは<ruby>何分<rt>なんぷん</rt></ruby>で<ruby>追<rt>お</rt></ruby>いつきますか？",
+    "answer": "5分",
+    "explanation": "差が縮まる速さ＝70-50＝20m/分。100÷20＝5分。",
+    "hints": ["差の速さを求めよう", "100mの差を何分で縮める？"],
+    "alternativeSolutions": []
+  },
+  {
+    "id": 80,
+    "genre": "word_problem",
+    "difficulty": 3,
+    "title": "食塩水",
+    "question": "20%の<ruby>食塩水<rt>しょくえんすい</rt></ruby>100gに<ruby>水<rt>みず</rt></ruby>を<ruby>何<rt>なん</rt></ruby>g<ruby>入<rt>い</rt></ruby>れると10%になりますか？",
+    "answer": "100g",
+    "explanation": "食塩の量＝100×0.2＝20g（変わらない）。10%にするには全体＝20÷0.1＝200g。水を200-100＝100g加える。",
+    "hints": ["食塩の量は変わらない", "食塩20gが全体の10%になるには？", "全体200g必要→水は100g"],
+    "alternativeSolutions": []
   }
 ]
