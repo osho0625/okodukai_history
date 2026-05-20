@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>⚔️ 算数バトル</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; padding: 20px;
+  color: #eee; font-size: 16px;
+}
+.container { max-width: 480px; margin: 0 auto; }
+.header {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 480px; margin: 0 auto 24px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
+h1 { font-size: 1.4em; font-weight: 700; }
+.hidden { display: none !important; }
+.view { max-width: 480px; margin: 0 auto; }
+
+.btn {
+  display: inline-block; padding: 12px 24px;
+  border: none; border-radius: 12px;
+  font-size: 1em; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  color: #fff; background: linear-gradient(135deg, #667eea, #764ba2);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+.btn-small { padding: 8px 14px; font-size: 0.85em; border-radius: 8px; }
+.btn-danger { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+input[type="text"], textarea {
+  width: 100%; padding: 12px 16px;
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+  background: rgba(0,0,0,0.3); color: #eee;
+  font-size: 1em; font-family: 'Segoe UI', sans-serif; outline: none;
+}
+input[type="text"]:focus, textarea:focus { border-color: rgba(102,126,234,0.6); }
+textarea { resize: vertical; min-height: 80px; }
+
+.card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  cursor: pointer; transition: transform 0.15s, background 0.15s;
+}
+.card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+
+.grade-option {
+  display: flex; align-items: center; gap: 12px; padding: 16px;
+  background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
+}
+.grade-option.selected { border-color: #667eea; background: rgba(102,126,234,0.15); }
+.grade-option:hover { background: rgba(255,255,255,0.1); }
+
+.player-list { margin: 16px 0; }
+.player-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: rgba(255,255,255,0.05);
+  border-radius: 10px; margin-bottom: 8px;
+}
+.player-item .name { flex: 1; font-weight: 600; }
+.player-item .status { font-size: 0.8em; color: #aaa; }
+
+.progress-bar {
+  width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+  border-radius: 3px; overflow: hidden; margin: 8px 0;
+}
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s;
+}
+
+.question-area {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 16px; margin-bottom: 16px;
+  line-height: 1.8; font-size: 1em;
+}
+
+.timer { font-size: 1.2em; font-weight: 700; color: #ffa500; text-align: center; margin: 12px 0; }
+
+.result-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px; text-align: center;
+}
+.result-rank { font-size: 2.5em; margin-bottom: 8px; }
+.result-name { font-size: 1.2em; font-weight: 700; margin-bottom: 4px; }
+.result-score { font-size: 1.5em; color: #ffd700; font-weight: 700; }
+.result-time { font-size: 0.9em; color: #aaa; }
+
+.scoring-status {
+  text-align: center; padding: 24px; color: #aaa;
+}
+.scoring-status .spinner {
+  display: inline-block; width: 24px; height: 24px;
+  border: 3px solid rgba(255,255,255,0.2); border-top-color: #667eea;
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.room-code-display {
+  font-size: 2em; font-weight: 700; letter-spacing: 8px;
+  text-align: center; color: #ffd700; margin: 16px 0;
+  background: rgba(255,215,0,0.1); border-radius: 12px; padding: 16px;
+}
+
+.opponent-progress {
+  background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px;
+  margin-bottom: 8px; font-size: 0.85em;
+}
+
+.error-msg { color: #ff6b6b; font-size: 0.9em; margin-top: 8px; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back" onclick="leaveBattle()">←</a>
+  <h1>⚔️ 算数バトル</h1>
+  <a href="math-olympiad.html" style="margin-left:auto; color:#eee; text-decoration:none; font-size:1.3em;">🧮</a>
+</div>
+
+<!-- View: Lobby -->
+<div id="view-lobby" class="view">
+  <div class="container">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:3em; margin-bottom:12px;">⚔️</div>
+      <p style="color:#aaa;">友達と算数バトル！<br>同じ10問を同時に解いてスコアを競おう</p>
+    </div>
+    <button class="btn" style="width:100%; margin-bottom:12px;" onclick="showView('view-create')">🏠 部屋をつくる</button>
+    <button class="btn btn-secondary" style="width:100%;" onclick="showView('view-join')">🚪 部屋に入る</button>
+  </div>
+</div>
+
+<!-- View: Create Room -->
+<div id="view-create" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:16px;">🏠 部屋をつくる</h2>
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:16px;">学年を選んでね</p>
+    <div id="grade-options">
+      <div class="grade-option" onclick="selectBattleGrade('grade1')" data-grade="grade1">
+        <span style="font-size:1.5em;">🌱</span>
+        <div><div style="font-weight:600;">小学1年</div><div style="font-size:0.8em;color:#aaa;">たしざん・ひきざん・かたち</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade3')" data-grade="grade3">
+        <span style="font-size:1.5em;">🌿</span>
+        <div><div style="font-weight:600;">小学3年</div><div style="font-size:0.8em;color:#aaa;">わり算・図形・きまり</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade5')" data-grade="grade5">
+        <span style="font-size:1.5em;">🌳</span>
+        <div><div style="font-weight:600;">小学5年</div><div style="font-size:0.8em;color:#aaa;">思考力・論理・場合の数</div></div>
+      </div>
+    </div>
+    <button class="btn" style="width:100%; margin-top:16px;" onclick="createRoom()" id="create-room-btn" disabled>部屋をつくる</button>
+    <button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="showView('view-lobby')">← 戻る</button>
+    <div id="create-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Join Room -->
+<div id="view-join" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:16px;">🚪 部屋に入る</h2>
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:16px;">部屋コードを入力してね</p>
+    <input type="text" id="join-code-input" placeholder="部屋コード（4文字）" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:6px; text-transform:uppercase;">
+    <button class="btn" style="width:100%; margin-top:16px;" onclick="joinRoom()">入室する</button>
+    <button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="showView('view-lobby')">← 戻る</button>
+    <div id="join-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Waiting Room -->
+<div id="view-waiting" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:8px;">⏳ 待機中...</h2>
+    <p style="color:#aaa; font-size:0.85em; margin-bottom:12px;">部屋コードを友達に教えてね</p>
+    <div class="room-code-display" id="waiting-room-code"></div>
+    <button class="btn btn-secondary btn-small" style="display:block; margin:8px auto;" onclick="copyRoomUrl()" id="copy-url-btn">📋 URLをコピーして招待</button>
+    <div id="waiting-grade" style="text-align:center; color:#aaa; font-size:0.9em; margin-bottom:16px;"></div>
+    <div class="player-list" id="waiting-players"></div>
+    <button class="btn" style="width:100%;" onclick="startBattle()" id="start-battle-btn" disabled>🚀 バトル開始！</button>
+    <p id="start-hint" style="color:#aaa; font-size:0.8em; text-align:center; margin-top:8px;">2人以上で開始できます（部屋を作った人だけ開始できます）</p>
+    <button class="btn btn-secondary btn-small" style="margin-top:16px;" onclick="leaveRoom()">退出する</button>
+  </div>
+</div>
+
+<!-- View: Battle (solving problems) -->
+<div id="view-battle" class="view hidden">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span id="battle-progress" style="font-weight:600;"></span>
+      <span class="timer" id="battle-timer">00:00</span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="battle-progress-bar"></div></div>
+    <div id="opponent-status" style="margin:12px 0;"></div>
+    <h3 id="battle-problem-title" style="margin-bottom:8px;"></h3>
+    <div id="battle-question" class="question-area"></div>
+    <textarea id="battle-answer" placeholder="答えを書いてね" rows="3"></textarea>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <button class="btn" style="flex:1;" onclick="submitBattleAnswer()" id="battle-submit-btn">次へ →</button>
+      <button class="btn btn-secondary btn-small" onclick="skipBattleProblem()">スキップ</button>
+    </div>
+    <div id="battle-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Scoring (waiting for AI) -->
+<div id="view-scoring" class="view hidden">
+  <div class="container">
+    <div class="scoring-status">
+      <div class="spinner"></div>
+      <div style="font-size:1.1em; margin-bottom:8px;">🤖 AI採点中...</div>
+      <div id="scoring-progress" style="color:#aaa;">0 / 10 問採点完了</div>
+    </div>
+  </div>
+</div>
+
+<!-- View: Results -->
+<div id="view-results" class="view hidden">
+  <div class="container">
+    <h2 style="text-align:center; margin-bottom:20px;">🏆 バトル結果</h2>
+    <div id="results-ranking"></div>
+    <div id="results-detail" style="margin-top:20px;"></div>
+    <button class="btn" style="width:100%; margin-top:20px;" onclick="showView('view-lobby'); cleanupRoom();">もう一回あそぶ</button>
+    <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="location.href='math-olympiad.html'">算数オリンピックに戻る</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script src="../js/common.js"></script>
+<script>
+
+// === Config ===
+const GRADE_CONFIG = {
+  grade1: { label: '小学1年', file: '../data/math-olympiad-grade1.json', icon: '🌱' },
+  grade3: { label: '小学3年', file: '../data/math-olympiad-grade3.json', icon: '🌿' },
+  grade5: { label: '小学5年', file: '../data/math-olympiad-problems.json', icon: '🌳' }
+};
+const BATTLE_PROBLEM_COUNT = 10;
+
+// === State ===
+let allProblems = {};
+let battleGrade = null;
+let currentRoom = null;
+let currentPlayerId = null;
+let battleProblems = []; // 10 problems for this battle
+let battleIndex = 0;
+let battleTimerInterval = null;
+let battleStartTime = null;
+let problemStartTime = null;
+let subscription = null;
+let playerSubscription = null;
+let aiApiKeys = null;
+
+// === Utilities ===
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById(id)?.classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) el.textContent = msg;
+}
+
+function getUserId() {
+  let id = localStorage.getItem('math_olympiad_user_id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('math_olympiad_user_id', id); }
+  return id;
+}
+
+function getUserName() {
+  return localStorage.getItem('math_olympiad_user') || '';
+}
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+// === Data Loading ===
+async function loadAllProblems() {
+  for (const [grade, config] of Object.entries(GRADE_CONFIG)) {
+    try {
+      const res = await fetch(config.file);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      allProblems[grade] = await res.json();
+    } catch (e) {
+      console.error('Failed to load', grade, e);
+      allProblems[grade] = [];
+    }
+  }
+}
+
+function pickRandomProblems(grade) {
+  const pool = allProblems[grade] || [];
+  if (pool.length <= BATTLE_PROBLEM_COUNT) return pool.map(p => p.id);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, BATTLE_PROBLEM_COUNT).map(p => p.id);
+}
+
+function findProblem(problemId) {
+  for (const probs of Object.values(allProblems)) {
+    const p = probs.find(x => x.id === problemId);
+    if (p) return p;
+  }
+  return null;
+}
+
+// === Grade Selection ===
+function selectBattleGrade(grade) {
+  battleGrade = grade;
+  document.querySelectorAll('.grade-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.grade === grade);
+  });
+  document.getElementById('create-room-btn').disabled = false;
+}
+
+// === Room Creation ===
+async function createRoom() {
+  if (!battleGrade) return;
+  const userName = getUserName();
+  if (!userName) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
+
+  const btn = document.getElementById('create-room-btn');
+  btn.disabled = true;
+
+  const roomCode = generateRoomCode();
+  const problemIds = pickRandomProblems(battleGrade);
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms').insert({
+      room_code: roomCode,
+      grade: battleGrade,
+      problem_ids: problemIds,
+      status: 'waiting',
+      created_by: getUserId()
+    }).select().single();
+
+    if (error) throw error;
+    currentRoom = data;
+
+    // Join as player
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('create-error', '部屋の作成に失敗しました');
+    btn.disabled = false;
+  }
+}
+
+// === Room Joining ===
+async function joinRoom() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (code.length !== 4) { showError('join-error', '4文字のコードを入力してね'); return; }
+
+  const userName = getUserName();
+  if (!userName) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*')
+      .eq('room_code', code)
+      .eq('status', 'waiting')
+      .single();
+
+    if (error || !data) { showError('join-error', '部屋が見つかりません'); return; }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('join-error', '入室に失敗しました');
+  }
+}
+
+async function joinAsPlayer(roomId) {
+  const { data, error } = await client.from('math_battle_players').insert({
+    room_id: roomId,
+    user_id: getUserId(),
+    user_name: getUserName()
+  }).select().single();
+
+  if (error && error.code === '23505') {
+    // Already joined
+    const { data: existing } = await client.from('math_battle_players')
+      .select('*').eq('room_id', roomId).eq('user_id', getUserId()).single();
+    if (existing) { currentPlayerId = existing.id; return; }
+  }
+  if (error) throw error;
+  currentPlayerId = data.id;
+}
+
+// === Waiting Room ===
+function showWaitingRoom() {
+  document.getElementById('waiting-room-code').textContent = currentRoom.room_code;
+  const config = GRADE_CONFIG[currentRoom.grade];
+  document.getElementById('waiting-grade').textContent = config.icon + ' ' + config.label + '（10問）';
+  showView('view-waiting');
+  loadPlayers();
+  subscribeToRoom();
+}
+
+function copyRoomUrl() {
+  const url = location.origin + location.pathname + '?room=' + currentRoom.room_code;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copy-url-btn');
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📋 URLをコピーして招待'; }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    prompt('このURLを共有してね:', location.origin + location.pathname + '?room=' + currentRoom.room_code);
+  });
+}
+
+async function loadPlayers() {
+  const { data } = await client.from('math_battle_players')
+    .select('*').eq('room_id', currentRoom.id).order('joined_at');
+  renderPlayers(data || []);
+}
+
+function renderPlayers(players) {
+  const container = document.getElementById('waiting-players');
+  container.innerHTML = players.map(p => {
+    const isMe = p.user_id === getUserId();
+    const isHost = p.user_id === currentRoom.created_by;
+    const badge = isHost ? '👑' : '';
+    const meTag = isMe ? ' <span style="color:#667eea;">(あなた)</span>' : '';
+    return `<div class="player-item"><span class="name">${badge} ${p.user_name}${meTag}</span><span class="status">参加中</span></div>`;
+  }).join('');
+
+  // Enable start button only for host with 2+ players
+  const isHost = currentRoom.created_by === getUserId();
+  const startBtn = document.getElementById('start-battle-btn');
+  startBtn.disabled = !(isHost && players.length >= 2);
+  document.getElementById('start-hint').style.display = isHost ? 'block' : 'none';
+  if (!isHost) {
+    document.getElementById('start-hint').textContent = 'ホストがバトルを開始するのを待っています...';
+    document.getElementById('start-hint').style.display = 'block';
+  }
+}
+
+function subscribeToRoom() {
+  // Subscribe to player changes
+  playerSubscription = client.channel('battle-players-' + currentRoom.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'math_battle_players', filter: 'room_id=eq.' + currentRoom.id }, () => {
+      loadPlayers();
+    })
+    .subscribe();
+
+  // Subscribe to room status changes
+  subscription = client.channel('battle-room-' + currentRoom.id)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'math_battle_rooms', filter: 'id=eq.' + currentRoom.id }, (payload) => {
+      currentRoom = payload.new;
+      if (currentRoom.status === 'playing') {
+        startBattlePlay();
+      } else if (currentRoom.status === 'finished') {
+        showResults();
+      }
+    })
+    .subscribe();
+}
+
+// === Start Battle ===
+async function startBattle() {
+  if (currentRoom.created_by !== getUserId()) return;
+
+  try {
+    const { error } = await client.from('math_battle_rooms')
+      .update({ status: 'playing', started_at: new Date().toISOString() })
+      .eq('id', currentRoom.id);
+    if (error) throw error;
+    // The subscription will trigger startBattlePlay for everyone
+  } catch (e) {
+    alert('開始に失敗しました');
+  }
+}
+
+function startBattlePlay() {
+  // Load battle problems
+  const problemIds = currentRoom.problem_ids;
+  battleProblems = problemIds.map(id => findProblem(id)).filter(Boolean);
+  battleIndex = 0;
+  battleStartTime = Date.now();
+  problemStartTime = Date.now();
+
+  showView('view-battle');
+  renderBattleProblem();
+  startBattleTimer();
+  subscribeToOpponentProgress();
+}
+
+// === Battle Timer ===
+function startBattleTimer() {
+  if (battleTimerInterval) clearInterval(battleTimerInterval);
+  battleTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+    document.getElementById('battle-timer').textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function stopBattleTimer() {
+  if (battleTimerInterval) { clearInterval(battleTimerInterval); battleTimerInterval = null; }
+}
+
+// === Render Battle Problem ===
+function renderBattleProblem() {
+  if (battleIndex >= battleProblems.length) {
+    finishBattle();
+    return;
+  }
+  const p = battleProblems[battleIndex];
+  document.getElementById('battle-progress').textContent = `問${battleIndex + 1} / ${battleProblems.length}`;
+  document.getElementById('battle-progress-bar').style.width = ((battleIndex / battleProblems.length) * 100) + '%';
+  document.getElementById('battle-problem-title').textContent = p.title;
+  document.getElementById('battle-question').innerHTML = DOMPurify.sanitize(p.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] });
+  document.getElementById('battle-answer').value = '';
+  document.getElementById('battle-submit-btn').disabled = false;
+  problemStartTime = Date.now();
+}
+
+// === Submit Answer ===
+async function submitBattleAnswer() {
+  const answerText = document.getElementById('battle-answer').value.trim();
+  if (!answerText) { showError('battle-error', '答えを入力してね'); return; }
+
+  const btn = document.getElementById('battle-submit-btn');
+  btn.disabled = true;
+  document.getElementById('battle-error').textContent = '';
+
+  const elapsed = Math.floor((Date.now() - problemStartTime) / 1000);
+  const problem = battleProblems[battleIndex];
+
+  try {
+    await client.from('math_battle_answers').insert({
+      room_id: currentRoom.id,
+      user_id: getUserId(),
+      problem_id: problem.id,
+      answer_text: answerText,
+      elapsed_seconds: elapsed
+    });
+  } catch (e) {
+    // Ignore duplicate errors
+  }
+
+  // Update progress
+  battleIndex++;
+  await client.from('math_battle_players')
+    .update({ current_problem_index: battleIndex })
+    .eq('id', currentPlayerId);
+
+  renderBattleProblem();
+}
+
+function skipBattleProblem() {
+  // Submit empty answer with 0 score
+  const elapsed = Math.floor((Date.now() - problemStartTime) / 1000);
+  const problem = battleProblems[battleIndex];
+
+  client.from('math_battle_answers').insert({
+    room_id: currentRoom.id,
+    user_id: getUserId(),
+    problem_id: problem.id,
+    answer_text: '（スキップ）',
+    elapsed_seconds: elapsed,
+    score: 0,
+    ai_comment: 'スキップされました'
+  }).then(() => {});
+
+  battleIndex++;
+  client.from('math_battle_players')
+    .update({ current_problem_index: battleIndex })
+    .eq('id', currentPlayerId).then(() => {});
+
+  renderBattleProblem();
+}
+
+// === Opponent Progress ===
+function subscribeToOpponentProgress() {
+  // Poll opponent progress every 3 seconds
+  const interval = setInterval(async () => {
+    if (!currentRoom || currentRoom.status === 'finished') { clearInterval(interval); return; }
+    const { data } = await client.from('math_battle_players')
+      .select('user_name, current_problem_index, finished')
+      .eq('room_id', currentRoom.id)
+      .neq('user_id', getUserId());
+
+    const container = document.getElementById('opponent-status');
+    if (data && data.length > 0) {
+      container.innerHTML = data.map(p => {
+        const status = p.finished ? '✅ 完了！' : `問${p.current_problem_index + 1}を解答中`;
+        return `<div class="opponent-progress">👤 ${p.user_name}: ${status}</div>`;
+      }).join('');
+    }
+  }, 3000);
+}
+
+// === Finish Battle ===
+async function finishBattle() {
+  stopBattleTimer();
+  const totalElapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+
+  await client.from('math_battle_players')
+    .update({
+      finished: true,
+      finished_at: new Date().toISOString(),
+      total_elapsed_seconds: totalElapsed,
+      current_problem_index: battleProblems.length
+    })
+    .eq('id', currentPlayerId);
+
+  // Show scoring view
+  showView('view-scoring');
+
+  // AI grade my answers
+  await gradeMyAnswers();
+
+  // Check if all players finished
+  await checkAllFinished();
+}
+
+// === AI Grading ===
+async function loadAiApiKeys() {
+  if (aiApiKeys) return aiApiKeys;
+  const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+  aiApiKeys = {};
+  if (data) data.forEach(row => { aiApiKeys[row.key] = row.value; });
+  return aiApiKeys;
+}
+
+async function gradeMyAnswers() {
+  const keys = await loadAiApiKeys();
+  const { data: answers } = await client.from('math_battle_answers')
+    .select('*')
+    .eq('room_id', currentRoom.id)
+    .eq('user_id', getUserId())
+    .is('score', null);
+
+  if (!answers || answers.length === 0) { updateScoringProgress(10, 10); return; }
+
+  let graded = battleProblems.length - answers.length;
+  updateScoringProgress(graded, battleProblems.length);
+
+  for (const answer of answers) {
+    const problem = findProblem(answer.problem_id);
+    if (!problem) { graded++; updateScoringProgress(graded, battleProblems.length); continue; }
+
+    const prompt = buildGradePrompt(problem, answer.answer_text);
+    let result = null;
+
+    try {
+      if (keys.gemini_api_key) {
+        result = await callGemini(keys.gemini_api_key, prompt);
+      }
+      if (!result && keys.groq_api_key) {
+        result = await callGroq(keys.groq_api_key, prompt);
+      }
+    } catch (e) {
+      console.error('AI grading error:', e);
+    }
+
+    let score = 0;
+    let comment = '';
+    if (result) {
+      const scoreMatch = result.match(/点数[：:]\s*(\d+)/) || result.match(/(\d+)\s*[\/／]\s*10/) || result.match(/(\d+)\s*点/);
+      if (scoreMatch) score = Math.min(10, Math.max(0, parseInt(scoreMatch[1])));
+      const commentMatch = result.match(/コメント[：:]\s*([\s\S]*)/);
+      comment = commentMatch ? commentMatch[1].trim() : result.substring(0, 200);
+    }
+
+    await client.from('math_battle_answers')
+      .update({ score, ai_comment: comment })
+      .eq('id', answer.id);
+
+    graded++;
+    updateScoringProgress(graded, battleProblems.length);
+  }
+
+  // Update total score
+  const { data: allMyAnswers } = await client.from('math_battle_answers')
+    .select('score').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+  const totalScore = (allMyAnswers || []).reduce((sum, a) => sum + (a.score || 0), 0);
+  const totalElapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+
+  await client.from('math_battle_players')
+    .update({ total_score: totalScore, total_elapsed_seconds: totalElapsed })
+    .eq('id', currentPlayerId);
+}
+
+function buildGradePrompt(problem, answerText) {
+  return `あなたは小学生向け算数コンテストの採点官です。以下の問題と解答を採点してください。
+あなた自身で問題を解いて正解を導き出し、それと受験者の解答を比較して採点してください。
+
+【問題】
+${problem.question.replace(/<[^>]+>/g, '')}
+
+【受験者の解答】
+${answerText}
+
+【採点ルール】
+- 10点満点で採点する
+- まずあなた自身で問題を解き、正解を確認する
+- 受験者の解答が正しければ満点（10点）
+- 表現が違っても論理的に同じ結論なら正解
+- 小学生の回答なので言葉遣いの稚拙さは減点しない
+- 部分的に正しければ部分点を与える
+
+回答は必ず以下の形式で（形式厳守）:
+点数: X
+コメント: （短い一言コメント）`;
+}
+
+async function callGemini(apiKey, prompt) {
+  const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body = model.includes('2.5')
+        ? { contents: [{ parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }
+        : { contents: [{ parts: [{ text: prompt }] }] };
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find(p => p.text !== undefined);
+      if (textPart?.text) return textPart.text;
+    } catch (e) { continue; }
+  }
+  throw new Error('Gemini failed');
+}
+
+async function callGroq(apiKey, prompt) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+  });
+  if (!res.ok) throw new Error('Groq error');
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function updateScoringProgress(done, total) {
+  document.getElementById('scoring-progress').textContent = `${done} / ${total} 問採点完了`;
+}
+
+// === Check All Finished ===
+async function checkAllFinished() {
+  const { data: players } = await client.from('math_battle_players')
+    .select('*').eq('room_id', currentRoom.id);
+
+  const allDone = players && players.every(p => p.finished);
+  if (allDone) {
+    // Mark room as finished (host does this, but anyone can)
+    await client.from('math_battle_rooms')
+      .update({ status: 'finished', finished_at: new Date().toISOString() })
+      .eq('id', currentRoom.id);
+    showResults();
+  } else {
+    // Wait for others, poll every 5 seconds
+    const waitInterval = setInterval(async () => {
+      const { data: p2 } = await client.from('math_battle_players')
+        .select('*').eq('room_id', currentRoom.id);
+      const done = p2 && p2.every(p => p.finished);
+      if (done) {
+        clearInterval(waitInterval);
+        await client.from('math_battle_rooms')
+          .update({ status: 'finished', finished_at: new Date().toISOString() })
+          .eq('id', currentRoom.id);
+        showResults();
+      }
+    }, 5000);
+  }
+}
+
+// === Results ===
+async function showResults() {
+  showView('view-results');
+
+  const { data: players } = await client.from('math_battle_players')
+    .select('*').eq('room_id', currentRoom.id).order('total_score', { ascending: false });
+
+  if (!players || players.length === 0) return;
+
+  // Sort by score desc, then by time asc
+  players.sort((a, b) => {
+    if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+    return a.total_elapsed_seconds - b.total_elapsed_seconds;
+  });
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+
+  document.getElementById('results-ranking').innerHTML = players.map((p, i) => {
+    const medal = medals[i] || (i + 1) + '位';
+    const color = colors[i] || '#aaa';
+    const isMe = p.user_id === getUserId();
+    const border = isMe ? 'border: 2px solid #667eea;' : '';
+    return `<div class="result-card" style="${border}">
+      <div class="result-rank">${medal}</div>
+      <div class="result-name" style="color:${color};">${p.user_name}${isMe ? ' (あなた)' : ''}</div>
+      <div class="result-score">${p.total_score} / ${battleProblems.length * 10} 点</div>
+      <div class="result-time">⏱️ ${formatTime(p.total_elapsed_seconds)}</div>
+    </div>`;
+  }).join('');
+
+  // Show per-problem detail for current user
+  const { data: myAnswers } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+
+  if (myAnswers && myAnswers.length > 0) {
+    document.getElementById('results-detail').innerHTML = '<h3 style="margin-bottom:12px;">📝 あなたの回答</h3>' +
+      myAnswers.map(a => {
+        const problem = findProblem(a.problem_id);
+        const title = problem ? problem.title : '問題' + a.problem_id;
+        const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
+        return `<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:600;font-size:0.9em;">${title}</span>
+            <span style="color:${scoreColor};font-weight:700;">${a.score ?? '?'}/10</span>
+          </div>
+          <div style="font-size:0.8em;color:#aaa;margin-top:4px;">${a.ai_comment || ''}</div>
+        </div>`;
+      }).join('');
+  }
+}
+
+// === Leave / Cleanup ===
+function leaveBattle() {
+  if (currentRoom && currentRoom.status === 'playing') {
+    if (!confirm('バトル中です。退出しますか？')) return;
+  }
+  leaveRoom();
+  location.href = 'math-olympiad.html';
+}
+
+async function leaveRoom() {
+  cleanupSubscriptions();
+  if (currentRoom && currentPlayerId) {
+    await client.from('math_battle_players').delete().eq('id', currentPlayerId);
+  }
+  currentRoom = null;
+  currentPlayerId = null;
+  showView('view-lobby');
+}
+
+function cleanupRoom() {
+  cleanupSubscriptions();
+  currentRoom = null;
+  currentPlayerId = null;
+  battleProblems = [];
+  battleIndex = 0;
+  stopBattleTimer();
+}
+
+function cleanupSubscriptions() {
+  if (subscription) { client.removeChannel(subscription); subscription = null; }
+  if (playerSubscription) { client.removeChannel(playerSubscription); playerSubscription = null; }
+}
+
+// === Init ===
+async function init() {
+  if (isNightTime()) {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;"><div><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div></div>';
+    return;
+  }
+  if (!getUserName()) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
+  await loadAllProblems();
+
+  // URLパラメータに部屋コードがあれば自動入室
+  const params = new URLSearchParams(location.search);
+  const roomCode = params.get('room');
+  if (roomCode) {
+    try {
+      const { data, error } = await client.from('math_battle_rooms')
+        .select('*').eq('room_code', roomCode.toUpperCase()).eq('status', 'waiting').single();
+      if (data) {
+        currentRoom = data;
+        await joinAsPlayer(data.id);
+        showWaitingRoom();
+        return;
+      }
+    } catch (e) {}
+  }
+
+  showView('view-lobby');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

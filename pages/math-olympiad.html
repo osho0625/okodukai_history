@@ -373,6 +373,7 @@ select {
       </div>
     </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
+    <a href="math-battle.html" class="btn" style="width:100%; display:block; margin-top:16px; text-align:center; text-decoration:none; background:linear-gradient(135deg,#f093fb,#f5576c);">⚔️ 対戦モード</a>
     <div id="pending-review-badge" style="display:none; margin-top:12px; text-align:center;">
       <a onclick="showView('view-admin-review'); loadPendingReviews();" style="cursor:pointer; color:#ffa500; font-weight:600; text-decoration:none;">
         🔔 <span id="pending-count"></span>件の採点待ちがあります
@@ -765,11 +766,13 @@ function updateGenreFilter() {
 }
 
 // === Data Loading (Task 4.2) ===
-async function loadAllProblems() {
+async function loadAllProblems(bustCache) {
   const grades = Object.keys(GRADE_CONFIG);
   for (const grade of grades) {
     try {
-      const res = await fetch(GRADE_CONFIG[grade].file);
+      const url = bustCache ? GRADE_CONFIG[grade].file + '?t=' + Date.now() : GRADE_CONFIG[grade].file;
+      const opts = bustCache ? { cache: 'no-store' } : {};
+      const res = await fetch(url, opts);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) {
@@ -813,10 +816,20 @@ async function refreshData() {
   const btn = event?.target;
   if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
   try {
+    // Service Workerキャッシュをクリア
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
     aiApiKeys = null; // APIキーキャッシュもクリア
+    allProblemsCache = {}; // 問題データキャッシュもクリア
+    await loadAllProblems(true); // 問題JSONをキャッシュバイパスで再取得
+    if (currentGrade) {
+      problems = allProblemsCache[currentGrade] || [];
+    }
     await loadUserAnswers();
     await loadAllReviewedAnswers();
-    renderGradeStats();
+    renderTotalScore();
     if (currentGrade && document.getElementById('view-problem-list')?.classList.contains('hidden') === false) {
       renderProblemList();
     }
@@ -1735,13 +1748,24 @@ async function sendAiChat() {
   try {
     if (keys.gemini_api_key) {
       reply = await callGemini(keys.gemini_api_key, fullPrompt);
-    } else if (keys.groq_api_key) {
+    }
+    if (!reply && keys.groq_api_key) {
       reply = await callGroq(keys.groq_api_key, fullPrompt);
-    } else {
+    }
+    if (!reply) {
       reply = 'APIキーが設定されていません';
     }
   } catch (e) {
-    reply = 'エラーが発生しました: ' + e.message;
+    // Gemini失敗時にGroqフォールバック
+    if (keys.groq_api_key) {
+      try {
+        reply = await callGroq(keys.groq_api_key, fullPrompt);
+      } catch (e2) {
+        reply = 'エラーが発生しました: ' + e2.message;
+      }
+    } else {
+      reply = 'エラーが発生しました: ' + e.message;
+    }
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });

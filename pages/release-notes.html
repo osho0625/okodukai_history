@@ -36,6 +36,20 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.77.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> ⚔️ 算数バトル（対戦モード）追加 — 2人以上で同じ10問を同時に解いてスコア＆タイムを競う</li>
+    <li><span class="tag tag-feat">機能</span> 部屋作成＆4文字コードで入室、URLコピーで招待可能</li>
+    <li><span class="tag tag-feat">機能</span> 学年選択（小1/小3/小5）からランダム10問出題</li>
+    <li><span class="tag tag-feat">機能</span> AI自動採点（Gemini/Groqフォールバック）で即時結果表示</li>
+    <li><span class="tag tag-feat">機能</span> リアルタイムで相手の進捗が見える</li>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック：更新ボタンでキャッシュが正しくクリアされない問題を修正</li>
+    <li><span class="tag tag-fix">修正</span> AI採点チャット：1回目が必ずエラーになる問題を修正（Groqフォールバック追加）</li>
+    <li><span class="tag tag-infra">DB</span> math_battle_rooms / math_battle_players / math_battle_answers テーブル追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.75.0</span><span class="date">2026/05/20</span></div>
   <ul>
     <li><span class="tag tag-feat">機能</span> 管理画面にAIキー設定UI追加（Gemini/Groq/OpenAI）</li>
