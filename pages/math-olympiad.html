@@ -1349,7 +1349,14 @@ function renderResultView(answer, problem) {
 }
 
 // === Bootstrap ===
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', async function() {
+  await initApp();
+  // Handle hash navigation (e.g. #admin-review from index.html)
+  if (window.location.hash === '#admin-review' && isAdmin) {
+    showView('view-admin-review');
+    loadPendingReviews();
+  }
+});
 </script>
 </body>
 </html>

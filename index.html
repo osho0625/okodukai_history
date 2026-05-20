@@ -217,6 +217,12 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <a href="#" onclick="openSortModal(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x2699;&#xFE0F;</a>
 </div>
 
+<div id="mathReviewNotice" style="display:none; text-align:center; margin-top:12px;">
+  <a href="pages/math-olympiad.html#admin-review" style="color:#ffa500; font-weight:600; text-decoration:none; font-size:0.9em;">
+    🧮🔔 算数オリンピック：<span id="mathPendingCount"></span>件の採点待ち
+  </a>
+</div>
+
 <script>
 // admin権限ならアイコン表示
 if (localStorage.getItem('deviceRole') === 'admin') {
@@ -948,12 +954,28 @@ autoConsumeTickets();
 load();
 loadPuyoCounts();
 loadPasswords();
+
+// Admin: check math olympiad pending reviews
+if (localStorage.getItem('deviceRole') === 'admin') {
+  (async function() {
+    try {
+      const { data } = await client.from('math_olympiad_answers')
+        .select('id')
+        .eq('status', 'pending');
+      const count = (data || []).length;
+      if (count > 0) {
+        document.getElementById('mathReviewNotice').style.display = 'block';
+        document.getElementById('mathPendingCount').textContent = count;
+      }
+    } catch(e) {}
+  })();
+}
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.70.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.71.0</a></div>
 
 </body>
 </html>
