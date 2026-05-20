@@ -452,7 +452,12 @@ select {
 <div id="view-admin-review" class="view hidden">
   <div class="container">
     <h2 class="section-title">📋 採点待ち一覧</h2>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn btn-small" id="tab-pending" onclick="showReviewTab('pending')" style="background:rgba(102,126,234,0.3);">採点待ち</button>
+      <button class="btn btn-secondary btn-small" id="tab-reviewed" onclick="showReviewTab('reviewed')">採点済み管理</button>
+    </div>
     <div id="review-list"></div>
+    <div id="reviewed-list" style="display:none;"></div>
     <button class="btn btn-secondary" style="width:100%; margin-top: 16px;" onclick="showView('view-grade-select');">戻る</button>
     <div id="admin-error" class="error-msg"></div>
   </div>
@@ -494,6 +499,13 @@ select {
       <textarea id="review-comment" placeholder="コメントを入力" rows="3"></textarea>
     </div>
     <button class="btn" style="width:100%;" onclick="submitReview()">採点を送信する</button>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1);">
+      <div style="font-size:0.85em; color:#aaa; margin-bottom:8px;">管理操作</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-small" onclick="changeAnswerOwner()">👤 回答者変更</button>
+        <button class="btn btn-secondary btn-small" style="color:#ff6b6b;" onclick="resetAnswer()">🗑️ 採点取消・削除</button>
+      </div>
+    </div>
     <div id="admin-detail-error" class="error-msg"></div>
   </div>
 </div>
@@ -1308,6 +1320,151 @@ async function submitReview() {
     await loadPendingReviews();
   } catch (e) {
     showError('admin-detail-error', '採点保存に失敗しました');
+  }
+}
+
+// === Admin Management Functions ===
+function showReviewTab(tab) {
+  const pendingBtn = document.getElementById('tab-pending');
+  const reviewedBtn = document.getElementById('tab-reviewed');
+  const pendingList = document.getElementById('review-list');
+  const reviewedList = document.getElementById('reviewed-list');
+  
+  if (tab === 'pending') {
+    pendingBtn.style.background = 'rgba(102,126,234,0.3)';
+    pendingBtn.classList.remove('btn-secondary');
+    reviewedBtn.style.background = '';
+    reviewedBtn.classList.add('btn-secondary');
+    pendingList.style.display = 'block';
+    reviewedList.style.display = 'none';
+  } else {
+    reviewedBtn.style.background = 'rgba(102,126,234,0.3)';
+    reviewedBtn.classList.remove('btn-secondary');
+    pendingBtn.style.background = '';
+    pendingBtn.classList.add('btn-secondary');
+    pendingList.style.display = 'none';
+    reviewedList.style.display = 'block';
+    loadReviewedAnswers();
+  }
+}
+
+let reviewedAnswersList = [];
+
+async function loadReviewedAnswers() {
+  try {
+    const { data, error } = await client.from('math_olympiad_answers')
+      .select('id,user_name,user_id,problem_id,score,admin_comment,status,submitted_at')
+      .eq('status', 'reviewed')
+      .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    reviewedAnswersList = data || [];
+    renderReviewedList();
+  } catch (e) {
+    document.getElementById('reviewed-list').innerHTML = '<p style="color:#ff6b6b;">読み込みエラー</p>';
+  }
+}
+
+function renderReviewedList() {
+  const container = document.getElementById('reviewed-list');
+  if (reviewedAnswersList.length === 0) {
+    container.innerHTML = '<p style="color:#aaa; text-align:center;">採点済みの回答はありません</p>';
+    return;
+  }
+  container.innerHTML = reviewedAnswersList.map((r, i) => {
+    let problem = null;
+    for (const probs of Object.values(allProblemsCache)) {
+      problem = probs.find(p => p.id === r.problem_id);
+      if (problem) break;
+    }
+    const title = problem ? problem.title : '問題' + r.problem_id;
+    return '<div class="review-item" onclick="showReviewedDetail(' + i + ')">' +
+      '<div class="review-item-name">' + r.user_name + ' - ' + title + ' <span style="color:#4caf50;">' + r.score + '/10</span></div>' +
+      '<div class="review-item-meta">' + new Date(r.submitted_at).toLocaleDateString('ja-JP') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function showReviewedDetail(index) {
+  const review = reviewedAnswersList[index];
+  if (!review) return;
+  currentReviewId = review.id;
+  
+  let problem = null;
+  for (const probs of Object.values(allProblemsCache)) {
+    problem = probs.find(p => p.id === review.problem_id);
+    if (problem) break;
+  }
+  document.getElementById('review-problem-title').textContent = problem ? problem.title : '問題' + review.problem_id;
+  document.getElementById('review-question-text').innerHTML = problem
+    ? DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] })
+    : '';
+  document.getElementById('review-answer-text').textContent = '（採点済み）';
+  document.getElementById('review-thinking').textContent = '';
+  document.getElementById('review-elapsed').textContent = '-';
+  document.getElementById('review-hints').textContent = '-';
+  document.getElementById('review-user-name').textContent = review.user_name;
+  document.getElementById('review-score').value = review.score || '';
+  document.getElementById('review-comment').value = review.admin_comment || '';
+  clearError('admin-detail-error');
+  showView('view-admin-detail');
+}
+
+async function changeAnswerOwner() {
+  if (!currentReviewId) return;
+  const newName = prompt('新しい回答者の名前を入力してください:');
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  
+  // Try to find the user_id for this name from existing answers
+  const { data: existing } = await client.from('math_olympiad_answers')
+    .select('user_id')
+    .eq('user_name', trimmed)
+    .limit(1);
+  
+  const newUserId = (existing && existing.length > 0) ? existing[0].user_id : crypto.randomUUID();
+  
+  try {
+    const { error } = await client.from('math_olympiad_answers')
+      .update({ user_name: trimmed, user_id: newUserId })
+      .eq('id', currentReviewId);
+    if (error) throw error;
+    alert('回答者を「' + trimmed + '」に変更しました');
+    showView('view-admin-review');
+    loadPendingReviews();
+  } catch (e) {
+    showError('admin-detail-error', '変更に失敗しました');
+  }
+}
+
+async function resetAnswer() {
+  if (!currentReviewId) return;
+  const choice = prompt('操作を選んでください:\n1: 採点取消（pendingに戻す）\n2: 回答を完全削除');
+  if (choice === '1') {
+    if (!confirm('採点を取り消してpending状態に戻しますか？')) return;
+    try {
+      const { error } = await client.from('math_olympiad_answers')
+        .update({ status: 'pending', score: null, admin_comment: null, reviewed_at: null })
+        .eq('id', currentReviewId);
+      if (error) throw error;
+      alert('採点を取り消しました');
+      showView('view-admin-review');
+      loadPendingReviews();
+    } catch (e) {
+      showError('admin-detail-error', '取消に失敗しました');
+    }
+  } else if (choice === '2') {
+    if (!confirm('⚠️ この回答を完全に削除しますか？元に戻せません。')) return;
+    try {
+      const { error } = await client.from('math_olympiad_answers')
+        .delete()
+        .eq('id', currentReviewId);
+      if (error) throw error;
+      alert('回答を削除しました');
+      showView('view-admin-review');
+      loadPendingReviews();
+    } catch (e) {
+      showError('admin-detail-error', '削除に失敗しました');
+    }
   }
 }
 
