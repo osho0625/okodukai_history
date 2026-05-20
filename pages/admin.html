@@ -406,6 +406,41 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- APIキー設定 -->
+<h2 onclick="toggleSection('apiKeySection', this)"><span class="toggle">▶</span> 🔑 AIキー設定</h2>
+<div class="section-body" id="apiKeySection">
+  <div class="card">
+    <div style="font-size:0.85em; color:#999; margin-bottom:12px;">AI相談所・算数オリンピックで使用するAPIキーを設定します</div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:4px;">Gemini API Key</div>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm" onclick="toggleKeyVisibility('geminiKeyInput', this)" style="padding:8px 10px; background:#eee; color:#333;">👁</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:4px;">Groq API Key</div>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="groqKeyInput" placeholder="gsk_..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm" onclick="toggleKeyVisibility('groqKeyInput', this)" style="padding:8px 10px; background:#eee; color:#333;">👁</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; margin-bottom:4px;">OpenAI API Key</div>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="openaiKeyInput" placeholder="sk-..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <button class="btn-sm" onclick="toggleKeyVisibility('openaiKeyInput', this)" style="padding:8px 10px; background:#eee; color:#333;">👁</button>
+      </div>
+    </div>
+    <button class="btn-add" onclick="saveApiKeys()" style="width:100%;">APIキーを保存</button>
+    <div class="msg" id="apiKeyMsg">✓ 保存しました</div>
+    <div style="margin-top:12px;">
+      <button class="btn-sm btn-primary" onclick="testGeminiKey()" style="padding:8px 14px;">Geminiテスト</button>
+      <span id="geminiTestResult" style="font-size:0.85em; margin-left:8px;"></span>
+    </div>
+  </div>
+</div>
+
 <!-- バックアップ復元 -->
 <h2 onclick="toggleSection('restoreSection', this)"><span class="toggle">▶</span> 💾 バックアップ</h2>
 <div class="section-body" id="restoreSection">
@@ -1345,6 +1380,87 @@ async function issueTickets() {
     btn.disabled = false;
   }
 }
+
+// --- APIキー管理 ---
+async function loadApiKeysAdmin() {
+  try {
+    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key', 'openai_api_key']);
+    if (data) {
+      data.forEach(row => {
+        if (row.key === 'gemini_api_key') document.getElementById('geminiKeyInput').value = row.value || '';
+        if (row.key === 'groq_api_key') document.getElementById('groqKeyInput').value = row.value || '';
+        if (row.key === 'openai_api_key') document.getElementById('openaiKeyInput').value = row.value || '';
+      });
+    }
+  } catch(e) { console.warn('APIキー読み込み失敗:', e); }
+}
+
+function toggleKeyVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁'; }
+}
+
+async function saveApiKeys() {
+  const keys = [
+    { key: 'gemini_api_key', value: document.getElementById('geminiKeyInput').value.trim() },
+    { key: 'groq_api_key', value: document.getElementById('groqKeyInput').value.trim() },
+    { key: 'openai_api_key', value: document.getElementById('openaiKeyInput').value.trim() }
+  ];
+
+  try {
+    for (const item of keys) {
+      const { data } = await client.from('app_config').select('key').eq('key', item.key).maybeSingle();
+      if (data) {
+        await client.from('app_config').update({ value: item.value }).eq('key', item.key);
+      } else {
+        await client.from('app_config').insert({ key: item.key, value: item.value });
+      }
+    }
+    const msg = document.getElementById('apiKeyMsg');
+    msg.style.display = 'block';
+    msg.style.color = '#4caf50';
+    msg.textContent = '✓ 保存しました';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  } catch(e) {
+    const msg = document.getElementById('apiKeyMsg');
+    msg.style.display = 'block';
+    msg.style.color = '#e53935';
+    msg.textContent = '❌ 保存に失敗しました: ' + e.message;
+  }
+}
+
+async function testGeminiKey() {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  const result = document.getElementById('geminiTestResult');
+  if (!key) { result.textContent = '❌ キーが空です'; result.style.color = '#e53935'; return; }
+
+  result.textContent = 'テスト中...';
+  result.style.color = '#999';
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'こんにちは。1+1は？' }] }] })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      result.textContent = '✅ 接続OK: ' + text.slice(0, 30);
+      result.style.color = '#43a047';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      result.textContent = `❌ エラー ${res.status}: ${err.error?.message || '不明'}`;
+      result.style.color = '#e53935';
+    }
+  } catch(e) {
+    result.textContent = '❌ 接続失敗: ' + e.message;
+    result.style.color = '#e53935';
+  }
+}
+
+// 初期化時にAPIキーを読み込み
+loadApiKeysAdmin();
 </script>
 </body>
 </html>
