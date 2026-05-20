@@ -138,8 +138,12 @@ textarea { resize: vertical; min-height: 80px; }
       <div style="font-size:3em; margin-bottom:12px;">⚔️</div>
       <p style="color:#aaa;">友達と算数バトル！<br>同じ10問を同時に解いてスコアを競おう</p>
     </div>
-    <button class="btn" style="width:100%; margin-bottom:12px;" onclick="showView('view-create')">🏠 部屋をつくる</button>
-    <button class="btn btn-secondary" style="width:100%;" onclick="showView('view-join')">🚪 部屋に入る</button>
+    <div style="margin-bottom:16px;">
+      <input type="text" id="battle-name-input" placeholder="なまえを入れてね" maxlength="20" style="text-align:center;">
+    </div>
+    <button class="btn" style="width:100%; margin-bottom:12px;" onclick="goCreate()">🏠 部屋をつくる</button>
+    <button class="btn btn-secondary" style="width:100%;" onclick="goJoin()">🚪 部屋に入る</button>
+    <div id="lobby-error" class="error-msg"></div>
   </div>
 </div>
 
@@ -264,6 +268,8 @@ let subscription = null;
 let playerSubscription = null;
 let aiApiKeys = null;
 let isRoomHost = false; // この端末が部屋を作ったかどうか
+let battleUserName = ''; // この対戦で使う名前
+let battleUserId = ''; // この対戦で使うID
 
 // === Utilities ===
 function showView(id) {
@@ -278,13 +284,34 @@ function showError(elId, msg) {
 }
 
 function getUserId() {
-  let id = localStorage.getItem('math_olympiad_user_id');
-  if (!id) { id = crypto.randomUUID(); localStorage.setItem('math_olympiad_user_id', id); }
-  return id;
+  if (!battleUserId) battleUserId = crypto.randomUUID();
+  return battleUserId;
 }
 
 function getUserName() {
-  return localStorage.getItem('math_olympiad_user') || '';
+  return battleUserName;
+}
+
+function validateName() {
+  const name = document.getElementById('battle-name-input').value.trim();
+  if (!name) {
+    showError('lobby-error', 'なまえを入れてね');
+    return false;
+  }
+  battleUserName = name;
+  battleUserId = crypto.randomUUID();
+  document.getElementById('lobby-error').textContent = '';
+  return true;
+}
+
+function goCreate() {
+  if (!validateName()) return;
+  showView('view-create');
+}
+
+function goJoin() {
+  if (!validateName()) return;
+  showView('view-join');
 }
 
 function generateRoomCode() {
@@ -341,8 +368,6 @@ function selectBattleGrade(grade) {
 // === Room Creation ===
 async function createRoom() {
   if (!battleGrade) return;
-  const userName = getUserName();
-  if (!userName) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
 
   const btn = document.getElementById('create-room-btn');
   btn.disabled = true;
@@ -376,9 +401,6 @@ async function createRoom() {
 async function joinRoom() {
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
   if (code.length !== 4) { showError('join-error', '4文字のコードを入力してね'); return; }
-
-  const userName = getUserName();
-  if (!userName) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
 
   try {
     const { data, error } = await client.from('math_battle_rooms')
@@ -872,6 +894,8 @@ function cleanupRoom() {
   currentRoom = null;
   currentPlayerId = null;
   isRoomHost = false;
+  battleUserName = '';
+  battleUserId = '';
   battleProblems = [];
   battleIndex = 0;
   stopBattleTimer();
@@ -888,23 +912,14 @@ async function init() {
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;"><div><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div></div>';
     return;
   }
-  if (!getUserName()) { alert('先に算数オリンピックで名前を登録してね'); location.href = 'math-olympiad.html'; return; }
   await loadAllProblems();
 
-  // URLパラメータに部屋コードがあれば自動入室
+  // URLパラメータに部屋コードがあれば名前入力後に自動入室
   const params = new URLSearchParams(location.search);
   const roomCode = params.get('room');
   if (roomCode) {
-    try {
-      const { data, error } = await client.from('math_battle_rooms')
-        .select('*').eq('room_code', roomCode.toUpperCase()).eq('status', 'waiting').single();
-      if (data) {
-        currentRoom = data;
-        await joinAsPlayer(data.id);
-        showWaitingRoom();
-        return;
-      }
-    } catch (e) {}
+    // 部屋コードをjoin画面にプリセット
+    document.getElementById('join-code-input').value = roomCode.toUpperCase();
   }
 
   showView('view-lobby');
