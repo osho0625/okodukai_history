@@ -303,7 +303,8 @@ select {
 <div class="header">
   <a class="back" onclick="goBack()">←</a>
   <h1>🧮 算数オリンピック</h1>
-  <a href="../index.html" style="margin-left:auto; color:#eee; text-decoration:none; font-size:1.4em;">🏠</a>
+  <a onclick="refreshData()" style="margin-left:auto; color:#eee; text-decoration:none; font-size:1.3em; cursor:pointer;" title="データを更新">🔄</a>
+  <a href="../index.html" style="color:#eee; text-decoration:none; font-size:1.4em; margin-left:8px;">🏠</a>
 </div>
 
 <!-- View: Registration -->
@@ -800,6 +801,22 @@ async function loadUserAnswers() {
 
 // All reviewed answers (all users) for ranking display
 let allReviewedAnswers = [];
+
+async function refreshData() {
+  const btn = event?.target;
+  if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+  try {
+    aiApiKeys = null; // APIキーキャッシュもクリア
+    await loadUserAnswers();
+    await loadAllReviewedAnswers();
+    renderGradeStats();
+    if (currentGrade && document.getElementById('view-problem-list')?.classList.contains('hidden') === false) {
+      renderProblemList();
+    }
+  } finally {
+    if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = ''; }
+  }
+}
 
 async function loadAllReviewedAnswers() {
   try {
