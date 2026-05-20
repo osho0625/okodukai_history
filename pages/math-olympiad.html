@@ -1549,14 +1549,18 @@ ${problem.answer}
 【受験者の解答】
 ${review.answer_text}
 
-以下の観点で10点満点で採点してください。
-- 答えが過不足なく正しいか（10点）
-- 答えが足りない、もしくは間違っている場合、部分点を与える
+【採点ルール】
+- 10点満点で採点する
+- 模範解答と完全に同じ表現でなくても、問題の意図を正しく理解し本質的に正しい回答であれば満点（10点）とする
+- 表現が違っても論理的に同じ結論に達していれば正解とする
+- 小学生の回答なので、言葉遣いや表現の稚拙さは減点しない
+- 答えの方向性は合っているが不完全な場合は部分点を与える
+- 完全に間違っている場合でも、考え方の一部が正しければ部分点を与える
 
-採点では、
-- どこが間違っているか
-- どう直せば満点か
-を小学生にも分かる言葉で説明してください。
+【採点コメントのルール】
+- 小学生にも分かる言葉で書く
+- 良い点を先に褒める
+- 間違っている場合は「どこが違うか」「どう考えれば正解にたどり着けるか」を具体的に説明する
 
 回答形式:
 点数: X/10
@@ -1613,12 +1617,11 @@ ${review.answer_text}
 }
 
 async function callGemini(apiKey, prompt) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { thinkingConfig: { thinkingBudget: 0 } }
+      contents: [{ parts: [{ text: prompt }] }]
     })
   });
   if (!res.ok) {
@@ -1627,9 +1630,7 @@ async function callGemini(apiKey, prompt) {
     throw new Error('Gemini API error: ' + res.status);
   }
   const data = await res.json();
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  const textPart = parts.find(p => p.text !== undefined);
-  return textPart?.text || '';
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 async function callGroq(apiKey, prompt) {
