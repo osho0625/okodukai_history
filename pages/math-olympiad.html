@@ -1082,9 +1082,9 @@ function renderProblemList() {
   });
 
   const container = document.getElementById('problem-cards');
-  const DIFFICULTY_STARS = { 1: '★☆☆☆', 2: '★★☆☆', 3: '★★★☆', 4: '★★★★' };
+  const DIFFICULTY_STARS = { 1: '★☆☆☆☆', 2: '★★☆☆☆', 3: '★★★☆☆', 4: '★★★★☆', 5: '★★★★★' };
   const showTime = currentGrade === 'grade5';
-  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+', 4: '60分+' };
+  const DIFFICULTY_TIME = { 1: '10分', 2: '20分', 3: '30分+', 4: '60分+', 5: '90分+' };
 
   container.innerHTML = filtered.map(p => {
     const status = getProblemStatus(p.id);
