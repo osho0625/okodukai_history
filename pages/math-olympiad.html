@@ -439,47 +439,52 @@ select {
   </div>
 </div>
 
-<!-- View: Admin Review -->
+<!-- View: Admin Review (一覧) -->
 <div id="view-admin-review" class="view hidden">
   <div class="container">
     <h2 class="section-title">📋 採点待ち一覧</h2>
     <div id="review-list"></div>
+    <button class="btn btn-secondary" style="width:100%; margin-top: 16px;" onclick="showView('view-grade-select');">戻る</button>
+    <div id="admin-error" class="error-msg"></div>
+  </div>
+</div>
 
-    <div id="review-detail" class="hidden" style="margin-top: 20px;">
-      <h3 class="section-title">回答詳細</h3>
-      <div class="result-section">
-        <div class="result-label">回答</div>
-        <div id="review-answer-text"></div>
-      </div>
-      <div class="result-section">
-        <div class="result-label">考え方メモ</div>
-        <div id="review-thinking"></div>
-      </div>
-      <div class="result-section" style="display:flex; gap: 16px;">
-        <div><span class="result-label">経過時間: </span><span id="review-elapsed"></span></div>
-        <div><span class="result-label">ヒント使用: </span><span id="review-hints"></span></div>
-      </div>
-
-      <div class="form-group" style="margin-top: 16px;">
-        <label>点数（0〜10）</label>
-        <input type="number" id="review-score" min="0" max="10" placeholder="点数">
-      </div>
-      <div class="form-group">
-        <label>コメント</label>
-        <div class="template-btns">
-          <button class="btn-template" onclick="insertTemplate(0)">良い視点です</button>
-          <button class="btn-template" onclick="insertTemplate(1)">途中まで良いです</button>
-          <button class="btn-template" onclick="insertTemplate(2)">別の方法も考えてみよう</button>
-          <button class="btn-template" onclick="insertTemplate(3)">図を書いてみよう</button>
-          <button class="btn-template" onclick="insertTemplate(4)">最後までよく考えたね</button>
-        </div>
-        <textarea id="review-comment" placeholder="コメントを入力" rows="3"></textarea>
-      </div>
-      <button class="btn" style="width:100%;" onclick="submitReview()">採点を送信する</button>
+<!-- View: Admin Detail (個別採点) -->
+<div id="view-admin-detail" class="view hidden">
+  <div class="container">
+    <button class="btn btn-secondary btn-small" style="margin-bottom:12px;" onclick="showView('view-admin-review'); loadPendingReviews();">← 採点一覧に戻る</button>
+    <h3 id="review-problem-title" class="section-title"></h3>
+    <div class="result-section">
+      <div class="result-label">回答</div>
+      <div id="review-answer-text"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-label">考え方メモ</div>
+      <div id="review-thinking"></div>
+    </div>
+    <div class="result-section" style="display:flex; gap: 16px; flex-wrap:wrap;">
+      <div><span class="result-label">経過時間: </span><span id="review-elapsed"></span></div>
+      <div><span class="result-label">ヒント使用: </span><span id="review-hints"></span></div>
+      <div><span class="result-label">提出者: </span><span id="review-user-name"></span></div>
     </div>
 
-    <button class="btn btn-secondary" style="width:100%; margin-top: 16px;" onclick="showView('view-problem-list'); renderProblemList();">一覧に戻る</button>
-    <div id="admin-error" class="error-msg"></div>
+    <div class="form-group" style="margin-top: 16px;">
+      <label>点数（0〜10）</label>
+      <input type="number" id="review-score" min="0" max="10" placeholder="点数">
+    </div>
+    <div class="form-group">
+      <label>コメント</label>
+      <div class="template-btns">
+        <button class="btn-template" onclick="insertTemplate(0)">良い視点です</button>
+        <button class="btn-template" onclick="insertTemplate(1)">途中まで良いです</button>
+        <button class="btn-template" onclick="insertTemplate(2)">別の方法も考えてみよう</button>
+        <button class="btn-template" onclick="insertTemplate(3)">図を書いてみよう</button>
+        <button class="btn-template" onclick="insertTemplate(4)">最後までよく考えたね</button>
+      </div>
+      <textarea id="review-comment" placeholder="コメントを入力" rows="3"></textarea>
+    </div>
+    <button class="btn" style="width:100%;" onclick="submitReview()">採点を送信する</button>
+    <div id="admin-detail-error" class="error-msg"></div>
   </div>
 </div>
 
@@ -557,6 +562,13 @@ function goBack() {
   // From admin review → back to grade select
   if (id === 'view-admin-review') {
     showView('view-grade-select');
+    return;
+  }
+  
+  // From admin detail → back to review list
+  if (id === 'view-admin-detail') {
+    showView('view-admin-review');
+    loadPendingReviews();
     return;
   }
   
@@ -1116,7 +1128,6 @@ async function loadPendingReviews() {
 function renderReviewList(reviews) {
   pendingReviews = reviews;
   const container = document.getElementById('review-list');
-  document.getElementById('review-detail').classList.add('hidden');
   currentReviewId = null;
 
   if (reviews.length === 0) {
@@ -1125,11 +1136,18 @@ function renderReviewList(reviews) {
   }
 
   container.innerHTML = reviews.map((r, i) => {
-    const problem = problems.find(p => p.id === r.problem_id);
+    // Search all grades for the problem
+    let problem = null;
+    for (const probs of Object.values(allProblemsCache)) {
+      problem = probs.find(p => p.id === r.problem_id);
+      if (problem) break;
+    }
     const title = problem ? problem.title : '問題' + r.problem_id;
     const date = new Date(r.submitted_at).toLocaleDateString('ja-JP');
+    const hintColor = r.hints_used >= 3 ? '#ff6b6b' : r.hints_used === 2 ? '#ffa500' : r.hints_used === 1 ? '#ffdd57' : '';
+    const hintBadge = r.hints_used > 0 ? ' <span style="color:' + hintColor + ';">💡' + r.hints_used + '</span>' : '';
     return '<div class="review-item" onclick="showReviewDetail(' + i + ')">' +
-      '<div class="review-item-name">' + r.user_name + ' - ' + title + '</div>' +
+      '<div class="review-item-name">' + r.user_name + ' - ' + title + hintBadge + '</div>' +
       '<div class="review-item-meta">' + date + '</div>' +
     '</div>';
   }).join('');
@@ -1142,16 +1160,24 @@ function showReviewDetail(index) {
   const minutes = Math.floor(review.elapsed_seconds / 60);
   const seconds = review.elapsed_seconds % 60;
 
+  // Find problem title across all grades
+  let problem = null;
+  for (const probs of Object.values(allProblemsCache)) {
+    problem = probs.find(p => p.id === review.problem_id);
+    if (problem) break;
+  }
+  document.getElementById('review-problem-title').textContent = problem ? problem.title : '問題' + review.problem_id;
   document.getElementById('review-answer-text').textContent = review.answer_text;
   document.getElementById('review-thinking').textContent = review.thinking_note || '（なし）';
   document.getElementById('review-elapsed').textContent = minutes > 0 ? minutes + '分' + seconds + '秒' : seconds + '秒';
   document.getElementById('review-hints').innerHTML = review.hints_used > 0
     ? '<span style="color:' + (review.hints_used >= 3 ? '#ff6b6b' : review.hints_used === 2 ? '#ffa500' : '#ffdd57') + ';font-weight:700;">💡 ' + review.hints_used + '個</span>'
     : '0個（ヒントなし）';
+  document.getElementById('review-user-name').textContent = review.user_name;
   document.getElementById('review-score').value = '';
   document.getElementById('review-comment').value = '';
-  document.getElementById('review-detail').classList.remove('hidden');
-  clearError('admin-error');
+  clearError('admin-detail-error');
+  showView('view-admin-detail');
 }
 
 // === Submit Review & Templates (Task 9.2) ===
@@ -1167,11 +1193,11 @@ async function submitReview() {
   const comment = document.getElementById('review-comment').value.trim();
 
   if (isNaN(score) || score < 0 || score > 10) {
-    showError('admin-error', '点数を0〜10で入力してください');
+    showError('admin-detail-error', '点数を0〜10で入力してください');
     return;
   }
 
-  clearError('admin-error');
+  clearError('admin-detail-error');
 
   try {
     const { error } = await client.from('math_olympiad_answers')
@@ -1184,14 +1210,15 @@ async function submitReview() {
       .eq('id', currentReviewId);
 
     if (error) {
-      showError('admin-error', '採点保存に失敗しました');
+      showError('admin-detail-error', '採点保存に失敗しました');
       return;
     }
 
-    // Reload pending reviews to update the list
+    // Go back to review list and reload
+    showView('view-admin-review');
     await loadPendingReviews();
   } catch (e) {
-    showError('admin-error', '採点保存に失敗しました');
+    showError('admin-detail-error', '採点保存に失敗しました');
   }
 }
 
