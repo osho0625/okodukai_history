@@ -309,6 +309,10 @@ select {
 <!-- View: Grade Select -->
 <div id="view-grade-select" class="view hidden">
   <div class="container">
+    <div id="total-score-area" style="text-align:center; margin-bottom:20px; display:none;">
+      <div style="font-size:0.85em; color:#aaa;">合計とくてん</div>
+      <div id="total-score-display" style="font-size:2em; font-weight:700; color:#ffd700;"></div>
+    </div>
     <div style="text-align:center; margin-bottom: 24px;">
       <div style="font-size: 2.5em; margin-bottom: 12px;">📚</div>
       <p style="color:#aaa;">どのもんだいにチャレンジする？</p>
@@ -622,6 +626,7 @@ async function initApp() {
   }
 
   await loadUserAnswers();
+  await loadAllReviewedAnswers();
   bindDraftEvents();
   restoreTimerIfNeeded();
 
@@ -637,6 +642,7 @@ async function initApp() {
   if (!userName) {
     showView('view-registration');
   } else {
+    renderTotalScore();
     showView('view-grade-select');
   }
 }
@@ -729,6 +735,47 @@ async function loadUserAnswers() {
   }
 }
 
+// All reviewed answers (all users) for ranking display
+let allReviewedAnswers = [];
+
+async function loadAllReviewedAnswers() {
+  try {
+    const { data, error } = await client
+      .from('math_olympiad_answers')
+      .select('problem_id,user_name,score')
+      .eq('status', 'reviewed')
+      .not('score', 'is', null);
+    if (error) throw error;
+    allReviewedAnswers = data || [];
+  } catch (e) {
+    allReviewedAnswers = [];
+  }
+}
+
+function getRankingForProblem(problemId) {
+  return allReviewedAnswers
+    .filter(a => a.problem_id === problemId)
+    .sort((a, b) => b.score - a.score);
+}
+
+function getTotalScore() {
+  return userAnswers
+    .filter(a => a.status === 'reviewed' && a.score !== null)
+    .reduce((sum, a) => sum + a.score, 0);
+}
+
+function renderTotalScore() {
+  const total = getTotalScore();
+  const area = document.getElementById('total-score-area');
+  const display = document.getElementById('total-score-display');
+  if (total > 0) {
+    area.style.display = 'block';
+    display.textContent = total + '点';
+  } else {
+    area.style.display = 'none';
+  }
+}
+
 // === Problem List & Filters (Task 4.3) ===
 function getProblemStatus(problemId) {
   const a = userAnswers.find(x => x.problem_id === problemId);
@@ -815,6 +862,17 @@ function renderProblemList() {
       hintBadge = '<span style="color:#ffdd57;font-size:0.75em;">💡×1</span>';
     }
 
+    // Per-problem ranking
+    const ranking = getRankingForProblem(p.id);
+    let rankingHtml = '';
+    if (ranking.length > 0) {
+      rankingHtml = '<div style="font-size:0.75em;color:#aaa;margin-top:4px;">' +
+        ranking.slice(0, 3).map((r, i) => {
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+          return medal + r.score + '点(' + r.user_name + ')';
+        }).join(' ') + '</div>';
+    }
+
     return `<div class="problem-card" style="${hintStyle}" onclick="${onclick}">
       <div class="problem-card-title">${p.title} ${scoreHtml} ${hintBadge}</div>
       <div class="problem-card-meta">
@@ -823,6 +881,7 @@ function renderProblemList() {
         ${timeHtml}
         <span class="badge ${badgeClass}">${badgeText}</span>
       </div>
+      ${rankingHtml}
     </div>`;
   }).join('');
 
