@@ -327,6 +327,10 @@ select {
       <div style="font-size:0.85em; color:#aaa; text-align:center; margin-bottom:8px;">🏆 合計とくてん</div>
       <div id="total-score-ranking" style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;"></div>
     </div>
+    <div id="user-switch-area" style="display:none; text-align:center; margin-bottom:16px;">
+      <div style="font-size:0.8em; color:#aaa; margin-bottom:6px;">現在の回答者: <span id="current-user-display" style="color:#eee; font-weight:600;"></span></div>
+      <button class="btn btn-secondary btn-small" onclick="switchUser()">👤 回答者を変更</button>
+    </div>
     <div style="text-align:center; margin-bottom: 24px;">
       <div style="font-size: 2.5em; margin-bottom: 12px;">📚</div>
       <p style="color:#aaa;">どのもんだいにチャレンジする？</p>
@@ -365,10 +369,6 @@ select {
           <div id="grade5-stats" class="grade-stats"></div>
         </div>
       </div>
-    </div>
-    <div id="user-switch-area" style="display:none; margin-top:16px; text-align:center;">
-      <div style="font-size:0.8em; color:#aaa; margin-bottom:6px;">現在の回答者: <span id="current-user-display" style="color:#eee; font-weight:600;"></span></div>
-      <button class="btn btn-secondary btn-small" onclick="switchUser()">👤 回答者を変更</button>
     </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
     <div id="pending-review-badge" style="display:none; margin-top:12px; text-align:center;">
