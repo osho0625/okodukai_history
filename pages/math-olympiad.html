@@ -366,6 +366,10 @@ select {
         </div>
       </div>
     </div>
+    <div id="user-switch-area" style="display:none; margin-top:16px; text-align:center;">
+      <div style="font-size:0.8em; color:#aaa; margin-bottom:6px;">現在の回答者: <span id="current-user-display" style="color:#eee; font-weight:600;"></span></div>
+      <button class="btn btn-secondary btn-small" onclick="switchUser()">👤 回答者を変更</button>
+    </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
     <div id="pending-review-badge" style="display:none; margin-top:12px; text-align:center;">
       <a onclick="showView('view-admin-review'); loadPendingReviews();" style="cursor:pointer; color:#ffa500; font-weight:600; text-decoration:none;">
@@ -683,6 +687,7 @@ async function initApp() {
     document.getElementById('admin-btn').style.display = 'block';
     const adminBtnGrade = document.getElementById('admin-btn-grade');
     if (adminBtnGrade) adminBtnGrade.style.display = 'block';
+    document.getElementById('user-switch-area').style.display = 'block';
     checkPendingReviewCount();
   }
 
@@ -691,6 +696,7 @@ async function initApp() {
     showView('view-registration');
   } else {
     renderTotalScore();
+    updateCurrentUserDisplay();
     showView('view-grade-select');
   }
 }
@@ -1006,7 +1012,38 @@ function registerUser() {
   const userId = localStorage.getItem('math_olympiad_user_id') || crypto.randomUUID();
   localStorage.setItem('math_olympiad_user', name);
   localStorage.setItem('math_olympiad_user_id', userId);
+  updateCurrentUserDisplay();
   showView('view-grade-select');
+}
+
+function updateCurrentUserDisplay() {
+  const el = document.getElementById('current-user-display');
+  if (el) el.textContent = localStorage.getItem('math_olympiad_user') || '';
+}
+
+function switchUser() {
+  const current = localStorage.getItem('math_olympiad_user') || '';
+  const newName = prompt('回答者の名前を入力してください:', current);
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  
+  // Check if this user already exists in DB
+  (async function() {
+    const { data } = await client.from('math_olympiad_answers')
+      .select('user_id')
+      .eq('user_name', trimmed)
+      .limit(1);
+    
+    const newUserId = (data && data.length > 0) ? data[0].user_id : crypto.randomUUID();
+    localStorage.setItem('math_olympiad_user', trimmed);
+    localStorage.setItem('math_olympiad_user_id', newUserId);
+    updateCurrentUserDisplay();
+    
+    // Reload user answers for the new user
+    await loadUserAnswers();
+    renderTotalScore();
+    renderGradeStats();
+  })();
 }
 
 // === Problem Solve (Task 6.1) ===
