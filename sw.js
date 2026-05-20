@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v86';
+const CACHE_NAME = 'okozukai-v87';
 const ASSETS = [
   './',
   './index.html',

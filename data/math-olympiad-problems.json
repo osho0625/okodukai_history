@@ -954,12 +954,12 @@
     "id": 69,
     "genre": "geometry",
     "difficulty": 4,
-    "title": "反射で最短",
-    "question": "たて8cm、<ruby>横<rt>よこ</rt></ruby>15cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>の<ruby>左下<rt>ひだりした</rt></ruby>Aから<ruby>右上<rt>みぎうえ</rt></ruby>Bへ<ruby>進<rt>すす</rt></ruby>みます。<br><ruby>途中<rt>とちゅう</rt></ruby>で<ruby>下<rt>した</rt></ruby>の<ruby>辺<rt>へん</rt></ruby>に1<ruby>回<rt>かい</rt></ruby>だけ<ruby>触<rt>ふ</rt></ruby>れなければなりません。<br><ruby>最短距離<rt>さいたんきょり</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。（ヒント：<ruby>三平方<rt>さんへいほう</rt></ruby>の<ruby>定理<rt>ていり</rt></ruby>を使います）",
-    "answer": "17 cm",
-    "explanation": "下辺で反射すると、Bを下に折り返した点との直線になる。高さ8+8=16、横15なので √(15²+16²)=√(225+256)=√481…ではなく、Aから下辺への反射なのでAを折り返す：高さ8+8=16、横15→√(15²+16²)=17。",
-    "hints": ["折り返しを考える", "Aを下に反射させる", "三平方の定理で計算"],
-    "alternativeSolutions": []
+    "title": "面積が等しい分割",
+    "question": "たて6cm、<ruby>横<rt>よこ</rt></ruby>10cmの<ruby>長方形<rt>ちょうほうけい</rt></ruby>があります。<ruby>左下<rt>ひだりした</rt></ruby>の<ruby>角<rt>かど</rt></ruby>から<ruby>右辺<rt>うへん</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>から2cmの<ruby>点<rt>てん</rt></ruby>へ<ruby>直線<rt>ちょくせん</rt></ruby>を<ruby>引<rt>ひ</rt></ruby>きます。<br>この<ruby>直線<rt>ちょくせん</rt></ruby>で<ruby>長方形<rt>ちょうほうけい</rt></ruby>が2つに<ruby>分<rt>わ</rt></ruby>かれます。<ruby>大<rt>おお</rt></ruby>きい<ruby>方<rt>ほう</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>を<ruby>求<rt>もと</rt></ruby>めなさい。",
+    "answer": "40cm²",
+    "explanation": "直線で切ると三角形と台形ができる。三角形の面積=底辺10×高さ4÷2=20cm²（右辺の上から2cm=下から4cmの点なので高さ4cm）。長方形全体=60cm²。大きい方=60-20=40cm²。",
+    "hints": ["直線で切ると三角形と台形ができる", "三角形の底辺と高さを求めよう", "長方形全体から引き算"],
+    "alternativeSolutions": ["台形の面積を直接計算：(6+4)×10÷2=50…ではなく、台形の公式を正しく使う"]
   },
   {
     "id": 70,
