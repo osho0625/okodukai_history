@@ -102,7 +102,12 @@ h1 { font-size: 1.4em; font-weight: 700; }
 <script src="../js/common.js"></script>
 <script>
 (async function() {
-  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  // 夜間制限
+  if (isNightTime()) {
+    document.getElementById('gamesGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;"><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;margin-bottom:8px;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div>';
+    return;
+  }
+
   if (isAdmin) return; // 管理者は全部見える
   try {
     const { data } = await client.from('game_settings').select('game_publish').eq('id', 1).maybeSingle();
