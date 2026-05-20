@@ -157,13 +157,25 @@ textarea { resize: vertical; min-height: 80px; }
         <span style="font-size:1.5em;">🌱</span>
         <div><div style="font-weight:600;">小学1年</div><div style="font-size:0.8em;color:#aaa;">たしざん・ひきざん・かたち</div></div>
       </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade2')" data-grade="grade2">
+        <span style="font-size:1.5em;">🌱</span>
+        <div><div style="font-weight:600;">小学2年</div><div style="font-size:0.8em;color:#aaa;">くり上がり・長さ・時計</div></div>
+      </div>
       <div class="grade-option" onclick="selectBattleGrade('grade3')" data-grade="grade3">
         <span style="font-size:1.5em;">🌿</span>
         <div><div style="font-weight:600;">小学3年</div><div style="font-size:0.8em;color:#aaa;">わり算・図形・きまり</div></div>
       </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade4')" data-grade="grade4">
+        <span style="font-size:1.5em;">🌿</span>
+        <div><div style="font-weight:600;">小学4年</div><div style="font-size:0.8em;color:#aaa;">約数・面積・角度</div></div>
+      </div>
       <div class="grade-option" onclick="selectBattleGrade('grade5')" data-grade="grade5">
         <span style="font-size:1.5em;">🌳</span>
         <div><div style="font-weight:600;">小学5年</div><div style="font-size:0.8em;color:#aaa;">思考力・論理・場合の数</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade6')" data-grade="grade6">
+        <span style="font-size:1.5em;">🌳</span>
+        <div><div style="font-weight:600;">小学6年</div><div style="font-size:0.8em;color:#aaa;">比・速さ・場合の数</div></div>
       </div>
     </div>
     <button class="btn" style="width:100%; margin-top:16px;" onclick="createRoom()" id="create-room-btn" disabled>部屋をつくる</button>
@@ -289,8 +301,11 @@ textarea { resize: vertical; min-height: 80px; }
 // === Config ===
 const GRADE_CONFIG = {
   grade1: { label: '小学1年', file: '../data/math-olympiad-grade1.json', icon: '🌱' },
+  grade2: { label: '小学2年', file: '../data/math-olympiad-grade2.json', icon: '🌱' },
   grade3: { label: '小学3年', file: '../data/math-olympiad-grade3.json', icon: '🌿' },
-  grade5: { label: '小学5年', file: '../data/math-olympiad-grade5.json', icon: '🌳' }
+  grade4: { label: '小学4年', file: '../data/math-olympiad-grade4.json', icon: '🌿' },
+  grade5: { label: '小学5年', file: '../data/math-olympiad-grade5.json', icon: '🌳' },
+  grade6: { label: '小学6年', file: '../data/math-olympiad-grade6.json', icon: '🌳' }
 };
 const BATTLE_PROBLEM_COUNT = 10;
 

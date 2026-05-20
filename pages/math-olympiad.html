@@ -349,6 +349,17 @@ select {
           <div id="grade1-stats" class="grade-stats"></div>
         </div>
       </div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade2')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌱</div>
+          <div class="problem-card-title">小学2年</div>
+          <div class="problem-card-meta">くり上がり・長さ・時計</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade2-ranking" class="grade-ranking"></div>
+          <div id="grade2-stats" class="grade-stats"></div>
+        </div>
+      </div>
       <div class="problem-card grade-card-layout" onclick="selectGrade('grade3')">
         <div class="grade-card-left">
           <div style="font-size:1.8em;">🌿</div>
@@ -360,6 +371,17 @@ select {
           <div id="grade3-stats" class="grade-stats"></div>
         </div>
       </div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade4')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌿</div>
+          <div class="problem-card-title">小学4年</div>
+          <div class="problem-card-meta">約数・面積・角度</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade4-ranking" class="grade-ranking"></div>
+          <div id="grade4-stats" class="grade-stats"></div>
+        </div>
+      </div>
       <div class="problem-card grade-card-layout" onclick="selectGrade('grade5')">
         <div class="grade-card-left">
           <div style="font-size:1.8em;">🌳</div>
@@ -369,6 +391,17 @@ select {
         <div class="grade-card-right">
           <div id="grade5-ranking" class="grade-ranking"></div>
           <div id="grade5-stats" class="grade-stats"></div>
+        </div>
+      </div>
+      <div class="problem-card grade-card-layout" onclick="selectGrade('grade6')">
+        <div class="grade-card-left">
+          <div style="font-size:1.8em;">🌳</div>
+          <div class="problem-card-title">小学6年</div>
+          <div class="problem-card-meta">比・速さ・場合の数</div>
+        </div>
+        <div class="grade-card-right">
+          <div id="grade6-ranking" class="grade-ranking"></div>
+          <div id="grade6-stats" class="grade-stats"></div>
         </div>
       </div>
     </div>
@@ -628,13 +661,19 @@ const GENRE_LABEL = {
   multiplication: 'かけ算',
   time: '時間',
   measurement: '長さ',
-  // Shared
+  // Grade 4/6
+  fraction: '分数',
+  ratio: '比・割合',
+  algebra: '文字と式',
 };
 
 const GRADE_CONFIG = {
   grade1: { label: '小学1年', file: '../data/math-olympiad-grade1.json', icon: '🌱' },
+  grade2: { label: '小学2年', file: '../data/math-olympiad-grade2.json', icon: '🌱' },
   grade3: { label: '小学3年', file: '../data/math-olympiad-grade3.json', icon: '🌿' },
-  grade5: { label: '小学5年（オリンピック）', file: '../data/math-olympiad-grade5.json', icon: '🌳' }
+  grade4: { label: '小学4年', file: '../data/math-olympiad-grade4.json', icon: '🌿' },
+  grade5: { label: '小学5年', file: '../data/math-olympiad-grade5.json', icon: '🌳' },
+  grade6: { label: '小学6年', file: '../data/math-olympiad-grade6.json', icon: '🌳' }
 };
 
 const TIMER_EXPIRE_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -953,7 +992,7 @@ function renderTotalScore() {
 }
 
 function renderGradeStats() {
-  const gradeMap = { grade1: [1001, 1020], grade3: [3001, 3020], grade5: [1, 70] };
+  const gradeMap = { grade1: [1001, 1040], grade2: [2001, 2040], grade3: [3001, 3040], grade4: [4001, 4040], grade5: [1, 120], grade6: [6001, 6040] };
   const userId = localStorage.getItem('math_olympiad_user_id');
   
   for (const [grade, [minId, maxId]] of Object.entries(gradeMap)) {
