@@ -331,6 +331,11 @@ select {
       </div>
     </div>
     <button id="admin-btn-grade" class="btn btn-secondary" style="width:100%; display:none; margin-top:16px;" onclick="showView('view-admin-review'); loadPendingReviews();">📋 採点する（管理者）</button>
+    <div id="pending-review-badge" style="display:none; margin-top:12px; text-align:center;">
+      <a onclick="showView('view-admin-review'); loadPendingReviews();" style="cursor:pointer; color:#ffa500; font-weight:600; text-decoration:none;">
+        🔔 <span id="pending-count"></span>件の採点待ちがあります
+      </a>
+    </div>
   </div>
 </div>
 
@@ -454,8 +459,9 @@ select {
   <div class="container">
     <button class="btn btn-secondary btn-small" style="margin-bottom:12px;" onclick="showView('view-admin-review'); loadPendingReviews();">← 採点一覧に戻る</button>
     <h3 id="review-problem-title" class="section-title"></h3>
+    <div id="review-question-text" class="question-area" style="margin-bottom:16px;"></div>
     <div class="result-section">
-      <div class="result-label">回答</div>
+      <div class="result-label">生徒の回答</div>
       <div id="review-answer-text"></div>
     </div>
     <div class="result-section">
@@ -624,6 +630,7 @@ async function initApp() {
     document.getElementById('admin-btn').style.display = 'block';
     const adminBtnGrade = document.getElementById('admin-btn-grade');
     if (adminBtnGrade) adminBtnGrade.style.display = 'block';
+    checkPendingReviewCount();
   }
 
   const userName = localStorage.getItem('math_olympiad_user');
@@ -632,6 +639,25 @@ async function initApp() {
   } else {
     showView('view-grade-select');
   }
+}
+
+// Check pending review count for admin badge
+async function checkPendingReviewCount() {
+  try {
+    const { data, error } = await client.from('math_olympiad_answers')
+      .select('id')
+      .eq('status', 'pending');
+    if (error) return;
+    const count = (data || []).length;
+    const badge = document.getElementById('pending-review-badge');
+    const countEl = document.getElementById('pending-count');
+    if (count > 0) {
+      badge.style.display = 'block';
+      countEl.textContent = count;
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) {}
 }
 
 // === Grade Selection ===
@@ -1160,13 +1186,17 @@ function showReviewDetail(index) {
   const minutes = Math.floor(review.elapsed_seconds / 60);
   const seconds = review.elapsed_seconds % 60;
 
-  // Find problem title across all grades
+  // Find problem across all grades
   let problem = null;
   for (const probs of Object.values(allProblemsCache)) {
     problem = probs.find(p => p.id === review.problem_id);
     if (problem) break;
   }
   document.getElementById('review-problem-title').textContent = problem ? problem.title : '問題' + review.problem_id;
+  // Show the problem question
+  document.getElementById('review-question-text').innerHTML = problem
+    ? DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] })
+    : '';
   document.getElementById('review-answer-text').textContent = review.answer_text;
   document.getElementById('review-thinking').textContent = review.thinking_note || '（なし）';
   document.getElementById('review-elapsed').textContent = minutes > 0 ? minutes + '分' + seconds + '秒' : seconds + '秒';
