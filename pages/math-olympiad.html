@@ -425,28 +425,7 @@ select {
     <div style="text-align:center; margin-bottom:20px;">
       <p style="color:#aaa;">難易度を選んでね</p>
     </div>
-    <div class="grade-cards">
-      <div class="problem-card" onclick="selectDifficulty(1)" style="text-align:center;">
-        <div class="problem-card-title">★☆☆☆ かんたん</div>
-        <div class="problem-card-meta" style="justify-content:center;" id="diff1-count"></div>
-      </div>
-      <div class="problem-card" onclick="selectDifficulty(2)" style="text-align:center;">
-        <div class="problem-card-title">★★☆☆ ふつう</div>
-        <div class="problem-card-meta" style="justify-content:center;" id="diff2-count"></div>
-      </div>
-      <div class="problem-card" onclick="selectDifficulty(3)" style="text-align:center;">
-        <div class="problem-card-title">★★★☆ むずかしい</div>
-        <div class="problem-card-meta" style="justify-content:center;" id="diff3-count"></div>
-      </div>
-      <div class="problem-card" onclick="selectDifficulty(4)" style="text-align:center;">
-        <div class="problem-card-title">★★★★ 超むずかしい</div>
-        <div class="problem-card-meta" style="justify-content:center;" id="diff4-count"></div>
-      </div>
-      <div class="problem-card" onclick="selectDifficulty('all')" style="text-align:center;">
-        <div class="problem-card-title">📋 すべての難易度</div>
-        <div class="problem-card-meta" style="justify-content:center;">全問題を表示</div>
-      </div>
-    </div>
+    <div class="grade-cards" id="difficulty-cards"></div>
   </div>
 </div>
 
@@ -463,10 +442,6 @@ select {
       </select>
       <select id="difficulty-filter" onchange="renderProblemList()">
         <option value="all">すべての難易度</option>
-        <option value="1">★☆☆☆</option>
-        <option value="2">★★☆☆</option>
-        <option value="3">★★★☆</option>
-        <option value="4">★★★★</option>
       </select>
     </div>
     <div class="status-filters" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
@@ -832,19 +807,38 @@ function selectGrade(grade) {
   document.getElementById('grade-label').textContent = config.icon + ' ' + config.label;
   document.getElementById('difficulty-grade-label').textContent = config.icon + ' ' + config.label;
   
-  // Show difficulty counts
-  for (let d = 1; d <= 4; d++) {
+  // Render difficulty cards dynamically
+  const DIFF_LABELS = { 1: '★☆☆☆☆ かんたん', 2: '★★☆☆☆ ふつう', 3: '★★★☆☆ むずかしい', 4: '★★★★☆ 超むずかしい', 5: '★★★★★ 鬼むずかしい' };
+  const container = document.getElementById('difficulty-cards');
+  let html = '';
+  const difficulties = [...new Set(problems.map(p => p.difficulty))].sort((a, b) => a - b);
+  for (const d of difficulties) {
     const count = problems.filter(p => p.difficulty === d).length;
-    const el = document.getElementById('diff' + d + '-count');
-    if (el) el.textContent = count > 0 ? count + '問' : 'なし';
+    if (count === 0) continue;
+    const label = DIFF_LABELS[d] || '★'.repeat(d) + ' Lv' + d;
+    html += `<div class="problem-card" onclick="selectDifficulty(${d})" style="text-align:center;">
+      <div class="problem-card-title">${label}</div>
+      <div class="problem-card-meta" style="justify-content:center;">${count}問</div>
+    </div>`;
   }
+  html += `<div class="problem-card" onclick="selectDifficulty('all')" style="text-align:center;">
+    <div class="problem-card-title">📋 すべての難易度</div>
+    <div class="problem-card-meta" style="justify-content:center;">全${problems.length}問を表示</div>
+  </div>`;
+  container.innerHTML = html;
   
   showView('view-difficulty-select');
 }
 
 function selectDifficulty(difficulty) {
-  // Set the difficulty filter
+  // Update difficulty filter options dynamically
   const filterEl = document.getElementById('difficulty-filter');
+  const DIFF_STARS = { 1: '★☆☆☆☆', 2: '★★☆☆☆', 3: '★★★☆☆', 4: '★★★★☆', 5: '★★★★★' };
+  const difficulties = [...new Set(problems.map(p => p.difficulty))].sort((a, b) => a - b);
+  filterEl.innerHTML = '<option value="all">すべての難易度</option>' +
+    difficulties.map(d => `<option value="${d}">${DIFF_STARS[d] || '★'.repeat(d)}</option>`).join('');
+
+  // Set the difficulty filter
   if (difficulty === 'all') {
     filterEl.value = 'all';
   } else {
