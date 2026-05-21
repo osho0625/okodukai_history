@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/20 v1.78.0
+最終更新: 2026/05/21 v1.79.0
 
 ## プロジェクト概要
 
@@ -26,6 +26,7 @@
 │   ├── allowance.html  # お小遣い入出金ページ（admin専用）
 │   ├── arcade.html     # ゲームセンター（ゲーム一覧）
 │   ├── game.html       # ぷよぷよ風パズルゲーム（難易度選択対応）
+│   ├── puyo-battle.html # ぴくぴく対戦（オンライン2人対戦、お邪魔ぷよ）
 │   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
@@ -101,6 +102,12 @@
 - UNIQUE(user_id, problem_id)
 - INDEX: idx_math_answers_user_id, idx_math_answers_status
 - RLS有効: SELECT/INSERT全許可、UPDATE=status='pending'のみ
+
+### puyo_battles（ぷよ対戦ルーム）
+- id: UUID (PK), room_code: TEXT UNIQUE, player1_name: TEXT, player2_name: TEXT
+- status: TEXT DEFAULT 'waiting' CHECK IN ('waiting', 'playing', 'finished')
+- winner: TEXT, created_at: TIMESTAMPTZ, finished_at: TIMESTAMPTZ
+- RLS無効
 
 ### game_settings（各種設定、id=1の1行）
 - night_password: TEXT, night_limit_enabled: BOOLEAN
@@ -251,6 +258,17 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 初期状態: area 0, pos(16,35), 主人公1人, 1000G, 回復草×3（原作CInitGame準拠）
 - 唯一の未実装: CEfcWork（3Dエフェクト120パターン）→ 2Dスキルアニメーションで代替
 
+### ぴくぴく対戦（puyo-battle.html）
+- Supabase Realtimeによるオンライン2人対戦
+- マッチング: ルームコード共有方式（4文字コード）
+- 難易度: Normal固定（5色、6×13）、制限時間なし
+- お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
+- お邪魔ぷよ仕様: 灰色、連鎖に参加しない、隣接消去で消える、1行に1穴
+- 予告表示: 岩(30個)/大(6個)/小(1個)
+- 通信: Supabase Realtime Broadcast（grid状態・お邪魔・ゲームオーバーを送受信）
+- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished）
+- game_settings.game_publish.game_puyo_battle で公開制御
+
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）
 - 10×20グリッド、ゴースト表示、NEXT表示
@@ -382,4 +400,4 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 |----------|------|------|
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
-| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了 |
+| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加 |
