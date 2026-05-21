@@ -178,6 +178,15 @@ textarea { resize: vertical; min-height: 80px; }
         <div><div style="font-weight:600;">小学6年</div><div style="font-size:0.8em;color:#aaa;">比・速さ・場合の数</div></div>
       </div>
     </div>
+    <div style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.04); border-radius:12px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9em;">
+        <input type="checkbox" id="passcode-toggle" onchange="togglePasscodeInput()">
+        <span>🔒 パスコードを設定する</span>
+      </label>
+      <div id="passcode-create-area" class="hidden" style="margin-top:10px;">
+        <input type="text" id="passcode-create-input" placeholder="数字4桁" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="text-align:center; font-size:1.2em; letter-spacing:6px;">
+      </div>
+    </div>
     <button class="btn" style="width:100%; margin-top:16px;" onclick="createRoom()" id="create-room-btn" disabled>部屋をつくる</button>
     <button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="showView('view-lobby')">← 戻る</button>
     <div id="create-error" class="error-msg"></div>
@@ -188,10 +197,26 @@ textarea { resize: vertical; min-height: 80px; }
 <div id="view-join" class="view hidden">
   <div class="container">
     <h2 style="font-size:1.1em; margin-bottom:16px;">🚪 部屋に入る</h2>
-    <p style="color:#aaa; font-size:0.9em; margin-bottom:16px;">部屋コードを入力してね</p>
-    <input type="text" id="join-code-input" placeholder="部屋コード（4文字）" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:6px; text-transform:uppercase;">
-    <button class="btn" style="width:100%; margin-top:16px;" onclick="joinRoom()">入室する</button>
-    <button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="showView('view-lobby')">← 戻る</button>
+    <div id="room-list-area">
+      <p style="color:#aaa; font-size:0.9em; margin-bottom:12px;">待機中の部屋</p>
+      <div id="room-list" style="margin-bottom:16px;"><div style="color:#aaa; text-align:center; padding:20px;">読み込み中...</div></div>
+      <button class="btn btn-secondary btn-small" onclick="loadRoomList()">🔄 更新</button>
+    </div>
+    <div id="passcode-entry-area" class="hidden" style="margin-top:16px;">
+      <p style="color:#ffa500; font-size:0.9em; margin-bottom:8px;">🔒 この部屋にはパスコードが必要です</p>
+      <input type="text" id="passcode-input" placeholder="パスコード（数字4桁）" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="text-align:center; font-size:1.3em; letter-spacing:6px;">
+      <button class="btn" style="width:100%; margin-top:12px;" onclick="submitPasscode()">入室する</button>
+      <button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="cancelPasscode()">← 部屋一覧に戻る</button>
+      <div id="passcode-error" class="error-msg"></div>
+    </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1);">
+      <p style="color:#aaa; font-size:0.85em; margin-bottom:8px;">コードで入室</p>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="join-code-input" placeholder="部屋コード（4文字）" maxlength="4" style="text-align:center; font-size:1.1em; letter-spacing:4px; text-transform:uppercase; flex:1;">
+        <button class="btn btn-small" onclick="joinRoom()">入室</button>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-small" style="margin-top:16px;" onclick="showView('view-lobby')">← 戻る</button>
     <div id="join-error" class="error-msg"></div>
   </div>
 </div>
@@ -368,6 +393,7 @@ function goCreate() {
 function goJoin() {
   if (!validateName()) return;
   showView('view-join');
+  loadRoomList();
 }
 
 function generateRoomCode() {
@@ -421,6 +447,115 @@ function selectBattleGrade(grade) {
   document.getElementById('create-room-btn').disabled = false;
 }
 
+function togglePasscodeInput() {
+  const checked = document.getElementById('passcode-toggle').checked;
+  document.getElementById('passcode-create-area').classList.toggle('hidden', !checked);
+  if (!checked) document.getElementById('passcode-create-input').value = '';
+}
+
+// === Room List ===
+let pendingJoinRoom = null;
+
+async function loadRoomList() {
+  const container = document.getElementById('room-list');
+  container.innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">読み込み中...</div>';
+
+  try {
+    const { data: rooms, error } = await client.from('math_battle_rooms')
+      .select('*')
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    if (!rooms || rooms.length === 0) {
+      container.innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">待機中の部屋はありません</div>';
+      return;
+    }
+
+    // Get player counts
+    const roomIds = rooms.map(r => r.id);
+    const { data: players } = await client.from('math_battle_players')
+      .select('room_id')
+      .in('room_id', roomIds);
+    const playerCounts = {};
+    (players || []).forEach(p => { playerCounts[p.room_id] = (playerCounts[p.room_id] || 0) + 1; });
+
+    container.innerHTML = rooms.map(r => {
+      const config = GRADE_CONFIG[r.grade] || { label: r.grade, icon: '📚' };
+      const count = playerCounts[r.id] || 0;
+      const hasPasscode = !!r.passcode;
+      const lockIcon = hasPasscode ? '🔒 ' : '';
+      return `<div class="card" onclick="tryJoinRoom('${r.id}', ${hasPasscode})" style="padding:12px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:0.95em;">${lockIcon}${config.icon} ${config.label}</div>
+            <div style="font-size:0.8em;color:#aaa;margin-top:2px;">コード: ${r.room_code} ・ ${count}人待機中</div>
+          </div>
+          <span style="font-size:1.2em;">→</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div style="color:#ff6b6b; text-align:center; padding:20px;">読み込みに失敗しました</div>';
+  }
+}
+
+async function tryJoinRoom(roomId, hasPasscode) {
+  if (hasPasscode) {
+    pendingJoinRoom = roomId;
+    document.getElementById('room-list-area').classList.add('hidden');
+    document.getElementById('passcode-entry-area').classList.remove('hidden');
+    document.getElementById('passcode-input').value = '';
+    document.getElementById('passcode-error').textContent = '';
+    setTimeout(() => document.getElementById('passcode-input').focus(), 100);
+  } else {
+    await joinRoomById(roomId);
+  }
+}
+
+async function submitPasscode() {
+  const code = document.getElementById('passcode-input').value.trim();
+  if (!/^\d{4}$/.test(code)) {
+    showError('passcode-error', '数字4桁を入力してね');
+    return;
+  }
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*').eq('id', pendingJoinRoom).eq('passcode', code).single();
+    if (error || !data) {
+      showError('passcode-error', 'パスコードが違います');
+      return;
+    }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('passcode-error', '入室に失敗しました');
+  }
+}
+
+function cancelPasscode() {
+  pendingJoinRoom = null;
+  document.getElementById('passcode-entry-area').classList.add('hidden');
+  document.getElementById('room-list-area').classList.remove('hidden');
+}
+
+async function joinRoomById(roomId) {
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*').eq('id', roomId).eq('status', 'waiting').single();
+    if (error || !data) { showError('join-error', '部屋が見つかりません'); return; }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('join-error', '入室に失敗しました');
+  }
+}
+
 // === Room Creation ===
 async function createRoom() {
   if (!battleGrade) return;
@@ -431,13 +566,26 @@ async function createRoom() {
   const roomCode = generateRoomCode();
   const problemIds = pickRandomProblems(battleGrade);
 
+  // Passcode (optional)
+  let passcode = null;
+  if (document.getElementById('passcode-toggle').checked) {
+    const code = document.getElementById('passcode-create-input').value.trim();
+    if (!/^\d{4}$/.test(code)) {
+      showError('create-error', 'パスコードは数字4桁で入力してね');
+      btn.disabled = false;
+      return;
+    }
+    passcode = code;
+  }
+
   try {
     const { data, error } = await client.from('math_battle_rooms').insert({
       room_code: roomCode,
       grade: battleGrade,
       problem_ids: problemIds,
       status: 'waiting',
-      created_by: getUserId()
+      created_by: getUserId(),
+      passcode: passcode
     }).select().single();
 
     if (error) throw error;
@@ -1209,20 +1357,41 @@ async function showResults() {
   const { data: myAnswers } = await client.from('math_battle_answers')
     .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
 
-  if (myAnswers && myAnswers.length > 0) {
-    document.getElementById('results-detail').innerHTML = '<h3 style="margin-bottom:12px;">📝 あなたの回答</h3>' +
-      myAnswers.map(a => {
-        const problem = findProblem(a.problem_id);
-        const title = problem ? problem.title : '問題' + a.problem_id;
+  // 全プレイヤーの回答を取得
+  const { data: allAnswers } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id);
+
+  if (allAnswers && allAnswers.length > 0) {
+    // 問題ごとにグループ化して表示
+    let detailHtml = '<h3 style="margin-bottom:12px;">📝 全員の回答</h3>';
+    const playerMap = {};
+    players.forEach(p => { playerMap[p.user_id] = p.user_name; });
+
+    for (const problem of battleProblems) {
+      const answersForProblem = allAnswers.filter(a => a.problem_id === problem.id);
+      if (answersForProblem.length === 0) continue;
+
+      detailHtml += `<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-weight:600;margin-bottom:8px;">${problem.title}</div>
+        <div style="font-size:0.8em;color:#888;margin-bottom:10px;line-height:1.6;">${DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] })}</div>`;
+
+      for (const a of answersForProblem) {
+        const pName = playerMap[a.user_id] || '???';
+        const isMe = a.user_id === getUserId();
         const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
-        return `<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:8px;">
+        const highlight = isMe ? 'border-left:3px solid #667eea;padding-left:10px;' : 'padding-left:13px;';
+        detailHtml += `<div style="margin-bottom:8px;${highlight}">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-weight:600;font-size:0.9em;">${title}</span>
-            <span style="color:${scoreColor};font-weight:700;">${a.score ?? '?'}/10</span>
+            <span style="font-size:0.85em;font-weight:600;">${pName}${isMe ? ' (あなた)' : ''}</span>
+            <span style="color:${scoreColor};font-weight:700;font-size:0.9em;">${a.score ?? '?'}/10</span>
           </div>
-          <div style="font-size:0.8em;color:#aaa;margin-top:4px;">${a.ai_comment || ''}</div>
+          <div style="font-size:0.8em;color:#ccc;margin-top:2px;">💬 ${a.answer_text}</div>
+          <div style="font-size:0.75em;color:#aaa;margin-top:2px;">🤖 ${a.ai_comment || ''}</div>
         </div>`;
-      }).join('');
+      }
+      detailHtml += '</div>';
+    }
+    document.getElementById('results-detail').innerHTML = detailHtml;
   }
 }
 
