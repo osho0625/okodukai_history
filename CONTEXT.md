@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/21 v1.79.0
+最終更新: 2026/05/21 v1.80.0
 
 ## プロジェクト概要
 
@@ -105,6 +105,7 @@
 
 ### puyo_battles（ぷよ対戦ルーム）
 - id: UUID (PK), room_code: TEXT UNIQUE, player1_name: TEXT, player2_name: TEXT
+- passcode: TEXT (nullable、数字4桁、NULLならパスコードなし)
 - status: TEXT DEFAULT 'waiting' CHECK IN ('waiting', 'playing', 'finished')
 - winner: TEXT, created_at: TIMESTAMPTZ, finished_at: TIMESTAMPTZ
 - RLS無効
@@ -259,15 +260,17 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 唯一の未実装: CEfcWork（3Dエフェクト120パターン）→ 2Dスキルアニメーションで代替
 
 ### ぴくぴく対戦（puyo-battle.html）
+- ぴくぴく(game.html)タイトル画面の「2人であそぶ」から遷移
 - Supabase Realtimeによるオンライン2人対戦
-- マッチング: ルームコード共有方式（4文字コード）
+- マッチング: ルーム一覧から選んで参加（コード入力不要）
+- パスコード: 任意で数字4桁を設定可能（デフォルトなし）
 - 難易度: Normal固定（5色、6×13）、制限時間なし
 - お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
 - お邪魔ぷよ仕様: 灰色、連鎖に参加しない、隣接消去で消える、1行に1穴
 - 予告表示: 岩(30個)/大(6個)/小(1個)
 - 通信: Supabase Realtime Broadcast（grid状態・お邪魔・ゲームオーバーを送受信）
-- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished）
-- game_settings.game_publish.game_puyo_battle で公開制御
+- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished、passcode: TEXT nullable）
+- game_settings.game_publish不要（ぴくぴくタイトルから直接遷移）
 
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）

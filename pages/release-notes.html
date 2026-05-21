@@ -38,9 +38,14 @@ h1 { margin-bottom: 24px; color: #333; }
 <div class="release">
   <div><span class="ver">v1.80.0</span><span class="date">2026/05/21</span></div>
   <ul>
+    <li><span class="tag tag-feat">機能</span> ⚔️ ぴくぴく対戦モード追加 — Supabase Realtimeによるオンライン2人対戦</li>
+    <li><span class="tag tag-feat">機能</span> ぴくぴくタイトル画面に「1人であそぶ」「2人であそぶ」「カスタムモード」「ランキング」メニュー</li>
+    <li><span class="tag tag-feat">機能</span> ルーム一覧から選んで参加（コード入力不要）、任意でパスコード（数字4桁）設定可能</li>
+    <li><span class="tag tag-feat">機能</span> お邪魔ぷよ実装（連鎖で相手に送る、相殺、予告表示、隣接消去）</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：結果画面で全プレイヤーの回答・AI採点コメントを問題ごとに表示</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：「部屋に入る」で待機中の部屋一覧から選んで入室可能に</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：部屋作成時に任意でパスコード（数字4桁）を設定可能</li>
+    <li><span class="tag tag-infra">DB</span> puyo_battles テーブル追加（ルーム管理、passcodeカラム）</li>
   </ul>
 </div>
 
@@ -72,17 +77,6 @@ h1 { margin-bottom: 24px; color: #333; }
     <li><span class="tag tag-fix">修正</span> 算数オリンピック小3：条件不足・オープンエンド・採点不能な問題を9問修正（ID 3002,3006,3007,3013,3016,3018,3019,3033,3035）</li>
     <li><span class="tag tag-fix">修正</span> 曖昧条件の明示化、列挙型→通り数回答への変更、有名問題知識依存の解消</li>
     <li><span class="tag tag-fix">修正</span> difficulty調整（3018,3019,3035: 3→2）</li>
-  </ul>
-</div>
-
-<div class="release">
-  <div><span class="ver">v1.79.0</span><span class="date">2026/05/20</span></div>
-  <ul>
-    <li><span class="tag tag-feat">機能</span> ⚔️ ぴくぴく対戦モード追加 — Supabase Realtimeによるオンライン2人対戦</li>
-    <li><span class="tag tag-feat">機能</span> ルームコード共有方式でマッチング（4文字コード）</li>
-    <li><span class="tag tag-feat">機能</span> お邪魔ぷよ実装（連鎖で相手に送る、相殺、予告表示）</li>
-    <li><span class="tag tag-feat">機能</span> 難易度Normal固定（5色・6×13）、制限時間なし</li>
-    <li><span class="tag tag-infra">DB</span> puyo_battles テーブル追加（ルーム管理）</li>
   </ul>
 </div>
 

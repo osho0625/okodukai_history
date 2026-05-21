@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS puyo_battles (
   room_code TEXT NOT NULL UNIQUE,
   player1_name TEXT NOT NULL,
   player2_name TEXT,
+  passcode TEXT, -- 任意の数字4桁パスコード（NULLならパスコードなし）
   status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'playing', 'finished')),
   winner TEXT, -- player1_name or player2_name
   created_at TIMESTAMPTZ DEFAULT now(),
