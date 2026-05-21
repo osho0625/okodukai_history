@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f14">
+<title>🦑 クトゥルフTRPG シナリオリーダー</title>
+<style>
+:root {
+  --scene-font-size: 0.95em;
+  --bg-primary: #0a0f14;
+  --bg-secondary: #111a22;
+  --bg-card: #162029;
+  --bg-overlay: rgba(5, 10, 15, 0.95);
+  --color-text: #d4dce4;
+  --color-text-dim: #8a9baa;
+  --color-accent: #2d8a6e;
+  --color-accent-light: #3bb88a;
+  --color-purple: #6b4c9a;
+  --color-purple-light: #9b7fd4;
+  --color-danger: #c0392b;
+  --color-visited: #4a6a5a;
+  --color-current: #3bb88a;
+  --color-unvisited: #555;
+  --color-kp-bg: #1a1a2e;
+  --color-kp-border: #6b4c9a;
+  --radius: 10px;
+  --max-width: 420px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-primary); color: var(--color-text);
+  font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; min-height: 100dvh;
+}
+.header {
+  display: flex; align-items: center; width: 100%; max-width: var(--max-width);
+  padding: 8px 12px; gap: 8px; position: sticky; top: 0;
+  background: var(--bg-primary); z-index: 10;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.header .back-btn {
+  color: var(--color-text); text-decoration: none; font-size: 1.4em;
+  cursor: pointer; background: none; border: none; padding: 4px 8px;
+}
+.header .title {
+  flex: 1; text-align: center; font-size: 0.95em; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.header .home-link {
+  color: var(--color-text); text-decoration: none; font-size: 1.3em; padding: 4px 8px;
+}
+.toolbar {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; max-width: var(--max-width); padding: 6px 12px; gap: 6px;
+  flex-wrap: wrap;
+}
+.tool-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-text); border-radius: 20px; padding: 6px 12px;
+  font-size: 0.8em; cursor: pointer; white-space: nowrap;
+}
+.tool-btn:active { background: rgba(255,255,255,0.15); }
+.tool-btn.hidden { display: none; }
+.content {
+  flex: 1; width: 100%; max-width: var(--max-width); padding: 0 12px 20px;
+  overflow-y: auto;
+}
+.view { display: none; }
+.view.active { display: block; }
+#access-denied { text-align: center; padding-top: 80px; }
+#access-denied .icon { font-size: 4em; margin-bottom: 16px; }
+#access-denied h2 { color: var(--color-danger); margin-bottom: 12px; }
+#access-denied p { color: var(--color-text-dim); }
+#scenario-select h2 { margin: 16px 0 12px; font-size: 1.1em; }
+.scenario-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08); transition: border-color 0.2s;
+}
+.scenario-card:active { border-color: var(--color-accent); }
+.scenario-card .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.scenario-card .card-icon { font-size: 2em; }
+.scenario-card .card-title { font-size: 1.05em; font-weight: 600; }
+.scenario-card .card-desc { color: var(--color-text-dim); font-size: 0.85em; margin-bottom: 6px; }
+.scenario-card .card-meta { display: flex; gap: 12px; font-size: 0.75em; color: var(--color-text-dim); }
+.scenario-card .card-status {
+  display: inline-block; margin-top: 8px; padding: 2px 8px;
+  border-radius: 10px; font-size: 0.75em; font-weight: 600;
+}
+.status-resume { background: var(--color-accent); color: #fff; }
+.status-completed { background: var(--color-purple); color: #fff; }
+.scenario-error {
+  background: rgba(192,57,43,0.15); border: 1px solid var(--color-danger);
+  border-radius: var(--radius); padding: 12px; margin-top: 12px;
+  font-size: 0.85em; color: #e88;
+}
+/* Scene View */
+#scene-view .phase-label {
+  font-size: 0.75em; color: var(--color-purple-light);
+  margin-bottom: 4px; font-weight: 600;
+}
+#scene-view .node-id-label {
+  font-size: 0.7em; color: var(--color-text-dim);
+  margin-bottom: 12px; font-family: monospace;
+}
+.scene-text { font-size: var(--scene-font-size); line-height: 1.9; margin-bottom: 16px; }
+.scene-text p { margin-bottom: 10px; }
+.kp-note {
+  background: var(--color-kp-bg); border-left: 3px solid var(--color-kp-border);
+  border-radius: 6px; padding: 12px; margin-bottom: 16px;
+}
+.kp-note-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: 0.85em; font-weight: 600; color: var(--color-purple-light);
+}
+.kp-note-header .toggle-icon { transition: transform 0.2s; }
+.kp-note-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+.kp-note-content {
+  font-size: var(--scene-font-size); line-height: 1.7;
+  margin-top: 8px; color: var(--color-text-dim);
+}
+.kp-note-content.hidden { display: none; }
+.related-scenes { margin-bottom: 16px; }
+.related-scenes h4 { font-size: 0.8em; color: var(--color-text-dim); margin-bottom: 8px; }
+.related-btn {
+  display: inline-block; background: rgba(45,138,110,0.2);
+  border: 1px solid var(--color-accent); color: var(--color-accent-light);
+  border-radius: 20px; padding: 6px 14px; margin: 0 6px 6px 0;
+  font-size: 0.82em; cursor: pointer;
+}
+.related-btn:active { background: rgba(45,138,110,0.4); }
+.session-end-btn {
+  display: block; width: 100%; padding: 14px;
+  background: var(--color-purple); color: #fff;
+  border: none; border-radius: var(--radius);
+  font-size: 1em; font-weight: 600; cursor: pointer; margin-top: 20px;
+}
+.session-end-btn:active { opacity: 0.8; }
+.session-end-btn.hidden { display: none; }
+/* Overlays */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: var(--bg-overlay); z-index: 100;
+  flex-direction: column; align-items: center; overflow-y: auto;
+}
+.overlay.active { display: flex; }
+.overlay-inner { width: 100%; max-width: var(--max-width); padding: 16px; min-height: 100%; }
+.overlay-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; position: sticky; top: 0;
+  background: var(--bg-primary); padding: 8px 0; z-index: 2;
+}
+.overlay-header h3 { font-size: 1.05em; }
+.overlay-close {
+  background: none; border: none; color: var(--color-text);
+  font-size: 1.5em; cursor: pointer; padding: 4px 8px;
+}
+/* TOC */
+.toc-filter {
+  width: 100%; padding: 8px 12px; margin-bottom: 12px;
+  background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; color: var(--color-text); font-size: 0.85em; outline: none;
+}
+.toc-filter::placeholder { color: var(--color-text-dim); }
+.toc-phase-group { margin-bottom: 16px; }
+.toc-phase-title {
+  font-size: 0.8em; color: var(--color-purple-light);
+  font-weight: 600; margin-bottom: 6px; padding-left: 4px;
+}
+.toc-node {
+  padding: 8px 12px; margin-bottom: 4px; border-radius: 6px;
+  cursor: pointer; font-size: 0.85em;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+}
+.toc-node:active { background: rgba(45,138,110,0.2); }
+.toc-node.visited { border-left: 3px solid var(--color-visited); }
+.toc-node.current { border-left: 3px solid var(--color-current); background: rgba(45,138,110,0.1); }
+/* Map */
+.map-svg {
+  width: 100%; aspect-ratio: 1; background: var(--bg-secondary);
+  border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.08);
+}
+.map-svg text { font-size: 4px; fill: var(--color-text); text-anchor: middle; pointer-events: none; }
+.map-svg .loc-circle { cursor: pointer; }
+.map-svg .loc-unvisited { fill: var(--color-unvisited); }
+.map-svg .loc-visited { fill: var(--color-visited); }
+.map-svg .loc-current { fill: var(--color-current); }
+.map-svg line { stroke: rgba(255,255,255,0.2); stroke-width: 0.5; }
+.map-picker { margin-top: 12px; }
+.map-picker h4 { font-size: 0.85em; margin-bottom: 8px; color: var(--color-text-dim); }
+.map-picker-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 12px; margin-bottom: 6px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px; color: var(--color-text); font-size: 0.85em; cursor: pointer;
+}
+.map-picker-btn:active { background: rgba(45,138,110,0.2); }
+.map-picker-btn .unvisited-marker { color: var(--color-accent-light); margin-left: 6px; font-size: 0.8em; }
+/* NPC */
+.npc-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 12px; margin-bottom: 10px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.npc-item .npc-name { font-weight: 600; font-size: 0.95em; }
+.npc-item .npc-meta { font-size: 0.8em; color: var(--color-text-dim); margin-top: 4px; }
+.npc-item .npc-secret {
+  margin-top: 8px; padding: 8px; background: rgba(107,76,154,0.15);
+  border-radius: 6px; font-size: 0.85em; color: var(--color-purple-light);
+  display: none;
+}
+.npc-item.expanded .npc-secret { display: block; }
+/* Font size active indicator */
+.tool-btn.font-active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+</style>
+</head>
+<body>
+<div class="header">
+  <button class="back-btn" id="headerBack" aria-label="戻る">←</button>
+  <span class="title" id="headerTitle">シナリオリーダー</span>
+  <a href="../index.html" class="home-link" aria-label="ホーム">🏠</a>
+</div>
+<div class="toolbar" id="toolbar" style="display:none;">
+  <button class="tool-btn" id="btnToc" aria-label="目次を開く">📖 目次</button>
+  <button class="tool-btn" id="btnMap" aria-label="マップを開く">🗺️ マップ</button>
+  <button class="tool-btn" id="btnNpc" aria-label="NPC一覧を開く">👤 NPC</button>
+  <button class="tool-btn" id="btnReset" aria-label="進行リセット">🔄 リセット</button>
+  <button class="tool-btn" id="btnFontSmall" aria-label="フォント小">小</button>
+  <button class="tool-btn" id="btnFontMedium" aria-label="フォント中">中</button>
+  <button class="tool-btn" id="btnFontLarge" aria-label="フォント大">大</button>
+</div>
+<div class="content">
+  <div class="view" id="access-denied">
+    <div class="icon">🔒</div>
+    <h2>アクセス拒否</h2>
+    <p>このページは管理者のみアクセスできます。</p>
+  </div>
+  <div class="view" id="scenario-select">
+    <h2>シナリオ選択</h2>
+    <div id="scenarioList"></div>
+    <div id="scenarioError" class="scenario-error" style="display:none;"></div>
+  </div>
+  <div class="view" id="scene-view">
+    <div class="phase-label" id="phaseLabel"></div>
+    <div class="node-id-label" id="nodeIdLabel"></div>
+    <div class="scene-text" id="sceneText"></div>
+    <div id="kpNoteArea"></div>
+    <div class="related-scenes" id="relatedArea"></div>
+    <button class="session-end-btn hidden" id="sessionEndBtn">🎬 セッション終了</button>
+  </div>
+</div>
+<!-- Overlays -->
+<div class="overlay" id="toc-overlay" role="dialog" aria-label="目次">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <h3>📖 目次</h3>
+      <button class="overlay-close" id="tocClose" aria-label="目次を閉じる">&times;</button>
+    </div>
+    <input type="text" class="toc-filter" id="tocFilter" placeholder="キーワードで検索...">
+    <div id="tocContent"></div>
+  </div>
+</div>
+<div class="overlay" id="map-overlay" role="dialog" aria-label="マップ">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <h3>🗺️ マップ</h3>
+      <button class="overlay-close" id="mapClose" aria-label="マップを閉じる">&times;</button>
+    </div>
+    <div id="mapContent"></div>
+  </div>
+</div>
+<div class="overlay" id="npc-overlay" role="dialog" aria-label="NPC一覧">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <h3>👤 NPC一覧</h3>
+      <button class="overlay-close" id="npcClose" aria-label="NPC一覧を閉じる">&times;</button>
+    </div>
+    <div id="npcContent"></div>
+  </div>
+</div>
+<script>
+'use strict';
+
+// ===== SCENARIO REGISTRY =====
+const SCENARIO_REGISTRY = [{
+  id: "poisoned_soup",
+  title: "毒入りスープ",
+  description: "初心者向け・1セッション完結",
+  estimatedTime: "60-90分",
+  playerCount: "2-4人",
+  icon: "🦑",
+  file: "js/trpg-poisoned-soup-scenario.js"
+}];
+
+// ===== STATE =====
+window.TRPG_SCENARIOS = window.TRPG_SCENARIOS || {};
+let currentScenario = null;
+let currentState = null;
+
+// ===== ACCESS GUARD (1.2) =====
+function checkAccess() {
+  if (localStorage.getItem('deviceRole') !== 'admin') {
+    showView('access-denied');
+    document.getElementById('toolbar').style.display = 'none';
+    document.getElementById('headerBack').style.visibility = 'hidden';
+    return false;
+  }
+  return true;
+}
+
+// ===== VIEW MANAGEMENT =====
+function showView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const view = document.getElementById(viewId);
+  if (view) view.classList.add('active');
+
+  const toolbar = document.getElementById('toolbar');
+  if (viewId === 'scene-view') {
+    toolbar.style.display = 'flex';
+    document.getElementById('headerBack').onclick = backToSelect;
+    updateToolbarVisibility();
+  } else {
+    toolbar.style.display = 'none';
+    if (viewId === 'scenario-select') {
+      document.getElementById('headerBack').onclick = () => { window.location.href = '../index.html'; };
+      document.getElementById('headerTitle').textContent = 'シナリオリーダー';
+    }
+  }
+}
+
+function backToSelect() {
+  currentScenario = null;
+  currentState = null;
+  document.getElementById('headerTitle').textContent = 'シナリオリーダー';
+  renderScenarioSelect();
+  showView('scenario-select');
+}
+
+function updateToolbarVisibility() {
+  if (!currentScenario) return;
+  document.getElementById('btnMap').classList.toggle('hidden', !currentScenario.map);
+  document.getElementById('btnNpc').classList.toggle('hidden', !currentScenario.npcs || currentScenario.npcs.length === 0);
+}
+
+// ===== SCENARIO SELECT (1.2) =====
+function renderScenarioSelect() {
+  const list = document.getElementById('scenarioList');
+  list.innerHTML = '';
+  SCENARIO_REGISTRY.forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'scenario-card';
+    const hasProgress = ProgressManager.hasProgress(entry.id);
+    const isCompleted = ProgressManager.isCompleted(entry.id);
+    let statusHtml = '';
+    if (isCompleted) {
+      statusHtml = '<span class="card-status status-completed">✓ クリア済み</span>';
+    } else if (hasProgress) {
+      statusHtml = '<span class="card-status status-resume">▶ 続きから</span>';
+    }
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-icon">${entry.icon}</span>
+        <span class="card-title">${entry.title}</span>
+      </div>
+      <div class="card-desc">${entry.description}</div>
+      <div class="card-meta">
+        <span>⏱ ${entry.estimatedTime}</span>
+        <span>👥 ${entry.playerCount}</span>
+      </div>
+      ${statusHtml}
+    `;
+    card.onclick = () => selectScenario(entry);
+    list.appendChild(card);
+  });
+}
+
+async function selectScenario(entry) {
+  const errorEl = document.getElementById('scenarioError');
+  errorEl.style.display = 'none';
+  try {
+    const data = await loadScenario(entry);
+    const errors = validateScenario(data);
+    if (errors.length > 0) {
+      errorEl.textContent = 'シナリオデータエラー:\n' + errors.join('\n');
+      errorEl.style.display = 'block';
+      return;
+    }
+    currentScenario = data;
+    document.getElementById('headerTitle').textContent = data.title;
+    // Load or init progress
+    const saved = ProgressManager.load(entry.id);
+    if (saved && data.nodes[saved.currentNodeId]) {
+      currentState = saved;
+    } else {
+      currentState = {
+        currentNodeId: data.startNode,
+        visitedNodeIds: [data.startNode],
+        history: [],
+        phase: data.nodes[data.startNode].phase,
+        updatedAt: Date.now()
+      };
+      ProgressManager.save(entry.id, currentState);
+    }
+    showView('scene-view');
+    renderScene();
+  } catch (err) {
+    errorEl.textContent = 'シナリオ読み込みエラー: ' + err.message;
+    errorEl.style.display = 'block';
+  }
+}
+
+// ===== SCENARIO LOADER (1.3) =====
+const pendingLoads = new Map();
+
+async function loadScenario(registryEntry) {
+  const id = registryEntry.id;
+  if (window.TRPG_SCENARIOS && window.TRPG_SCENARIOS[id]) {
+    return window.TRPG_SCENARIOS[id];
+  }
+  if (pendingLoads.has(id)) {
+    return pendingLoads.get(id);
+  }
+  // Check if script already injected
+  if (document.querySelector(`script[data-scenario="${id}"]`)) {
+    // Script exists but data not ready - wait briefly
+    const data = window.TRPG_SCENARIOS && window.TRPG_SCENARIOS[id];
+    if (data) return data;
+  }
+  const promise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-scenario="${id}"]`);
+    if (existing) {
+      existing.remove();
+    }
+    const script = document.createElement('script');
+    script.src = '../' + registryEntry.file;
+    script.setAttribute('data-scenario', id);
+    const timer = setTimeout(() => {
+      script.remove();
+      pendingLoads.delete(id);
+      reject(new Error('スクリプト読み込みタイムアウト (5秒)'));
+    }, 5000);
+    script.onload = () => {
+      clearTimeout(timer);
+      pendingLoads.delete(id);
+      const data = window.TRPG_SCENARIOS && window.TRPG_SCENARIOS[id];
+      if (data) {
+        resolve(data);
+      } else {
+        reject(new Error('シナリオが登録されていません'));
+      }
+    };
+    script.onerror = () => {
+      clearTimeout(timer);
+      script.remove();
+      pendingLoads.delete(id);
+      reject(new Error('スクリプト読み込み失敗'));
+    };
+    document.head.appendChild(script);
+  });
+  pendingLoads.set(id, promise);
+  return promise;
+}
+
+// ===== SCENARIO VALIDATOR (1.4) =====
+function validateScenario(data) {
+  const errors = [];
+  if (!data || !data.nodes || !data.phases || !data.startNode) {
+    errors.push('必須フィールド(nodes, phases, startNode)が不足しています');
+    return errors;
+  }
+  if (!data.nodes[data.startNode]) {
+    errors.push(`startNode "${data.startNode}" がnodesに存在しません`);
+  }
+  const phaseIds = data.phases.map(p => p.id);
+  Object.values(data.nodes).forEach(node => {
+    (node.relatedScenes || []).forEach(ref => {
+      if (!data.nodes[ref]) errors.push(`ノード "${node.id}": relatedScene "${ref}" が存在しません`);
+    });
+    if (!phaseIds.includes(node.phase)) {
+      errors.push(`ノード "${node.id}": phase "${node.phase}" がphasesに存在しません`);
+    }
+  });
+  data.phases.forEach(p => {
+    (p.nodes || []).forEach(nodeId => {
+      if (!data.nodes[nodeId]) errors.push(`Phase "${p.id}": ノード "${nodeId}" が存在しません`);
+    });
+  });
+  const allPhaseNodeIds = new Set(data.phases.flatMap(p => p.nodes || []));
+  Object.keys(data.nodes).forEach(nodeId => {
+    if (!allPhaseNodeIds.has(nodeId)) errors.push(`ノード "${nodeId}" がどのphaseにも属していません`);
+  });
+  if (data.map && data.map.locations) {
+    const locIds = data.map.locations.map(l => l.id);
+    Object.values(data.nodes).forEach(node => {
+      if (node.location && !locIds.includes(node.location)) {
+        errors.push(`ノード "${node.id}": location "${node.location}" がmap.locationsに存在しません`);
+      }
+    });
+  }
+  return errors;
+}
+
+// ===== PROGRESS MANAGER (1.5) =====
+const ProgressManager = {
+  _key(scenarioId) { return `trpg_cthulhu_progress_${scenarioId}`; },
+  _completionKey(scenarioId) { return `trpg_cthulhu_completed_${scenarioId}`; },
+  load(scenarioId) {
+    try {
+      const raw = localStorage.getItem(this._key(scenarioId));
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  },
+  save(scenarioId, state) {
+    state.updatedAt = Date.now();
+    localStorage.setItem(this._key(scenarioId), JSON.stringify(state));
+  },
+  reset(scenarioId) {
+    localStorage.removeItem(this._key(scenarioId));
+  },
+  markCompleted(scenarioId) {
+    localStorage.setItem(this._completionKey(scenarioId), JSON.stringify({ completed: true, completedAt: Date.now() }));
+  },
+  isCompleted(scenarioId) {
+    try {
+      const raw = localStorage.getItem(this._completionKey(scenarioId));
+      return raw ? JSON.parse(raw).completed === true : false;
+    } catch { return false; }
+  },
+  hasProgress(scenarioId) {
+    return this.load(scenarioId) !== null;
+  }
+};
+
+// ===== NAVIGATION =====
+function navigateTo(targetId) {
+  if (!currentScenario || !currentState) return;
+  if (!currentScenario.nodes[targetId]) return;
+  // Push current to history
+  currentState.history.push(currentState.currentNodeId);
+  currentState.currentNodeId = targetId;
+  currentState.visitedNodeIds = [...new Set([...currentState.visitedNodeIds, targetId])];
+  currentState.phase = currentScenario.nodes[targetId].phase;
+  ProgressManager.save(currentScenario.id, currentState);
+  renderScene();
+}
+
+function goBack() {
+  if (!currentState || currentState.history.length === 0) return;
+  const prevId = currentState.history.pop();
+  currentState.currentNodeId = prevId;
+  currentState.phase = currentScenario.nodes[prevId].phase;
+  ProgressManager.save(currentScenario.id, currentState);
+  renderScene();
+}
+
+function resetProgress() {
+  if (!currentScenario) return;
+  if (!confirm('進行状態をリセットしますか？\n（クリア済み状態は維持されます）')) return;
+  ProgressManager.reset(currentScenario.id);
+  currentState = {
+    currentNodeId: currentScenario.startNode,
+    visitedNodeIds: [currentScenario.startNode],
+    history: [],
+    phase: currentScenario.nodes[currentScenario.startNode].phase,
+    updatedAt: Date.now()
+  };
+  ProgressManager.save(currentScenario.id, currentState);
+  renderScene();
+}
+
+// ===== SCENE RENDERER (1.5) =====
+function renderScene() {
+  if (!currentScenario || !currentState) return;
+  const node = currentScenario.nodes[currentState.currentNodeId];
+  if (!node) return;
+
+  // Phase label
+  const phase = currentScenario.phases.find(p => p.id === node.phase);
+  document.getElementById('phaseLabel').textContent = phase ? phase.title : '';
+
+  // Node ID
+  document.getElementById('nodeIdLabel').textContent = `[${node.id}]`;
+
+  // Text paragraphs
+  const textEl = document.getElementById('sceneText');
+  textEl.innerHTML = '';
+  (node.text || []).forEach(t => {
+    const p = document.createElement('p');
+    p.textContent = t;
+    textEl.appendChild(p);
+  });
+
+  // KP Note
+  const kpArea = document.getElementById('kpNoteArea');
+  kpArea.innerHTML = '';
+  if (node.kpNote) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'kp-note';
+    const header = document.createElement('div');
+    header.className = 'kp-note-header';
+    header.innerHTML = '<span>📝 KPメモ</span><span class="toggle-icon">▼</span>';
+    const content = document.createElement('div');
+    content.className = 'kp-note-content';
+    content.innerHTML = node.kpNote.replace(/\n/g, '<br>');
+    header.onclick = () => {
+      header.classList.toggle('collapsed');
+      content.classList.toggle('hidden');
+    };
+    noteDiv.appendChild(header);
+    noteDiv.appendChild(content);
+    kpArea.appendChild(noteDiv);
+  }
+
+  // Related scenes
+  const relArea = document.getElementById('relatedArea');
+  relArea.innerHTML = '';
+  if (node.relatedScenes && node.relatedScenes.length > 0) {
+    const h4 = document.createElement('h4');
+    h4.textContent = '関連シーン';
+    relArea.appendChild(h4);
+    node.relatedScenes.forEach(sceneId => {
+      const target = currentScenario.nodes[sceneId];
+      if (!target) return;
+      const btn = document.createElement('button');
+      btn.className = 'related-btn';
+      btn.textContent = target.title;
+      btn.onclick = () => navigateTo(sceneId);
+      relArea.appendChild(btn);
+    });
+  }
+
+  // Session end button
+  const endBtn = document.getElementById('sessionEndBtn');
+  if (node.phase === 'ending') {
+    endBtn.classList.remove('hidden');
+  } else {
+    endBtn.classList.add('hidden');
+  }
+
+  // Back button state
+  document.getElementById('headerBack').textContent = currentState.history.length > 0 ? '←' : '←';
+  document.getElementById('headerBack').onclick = currentState.history.length > 0 ? goBack : backToSelect;
+
+  updateToolbarVisibility();
+}
+
+// ===== TOC RENDERER (1.6) =====
+function renderTOC(keyword) {
+  const container = document.getElementById('tocContent');
+  container.innerHTML = '';
+  if (!currentScenario) return;
+  const filter = (keyword || '').toLowerCase();
+
+  currentScenario.phases.forEach(phase => {
+    const nodes = (phase.nodes || [])
+      .map(nid => currentScenario.nodes[nid])
+      .filter(n => n && (!filter || n.title.toLowerCase().includes(filter)));
+    if (nodes.length === 0) return;
+
+    const group = document.createElement('div');
+    group.className = 'toc-phase-group';
+    const title = document.createElement('div');
+    title.className = 'toc-phase-title';
+    title.textContent = phase.title;
+    group.appendChild(title);
+
+    nodes.forEach(node => {
+      const item = document.createElement('div');
+      item.className = 'toc-node';
+      if (node.id === currentState.currentNodeId) {
+        item.classList.add('current');
+      } else if (currentState.visitedNodeIds.includes(node.id)) {
+        item.classList.add('visited');
+      }
+      item.textContent = node.title;
+      item.onclick = () => {
+        navigateTo(node.id);
+        closeOverlay('toc-overlay');
+      };
+      group.appendChild(item);
+    });
+    container.appendChild(group);
+  });
+}
+
+// ===== MAP RENDERER (1.7) =====
+function renderMap() {
+  const container = document.getElementById('mapContent');
+  container.innerHTML = '';
+  if (!currentScenario || !currentScenario.map) return;
+
+  const map = currentScenario.map;
+  const currentNode = currentScenario.nodes[currentState.currentNodeId];
+  const currentLoc = currentNode ? currentNode.location : null;
+
+  // Determine visited locations
+  const visitedLocs = new Set();
+  (currentState.visitedNodeIds || []).forEach(nid => {
+    const n = currentScenario.nodes[nid];
+    if (n && n.location) visitedLocs.add(n.location);
+  });
+
+  // SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'map-svg');
+
+  // Connections
+  map.connections.forEach(conn => {
+    const fromLoc = map.locations.find(l => l.id === conn.from);
+    const toLoc = map.locations.find(l => l.id === conn.to);
+    if (!fromLoc || !toLoc) return;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', fromLoc.x);
+    line.setAttribute('y1', fromLoc.y);
+    line.setAttribute('x2', toLoc.x);
+    line.setAttribute('y2', toLoc.y);
+    svg.appendChild(line);
+  });
+
+  // Locations
+  map.locations.forEach(loc => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'loc-circle');
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', loc.x);
+    circle.setAttribute('cy', loc.y);
+    circle.setAttribute('r', '5');
+    if (loc.id === currentLoc) {
+      circle.setAttribute('class', 'loc-current');
+    } else if (visitedLocs.has(loc.id)) {
+      circle.setAttribute('class', 'loc-visited');
+    } else {
+      circle.setAttribute('class', 'loc-unvisited');
+    }
+    g.appendChild(circle);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', loc.x);
+    text.setAttribute('y', loc.y + 9);
+    text.textContent = loc.label;
+    g.appendChild(text);
+
+    g.onclick = () => handleMapLocationTap(loc.id);
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+  // Picker area
+  const picker = document.createElement('div');
+  picker.className = 'map-picker';
+  picker.id = 'mapPicker';
+  container.appendChild(picker);
+}
+
+function handleMapLocationTap(locationId) {
+  if (!currentScenario) return;
+  const nodesAtLoc = Object.values(currentScenario.nodes).filter(n => n.location === locationId);
+  if (nodesAtLoc.length === 0) return;
+  if (nodesAtLoc.length === 1) {
+    navigateTo(nodesAtLoc[0].id);
+    closeOverlay('map-overlay');
+    return;
+  }
+  // Multiple nodes - show picker with priority sorting
+  const picker = document.getElementById('mapPicker');
+  picker.innerHTML = '<h4>シーンを選択</h4>';
+
+  const sorted = nodesAtLoc.sort((a, b) => {
+    const aVisited = currentState.visitedNodeIds.includes(a.id) ? 1 : 0;
+    const bVisited = currentState.visitedNodeIds.includes(b.id) ? 1 : 0;
+    const aCurrentPhase = a.phase === currentState.phase ? 0 : 1;
+    const bCurrentPhase = b.phase === currentState.phase ? 0 : 1;
+    // Priority: unvisited current-phase > current-phase > all
+    if (aVisited !== bVisited) return aVisited - bVisited;
+    return aCurrentPhase - bCurrentPhase;
+  });
+
+  sorted.forEach(node => {
+    const btn = document.createElement('button');
+    btn.className = 'map-picker-btn';
+    const visited = currentState.visitedNodeIds.includes(node.id);
+    btn.innerHTML = node.title + (!visited ? '<span class="unvisited-marker">● 未訪問</span>' : '');
+    btn.onclick = () => {
+      navigateTo(node.id);
+      closeOverlay('map-overlay');
+    };
+    picker.appendChild(btn);
+  });
+}
+
+// ===== NPC RENDERER (1.8) =====
+function renderNPC() {
+  const container = document.getElementById('npcContent');
+  container.innerHTML = '';
+  if (!currentScenario || !currentScenario.npcs) return;
+
+  currentScenario.npcs.forEach(npc => {
+    const item = document.createElement('div');
+    item.className = 'npc-item';
+    const locLabel = npc.defaultLocation && currentScenario.map
+      ? (currentScenario.map.locations.find(l => l.id === npc.defaultLocation) || {}).label || npc.defaultLocation
+      : npc.defaultLocation || '';
+    item.innerHTML = `
+      <div class="npc-name">${npc.name}</div>
+      <div class="npc-meta">${npc.age}歳 / ${locLabel}</div>
+      <div class="npc-meta">${npc.description}</div>
+      <div class="npc-secret">🔒 ${npc.secret}</div>
+    `;
+    item.onclick = () => item.classList.toggle('expanded');
+    container.appendChild(item);
+  });
+}
+
+// ===== FONT SIZE MANAGER (1.9) =====
+const FontSizeManager = {
+  KEY: 'trpg_cthulhu_font_size',
+  SIZES: { small: '0.85em', medium: '0.95em', large: '1.1em' },
+  get() { return localStorage.getItem(this.KEY) || 'medium'; },
+  set(size) {
+    localStorage.setItem(this.KEY, size);
+    this.apply(size);
+  },
+  apply(size) {
+    const val = this.SIZES[size] || this.SIZES.medium;
+    document.documentElement.style.setProperty('--scene-font-size', val);
+    // Update button active states
+    document.getElementById('btnFontSmall').classList.toggle('font-active', size === 'small');
+    document.getElementById('btnFontMedium').classList.toggle('font-active', size === 'medium');
+    document.getElementById('btnFontLarge').classList.toggle('font-active', size === 'large');
+  }
+};
+
+// ===== SESSION END (1.9) =====
+function endSession() {
+  if (!currentScenario) return;
+  if (!confirm('セッションを終了しますか？\nシナリオをクリア済みとして記録します。')) return;
+  ProgressManager.markCompleted(currentScenario.id);
+  alert('🎉 セッション完了！お疲れ様でした。');
+  backToSelect();
+}
+
+// ===== OVERLAY MANAGEMENT =====
+function openOverlay(id) {
+  document.getElementById(id).classList.add('active');
+}
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// Background tap to close
+['toc-overlay', 'map-overlay', 'npc-overlay'].forEach(id => {
+  const overlay = document.getElementById(id);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeOverlay(id);
+  });
+});
+
+// Esc key to close
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    ['toc-overlay', 'map-overlay', 'npc-overlay'].forEach(id => {
+      closeOverlay(id);
+    });
+  }
+});
+
+// ===== EVENT BINDINGS =====
+document.getElementById('tocClose').onclick = () => closeOverlay('toc-overlay');
+document.getElementById('mapClose').onclick = () => closeOverlay('map-overlay');
+document.getElementById('npcClose').onclick = () => closeOverlay('npc-overlay');
+
+document.getElementById('btnToc').onclick = () => {
+  document.getElementById('tocFilter').value = '';
+  renderTOC('');
+  openOverlay('toc-overlay');
+};
+document.getElementById('btnMap').onclick = () => {
+  renderMap();
+  openOverlay('map-overlay');
+};
+document.getElementById('btnNpc').onclick = () => {
+  renderNPC();
+  openOverlay('npc-overlay');
+};
+document.getElementById('btnReset').onclick = resetProgress;
+document.getElementById('sessionEndBtn').onclick = endSession;
+
+document.getElementById('tocFilter').addEventListener('input', (e) => {
+  renderTOC(e.target.value);
+});
+
+// Font size buttons
+document.getElementById('btnFontSmall').onclick = () => FontSizeManager.set('small');
+document.getElementById('btnFontMedium').onclick = () => FontSizeManager.set('medium');
+document.getElementById('btnFontLarge').onclick = () => FontSizeManager.set('large');
+
+// ===== INIT =====
+(function init() {
+  // Apply saved font size
+  FontSizeManager.apply(FontSizeManager.get());
+
+  // Access check
+  if (!checkAccess()) return;
+
+  // Show scenario select
+  renderScenarioSelect();
+  showView('scenario-select');
+})();
+</script>
+</body>
+</html>

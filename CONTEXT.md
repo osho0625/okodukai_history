@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/21 v1.80.0
+最終更新: 2026/05/21 v1.81.0
 
 ## プロジェクト概要
 
@@ -37,7 +37,8 @@
 │   ├── blast-ranking.html   # ブロックブラストランキング
 │   ├── release-notes.html # リリースノート
 │   ├── ticket.html    # あそびチケット（一覧・使用・履歴）
-│   └── math-olympiad.html # 算数オリンピック（思考力チャレンジ）
+│   ├── math-olympiad.html # 算数オリンピック（思考力チャレンジ）
+│   └── trpg-cthulhu.html # クトゥルフTRPGシナリオリーダー（KP用・admin限定）
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
@@ -45,6 +46,7 @@
 ├── js/
 │   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知等）
 │   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
+│   ├── trpg-poisoned-soup-scenario.js # クトゥルフTRPG「毒入りスープ」シナリオデータ（10ノード）
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
@@ -210,8 +212,9 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピックの7ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、クトゥルフTRPGの8ゲームをカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
+- クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
 
 ### 算数オリンピック（pages/math-olympiad.html）
 - 思考力育成アプリ。算数オリンピック風の問題を1問ずつ提示
@@ -228,6 +231,25 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - DOMPurify: rubyタグ対応（ALLOWED_TAGS: ruby, rt, br）
 - オフライン: sw.jsでHTML+JSONキャッシュ、提出はオンライン時のみ
 - game_settings.game_publish.game_math_olympiad で公開制御
+
+### クトゥルフTRPG シナリオリーダー（pages/trpg-cthulhu.html + js/trpg-poisoned-soup-scenario.js）
+- KP（管理者）向けTRPGシナリオ進行ツール。admin限定アクセス
+- ゲームブック方式ではなく、KPが自由にシーン間を移動する設計
+- SPA風ビュー切り替え: シナリオ選択 → シーン表示 + オーバーレイ（目次/マップ/NPC）
+- シナリオ選択画面: SCENARIO_REGISTRY配列からカード描画、続きから/クリア済み表示
+- Dynamic script load: window.TRPG_SCENARIOS[id]方式、5000msタイムアウト、連打防止
+- シーン自由遷移: TOC/マップ/関連シーンから任意のシーンへ移動可能
+- KPメモ: 折りたたみ表示、判定値・NPC指針・演出ヒント
+- マップ: SVG描画、場所ノード＋接続線、現在地ハイライト、タップで遷移
+- NPC一覧: 折りたたみ式詳細（秘密表示）
+- フェーズ別目次: キーワードフィルタ付き
+- 進行状態: localStorage保存（シナリオごと独立）、Back/Reset対応
+- フォントサイズ: CSS custom property方式（小/中/大）
+- セッション終了: endingフェーズでボタン表示、Completion_State保存
+- ダークテーマ（クトゥルフ風: deep green/purple系）
+- game_settings.game_publish.game_trpg_cthulhu で公開制御
+- 初回シナリオ「毒入りスープ」: 10ノード、3NPC、5ロケーション、4フェーズ
+- localStorage keys: trpg_cthulhu_progress_{id}, trpg_cthulhu_completed_{id}, trpg_cthulhu_font_size
 
 ### すいかが食べたい（pages/suika.html + suika/web/）
 - Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
@@ -356,6 +378,9 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | math_olympiad_user | 算数オリンピック ユーザー名（表示用） | 永続 |
 | math_olympiad_user_id | 算数オリンピック ユーザーUUID（DB識別子） | 永続 |
 | math_hint_history | 算数オリンピック ヒント使用履歴（問題ID→使用回数） | 永続 |
+| trpg_cthulhu_progress_{scenarioId} | TRPGシナリオ進行状態（JSON） | 永続 |
+| trpg_cthulhu_completed_{scenarioId} | TRPGシナリオ完了状態（JSON） | 永続 |
+| trpg_cthulhu_font_size | TRPGフォントサイズ設定（small/medium/large） | 永続 |
 
 ## sessionStorage使用
 
@@ -371,7 +396,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.80.0
+- 現在: v1.81.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

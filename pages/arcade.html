@@ -97,6 +97,11 @@ h1 { font-size: 1.4em; font-weight: 700; }
     <div class="game-title">算数オリンピック</div>
     <div class="game-desc">思考力チャレンジ</div>
   </a>
+  <a class="game-card" href="trpg-cthulhu.html" data-game="game_trpg_cthulhu" data-admin-only="true">
+    <div class="game-icon">🦑</div>
+    <div class="game-title">クトゥルフTRPG</div>
+    <div class="game-desc">KP用シナリオリーダー</div>
+  </a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
@@ -109,10 +114,15 @@ h1 { font-size: 1.4em; font-weight: 700; }
   }
 
   if (isAdmin) return; // 管理者は全部見える
+  // 管理者限定カードを非表示
+  document.querySelectorAll('.game-card[data-admin-only]').forEach(card => {
+    card.style.display = 'none';
+  });
   try {
     const { data } = await client.from('game_settings').select('game_publish').eq('id', 1).maybeSingle();
     const pub = (data && data.game_publish) || {};
     document.querySelectorAll('.game-card[data-game]').forEach(card => {
+      if (card.getAttribute('data-admin-only')) return; // already hidden
       const key = card.getAttribute('data-game');
       if (pub[key] !== true) card.style.display = 'none';
     });
