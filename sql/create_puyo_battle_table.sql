@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS puyo_battles (
   player1_name TEXT NOT NULL,
   player2_name TEXT,
   passcode TEXT, -- 任意の数字4桁パスコード（NULLならパスコードなし）
+  difficulty JSONB DEFAULT '{"type":"normal"}', -- 難易度設定（type + custom settings）
   status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'playing', 'finished')),
   winner TEXT, -- player1_name or player2_name
   created_at TIMESTAMPTZ DEFAULT now(),

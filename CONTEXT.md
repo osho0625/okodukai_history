@@ -106,6 +106,7 @@
 ### puyo_battles（ぷよ対戦ルーム）
 - id: UUID (PK), room_code: TEXT UNIQUE, player1_name: TEXT, player2_name: TEXT
 - passcode: TEXT (nullable、数字4桁、NULLならパスコードなし)
+- difficulty: JSONB DEFAULT '{"type":"normal"}' (type: easy/normal/hard/special/custom、custom時はsettingsオブジェクト含む)
 - status: TEXT DEFAULT 'waiting' CHECK IN ('waiting', 'playing', 'finished')
 - winner: TEXT, created_at: TIMESTAMPTZ, finished_at: TIMESTAMPTZ
 - RLS無効
@@ -264,12 +265,15 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - Supabase Realtimeによるオンライン2人対戦
 - マッチング: ルーム一覧から選んで参加（コード入力不要）
 - パスコード: 任意で数字4桁を設定可能（デフォルトなし）
-- 難易度: Normal固定（5色、6×13）、制限時間なし
+- 難易度: ルーム作成時に選択（Easy/Normal/Hard/Special/カスタム）
+  - 解放済みの難易度のみ選択可能（localStorage参照）
+  - カスタムモード: 色数/盤面サイズ/速度を自由設定
 - お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
 - お邪魔ぷよ仕様: 灰色、連鎖に参加しない、隣接消去で消える、1行に1穴
 - 予告表示: 岩(30個)/大(6個)/小(1個)
 - 通信: Supabase Realtime Broadcast（grid状態・お邪魔・ゲームオーバーを送受信）
-- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished、passcode: TEXT nullable）
+- 相手の落下中ぷよもリアルタイム描画
+- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished、passcode: TEXT、difficulty: JSONB）
 - game_settings.game_publish不要（ぴくぴくタイトルから直接遷移）
 
 ### テトリス（tetris.html）

@@ -41,11 +41,14 @@ h1 { margin-bottom: 24px; color: #333; }
     <li><span class="tag tag-feat">機能</span> ⚔️ ぴくぴく対戦モード追加 — Supabase Realtimeによるオンライン2人対戦</li>
     <li><span class="tag tag-feat">機能</span> ぴくぴくタイトル画面に「1人であそぶ」「2人であそぶ」「カスタムモード」「ランキング」メニュー</li>
     <li><span class="tag tag-feat">機能</span> ルーム一覧から選んで参加（コード入力不要）、任意でパスコード（数字4桁）設定可能</li>
+    <li><span class="tag tag-feat">機能</span> 対戦ルーム作成時に難易度選択（Easy/Normal/Hard/Special/カスタム）</li>
+    <li><span class="tag tag-feat">機能</span> 解放済みの難易度のみ選択可能、カスタムモードでは色数・盤面・速度を自由設定</li>
     <li><span class="tag tag-feat">機能</span> お邪魔ぷよ実装（連鎖で相手に送る、相殺、予告表示、隣接消去）</li>
+    <li><span class="tag tag-feat">機能</span> 相手の落下中ぷよをリアルタイム描画</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：結果画面で全プレイヤーの回答・AI採点コメントを問題ごとに表示</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：「部屋に入る」で待機中の部屋一覧から選んで入室可能に</li>
     <li><span class="tag tag-feat">機能</span> 算数バトル：部屋作成時に任意でパスコード（数字4桁）を設定可能</li>
-    <li><span class="tag tag-infra">DB</span> puyo_battles テーブル追加（ルーム管理、passcodeカラム）</li>
+    <li><span class="tag tag-infra">DB</span> puyo_battles テーブル追加（ルーム管理、passcode、difficulty JSONB）</li>
   </ul>
 </div>
 
