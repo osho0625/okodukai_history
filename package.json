@@ -6,6 +6,7 @@
     "test": "vitest --run"
   },
   "devDependencies": {
+    "fast-check": "^3.22.0",
     "vitest": "^3.1.3"
   }
 }

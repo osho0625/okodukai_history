@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/21 v1.81.0
+最終更新: 2026/05/22 v1.82.0
 
 ## プロジェクト概要
 
@@ -50,6 +50,8 @@
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
+├── css/
+│   └── puyo-escape.css # ぷよ逃走アニメーション共通CSS（game.html, puyo-battle.htmlで共有）
 ├── backups/            # 自動バックアップJSON
 ├── data/
 │   └── math-olympiad-problems.json # 算数オリンピック問題データ（小5:170問、小3:40問、小1:40問）
@@ -293,7 +295,16 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
 - お邪魔ぷよ仕様: 灰色、連鎖に参加しない、隣接消去で消える、1行に1穴
 - 予告表示: 岩(30個)/大(6個)/小(1個)
+- 連鎖演出: ノーマルモードと同等の逃走アニメーション（4段階: burst→scatter→getup→run）
+- 連鎖テキスト: 2連鎖以上で「N連鎖!」をローカル盤面上部に表示
+- パーティクル: 消去時に破片エフェクト（ローカルcanvasのみ）
+- 特殊ぷよモーション: puyo_8(羽)=飛行、puyo_9(光)=浮遊（puyo-escape.js共通処理）
+- ぷよ出現順序同期: seeded PRNG（mulberry32）で両者同一のぷよ色列を生成
+  - シード: crypto.getRandomValues生成、ルーム参加時にbroadcast共有
+  - お邪魔ぷよ穴位置: 別系列PRNG（seed ^ 0xDEADBEEF）
+  - 再接続: PRNG内部state直接復元
 - 通信: Supabase Realtime Broadcast（grid状態・お邪魔・ゲームオーバーを送受信）
+- アニメーションはローカル表示のみ（通信同期しない）
 - 相手の落下中ぷよもリアルタイム描画
 - DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished、passcode: TEXT、difficulty: JSONB）
 - game_settings.game_publish不要（ぴくぴくタイトルから直接遷移）
@@ -396,7 +407,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.81.0
+- 現在: v1.82.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
