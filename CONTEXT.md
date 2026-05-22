@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/22 v1.82.1
+最終更新: 2026/05/22 v1.82.2
 
 ## プロジェクト概要
 
@@ -408,7 +408,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.82.1
+- 現在: v1.82.2
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
