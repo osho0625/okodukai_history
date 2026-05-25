@@ -20,8 +20,8 @@ const myClientId = localStorage.getItem('puyo_client_id') || (() => {
 // ============================================================
 // Supabase setup
 // ============================================================
-const SUPABASE_URL = 'https://jbgxfmqjpnfiroqaowzf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZ3hmbXFqcG5maXJvcWFvd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0MDcyMTMsImV4cCI6MjA1MTk4MzIxM30.0M1VNHPV3LEzfGHMWLFmXBpn3JlH_SDiYBBk0RJpKXk';
+const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============================================================
