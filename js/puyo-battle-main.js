@@ -470,6 +470,7 @@ function subscribeToChannel(code) {
   channel.on('broadcast', { event: 'disconnect_notice' }, ({ payload }) => handleDisconnectNotice(payload));
   channel.on('broadcast', { event: 'reconnect_success' }, ({ payload }) => handleReconnectSuccess(payload));
   channel.on('broadcast', { event: 'reconnect_request' }, ({ payload }) => handleReconnectRequest(payload));
+  channel.on('broadcast', { event: 'room_dissolved' }, ({ payload }) => handleRoomDissolved(payload));
 
   channel.subscribe((status) => {
     if (status === 'SUBSCRIBED') {
@@ -776,6 +777,33 @@ function handleReconnectRequest(payload) {
   if (!isOwner) return;
   // Owner handles reconnection
   handlePlayerJoin(payload);
+}
+
+function handleRoomDissolved(payload) {
+  // Room was dissolved by owner — show notification and return to lobby
+  gameRunning = false;
+  clearDropLoop();
+  clearStateBroadcast();
+  if (channel) {
+    channel.unsubscribe();
+    channel = null;
+  }
+  stopOwnerHeartbeat();
+  stopMissDetection();
+  roomId = null;
+  roomCode = null;
+
+  // Show lobby with dissolution message
+  resultOverlay.style.display = 'none';
+  battleArea.style.display = 'none';
+  roleSelectModal.style.display = 'none';
+  participantPanel.style.display = 'none';
+  lobbyEl.style.display = 'block';
+  lobbyMain.style.display = 'block';
+  lobbyWaiting.style.display = 'none';
+  lobbyJoin.style.display = 'none';
+  lobbyCreate.style.display = 'none';
+  showError(payload.reason || 'ルームが解散されました');
 }
 
 
@@ -1724,23 +1752,30 @@ window.addEventListener('beforeunload', () => {
 // ============================================================
 async function cleanupStaleRooms() {
   const now = new Date();
-  const fifteenMinAgo = new Date(now - 15 * 60 * 1000).toISOString();
-  const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+  const fiveMinAgo = new Date(now - 5 * 60 * 1000).toISOString();
+  const thirtyMinAgo = new Date(now - 30 * 60 * 1000).toISOString();
 
   try {
-    // Clean waiting/finished rooms older than 15 min (by updated_at)
+    // Delete waiting rooms older than 5 min (nobody joined)
     await supabase
       .from('puyo_battles')
       .delete()
-      .in('status', ['waiting', 'finished'])
-      .lt('updated_at', fifteenMinAgo);
+      .eq('status', 'waiting')
+      .lt('updated_at', fiveMinAgo);
 
-    // Clean playing/lobby/rotating rooms older than 2 hours (by updated_at)
+    // Delete finished rooms older than 5 min
+    await supabase
+      .from('puyo_battles')
+      .delete()
+      .eq('status', 'finished')
+      .lt('updated_at', fiveMinAgo);
+
+    // Delete playing/lobby/rotating rooms older than 30 min (likely orphaned)
     await supabase
       .from('puyo_battles')
       .delete()
       .in('status', ['playing', 'lobby', 'rotating'])
-      .lt('updated_at', twoHoursAgo);
+      .lt('updated_at', thirtyMinAgo);
   } catch (e) {
     console.warn('cleanupStaleRooms error:', e);
   }
@@ -1802,9 +1837,16 @@ async function updateDBTimestamp() {
 }
 
 async function closeRoom() {
+  // Notify all participants that room is dissolved
+  if (channel) {
+    try {
+      channel.send({ type: 'broadcast', event: 'room_dissolved', payload: { reason: 'オーナーが退出しました' } });
+    } catch (e) { /* ignore */ }
+  }
+  // Delete the DB row (not just mark finished)
   if (roomId) {
     try {
-      await supabase.from('puyo_battles').update({ status: 'finished' }).eq('id', roomId);
+      await supabase.from('puyo_battles').delete().eq('id', roomId);
     } catch (e) { /* ignore */ }
   }
   if (channel) {
@@ -1813,6 +1855,8 @@ async function closeRoom() {
   }
   stopOwnerHeartbeat();
   stopMissDetection();
+  roomId = null;
+  roomCode = null;
 }
 
 // ============================================================
@@ -1841,7 +1885,11 @@ function backToLobby() {
 }
 
 function cancelRoom() {
+  // Notify participants that room is dissolved
   if (channel) {
+    try {
+      channel.send({ type: 'broadcast', event: 'room_dissolved', payload: { reason: 'ルームがキャンセルされました' } });
+    } catch (e) { /* ignore */ }
     channel.unsubscribe();
     channel = null;
   }
@@ -1849,6 +1897,8 @@ function cancelRoom() {
     supabase.from('puyo_battles').delete().eq('id', roomId).then(() => {});
   }
   stopOwnerHeartbeat();
+  roomId = null;
+  roomCode = null;
   backToMain();
 }
 
