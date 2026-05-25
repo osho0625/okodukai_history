@@ -419,7 +419,7 @@ function broadcastRoomState() {
   channel.send({
     type: 'broadcast',
     event: 'room_state_sync',
-    payload: { ...snapshot, stateId, ownerId: myClientId },
+    payload: { ...snapshot, stateId, ownerId: myClientId, seed },
   });
 }
 
@@ -830,7 +830,24 @@ function applyRoomState(payload) {
       showLobbyState();
       break;
     case STATES.PLAYING:
-      // If I'm an active player, game should be running
+      // If I'm an active player and game isn't running, start it
+      if ((myRole === 'seatA' || myRole === 'seatB') && !gameRunning) {
+        const snap = roomManager ? roomManager.getSnapshot() : payload;
+        // If seed is available in the payload, start the game
+        if (payload.seed) {
+          seed = payload.seed;
+          startBattleForAll(snap.seatA, snap.seatB);
+        } else {
+          // Show battle UI, wait for new_battle_start event with seed
+          lobbyEl.style.display = 'none';
+          battleArea.style.display = 'block';
+          spectatorBanner.style.display = 'none';
+          controlsEl.style.display = 'flex';
+          participantToggle.style.display = 'block';
+          if (snap.seatA) p1Name.textContent = snap.seatA.name;
+          if (snap.seatB) p2Name.textContent = snap.seatB.name;
+        }
+      }
       // If spectator/queue, show spectator view
       if (myRole === 'spectator' || myRole === 'queue') {
         showSpectatorView();
