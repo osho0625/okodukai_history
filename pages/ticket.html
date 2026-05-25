@@ -171,8 +171,7 @@ async function initTicketPage() {
     return;
   }
 
-  resolveOwner();
-  if (!isAdmin && !currentOwner) return;
+  if (!resolveOwner()) return;
 
   // 予約日時が過ぎたapprovedチケットを自動消化
   await autoConsumeApproved();
@@ -183,15 +182,15 @@ async function initTicketPage() {
 function resolveOwner() {
   const params = new URLSearchParams(location.search);
   const paramOwner = params.get('owner');
-  const storedOwner = localStorage.getItem('selectedChild');
 
-  if (!isAdmin && paramOwner && paramOwner !== storedOwner) {
-    showError('権限がありません');
+  currentOwner = paramOwner || null;
+
+  if (!currentOwner && !isAdmin) {
+    showError('所有者が指定されていません');
     return false;
   }
-  currentOwner = paramOwner || storedOwner;
 
-  if (!isAdmin && !VALID_OWNERS.includes(currentOwner)) {
+  if (currentOwner && !VALID_OWNERS.includes(currentOwner)) {
     currentOwner = null;
     showError('所有者が不正です');
     return false;
@@ -432,16 +431,9 @@ function updateTimeSlots() {
 
   if (!dateVal) { container.innerHTML = ''; return; }
 
-  const d = new Date(dateVal + 'T00:00:00');
-  const dayOfWeek = d.getDay(); // 0=日, 6=土
-  const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-
   let html = '';
   TIME_SLOTS.forEach(slot => {
-    const disabled = !isWeekend && slot.id !== 'dinner';
-    const disabledAttr = disabled ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
-    const hint = disabled ? ' <span style="font-size:0.75em;color:#999;">（平日は選べません）</span>' : '';
-    html += `<button class="slot-btn" data-slot="${slot.id}" ${disabledAttr} onclick="selectSlot('${slot.id}')" style="padding:14px 16px; border:2px solid #ddd; border-radius:10px; background:#fff; font-size:1em; font-weight:600; cursor:pointer; text-align:left; transition:all 0.15s;">${slot.label}${hint}</button>`;
+    html += `<button class="slot-btn" data-slot="${slot.id}" onclick="selectSlot('${slot.id}')" style="padding:14px 16px; border:2px solid #ddd; border-radius:10px; background:#fff; font-size:1em; font-weight:600; cursor:pointer; text-align:left; transition:all 0.15s;">${slot.label}</button>`;
   });
   html += `<button onclick="showCustomTime()" style="padding:10px 16px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; font-size:0.9em; color:#666; cursor:pointer; text-align:center;">⏰ 時間で予約する</button>`;
   container.innerHTML = html;
