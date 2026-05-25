@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/22 v1.82.2
+最終更新: 2026/05/25 v1.83.0
 
 ## プロジェクト概要
 
@@ -286,12 +286,20 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### ぴくぴく対戦（puyo-battle.html）
 - ぴくぴく(game.html)タイトル画面の「2人であそぶ」から遷移
-- Supabase Realtimeによるオンライン2人対戦
+- Supabase Realtimeによるオンラインマルチプレイヤー対戦（最大6人）
 - マッチング: ルーム一覧から選んで参加（コード入力不要）
 - パスコード: 任意で数字4桁を設定可能（デフォルトなし）
 - 難易度: ルーム作成時に選択（Easy/Normal/Hard/Special/カスタム）
   - 解放済みの難易度のみ選択可能（localStorage参照）
   - カスタムモード: 色数/盤面サイズ/速度を自由設定
+- 再戦機能: 「もういちど」ボタンで同じ相手と連戦（両者同意制、30秒タイムアウト）
+- 3人以上入室: 先に入った2人が対戦、3人目以降は観戦/順番待ちを選択
+- 勝ち残り方式: 勝者が残り、順番待ち先頭と対戦。敗者は待ちリスト末尾へ。5秒インターバル後に自動開始
+- 観戦のみ制限: ルーム作成時チェックボックスで順番待ちを無効化（👁アイコン表示）
+- 参加者パネル: 全参加者の役割（🎮対戦/👁観戦/⏳順番待ち/👑オーナー）・連勝数表示
+- 再接続: 30秒grace period、役割保持、Active_Playerのinput即時freeze
+- オーナーシップ: heartbeat 5秒間隔、15秒タイムアウトで最古参に自動移譲、claim tie-break
+- 状態管理: Owner権威モデル、stateId={epoch,version}、epoch++でsplit-brain防止
 - お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
 - お邪魔ぷよ仕様: puyo_10画像で表示、連鎖に参加しない、隣接消去で消える、1行に1穴
 - 予告表示: 岩(30個)/大(6個)/小(1個)
@@ -304,10 +312,11 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
   - シード: crypto.getRandomValues生成、ルーム参加時にbroadcast共有
   - お邪魔ぷよ穴位置: 別系列PRNG（seed ^ 0xDEADBEEF）
   - 再接続: PRNG内部state直接復元
-- 通信: Supabase Realtime Broadcast（grid状態・お邪魔・ゲームオーバーを送受信）
+- 通信: Supabase Realtime Broadcast（room_state_sync権威モデル + 個別イベント）
 - アニメーションはローカル表示のみ（通信同期しない）
-- 相手の落下中ぷよもリアルタイム描画
-- DB: puyo_battlesテーブル（ルーム管理、status: waiting/playing/finished、passcode: TEXT、difficulty: JSONB）
+- 相手の落下中ぷよ・NEXTぷよもリアルタイム描画
+- モジュール構成: js/puyo-room-state.js, js/puyo-ownership.js, js/puyo-reconnect.js, js/puyo-battle-main.js
+- DB: puyo_battlesテーブル（room_code, status, passcode, difficulty, spectator_only, owner_client_id, max_players, updated_at）
 - game_settings.game_publish不要（ぴくぴくタイトルから直接遷移）
 
 ### テトリス（tetris.html）
@@ -408,7 +417,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.82.2
+- 現在: v1.83.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

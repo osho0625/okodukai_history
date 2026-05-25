@@ -36,6 +36,30 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.83.1</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> あそびチケット：user権限でも個別ページから閲覧・予約可能に変更</li>
+    <li><span class="tag tag-fix">fix</span> あそびチケット：予約時の平日制限を撤廃（朝/昼/夜すべての時間帯で予約可能に）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.83.0</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：再戦機能追加（「もういちど」ボタンで同じ相手と連戦可能）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：3人以上の入室対応（最大6人、観戦/順番待ち選択）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：勝ち残り方式追加（勝者が残り、順番待ちの先頭と対戦）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：観戦モード追加（両プレイヤーの盤面をリアルタイム表示）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：「観戦のみ」制限オプション追加（ルーム作成時チェックボックス）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：参加者一覧パネル追加（役割アイコン・連勝数・順番表示）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：再接続対応（30秒間の切断猶予、役割保持）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：オーナーシップ自動移譲（heartbeat監視、15秒タイムアウト）</li>
+    <li><span class="tag tag-infra">infra</span> puyo_battlesテーブル拡張（max_players, spectator_only, owner_client_id, updated_at）</li>
+    <li><span class="tag tag-infra">infra</span> ルーム状態管理をES moduleに分離（puyo-room-state.js, puyo-ownership.js, puyo-reconnect.js）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.82.2</span><span class="date">2026/05/22</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：連鎖後の落下タイミング修正（消去→200ms待機→落下の順に変更、ノーマルモード準拠）</li>
