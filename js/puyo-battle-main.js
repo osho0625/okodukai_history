@@ -377,9 +377,10 @@ async function joinRoom(room) {
     sendAction('player_join', { clientId: myClientId, name: playerName });
   }, 500);
 
-  // Hide lobby
+  // Show waiting state (lobby stays visible until room_state_sync arrives)
   lobbyJoin.style.display = 'none';
-  lobbyEl.style.display = 'none';
+  lobbyWaiting.style.display = 'block';
+  waitingMsg.textContent = 'ルームに接続中...';
 }
 
 // ============================================================
