@@ -1276,6 +1276,25 @@ function initCanvases() {
 
 const PUYO_COLORS = ['#e53935', '#43a047', '#1e88e5', '#fdd835', '#8e24aa', '#ff8f00', '#00acc1', '#6d4c41', '#78909c'];
 
+// Puyo images preload
+const PUYO_IMGS_SRC = [
+  '../images/puyo_1.avif','../images/puyo_2.avif','../images/puyo_3.avif',
+  '../images/puyo_4.avif','../images/puyo_5.avif','../images/puyo_6.avif',
+  '../images/puyo_7.avif','../images/puyo_8.avif','../images/puyo_9.avif',
+  '../images/puyo_10.avif'
+];
+const loadedImgs = [];
+let imgsReady = false;
+(function preloadImages() {
+  let loaded = 0;
+  PUYO_IMGS_SRC.forEach((src, i) => {
+    const img = new Image();
+    img.onload = img.onerror = () => { loaded++; if (loaded === PUYO_IMGS_SRC.length) imgsReady = true; };
+    img.src = src;
+    loadedImgs[i] = img;
+  });
+})();
+
 function spawnPair() {
   if (!gameRunning) return;
   const c1 = puyoSeq[puyoSeqIndex % puyoSeq.length];
@@ -1537,6 +1556,40 @@ function showWin() {
 // ============================================================
 // Rendering
 // ============================================================
+function drawPuyoCell(ctx, x, y, cellW, cellH, colorIdx, ghost) {
+  const cx = x + cellW / 2;
+  const cy = y + cellH / 2;
+  const r = cellW * 0.45;
+  ctx.globalAlpha = ghost ? 0.3 : 1;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  if (colorIdx === -2) {
+    // Garbage puyo — use puyo_10 image
+    const gImg = loadedImgs[9];
+    if (imgsReady && gImg && gImg.complete && gImg.naturalWidth > 0) {
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+      const s = r * 2.2;
+      ctx.drawImage(gImg, -s/2, -s/2, s, s);
+    } else {
+      ctx.fillStyle = '#888';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    const img = loadedImgs[colorIdx];
+    if (imgsReady && img && img.complete && img.naturalWidth > 0) {
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+      const s = r * 2.2;
+      ctx.drawImage(img, -s/2, -s/2, s, s);
+    } else {
+      ctx.fillStyle = PUYO_COLORS[colorIdx] || '#888';
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 function renderMyBoard() {
   const ctx = myCanvas.getContext('2d');
   const cellW = myCanvas.width / cols;
@@ -1548,16 +1601,9 @@ function renderMyBoard() {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (grid[r][c] >= 0) {
-        ctx.fillStyle = PUYO_COLORS[grid[r][c]] || '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, grid[r][c], false);
       } else if (grid[r][c] === -2) {
-        // Garbage
-        ctx.fillStyle = '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.35, 0, Math.PI * 2);
-        ctx.fill();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, -2, false);
       }
     }
   }
@@ -1568,13 +1614,7 @@ function renderMyBoard() {
     const colors = [currentPair.color1, currentPair.color2];
     positions.forEach(([r, c], i) => {
       if (r >= 0 && r < rows && c >= 0 && c < cols) {
-        ctx.fillStyle = PUYO_COLORS[colors[i]] || '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, colors[i], false);
       }
     });
   }
@@ -1590,15 +1630,9 @@ function renderOppBoard() {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (oppGrid[r] && oppGrid[r][c] >= 0) {
-        ctx.fillStyle = PUYO_COLORS[oppGrid[r][c]] || '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, oppGrid[r][c], false);
       } else if (oppGrid[r] && oppGrid[r][c] === -2) {
-        ctx.fillStyle = '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.35, 0, Math.PI * 2);
-        ctx.fill();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, -2, false);
       }
     }
   }
@@ -1609,10 +1643,7 @@ function renderOppBoard() {
     const colors = [oppPair.color1, oppPair.color2];
     positions.forEach(([r, c], i) => {
       if (r >= 0 && r < rows && c >= 0 && c < cols) {
-        ctx.fillStyle = PUYO_COLORS[colors[i]] || '#888';
-        ctx.beginPath();
-        ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+        drawPuyoCell(ctx, c * cellW, r * cellH, cellW, cellH, colors[i], false);
       }
     });
   }
