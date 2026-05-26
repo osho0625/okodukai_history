@@ -399,10 +399,11 @@ function initManagers(asOwner) {
   reconnectMgr = createReconnectionManager({ gracePeriod: 30000 });
 
   if (asOwner) {
-    // Add self as first participant
+    // Add self as first participant and assign to seatA
     const me = roomManager.addParticipant(myClientId, playerName);
     myJoinOrder = me.joinOrder;
-    myRole = 'spectator'; // will be assigned to seat when opponent joins
+    roomManager.assignSeat(myClientId, 'seatA');
+    myRole = 'seatA';
   }
 }
 
