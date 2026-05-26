@@ -40,6 +40,14 @@ let currentDifficulty = { type: 'normal' };
 let spectatorOnlyRoom = false;
 let myRole = null; // 'seatA' | 'seatB' | 'spectator' | 'queue'
 
+// Spectator animation state
+let spectatorMode = false;           // true when role is 'spectator' or 'queue'
+let seatAClientId = null;            // Player on left board
+let seatBClientId = null;            // Player on right board
+let spectatorParticles = [];         // Particle array for spectator overlay
+let spectatorParticleCanvas = null;  // Overlay canvas element
+let spectatorAnimFrame = null;       // Animation frame ID
+
 // Game state
 let gameRunning = false;
 let gameLoop = null;
@@ -466,6 +474,7 @@ function subscribeToChannel(code, onSubscribed) {
   channel.on('broadcast', { event: 'state' }, ({ payload }) => handleStateUpdate(payload));
   channel.on('broadcast', { event: 'garbage' }, ({ payload }) => handleGarbageReceived(payload));
   channel.on('broadcast', { event: 'seed' }, ({ payload }) => handleSeed(payload));
+  channel.on('broadcast', { event: 'chain_animation' }, ({ payload }) => handleChainAnimation(payload));
   channel.on('broadcast', { event: 'disconnect_notice' }, ({ payload }) => handleDisconnectNotice(payload));
   channel.on('broadcast', { event: 'reconnect_success' }, ({ payload }) => handleReconnectSuccess(payload));
   channel.on('broadcast', { event: 'reconnect_request' }, ({ payload }) => handleReconnectRequest(payload));
@@ -823,6 +832,12 @@ function applyRoomState(payload) {
   const snapshot = roomManager ? roomManager.getSnapshot() : payload;
   updateMyRole(snapshot);
 
+  // Task 1.2: Update spectator seat clientIds on room_state_sync
+  if (spectatorMode) {
+    seatAClientId = snapshot.seatA ? snapshot.seatA.clientId : null;
+    seatBClientId = snapshot.seatB ? snapshot.seatB.clientId : null;
+  }
+
   // Update UI based on state
   const roomState = snapshot.state || payload.state;
 
@@ -1038,7 +1053,11 @@ function showSpectatorView() {
   if (snapshot) {
     p1Name.textContent = snapshot.seatA ? snapshot.seatA.name : 'P1';
     p2Name.textContent = snapshot.seatB ? snapshot.seatB.name : 'P2';
+    // Task 1.2: Initialize spectator seat clientIds for animation targeting
+    seatAClientId = snapshot.seatA ? snapshot.seatA.clientId : null;
+    seatBClientId = snapshot.seatB ? snapshot.seatB.clientId : null;
   }
+  spectatorMode = true;
 
   initCanvases();
 }
@@ -1410,10 +1429,16 @@ function resolveChains() {
 
     totalChains++;
     let clearedCount = 0;
+    const clears = [];
 
     groups.forEach(group => {
       clearedCount += group.length;
       group.forEach(([r, c]) => {
+        // Collect cleared Color_Puyo positions before clearing (colorIdx >= 0 only)
+        const colorIdx = grid[r][c];
+        if (colorIdx >= 0) {
+          clears.push({ col: c, row: r, colorIdx });
+        }
         // Clear adjacent garbage (color -2)
         [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr, nc]) => {
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] === -2) {
@@ -1423,6 +1448,18 @@ function resolveChains() {
         grid[r][c] = -1;
       });
     });
+
+    // Broadcast chain animation event for spectators
+    if (clears.length > 0) {
+      sendAction('chain_animation', {
+        clientId: myClientId,
+        chainNum: totalChains,
+        clears
+      });
+
+      // Local chain animations for active player (own board)
+      playLocalChainAnimation(clears, totalChains);
+    }
 
     // Score calculation (simplified puyo scoring)
     chainPower = totalChains === 1 ? 0 : [8, 16, 32, 64, 96, 128, 160, 192, 224, 256][Math.min(totalChains - 2, 9)];
@@ -1448,6 +1485,242 @@ function resolveChains() {
   p1Score.textContent = score;
   renderMyBoard();
   return totalChains;
+}
+
+// ============================================================
+// Local Chain Animation for Active Players
+// ============================================================
+
+function playLocalChainAnimation(clears, chainNum) {
+  if (!myCanvas || !myCanvas.width) return;
+
+  const canvasRect = myCanvas.getBoundingClientRect();
+  const cellW = myCanvas.width / cols;
+  const cellH = myCanvas.height / rows;
+
+  // Enforce DOM element cap
+  enforceEscapeCap();
+
+  clears.forEach(({ col, row, colorIdx }) => {
+    if (colorIdx < 0) return;
+
+    const startX = canvasRect.left + col * cellW + cellW / 2 - 14;
+    const startY = canvasRect.top + row * cellH + cellH / 2 - 14;
+    const imgSrc = PUYO_IMGS_SRC[colorIdx];
+    const groundY = canvasRect.bottom + 10;
+
+    if (typeof spawnPuyoEscape === 'function') {
+      spawnPuyoEscape(startX, startY, imgSrc, colorIdx, {
+        size: Math.min(28, cellW),
+        groundY
+      });
+    }
+  });
+
+  // Particles for active player
+  clears.forEach(({ col, row, colorIdx }) => {
+    if (colorIdx < 0 && colorIdx !== -2) return;
+    const px = canvasRect.left + col * cellW + cellW / 2;
+    const py = canvasRect.top + row * cellH + cellH / 2;
+    const pColor = colorIdx >= 0 ? (PUYO_COLORS[colorIdx] || '#999') : '#999';
+    for (let i = 0; i < 3; i++) {
+      spectatorParticles.push({
+        x: px, y: py,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        color: pColor,
+        size: 2 + Math.random() * 2,
+        life: 0.6
+      });
+    }
+  });
+
+  if (spectatorParticles.length > 0 && !spectatorAnimFrame) {
+    startSpectatorParticleLoop();
+  }
+
+  // Chain text for active player
+  if (chainNum >= 2) {
+    showSpectatorChainText(myCanvas, chainNum);
+  }
+}
+
+// ============================================================
+// Spectator Chain Animation System
+// ============================================================
+
+const SPECTATOR_ESCAPE_CAP = 60;
+
+function handleChainAnimation(payload) {
+  // Active players ignore (they have local animations)
+  if (myRole === 'seatA' || myRole === 'seatB') return;
+  if (!spectatorMode) return;
+
+  // Payload validation
+  if (!payload || typeof payload.clientId !== 'string') return;
+  if (typeof payload.chainNum !== 'number' || payload.chainNum < 1) return;
+  if (!Array.isArray(payload.clears) || payload.clears.length === 0) return;
+
+  // Guard against uninitialized canvases
+  if (!myCanvas || !myCanvas.width || !oppCanvas || !oppCanvas.width) return;
+
+  const { clientId, chainNum, clears } = payload;
+
+  // Board targeting: map clientId to correct canvas
+  let targetCanvas;
+  if (clientId === seatAClientId) {
+    targetCanvas = myCanvas;
+  } else if (clientId === seatBClientId) {
+    targetCanvas = oppCanvas;
+  } else {
+    return; // Unknown clientId, ignore
+  }
+
+  const canvasRect = targetCanvas.getBoundingClientRect();
+  const cellW = targetCanvas.width / cols;
+  const cellH = targetCanvas.height / rows;
+
+  // Enforce DOM element cap before spawning
+  enforceEscapeCap();
+
+  // Spawn escape animations for cleared color puyos
+  clears.forEach(({ col, row, colorIdx }) => {
+    // Validate individual clear
+    if (typeof col !== 'number' || typeof row !== 'number') return;
+    if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+    if (typeof colorIdx !== 'number') return;
+
+    // Particles for all puyos (including garbage)
+    if (colorIdx >= 0 || colorIdx === -2) {
+      const px = canvasRect.left + col * cellW + cellW / 2;
+      const py = canvasRect.top + row * cellH + cellH / 2;
+      const pColor = colorIdx >= 0 ? (PUYO_COLORS[colorIdx] || '#999') : '#999';
+      for (let i = 0; i < 3; i++) {
+        spectatorParticles.push({
+          x: px, y: py,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          color: pColor,
+          size: 2 + Math.random() * 2,
+          life: 0.6
+        });
+      }
+    }
+
+    // Escape animation only for color puyos
+    if (colorIdx < 0) return;
+
+    const startX = canvasRect.left + col * cellW + cellW / 2 - 14;
+    const startY = canvasRect.top + row * cellH + cellH / 2 - 14;
+    const imgSrc = PUYO_IMGS_SRC[colorIdx];
+    const groundY = canvasRect.bottom + 10;
+
+    if (typeof spawnPuyoEscape === 'function') {
+      spawnPuyoEscape(startX, startY, imgSrc, colorIdx, {
+        size: Math.min(28, cellW),
+        groundY
+      });
+    }
+  });
+
+  // Show chain text for chainNum >= 2
+  if (chainNum >= 2) {
+    showSpectatorChainText(targetCanvas, chainNum);
+  }
+
+  // Start particle render loop if not running
+  if (spectatorParticles.length > 0 && !spectatorAnimFrame) {
+    startSpectatorParticleLoop();
+  }
+}
+
+function showSpectatorChainText(targetCanvas, chainNum) {
+  const side = (targetCanvas === myCanvas) ? 'left' : 'right';
+  const existingId = 'spec-chain-text-' + side;
+  let el = document.getElementById(existingId);
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = existingId;
+    el.style.cssText = 'position:fixed;pointer-events:none;z-index:35;'
+      + 'font-size:24px;font-weight:bold;color:#fff;text-shadow:2px 2px 4px #000;'
+      + 'transition:opacity 0.3s;';
+    document.body.appendChild(el);
+  }
+
+  const rect = targetCanvas.getBoundingClientRect();
+  el.style.left = (rect.left + rect.width / 2) + 'px';
+  el.style.top = (rect.top - 30) + 'px';
+  el.style.transform = 'translateX(-50%)';
+  el.textContent = `${chainNum}連鎖!`;
+  el.style.opacity = '1';
+
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => {
+    el.style.opacity = '0';
+  }, 1500);
+}
+
+function getOrCreateParticleOverlay() {
+  if (spectatorParticleCanvas) return spectatorParticleCanvas;
+
+  const container = battleArea || document.body;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'spectator-particle-overlay';
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:30;';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  container.appendChild(canvas);
+  spectatorParticleCanvas = canvas;
+  return canvas;
+}
+
+function startSpectatorParticleLoop() {
+  if (spectatorAnimFrame) return;
+
+  const overlay = getOrCreateParticleOverlay();
+  const ctx = overlay.getContext('2d');
+
+  function loop() {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    spectatorParticles = spectatorParticles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.15; // gravity
+      p.life -= 0.025;
+      if (p.life <= 0) return false;
+
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      return true;
+    });
+
+    ctx.globalAlpha = 1;
+
+    if (spectatorParticles.length > 0) {
+      spectatorAnimFrame = requestAnimationFrame(loop);
+    } else {
+      spectatorAnimFrame = null;
+    }
+  }
+
+  spectatorAnimFrame = requestAnimationFrame(loop);
+}
+
+function enforceEscapeCap() {
+  // Query all fixed-position escape-style elements (created by spawnPuyoEscape)
+  const escapeEls = document.querySelectorAll('div[style*="position:fixed"][style*="border-radius:50%"][style*="z-index:30"]');
+  if (escapeEls.length >= SPECTATOR_ESCAPE_CAP) {
+    // Remove oldest elements (first in DOM order)
+    const toRemove = escapeEls.length - SPECTATOR_ESCAPE_CAP + 10; // Remove 10 extra for headroom
+    for (let i = 0; i < toRemove && i < escapeEls.length; i++) {
+      escapeEls[i].remove();
+    }
+  }
 }
 
 function findConnectedGroups() {
