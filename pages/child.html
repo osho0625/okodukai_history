@@ -286,6 +286,29 @@ h2 { margin-bottom: 12px; color: #333; }
   </div>
 </div>
 
+<!-- リマインダーセクション -->
+<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+  <div onclick="toggleAccordion('reminderBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> 🔔 リマインダー
+  </div>
+  <div id="reminderBody" style="display:none; padding:0 16px 16px;">
+    <!-- 登録フォーム -->
+    <div style="margin-bottom:16px;">
+      <input type="text" id="reminderMsg" maxlength="200" placeholder="リマインダーの内容（200文字以内）" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9em;color:#555;">
+          <input type="checkbox" id="reminderNoDate" onchange="toggleReminderDate()"> 日付を指定しない
+        </label>
+      </div>
+      <input type="date" id="reminderDate" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      <button onclick="submitReminder()" style="width:100%;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">登録する</button>
+      <div id="reminderResultMsg" style="text-align:center;margin-top:8px;font-weight:600;display:none;"></div>
+    </div>
+    <!-- リマインダー一覧 -->
+    <div id="reminderList" style="margin-top:8px;"></div>
+  </div>
+</div>
+
 <!-- 承認セクション（admin権限のみ表示） -->
 <!-- リプレイボタン（左下固定） -->
 <div id="replayBtn" class="replay-btn" onclick="replayDeposit()">🎉</div>
@@ -1206,9 +1229,6 @@ async function giveAllowance(amount) {
   });
 })();
 
-load().then(() => {
-  loadPointsGrid();
-});
 loadChores();
 if (isAdmin) loadPendingApprovals();
 
@@ -1296,6 +1316,192 @@ async function rejectPoint(id) {
   loadPendingApprovals();
   loadPointsGrid();
 }
+
+// --- リマインダー機能 ---
+let lastSubmitAt = 0;
+
+function getReminderDeviceId() {
+  let id = localStorage.getItem('reminder_device_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('reminder_device_id', id);
+  }
+  return id;
+}
+
+function toggleReminderDate() {
+  const noDate = document.getElementById('reminderNoDate').checked;
+  const dateInput = document.getElementById('reminderDate');
+  if (noDate) {
+    dateInput.style.display = 'none';
+    dateInput.disabled = true;
+    dateInput.value = '';
+  } else {
+    dateInput.style.display = 'block';
+    dateInput.disabled = false;
+  }
+}
+
+async function submitReminder() {
+  const now = Date.now();
+  if (now - lastSubmitAt < 3000) return;
+
+  const msgInput = document.getElementById('reminderMsg');
+  const message = msgInput.value.trim();
+  const noDate = document.getElementById('reminderNoDate').checked;
+  const dateInput = document.getElementById('reminderDate');
+  const resultMsg = document.getElementById('reminderResultMsg');
+
+  // バリデーション: メッセージ
+  if (message.length < 1 || message.length > 200) {
+    resultMsg.textContent = '⚠️ メッセージは1〜200文字で入力してください';
+    resultMsg.style.color = '#e53935';
+    resultMsg.style.display = 'block';
+    setTimeout(() => resultMsg.style.display = 'none', 3000);
+    return;
+  }
+
+  // バリデーション: 日付
+  let eventDate = null;
+  if (!noDate) {
+    if (!dateInput.value) {
+      resultMsg.textContent = '⚠️ 日付を入力してください';
+      resultMsg.style.color = '#e53935';
+      resultMsg.style.display = 'block';
+      setTimeout(() => resultMsg.style.display = 'none', 3000);
+      return;
+    }
+    // 過去日付チェック（JST基準）
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    if (dateInput.value < todayStr) {
+      resultMsg.textContent = '⚠️ 過去の日付は指定できません';
+      resultMsg.style.color = '#e53935';
+      resultMsg.style.display = 'block';
+      setTimeout(() => resultMsg.style.display = 'none', 3000);
+      return;
+    }
+    eventDate = dateInput.value;
+  }
+
+  lastSubmitAt = now;
+
+  const deviceId = getReminderDeviceId();
+  const type = noDate ? 'memo' : 'event';
+  const creatorRole = isAdmin ? 'admin' : 'user';
+
+  const insertData = {
+    type,
+    child_id: childId,
+    child_name: child.name,
+    message,
+    creator_user_id: deviceId,
+    creator_role: creatorRole
+  };
+  if (eventDate) insertData.event_date = eventDate;
+
+  const { error } = await client.from('reminders').insert(insertData);
+  if (error) {
+    resultMsg.textContent = '⚠️ 保存に失敗しました。もう一度お試しください';
+    resultMsg.style.color = '#e53935';
+    resultMsg.style.display = 'block';
+    setTimeout(() => resultMsg.style.display = 'none', 3000);
+    return;
+  }
+
+  // 成功
+  resultMsg.textContent = '✓ リマインダーを登録しました';
+  resultMsg.style.color = '#4caf50';
+  resultMsg.style.display = 'block';
+  setTimeout(() => resultMsg.style.display = 'none', 3000);
+
+  // フォームリセット
+  msgInput.value = '';
+  dateInput.value = '';
+
+  // Discord通知（3秒タイムアウト、失敗してもUXブロックしない）
+  const discordMsg = type === 'memo'
+    ? '🔔 リマインダー登録\n📝 [' + child.name + '] ' + message
+    : '🔔 リマインダー登録\n📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 3000);
+    await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: discordMsg }),
+      signal: ctrl.signal
+    });
+    clearTimeout(tid);
+  } catch (e) {}
+
+  // 一覧を更新
+  loadReminders();
+}
+
+async function loadReminders() {
+  const listEl = document.getElementById('reminderList');
+  if (!childId) { listEl.innerHTML = ''; return; }
+
+  const { data, error } = await client.from('reminders')
+    .select('*')
+    .eq('child_id', childId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error || !data || data.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:#999;font-size:0.9em;padding:8px 0;">リマインダーはありません</div>';
+    return;
+  }
+
+  const deviceId = getReminderDeviceId();
+  listEl.innerHTML = '';
+  data.forEach(r => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;';
+
+    const createdDate = new Date(r.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    let info = '';
+    if (r.type === 'memo') {
+      info = '<div style="flex:1;"><div style="font-size:0.9em;">📝 ' + escHtml(r.message) + '</div>'
+        + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">登録: ' + createdDate + '</div></div>';
+    } else {
+      const daysLeft = Math.ceil((new Date(r.event_date + 'T00:00:00+09:00') - new Date()) / 86400000);
+      const daysText = daysLeft === 0 ? '今日' : daysLeft > 0 ? 'あと' + daysLeft + '日' : daysLeft + '日前';
+      info = '<div style="flex:1;"><div style="font-size:0.9em;">📅 ' + escHtml(r.message) + '</div>'
+        + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">' + r.event_date + '（' + daysText + '）</div></div>';
+    }
+
+    let deleteBtn = '';
+    if (r.creator_user_id === deviceId) {
+      deleteBtn = '<button onclick="deleteReminder(\'' + r.id + '\')" style="padding:4px 10px;border:none;border-radius:6px;background:#e53935;color:#fff;font-size:0.8em;cursor:pointer;">削除</button>';
+    }
+
+    div.innerHTML = info + deleteBtn;
+    listEl.appendChild(div);
+  });
+}
+
+async function deleteReminder(id) {
+  if (!confirm('このリマインダーを削除しますか？')) return;
+  await client.from('reminders')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .is('deleted_at', null);
+  loadReminders();
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ページ読み込み時にリマインダー一覧を取得
+load().then(() => {
+  loadPointsGrid();
+  loadReminders();
+});
 </script>
 
 </body>

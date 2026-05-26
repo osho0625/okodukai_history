@@ -143,6 +143,19 @@
 - 予約フロー: unused→pending(予約申請)→approved(承認)→used(予約日時到来で自動消化)
 - 却下/取消: pending→unused / approved→unused（予約日時前のみ）
 
+### reminders（リマインダー）
+- id: UUID (PK), type: TEXT ('memo'|'event')
+- child_id: UUID (FK→children), child_name: TEXT (非正規化、通知用)
+- message: TEXT (1-200文字), event_date: DATE (nullable、event型のみ)
+- creator_user_id: TEXT NOT NULL (端末識別子), creator_role: TEXT ('admin'|'user')
+- custom_schedule: JSONB (nullable、例: ["06:00","21:00"])
+- snooze_until: DATE (nullable、通知再開日。current_jst_date < snooze_until で通知停止)
+- created_at: TIMESTAMPTZ (UTC), deleted_at: TIMESTAMPTZ (nullable、soft delete)
+- CHECK: chk_event_date (type='memo' OR event_date IS NOT NULL), chk_custom_schedule (NULL OR jsonb array)
+- INDEX: idx_reminders_child_id, idx_reminders_type_event_date, idx_reminders_snooze (全てWHERE deleted_at IS NULL)
+- RLS無効（既存テーブルと同様）
+- soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
+
 ## 端末権限（deviceRole）
 
 localStorageに`deviceRole`を保存。管理者ページから設定。
@@ -155,10 +168,14 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ### TOP画面（index.html）
 - アカウント一覧（sort_order順）、ポイント数・次のお小遣い情報表示
 - 完了枚数に応じてぷよアイコン（5つでオリマーに変換）
+- 🔔 リマインダー通知バナー（タイトル下に表示）
+  - メモ型: 全件表示（created_at降順）、admin時×ボタン＋スヌーズボタン
+  - 行事型: event_dateが7日以内のもの表示（event_date昇順）
+  - スヌーズ中も表示（Discord通知のみ停止）
 - 未読入金: 🔔アイコン＋入金前残高表示
 - 承認待ち: ✅アイコン（全ユーザーに表示）
 - admin用: 🧹（入出金ページ）、⚙️（設定モーダル＝表示順変更）
-- 🪴（ぷよ畑）、�️（ゲームセンター）、🔧（管理者認証）
+- 🪴（ぷよ畑）、🕹️（ゲームセンター）、🔧（管理者認証）
 
 ### 個別アカウントページ（child.html）
 - 残高表示＋入金演出（フルスクリーンオーバーレイ＋カウントアップ＋紙吹雪）
@@ -168,6 +185,12 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
   - マイルストーン行の右に金額ラベル、達成済みにぷよシール
   - 20ptごとにお小遣い自動入金（40円/300円/200円/400円）
   - 返済用アカウント（「〇〇が返すお金」）には半額振り分け
+- 🔔 リマインダー（アコーディオンセクション）
+  - 登録フォーム: テキスト(1-200文字) + 「日付を指定しない」チェックボックス + 日付入力
+  - 日付なし→メモ型（毎日通知）、日付あり→行事型（7日前から通知）
+  - 登録時にDiscord通知送信（3秒タイムアウト）
+  - 一覧表示: 自分が作成したリマインダーのみ削除ボタン表示（creator_user_id照合）
+  - 3秒デバウンスで重複送信防止
 - 🧹 家事選択→ポイント追加（admin=即承認、user=承認待ち）
 - 💰 入出金（出金=全ユーザー、入金=adminのみ）
 - 📋 履歴
@@ -191,6 +214,10 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 😈 イタズラ設定（コケやすさ10倍=sessionStorage、夜間制限ON/OFF、カウントリセット、未読通知全消去）
 - 📊 アクティビティログ
 - 💾 バックアップ（手動DL/GitHub復元/ファイル復元）
+- 🔔 リマインダー管理（全リマインダー一覧、削除、スヌーズ設定、通知時間カスタマイズ）
+  - 通知時間カスタマイズ: `<input type="time">`で複数時間追加/削除、JSONB配列保存
+  - スヌーズ: 1-365日、snooze_until日まで通知停止
+  - 登録機能なし（登録はchild.htmlからのみ）
 
 ### ぷよゲーム（game.html）
 - タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始→難易度選択/ランキング）
@@ -419,6 +446,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | push_device_id | Web Push通知端末識別子（UUID） | 永続 |
 | push_subscribed | Web Push購読済みフラグ | 永続 |
 | push_banner_dismissed | Push通知バナー非表示タイムスタンプ | 永続 |
+| reminder_device_id | リマインダー作成者識別子（UUID、端末ごと） | 永続 |
 
 ## sessionStorage使用
 

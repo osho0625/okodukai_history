@@ -481,6 +481,14 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- リマインダー管理 -->
+<h2 onclick="toggleSection('reminderSection', this)"><span class="toggle">▶</span> 🔔 リマインダー管理</h2>
+<div class="section-body" id="reminderSection">
+  <div class="card" id="reminderAdminList">
+    <div style="color:#999; text-align:center; padding:12px;">読み込み中...</div>
+  </div>
+</div>
+
 <script>
 let allChildren = [];
 let editingTxId = null;
@@ -1461,6 +1469,213 @@ async function testGeminiKey() {
 
 // 初期化時にAPIキーを読み込み
 loadApiKeysAdmin();
+
+// --- リマインダー管理 ---
+async function loadReminders() {
+  const container = document.getElementById('reminderAdminList');
+  if (!container) return;
+
+  try {
+    const { data, error } = await client
+      .from('reminders')
+      .select('*')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="color:#999; text-align:center; padding:12px;">リマインダーがありません</div>';
+      return;
+    }
+
+    const nowJST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const todayStr = nowJST.toISOString().slice(0, 10);
+
+    container.innerHTML = '';
+    data.forEach(r => {
+      const createdJST = new Date(r.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const typeLabel = r.type === 'memo' ? '📝 メモ' : '📅 行事';
+      const roleLabel = r.creator_role === 'admin' ? '親' : '子';
+
+      // Status determination
+      let status = 'active';
+      let statusBadge = '<span style="font-size:0.75em;background:#4caf50;color:#fff;padding:1px 6px;border-radius:4px;">有効</span>';
+
+      if (r.type === 'event' && r.event_date && r.event_date < todayStr) {
+        status = 'past';
+        statusBadge = '<span style="font-size:0.75em;background:#9e9e9e;color:#fff;padding:1px 6px;border-radius:4px;">過去</span>';
+      }
+
+      // Snooze check
+      let snoozeInfo = '';
+      if (r.snooze_until && r.snooze_until > todayStr) {
+        if (status !== 'past') {
+          status = 'snoozed';
+          statusBadge = '<span style="font-size:0.75em;background:#ff9800;color:#fff;padding:1px 6px;border-radius:4px;">スヌーズ中</span>';
+        }
+        const snoozeDate = new Date(r.snooze_until + 'T00:00:00+09:00');
+        const diffDays = Math.ceil((snoozeDate - nowJST) / (1000 * 60 * 60 * 24));
+        snoozeInfo = `<div style="font-size:0.8em; color:#ff9800; margin-top:4px;">💤 スヌーズ中（あと${diffDays}日、${r.snooze_until}まで）</div>`;
+      }
+
+      // Notification schedule
+      const schedule = r.custom_schedule && Array.isArray(r.custom_schedule) && r.custom_schedule.length > 0
+        ? r.custom_schedule.join(', ')
+        : '07:50, 17:30（デフォルト）';
+
+      // Event date display
+      const eventDateInfo = r.type === 'event' && r.event_date
+        ? `<span style="color:#1976d2; font-size:0.85em;">📅 ${r.event_date}</span> `
+        : '';
+
+      container.innerHTML += `
+        <div style="padding:12px 0; border-bottom:1px solid #f0f0f0;" id="reminder-row-${r.id}">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="font-size:0.85em;">${typeLabel}</span>
+                <span style="font-weight:600;">${esc(r.child_name)}</span>
+                ${statusBadge}
+                <span style="font-size:0.75em; color:#aaa;">(${roleLabel})</span>
+              </div>
+              <div style="margin-top:4px; font-size:0.95em; word-break:break-word;">${esc(r.message)}</div>
+              <div style="margin-top:4px; font-size:0.8em; color:#999;">
+                ${eventDateInfo}🕐 ${createdJST} ｜ 🔔 ${schedule}
+              </div>
+              ${snoozeInfo}
+            </div>
+            <div style="display:flex; gap:4px; flex-shrink:0; flex-wrap:wrap;">
+              <button class="btn-sm btn-warn" onclick="snoozeReminder('${r.id}')">💤</button>
+              <button class="btn-sm btn-danger" onclick="deleteReminderAdmin('${r.id}')">削除</button>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div style="font-size:0.8em; color:#666; margin-bottom:4px;">通知時間カスタマイズ:</div>
+            <div id="schedule-${r.id}" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+              ${renderScheduleInputs(r.id, r.custom_schedule)}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  } catch (e) {
+    container.innerHTML = '<div style="color:#e53935; text-align:center; padding:12px;">読み込みに失敗しました</div>';
+    console.error('リマインダー読み込みエラー:', e);
+  }
+}
+
+function esc(str) {
+  if (typeof window._escDiv === 'undefined') window._escDiv = document.createElement('div');
+  window._escDiv.textContent = str || '';
+  return window._escDiv.innerHTML;
+}
+
+function renderScheduleInputs(id, customSchedule) {
+  const times = (customSchedule && Array.isArray(customSchedule) && customSchedule.length > 0)
+    ? customSchedule
+    : [];
+
+  let html = '';
+  times.forEach((t, idx) => {
+    html += `<div style="display:inline-flex; align-items:center; gap:2px; background:#e3f2fd; padding:2px 6px; border-radius:4px;">
+      <input type="time" value="${t}" onchange="updateScheduleTime('${id}', ${idx}, this.value)" style="border:none; background:transparent; font-size:0.85em; padding:2px;">
+      <span onclick="removeScheduleTime('${id}', ${idx})" style="cursor:pointer; color:#e53935; font-weight:bold; font-size:0.9em;">×</span>
+    </div>`;
+  });
+  html += `<button class="btn-sm btn-primary" onclick="addScheduleTime('${id}')" style="padding:2px 8px; font-size:0.8em;">＋</button>`;
+  return html;
+}
+
+async function deleteReminderAdmin(id) {
+  if (!confirm('このリマインダーを削除しますか？')) return;
+  try {
+    await client.from('reminders').update({ deleted_at: new Date().toISOString() }).is('deleted_at', null).eq('id', id);
+    loadReminders();
+  } catch (e) {
+    alert('削除に失敗しました: ' + e.message);
+  }
+}
+
+async function snoozeReminder(id) {
+  const days = prompt('スヌーズ日数を入力してください（1〜365）:');
+  if (days === null) return;
+
+  const n = parseInt(days, 10);
+  if (!Number.isInteger(n) || n <= 0 || n > 365) {
+    alert('1〜365の正の整数を入力してください');
+    return;
+  }
+
+  // Calculate snooze_until in JST
+  const nowJST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  nowJST.setDate(nowJST.getDate() + n);
+  const snoozeUntil = nowJST.toISOString().slice(0, 10);
+
+  try {
+    await client.from('reminders').update({ snooze_until: snoozeUntil }).eq('id', id);
+    loadReminders();
+  } catch (e) {
+    alert('スヌーズ設定に失敗しました: ' + e.message);
+  }
+}
+
+// Custom schedule management
+let scheduleCache = {};
+
+async function loadScheduleCache() {
+  try {
+    const { data } = await client.from('reminders').select('id, custom_schedule').is('deleted_at', null);
+    if (data) {
+      data.forEach(r => {
+        scheduleCache[r.id] = r.custom_schedule && Array.isArray(r.custom_schedule) ? [...r.custom_schedule] : [];
+      });
+    }
+  } catch(e) {}
+}
+
+function addScheduleTime(id) {
+  if (!scheduleCache[id]) scheduleCache[id] = [];
+  scheduleCache[id].push('12:00');
+  rerenderSchedule(id);
+  saveSchedule(id);
+}
+
+function removeScheduleTime(id, idx) {
+  if (!scheduleCache[id]) return;
+  scheduleCache[id].splice(idx, 1);
+  rerenderSchedule(id);
+  saveSchedule(id);
+}
+
+function updateScheduleTime(id, idx, value) {
+  if (!scheduleCache[id]) scheduleCache[id] = [];
+  scheduleCache[id][idx] = value;
+  saveSchedule(id);
+}
+
+function rerenderSchedule(id) {
+  const container = document.getElementById('schedule-' + id);
+  if (!container) return;
+  container.innerHTML = renderScheduleInputs(id, scheduleCache[id]);
+}
+
+async function saveSchedule(id) {
+  const times = scheduleCache[id] || [];
+  // When all custom times removed, set to NULL (revert to default)
+  const value = times.length > 0 ? times : null;
+  try {
+    await client.from('reminders').update({ custom_schedule: value }).eq('id', id);
+  } catch (e) {
+    console.error('スケジュール保存エラー:', e);
+  }
+}
+
+// Load reminders on page load
+setTimeout(() => {
+  loadReminders();
+  loadScheduleCache();
+}, 600);
 </script>
 </body>
 </html>
