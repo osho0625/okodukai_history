@@ -14,7 +14,7 @@ async function notifyDiscord(content) {
 
 // --- Web Push通知 ---
 // VAPID公開鍵（GitHub Secretsに対応する秘密鍵を保存）
-const VAPID_PUBLIC_KEY = 'BDummyPublicKeyReplaceMeWithRealVAPIDPublicKey00000000000000000000000000000000000000000000';
+const VAPID_PUBLIC_KEY = 'BHgHz0m_5AB7lMyEKx2T_stxMjDbIYS8_D-q2IdVqFxOLUdhn2iuRIN1pV40yu95IKAv5J7HGEnlIe4GcEbvpEA';
 
 /**
  * Push通知の購読を登録/更新
