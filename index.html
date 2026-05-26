@@ -108,26 +108,26 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 
 /* リマインダーバナー */
 .reminder-item {
-  background: #fff; border-radius: 8px; padding: 10px 12px;
-  margin-bottom: 6px; border-left: 4px solid #ff9800;
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  background: #fff; border-radius: 6px; padding: 6px 10px;
+  margin-bottom: 4px; border-left: 3px solid #ff9800;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .reminder-item.event { border-left-color: #2196f3; }
-.reminder-info { flex: 1; min-width: 0; }
-.reminder-child { font-size: 0.8em; font-weight: 600; color: #555; }
-.reminder-msg { font-size: 0.9em; color: #333; margin-top: 2px; word-break: break-word; }
-.reminder-meta { font-size: 0.7em; color: #999; margin-top: 2px; }
-.reminder-snooze-badge { font-size: 0.7em; color: #ff9800; margin-left: 4px; }
-.reminder-btns { display: flex; gap: 6px; margin-left: 8px; flex-shrink: 0; }
+.reminder-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+.reminder-child { font-size: 0.65em; color: #999; flex-shrink: 0; }
+.reminder-msg { font-size: 0.82em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reminder-meta { font-size: 0.65em; color: #888; flex-shrink: 0; white-space: nowrap; }
+.reminder-snooze-badge { font-size: 0.65em; color: #ff9800; margin-left: 2px; }
+.reminder-btns { display: flex; gap: 4px; flex-shrink: 0; }
 .reminder-btn {
-  width: 28px; height: 28px; border: none; border-radius: 6px;
-  font-size: 0.85em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border: none; border-radius: 5px;
+  font-size: 0.7em; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .reminder-btn.delete { background: #ffebee; color: #e53935; }
 .reminder-btn.snooze { background: #fff3e0; color: #ff9800; }
 .reminder-btn:hover { opacity: 0.8; }
-.reminder-section-label { font-size: 0.75em; color: #888; font-weight: 600; margin: 8px 0 4px; }
+.reminder-section-label { font-size: 0.7em; color: #888; font-weight: 600; margin: 6px 0 2px; }
 
 /* 承認UI（TOP画面admin用） */
 .approval-section {
@@ -710,6 +710,11 @@ document.getElementById('pwOverlay').addEventListener('click', e => {
 
 // --- 管理者認証 ---
 function goAdmin() {
+  // admin権限ならパスワード不要で直接遷移
+  if (localStorage.getItem('deviceRole') === 'admin') {
+    window.location.href = 'pages/admin.html';
+    return;
+  }
   document.getElementById('adminError').style.display = 'none';
   document.getElementById('adminPwInput').value = '';
   document.getElementById('adminOverlay').classList.add('active');
@@ -1060,27 +1065,17 @@ function renderReminderItem(r, type, today) {
   let meta = '';
   let snoozeBadge = '';
 
-  if (type === 'memo') {
-    meta = formatDateJST(r.created_at) + ' 登録';
-  } else {
+  if (type === 'event') {
     const days = calcDaysRemaining(r.event_date, today);
     const dateStr = formatDateJST(r.event_date + 'T00:00:00+09:00');
-    if (days === 0) {
-      meta = dateStr + '（今日）';
-    } else {
-      meta = dateStr + '（あと' + days + '日）';
-    }
+    meta = days === 0 ? '今日' : dateStr + ' あと' + days + '日';
   }
 
-  // Snooze indicator
   if (r.snooze_until) {
     const snoozeDays = calcSnoozeDaysRemaining(r.snooze_until);
-    if (snoozeDays > 0) {
-      snoozeBadge = '<span class="reminder-snooze-badge">💤' + snoozeDays + '日</span>';
-    }
+    if (snoozeDays > 0) snoozeBadge = '<span class="reminder-snooze-badge">💤' + snoozeDays + '日</span>';
   }
 
-  // Admin buttons
   let btnsHtml = '';
   if (adminMode) {
     btnsHtml = '<div class="reminder-btns">'
@@ -1089,11 +1084,13 @@ function renderReminderItem(r, type, today) {
       + '</div>';
   }
 
+  const metaHtml = meta ? '<span class="reminder-meta">' + meta + snoozeBadge + '</span>' : (snoozeBadge || '');
+
   return '<div class="reminder-item' + (type === 'event' ? ' event' : '') + '" id="reminder-' + r.id + '">'
     + '<div class="reminder-info">'
     + '<span class="reminder-child">' + escHtml(r.child_name) + '</span>'
-    + '<div class="reminder-msg">' + escHtml(r.message) + '</div>'
-    + '<div class="reminder-meta">' + meta + snoozeBadge + '</div>'
+    + '<span class="reminder-msg">' + escHtml(r.message) + '</span>'
+    + metaHtml
     + '</div>'
     + btnsHtml
     + '</div>';
