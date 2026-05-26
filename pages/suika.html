@@ -69,7 +69,12 @@ canvas {
   <p class="info">矢印:移動 / Enter:決定 / X:キャンセル / Z:メニュー / A/S:カメラ</p>
 </div>
 
+<script src="../js/common.js"></script>
 <script>
+if (isNightTime()) {
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;"><div><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;margin-bottom:8px;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div></div>';
+  window._nightBlock = true;
+}
 // Navigation guard — confirm before leaving during gameplay
 function suikaNavGuard(dest, action) {
   // Auto-save before leaving

@@ -36,6 +36,374 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.84.0</span><span class="date">2026/05/26</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> リマインダー機能追加（子供→親連絡メモ、行事リマインダー、Discord通知、スヌーズ、通知時間カスタマイズ）</li>
+    <li><span class="tag tag-feat">feat</span> Web Push通知対応（iPhone/Android両対応、リマインダーはadmin端末に配信）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者→子供へのPush通知送信機能（admin.html「📲 Push通知送信」セクション）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.83.3</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：古い部屋が残り続ける問題を修正（5分タイムアウトで自動削除）</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：オーナー退出時にDB行を完全削除＋接続中ユーザーへ解散通知</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：部屋参加時の真っ暗画面を修正</li>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：Supabase接続先URLの修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.83.2</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> TOP画面：チケット残数表示をタップでチケット予約ページに直接遷移可能に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.83.1</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> あそびチケット：user権限でも個別ページから閲覧・予約可能に変更</li>
+    <li><span class="tag tag-fix">fix</span> あそびチケット：予約時の平日制限を撤廃（朝/昼/夜すべての時間帯で予約可能に）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.83.0</span><span class="date">2026/05/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：再戦機能追加（「もういちど」ボタンで同じ相手と連戦可能）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：3人以上の入室対応（最大6人、観戦/順番待ち選択）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：勝ち残り方式追加（勝者が残り、順番待ちの先頭と対戦）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：観戦モード追加（両プレイヤーの盤面をリアルタイム表示）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：「観戦のみ」制限オプション追加（ルーム作成時チェックボックス）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：参加者一覧パネル追加（役割アイコン・連勝数・順番表示）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：再接続対応（30秒間の切断猶予、役割保持）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：オーナーシップ自動移譲（heartbeat監視、15秒タイムアウト）</li>
+    <li><span class="tag tag-infra">infra</span> puyo_battlesテーブル拡張（max_players, spectator_only, owner_client_id, updated_at）</li>
+    <li><span class="tag tag-infra">infra</span> ルーム状態管理をES moduleに分離（puyo-room-state.js, puyo-ownership.js, puyo-reconnect.js）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.82.2</span><span class="date">2026/05/22</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ぴくぴく対戦：連鎖後の落下タイミング修正（消去→200ms待機→落下の順に変更、ノーマルモード準拠）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：相手のNEXTぷよを表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.82.1</span><span class="date">2026/05/22</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：連鎖後の落下アニメーション追加（宙に浮いたぷよが滑らかに落ちる演出）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：お邪魔ぷよをpuyo_10画像で表示（灰色丸→専用画像）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.82.0</span><span class="date">2026/05/22</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：連鎖アニメーション（逃走演出）追加 — ノーマルモードと同等の4段階アニメーション</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：連鎖テキスト表示追加（「N連鎖!」を盤面上部に表示）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：パーティクルエフェクト追加（消去時の破片演出）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：特殊ぷよ逃走モーション対応（羽ピクミン飛行、光ピクミン浮遊）</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：ぷよ出現順序を同期（seeded PRNG）— 両者同じ条件で対戦可能に</li>
+    <li><span class="tag tag-feat">feat</span> ぴくぴく対戦：再接続時のPRNG状態復元対応</li>
+    <li><span class="tag tag-infra">infra</span> 逃走アニメーションCSSを共通ファイル化（css/puyo-escape.css）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.81.0</span><span class="date">2026/05/21</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> クトゥルフTRPGシナリオリーダー追加（KP用・管理者限定）</li>
+    <li><span class="tag tag-feat">feat</span> 「毒入りスープ」オリジナルシナリオ収録（10シーン・3NPC・マップ付き）</li>
+    <li><span class="tag tag-feat">feat</span> シナリオ選択画面・自由遷移・目次・マップ・NPC一覧・フォントサイズ変更対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.80.0</span><span class="date">2026/05/21</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> ⚔️ ぴくぴく対戦モード追加 — Supabase Realtimeによるオンライン2人対戦</li>
+    <li><span class="tag tag-feat">機能</span> ぴくぴくタイトル画面に「1人であそぶ」「2人であそぶ」「カスタムモード」「ランキング」メニュー</li>
+    <li><span class="tag tag-feat">機能</span> ルーム一覧から選んで参加（コード入力不要）、任意でパスコード（数字4桁）設定可能</li>
+    <li><span class="tag tag-feat">機能</span> 対戦ルーム作成時に難易度選択（Easy/Normal/Hard/Special/カスタム）</li>
+    <li><span class="tag tag-feat">機能</span> 解放済みの難易度のみ選択可能、カスタムモードでは色数・盤面・速度を自由設定</li>
+    <li><span class="tag tag-feat">機能</span> お邪魔ぷよ実装（連鎖で相手に送る、相殺、予告表示、隣接消去）</li>
+    <li><span class="tag tag-feat">機能</span> 相手の落下中ぷよをリアルタイム描画</li>
+    <li><span class="tag tag-feat">機能</span> 算数バトル：結果画面で全プレイヤーの回答・AI採点コメントを問題ごとに表示</li>
+    <li><span class="tag tag-feat">機能</span> 算数バトル：「部屋に入る」で待機中の部屋一覧から選んで入室可能に</li>
+    <li><span class="tag tag-feat">機能</span> 算数バトル：部屋作成時に任意でパスコード（数字4桁）を設定可能</li>
+    <li><span class="tag tag-infra">DB</span> puyo_battles テーブル追加（ルーム管理、passcode、difficulty JSONB）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.79.3</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック小2：論理欠陥・条件不足・自由回答問題を6問修正（ID 2001,2002,2003,2014,2029,2034）</li>
+    <li><span class="tag tag-fix">修正</span> ID 2029「うそつき」：論理的に一意解が出ない問題を矛盾関係に修正</li>
+    <li><span class="tag tag-fix">修正</span> 自由記述（絵で説明・工夫を説明）を削除し採点可能な形式に変更</li>
+    <li><span class="tag tag-fix">修正</span> ID 2001 順序区別の明示化、ID 2034 切り方の具体化で一意解を保証</li>
+    <li><span class="tag tag-fix">修正</span> difficulty調整（2001: 1→2、2014: 2→1）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.79.2</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック小1：条件不足・自由回答・採点不能な問題を14問修正（ID 1002,1005,1007,1008,1010,1013,1015,1019,1020,1025,1030,1036,1038,1040）</li>
+    <li><span class="tag tag-fix">修正</span> 自由回答問題をchoice形式・一意解に変更（1005,1013,1020,1025）</li>
+    <li><span class="tag tag-fix">修正</span> 列挙型回答を「なんとおり？」数値回答に変更（1007,1015,1030,1035）</li>
+    <li><span class="tag tag-fix">修正</span> 曖昧条件の明示化・複数解の解消（1008,1010,1036,1040）</li>
+    <li><span class="tag tag-fix">修正</span> difficulty調整（1011,1014,1016,1017,1018,1019,1024,1028,1031等）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.79.1</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック小3：条件不足・オープンエンド・採点不能な問題を9問修正（ID 3002,3006,3007,3013,3016,3018,3019,3033,3035）</li>
+    <li><span class="tag tag-fix">修正</span> 曖昧条件の明示化、列挙型→通り数回答への変更、有名問題知識依存の解消</li>
+    <li><span class="tag tag-fix">修正</span> difficulty調整（3018,3019,3035: 3→2）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.78.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 算数オリンピック：小5問題を120問→170問に拡充（ID 121-170、論理パズル中心）</li>
+    <li><span class="tag tag-feat">機能</span> 算数オリンピック：小3問題を20問→40問に拡充（ID 3021-3040）</li>
+    <li><span class="tag tag-feat">機能</span> 算数オリンピック：小1問題を20問→40問に拡充（ID 1021-1040）</li>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック：論理的に解けない/条件不足の問題を13問修正（ID 14,82,102,134,145,150,152,155,156,159,161,165,167,169）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.77.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> ⚔️ 算数バトル（対戦モード）追加 — 2人以上で同じ10問を同時に解いてスコア＆タイムを競う</li>
+    <li><span class="tag tag-feat">機能</span> 部屋作成＆4文字コードで入室、URLコピーで招待可能</li>
+    <li><span class="tag tag-feat">機能</span> 学年選択（小1/小3/小5）からランダム10問出題</li>
+    <li><span class="tag tag-feat">機能</span> AI自動採点（Gemini/Groqフォールバック）で即時結果表示</li>
+    <li><span class="tag tag-feat">機能</span> リアルタイムで相手の進捗が見える</li>
+    <li><span class="tag tag-fix">修正</span> 算数オリンピック：更新ボタンでキャッシュが正しくクリアされない問題を修正</li>
+    <li><span class="tag tag-fix">修正</span> AI採点チャット：1回目が必ずエラーになる問題を修正（Groqフォールバック追加）</li>
+    <li><span class="tag tag-infra">DB</span> math_battle_rooms / math_battle_players / math_battle_answers テーブル追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.75.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 管理画面にAIキー設定UI追加（Gemini/Groq/OpenAI）</li>
+    <li><span class="tag tag-feat">機能</span> Gemini APIキー接続テストボタン追加</li>
+    <li><span class="tag tag-fix">修正</span> APIキー保存先をapp_configテーブルに統一（SQLファイル修正）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.76.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-fix">修正</span> AI採点プロンプトから模範解答を除外（AI自身で問題を解いて採点）</li>
+    <li><span class="tag tag-fix">修正</span> Geminiモデルをフォールバック方式に変更（2.0-flash→2.5-flash-lite）</li>
+    <li><span class="tag tag-fix">修正</span> ID 55「どの曜日？」ID 24「影の面積」ID 30「論理パズル」の模範解答を修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.75.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> AI採点後にチャットで会話可能（採点に不満がある場合に反論・質問）</li>
+    <li><span class="tag tag-feat">機能</span> AIが「修正提案: X点」と回答すると自動で点数フォームを更新</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.74.1</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 管理者用：回答者切り替え機能（学年選択画面に「👤 回答者を変更」ボタン）</li>
+    <li><span class="tag tag-feat">機能</span> 既存ユーザーのuser_idを自動検索して引き継ぎ</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.74.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> AI自動採点機能（Gemini 2.0 Flash + Groq Llama 3.3フォールバック）</li>
+    <li><span class="tag tag-feat">機能</span> 「🤖 AI自動採点」ボタンで点数・コメントを自動生成</li>
+    <li><span class="tag tag-infra">DB</span> game_settingsにgemini_api_key, groq_api_keyカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.73.1</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 学年カードを2カラムレイアウトに変更（左:アイコン+タイトル、右:ランキング+進捗）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.73.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> TOP画面に人別合計得点ランキング表示（🥇🥈🥉）</li>
+    <li><span class="tag tag-feat">機能</span> 学年カード内に人別ランキング表示</li>
+    <li><span class="tag tag-feat">機能</span> 学年カード内に進捗表示（✅採点済/⏳採点待/📝未回答）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.72.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 管理者：回答者変更機能（他の人の端末で回答したケース対応）</li>
+    <li><span class="tag tag-feat">機能</span> 管理者：採点取消（pending戻し）・回答削除機能</li>
+    <li><span class="tag tag-feat">機能</span> 採点済み管理タブ追加（採点済み回答の一覧・管理）</li>
+    <li><span class="tag tag-infra">DB</span> RLSポリシー変更（全UPDATE/DELETE許可）</li>
+    <li><span class="tag tag-fix">修正</span> 「つじ」の回答を「いろは」に変更するSQL追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.71.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> アプリTOP（index.html）に算数オリンピック採点待ち通知を表示（管理者のみ）</li>
+    <li><span class="tag tag-feat">機能</span> 通知タップで採点ページに直接遷移（#admin-review）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.70.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> TOP画面に合計獲得得点を表示</li>
+    <li><span class="tag tag-feat">機能</span> 問題カードに他ユーザーのスコアランキング表示（🥇🥈🥉）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.69.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 採点ページに問題文を表示</li>
+    <li><span class="tag tag-feat">機能</span> 学年選択画面に採点待ち通知バッジ（🔔 N件）</li>
+    <li><span class="tag tag-feat">機能</span> 通知タップで採点ページに直接遷移</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.68.0</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 採点UIを一覧→個別ページ→一覧の画面遷移に改善</li>
+    <li><span class="tag tag-feat">機能</span> 採点ページに問題タイトル・提出者名を表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.67.1</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 管理者採点画面のヒント使用数を色分け強調表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.67.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> ヒント使用を永続記録（localStorage）</li>
+    <li><span class="tag tag-feat">機能</span> ヒントボタンに確認ダイアログ追加</li>
+    <li><span class="tag tag-feat">機能</span> 問題カードにヒント使用回数を色分け表示（黄→橙→赤）</li>
+    <li><span class="tag tag-fix">修正</span> √を使う問題を除外・差し替え（ID 24, 70）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.66.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 小5問題を70問に拡充（論理・図形・場合の数を中心に20問追加）</li>
+    <li><span class="tag tag-feat">機能</span> 難易度3〜4のチャレンジ問題を充実</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.65.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 小5問題に難易度4（★★★★）を追加（論理パズル6問）</li>
+    <li><span class="tag tag-feat">機能</span> 難易度フィルターに★★★★を追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.64.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 採点を10点満点に変更</li>
+    <li><span class="tag tag-feat">機能</span> 問題一覧にステータスフィルター追加（未挑戦/提出済み/採点済み）</li>
+    <li><span class="tag tag-feat">機能</span> 採点済み問題にスコア表示</li>
+    <li><span class="tag tag-feat">機能</span> 問題タップで採点結果表示・再提出対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.63.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 算数オリンピック 小5問題を50問に拡充（15→50問）</li>
+    <li><span class="tag tag-feat">機能</span> 5ジャンル×3難易度でバランスよく配置</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.68.1</span><span class="date">2026/05/20</span></div>
+  <ul>
+    <li><span class="tag tag-fix">修正</span> チケット: admin端末でも個別ページではその子のチケットのみ表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.62.2</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> チケット削除機能追加（admin限定）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.62.1</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> チケット予約: 時間帯ボタン（朝/昼/夜ごはんのあと）追加</li>
+    <li><span class="tag tag-feat">機能</span> 平日は「夜ごはんのあと」のみ選択可能</li>
+    <li><span class="tag tag-feat">機能</span> 「時間で予約する」で自由時間指定も可能</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.62.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> 算数オリンピック（思考力チャレンジ）を追加</li>
+    <li><span class="tag tag-feat">機能</span> 5ジャンル×3問＝15問の思考問題</li>
+    <li><span class="tag tag-feat">機能</span> 段階ヒント・考え方メモ・管理者採点</li>
+    <li><span class="tag tag-infra">DB</span> math_olympiad_answersテーブルを追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.62.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> チケット予約制に変更（日時選択→承認→自動消化）</li>
+    <li><span class="tag tag-feat">機能</span> TOP画面にチケット予約承認UI追加（admin）</li>
+    <li><span class="tag tag-feat">機能</span> TOP画面に承認済み予約表示追加</li>
+    <li><span class="tag tag-feat">機能</span> Admin端末でもチケット使用ボタン表示</li>
+    <li><span class="tag tag-infra">DB</span> tickets: status拡張(pending/approved)、reserved_atカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.61.0</span><span class="date">2026/05/19</span></div>
+  <ul>
+    <li><span class="tag tag-feat">機能</span> あそびチケット機能を追加</li>
+    <li><span class="tag tag-infra">DB</span> ticketsテーブルを追加（sequence, index, CHECK制約）</li>
+    <li><span class="tag tag-feat">機能</span> 管理者ページにチケット発行セクションを追加</li>
+    <li><span class="tag tag-feat">機能</span> 子供ページからチケットページへのリンクを追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.60.0</span><span class="date">2026/05/13</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> 🍉 すいか戦闘で2体目の敵を攻撃できないバグ修正</li>

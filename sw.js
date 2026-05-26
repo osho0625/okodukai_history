@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v58';
+const CACHE_NAME = 'okozukai-v111';
 const ASSETS = [
   './',
   './index.html',
@@ -10,8 +10,21 @@ const ASSETS = [
   './pages/ranking.html',
   './pages/release-notes.html',
   './pages/olimar.html',
+  './pages/ticket.html',
+  './pages/math-olympiad.html',
+  './pages/math-battle.html',
+  './pages/puyo-battle.html',
+  './css/puyo-escape.css',
+  './pages/trpg-cthulhu.html',
+  './data/math-olympiad-grade5.json',
+  './data/math-olympiad-grade1.json',
+  './data/math-olympiad-grade2.json',
+  './data/math-olympiad-grade3.json',
+  './data/math-olympiad-grade4.json',
+  './data/math-olympiad-grade6.json',
   './js/common.js',
   './js/olimar-scenario.js',
+  './js/trpg-poisoned-soup-scenario.js',
   './manifest.json',
   './images/2728.png'
 ];
@@ -33,6 +46,36 @@ self.addEventListener('activate', e => {
     )
   );
   self.clients.claim();
+});
+
+// Push通知受信
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  const title = data.title || '🔔 リマインダー';
+  const options = {
+    body: data.body || '',
+    icon: './images/2728.png',
+    badge: './images/2728.png',
+    tag: data.tag || 'reminder-' + Date.now(),
+    data: { url: data.url || './index.html' }
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+// 通知クリック時
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data && e.notification.data.url ? e.notification.data.url : './index.html';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url.includes('okodukai_history') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
 
 // ネットワーク優先、失敗時にキャッシュ（GETのみキャッシュ）

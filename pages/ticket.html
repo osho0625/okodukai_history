@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>あそびチケット</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { margin-bottom: 16px; color: #333; }
+
+/* タブ */
+.tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
+.tab-btn {
+  flex: 1; padding: 12px 16px; border: none; background: none;
+  font-size: 1em; font-weight: 600; color: #999; cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+}
+.tab-btn.active { color: #4caf50; border-bottom-color: #4caf50; }
+.tab-btn:hover:not(.active) { color: #666; }
+
+/* チケットカード */
+.ticket-card {
+  position: relative;
+  background: linear-gradient(135deg, #fdf6e3 0%, #f5e6c8 100%);
+  border-radius: 12px;
+  padding: 20px 24px 20px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+  border: 1px solid #e8d5a3;
+  overflow: hidden;
+}
+.ticket-card.used { opacity: 0.7; }
+.ticket-card.pending { border-color: #ff9800; box-shadow: 0 3px 12px rgba(255,152,0,0.2); }
+.ticket-card.approved { border-color: #4caf50; box-shadow: 0 3px 12px rgba(76,175,80,0.2); }
+
+.ticket-gold-line {
+  position: absolute; top: 0; right: 0; width: 8px; height: 100%;
+  background: linear-gradient(to bottom, #d4a017, #b8860b, #d4a017);
+}
+.ticket-header { position: relative; }
+.ticket-title-en { font-size: 1.1em; font-weight: 700; color: #5a3e1b; letter-spacing: 1px; }
+.ticket-title-ja { font-size: 1.4em; font-weight: 800; color: #3d2b0f; margin-bottom: 8px; }
+.ticket-no { position: absolute; top: 0; right: 12px; font-size: 0.8em; color: #8b7355; font-weight: 600; }
+.ticket-desc { font-size: 0.85em; color: #5a4a2f; margin-bottom: 10px; line-height: 1.4; }
+.ticket-rules { font-size: 0.75em; color: #6b5b3f; margin-bottom: 12px; line-height: 1.6; }
+.ticket-duration { font-size: 1.8em; font-weight: 800; color: #c0392b; text-align: center; margin: 8px 0; }
+.ticket-meta { display: flex; justify-content: space-between; font-size: 0.75em; color: #7a6b4f; margin-top: 8px; }
+.ticket-icons { text-align: center; font-size: 1.4em; margin-top: 10px; letter-spacing: 8px; }
+
+/* ステータスバッジ */
+.status-badge {
+  display: inline-block; font-size: 0.75em; padding: 3px 10px; border-radius: 12px;
+  font-weight: 700; margin-top: 8px;
+}
+.status-badge.pending { background: #fff3e0; color: #e65100; }
+.status-badge.approved { background: #e8f5e9; color: #2e7d32; }
+
+/* スタンプ */
+.stamp-overlay {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  font-size: 2.2em; font-weight: 900;
+  color: rgba(220, 50, 50, 0.6); border: 4px solid rgba(220, 50, 50, 0.6);
+  border-radius: 12px; padding: 8px 20px; pointer-events: none; white-space: nowrap;
+}
+.stamp-animate { animation: stampPress 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+@keyframes stampPress {
+  0% { transform: translate(-50%, -50%) rotate(-15deg) scale(3); opacity: 0; }
+  60% { transform: translate(-50%, -50%) rotate(-15deg) scale(0.9); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) rotate(-15deg) scale(1); opacity: 1; }
+}
+
+/* ボタン */
+.use-btn {
+  display: block; width: 100%; margin-top: 12px; padding: 12px;
+  background: #4caf50; color: #fff; border: none; border-radius: 8px;
+  font-size: 1.1em; font-weight: 700; cursor: pointer;
+}
+.use-btn:disabled { background: #ccc; cursor: not-allowed; }
+.use-btn:hover:not(:disabled) { opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<a class="back" onclick="if(history.length>1){history.back()}else{location.href='../index.html'}">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>🎫 あそびチケット</h1>
+
+<div id="errorMsg" style="display:none; background:#ffebee; color:#c62828; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:0.9em; text-align:center;"></div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="unused" onclick="switchTab('unused')">未使用</button>
+  <button class="tab-btn" data-tab="reserved" onclick="switchTab('reserved')">予約中</button>
+  <button class="tab-btn" data-tab="history" onclick="switchTab('history')">履歴</button>
+</div>
+
+<div id="ticketList"></div>
+
+<!-- 予約ダイアログ -->
+<div class="overlay" id="reserveOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h3 style="margin-bottom:16px; font-size:1.1em; text-align:center;">🎫 予約する</h3>
+    <div style="margin-bottom:12px;">
+      <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:4px;">日付</label>
+      <input type="date" id="reserveDate" onchange="updateTimeSlots()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+    </div>
+    <div id="timeSlotsArea" style="margin-bottom:12px;">
+      <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:8px;">いつ遊ぶ？</label>
+      <div id="timeSlots" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+    <div id="customTimeArea" style="display:none; margin-bottom:12px;">
+      <label style="font-weight:600; font-size:0.9em; display:block; margin-bottom:4px;">開始時間</label>
+      <input type="time" id="reserveTime" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+      <button onclick="showTimeSlots()" style="margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#eee; color:#555; font-size:0.85em; cursor:pointer;">← 時間帯から選ぶ</button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="cancelReserve()" style="flex:1; padding:12px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; background:#eee; color:#333;">キャンセル</button>
+      <button id="reserveOkBtn" onclick="submitReservation()" style="flex:1; padding:12px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; background:#4caf50; color:#fff;">予約する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- 定数・状態 ---
+const VALID_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+let currentOwner = null;
+let currentTab = 'unused';
+let unusedTickets = [];
+let reservedTickets = []; // pending + approved
+let usedTickets = [];
+let pendingTicketId = null;
+let shownLoadError = false;
+
+// --- XSSエスケープ ---
+function esc(s) {
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+
+// --- エラー表示 ---
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+// --- Discord通知（タイムアウト付き） ---
+function notifyWithTimeout(msg) {
+  return Promise.race([
+    notifyDiscord(msg),
+    new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))
+  ]).catch(() => console.warn('Discord通知失敗/タイムアウト'));
+}
+
+// --- 初期化 ---
+async function initTicketPage() {
+  if (!navigator.onLine) {
+    document.body.classList.add('offline');
+    loadCachedTickets();
+    renderCurrentTab();
+    disableAllTicketActions();
+    showError('オフラインです');
+    return;
+  }
+
+  if (!resolveOwner()) return;
+
+  // 予約日時が過ぎたapprovedチケットを自動消化
+  await autoConsumeApproved();
+  await loadTickets();
+  renderCurrentTab();
+}
+
+function resolveOwner() {
+  const params = new URLSearchParams(location.search);
+  const paramOwner = params.get('owner');
+
+  currentOwner = paramOwner || null;
+
+  if (!currentOwner && !isAdmin) {
+    showError('所有者が指定されていません');
+    return false;
+  }
+
+  if (currentOwner && !VALID_OWNERS.includes(currentOwner)) {
+    currentOwner = null;
+    showError('所有者が不正です');
+    return false;
+  }
+  return true;
+}
+
+// --- 予約日時が過ぎたapprovedを自動used化 ---
+async function autoConsumeApproved() {
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('tickets')
+    .update({ status: 'used', used_at: now })
+    .eq('status', 'approved')
+    .lte('reserved_at', now)
+    .select();
+  if (data && data.length > 0) {
+    data.forEach(t => {
+      notifyWithTimeout(`🎫 ${t.owner}のチケットNo.${t.ticket_no}が予約時間になりました！（${t.duration_minutes}分）`);
+    });
+  }
+}
+
+// --- チケット取得 ---
+async function loadTickets() {
+  shownLoadError = false;
+  await Promise.all([loadUnusedTickets(), loadReservedTickets(), loadUsedTickets()]);
+  if (unusedTickets.length > 0 || usedTickets.length > 0 || reservedTickets.length > 0) {
+    localStorage.setItem('ticketCache_unused', JSON.stringify(unusedTickets));
+    localStorage.setItem('ticketCache_used', JSON.stringify(usedTickets));
+    localStorage.setItem('ticketCache_reserved', JSON.stringify(reservedTickets));
+  }
+}
+
+async function loadUnusedTickets() {
+  let query = client.from('tickets').select('*').eq('status', 'unused');
+  if (currentOwner) query = query.eq('owner', currentOwner);
+  query = query.order('ticket_no', { ascending: true });
+  const { data, error } = await query;
+  if (error) { showLoadErrorOnce(); return; }
+  unusedTickets = data || [];
+}
+
+async function loadReservedTickets() {
+  let query = client.from('tickets').select('*').in('status', ['pending', 'approved']);
+  if (currentOwner) query = query.eq('owner', currentOwner);
+  query = query.order('reserved_at', { ascending: true });
+  const { data, error } = await query;
+  if (error) { showLoadErrorOnce(); return; }
+  reservedTickets = data || [];
+}
+
+async function loadUsedTickets() {
+  let query = client.from('tickets').select('*').eq('status', 'used');
+  if (currentOwner) query = query.eq('owner', currentOwner);
+  query = query.order('used_at', { ascending: false });
+  const { data, error } = await query;
+  if (error) { showLoadErrorOnce(); return; }
+  usedTickets = data || [];
+}
+
+function showLoadErrorOnce() {
+  if (shownLoadError) return;
+  shownLoadError = true;
+  showError('データの取得に失敗しました');
+}
+
+function loadCachedTickets() {
+  unusedTickets = JSON.parse(localStorage.getItem('ticketCache_unused') || '[]');
+  usedTickets = JSON.parse(localStorage.getItem('ticketCache_used') || '[]');
+  reservedTickets = JSON.parse(localStorage.getItem('ticketCache_reserved') || '[]');
+}
+
+// --- タブ切り替え ---
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  renderCurrentTab();
+}
+
+function renderCurrentTab() {
+  if (currentTab === 'unused') renderUnusedTickets();
+  else if (currentTab === 'reserved') renderReservedTickets();
+  else renderHistory();
+}
+
+// --- 描画: 未使用チケット ---
+function renderUnusedTickets() {
+  const container = document.getElementById('ticketList');
+  if (unusedTickets.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 20px;">未使用のチケットはありません</div>';
+    return;
+  }
+  if (isAdmin && !currentOwner) {
+    // Admin直アクセス（ownerなし）: Owner別グループ表示
+    const grouped = groupByOwner(unusedTickets);
+    container.innerHTML = Object.entries(grouped)
+      .map(([owner, tix]) => renderOwnerGroup(owner, tix)).join('');
+  } else {
+    container.innerHTML = `
+      <div style="text-align:center;font-size:1.1em;color:#555;margin-bottom:16px;padding:8px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.05);">のこり <strong>${unusedTickets.length}</strong> まい</div>
+      ${unusedTickets.map(t => renderTicketCard(t)).join('')}
+    `;
+  }
+}
+
+// --- 描画: 予約中チケット ---
+function renderReservedTickets() {
+  const container = document.getElementById('ticketList');
+  if (reservedTickets.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 20px;">予約中のチケットはありません</div>';
+    return;
+  }
+  container.innerHTML = reservedTickets.map(t => renderTicketCard(t)).join('');
+}
+
+function groupByOwner(tickets) {
+  return tickets.reduce((acc, t) => { (acc[t.owner] = acc[t.owner] || []).push(t); return acc; }, {});
+}
+
+function renderOwnerGroup(owner, tickets) {
+  return `<div style="margin-bottom:24px;"><h3 style="font-size:1em;font-weight:700;color:#555;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ddd;">${esc(owner)}（${tickets.length}枚）</h3>${tickets.map(t => renderTicketCard(t)).join('')}</div>`;
+}
+
+// --- 描画: チケットカード ---
+function renderTicketCard(ticket) {
+  const st = ticket.status;
+  const cardClass = st === 'used' ? 'used' : st === 'pending' ? 'pending' : st === 'approved' ? 'approved' : '';
+  let statusHtml = '';
+  if (st === 'pending') {
+    const dt = formatReservedAt(ticket.reserved_at);
+    statusHtml = `<div class="status-badge pending">⏳ 承認待ち（${dt}）</div>`;
+  } else if (st === 'approved') {
+    const dt = formatReservedAt(ticket.reserved_at);
+    statusHtml = `<div class="status-badge approved">✅ 承認済み（${dt}）</div>`;
+  }
+
+  let actionHtml = '';
+  if (st === 'unused') {
+    actionHtml = `<button class="use-btn" ${!navigator.onLine ? 'disabled' : ''} onclick="openReserveDialog('${ticket.id}')">予約する</button>`;
+  } else if (st === 'pending' && isAdmin) {
+    actionHtml = `<div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="approveTicket('${ticket.id}')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#4caf50;color:#fff;font-weight:600;cursor:pointer;">承認</button>
+      <button onclick="rejectTicket('${ticket.id}')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#e53935;color:#fff;font-weight:600;cursor:pointer;">却下</button>
+    </div>`;
+  } else if (st === 'approved' && isAdmin) {
+    actionHtml = `<button onclick="cancelApproval('${ticket.id}')" style="display:block;width:100%;margin-top:12px;padding:10px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-weight:600;cursor:pointer;">承認取消</button>`;
+  }
+
+  // Admin: 削除ボタン（全ステータスで表示）
+  let deleteHtml = '';
+  if (isAdmin) {
+    deleteHtml = `<button onclick="deleteTicket('${ticket.id}')" style="display:block;width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:none;color:#999;font-size:0.8em;cursor:pointer;">🗑 削除</button>`;
+  }
+
+  return `
+    <div class="ticket-card ${cardClass}" data-ticket-id="${ticket.id}">
+      <div class="ticket-body">
+        <div class="ticket-gold-line"></div>
+        <div class="ticket-content">
+          <div class="ticket-header">
+            <div class="ticket-title-en">PLAY WITH TSUJI !!</div>
+            <div class="ticket-title-ja">あそびチケット</div>
+            <div class="ticket-no">No.${String(ticket.ticket_no)}</div>
+          </div>
+          <div class="ticket-desc">このチケットを使うとつじはどんなあそびにも付き合います</div>
+          <div class="ticket-rules">
+            <div class="rule">・時間中は券を使った人が最優先されます</div>
+            <div class="rule">・この券は連続で使用できます</div>
+            <div class="rule">・この券は予約性です</div>
+            <div class="rule">・予約は先着順です</div>
+            <div class="rule">・ご飯の時間になるとつじはご飯をたべます</div>
+          </div>
+          <div class="ticket-duration">${esc(String(ticket.duration_minutes))}分</div>
+          <div class="ticket-meta">
+            <span class="ticket-owner">${esc(ticket.owner)}</span>
+            <span class="ticket-issuer">発行: TSUJI</span>
+            <span class="ticket-expiry">有効期限: ∞</span>
+          </div>
+          <div class="ticket-icons">📖 ⚽ 🪁 🎮</div>
+        </div>
+      </div>
+      ${st === 'used' ? '<div class="stamp-overlay">つかったよ</div>' : ''}
+      ${statusHtml}
+      ${actionHtml}
+      ${deleteHtml}
+    </div>
+  `;
+}
+
+function formatReservedAt(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// --- 描画: 履歴 ---
+function renderHistory() {
+  const container = document.getElementById('ticketList');
+  if (usedTickets.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 20px;">まだ使ったチケットはありません</div>';
+    return;
+  }
+  container.innerHTML = usedTickets.map(t => {
+    const date = new Date(t.used_at);
+    const dateStr = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+    return `<div style="margin-bottom:16px;">${renderTicketCard(t)}<div style="text-align:right;font-size:0.8em;color:#999;margin-top:4px;">使用: ${dateStr}</div></div>`;
+  }).join('');
+}
+
+// --- 予約ダイアログ ---
+const TIME_SLOTS = [
+  { id: 'morning', label: '🌅 朝ごはんのあと', time: '08:00' },
+  { id: 'lunch', label: '☀️ 昼ごはんのあと', time: '12:00' },
+  { id: 'dinner', label: '🌙 夜ごはんのあと', time: '19:00' }
+];
+let selectedSlot = null;
+let useCustomTime = false;
+
+function openReserveDialog(ticketId) {
+  pendingTicketId = ticketId;
+  selectedSlot = null;
+  useCustomTime = false;
+  // デフォルト: 今日
+  const today = new Date();
+  document.getElementById('reserveDate').value = today.toISOString().split('T')[0];
+  document.getElementById('customTimeArea').style.display = 'none';
+  document.getElementById('timeSlotsArea').style.display = 'block';
+  updateTimeSlots();
+  document.getElementById('reserveOverlay').style.display = 'flex';
+}
+
+function updateTimeSlots() {
+  const dateVal = document.getElementById('reserveDate').value;
+  const container = document.getElementById('timeSlots');
+  selectedSlot = null;
+
+  if (!dateVal) { container.innerHTML = ''; return; }
+
+  let html = '';
+  TIME_SLOTS.forEach(slot => {
+    html += `<button class="slot-btn" data-slot="${slot.id}" onclick="selectSlot('${slot.id}')" style="padding:14px 16px; border:2px solid #ddd; border-radius:10px; background:#fff; font-size:1em; font-weight:600; cursor:pointer; text-align:left; transition:all 0.15s;">${slot.label}</button>`;
+  });
+  html += `<button onclick="showCustomTime()" style="padding:10px 16px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; font-size:0.9em; color:#666; cursor:pointer; text-align:center;">⏰ 時間で予約する</button>`;
+  container.innerHTML = html;
+}
+
+function selectSlot(slotId) {
+  selectedSlot = slotId;
+  useCustomTime = false;
+  document.querySelectorAll('.slot-btn').forEach(b => {
+    b.style.borderColor = b.dataset.slot === slotId ? '#4caf50' : '#ddd';
+    b.style.background = b.dataset.slot === slotId ? '#e8f5e9' : '#fff';
+  });
+}
+
+function showCustomTime() {
+  useCustomTime = true;
+  selectedSlot = null;
+  document.getElementById('timeSlotsArea').style.display = 'none';
+  document.getElementById('customTimeArea').style.display = 'block';
+  document.getElementById('reserveTime').value = '19:00';
+}
+
+function showTimeSlots() {
+  useCustomTime = false;
+  document.getElementById('customTimeArea').style.display = 'none';
+  document.getElementById('timeSlotsArea').style.display = 'block';
+  updateTimeSlots();
+}
+
+function cancelReserve() {
+  pendingTicketId = null;
+  document.getElementById('reserveOverlay').style.display = 'none';
+}
+
+async function submitReservation() {
+  if (!pendingTicketId) return;
+  const dateVal = document.getElementById('reserveDate').value;
+  if (!dateVal) { showError('日付を選んでください'); return; }
+
+  let timeVal;
+  if (useCustomTime) {
+    timeVal = document.getElementById('reserveTime').value;
+    if (!timeVal) { showError('時間を入力してください'); return; }
+  } else {
+    if (!selectedSlot) { showError('時間帯を選んでください'); return; }
+    const slot = TIME_SLOTS.find(s => s.id === selectedSlot);
+    timeVal = slot.time;
+  }
+
+  const reservedAt = new Date(`${dateVal}T${timeVal}:00`);
+  if (reservedAt <= new Date()) { showError('未来の日時を選んでください'); return; }
+
+  const btn = document.getElementById('reserveOkBtn');
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await client
+      .from('tickets')
+      .update({ status: 'pending', reserved_at: reservedAt.toISOString() })
+      .eq('id', pendingTicketId)
+      .eq('status', 'unused')
+      .select();
+
+    if (error || !data || data.length === 0) {
+      showError(error ? '予約に失敗しました' : 'このチケットは既に使われています');
+      cancelReserve();
+      await loadTickets();
+      renderCurrentTab();
+      return;
+    }
+
+    const ticket = data[0];
+    notifyWithTimeout(`🎫 ${ticket.owner}がチケットNo.${ticket.ticket_no}を予約しました（${formatReservedAt(ticket.reserved_at)}〜${ticket.duration_minutes}分）`);
+    cancelReserve();
+    await loadTickets();
+    switchTab('reserved');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- 承認・却下・取消（admin） ---
+async function approveTicket(ticketId) {
+  const { data, error } = await client
+    .from('tickets')
+    .update({ status: 'approved' })
+    .eq('id', ticketId)
+    .eq('status', 'pending')
+    .select();
+  if (error || !data || data.length === 0) { showError('承認に失敗しました'); return; }
+  const t = data[0];
+  notifyWithTimeout(`✅ ${t.owner}のチケットNo.${t.ticket_no}予約を承認しました（${formatReservedAt(t.reserved_at)}）`);
+  await loadTickets();
+  renderCurrentTab();
+}
+
+async function rejectTicket(ticketId) {
+  const { data, error } = await client
+    .from('tickets')
+    .update({ status: 'unused', reserved_at: null })
+    .eq('id', ticketId)
+    .eq('status', 'pending')
+    .select();
+  if (error || !data || data.length === 0) { showError('却下に失敗しました'); return; }
+  const t = data[0];
+  notifyWithTimeout(`❌ ${t.owner}のチケットNo.${t.ticket_no}予約を却下しました`);
+  await loadTickets();
+  renderCurrentTab();
+}
+
+async function cancelApproval(ticketId) {
+  const { data, error } = await client
+    .from('tickets')
+    .update({ status: 'unused', reserved_at: null })
+    .eq('id', ticketId)
+    .eq('status', 'approved')
+    .select();
+  if (error || !data || data.length === 0) { showError('取消に失敗しました'); return; }
+  const t = data[0];
+  notifyWithTimeout(`🔄 ${t.owner}のチケットNo.${t.ticket_no}承認を取り消しました`);
+  await loadTickets();
+  renderCurrentTab();
+}
+
+async function deleteTicket(ticketId) {
+  if (!confirm('このチケットを削除しますか？（元に戻せません）')) return;
+  const { error } = await client.from('tickets').delete().eq('id', ticketId);
+  if (error) { showError('削除に失敗しました'); return; }
+  await loadTickets();
+  renderCurrentTab();
+}
+
+// --- オフライン対応 ---
+function disableAllTicketActions() {
+  document.querySelectorAll('.use-btn, button[onclick*="approve"], button[onclick*="reject"], button[onclick*="cancel"]').forEach(b => b.disabled = true);
+}
+
+window.addEventListener('online', () => {
+  document.body.classList.remove('offline');
+  loadTickets().then(renderCurrentTab);
+});
+
+window.addEventListener('offline', () => {
+  document.body.classList.add('offline');
+  cancelReserve();
+  disableAllTicketActions();
+  showError('オフラインです');
+});
+
+// --- ページ読み込み ---
+document.addEventListener('DOMContentLoaded', initTicketPage);
+</script>
+</body>
+</html>

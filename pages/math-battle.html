@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>⚔️ 算数バトル</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; padding: 20px;
+  color: #eee; font-size: 16px;
+}
+.container { max-width: 480px; margin: 0 auto; }
+.header {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 480px; margin: 0 auto 24px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
+h1 { font-size: 1.4em; font-weight: 700; }
+.hidden { display: none !important; }
+.view { max-width: 480px; margin: 0 auto; }
+
+.btn {
+  display: inline-block; padding: 12px 24px;
+  border: none; border-radius: 12px;
+  font-size: 1em; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  color: #fff; background: linear-gradient(135deg, #667eea, #764ba2);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+.btn-small { padding: 8px 14px; font-size: 0.85em; border-radius: 8px; }
+.btn-danger { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+input[type="text"], textarea {
+  width: 100%; padding: 12px 16px;
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+  background: rgba(0,0,0,0.3); color: #eee;
+  font-size: 1em; font-family: 'Segoe UI', sans-serif; outline: none;
+}
+input[type="text"]:focus, textarea:focus { border-color: rgba(102,126,234,0.6); }
+textarea { resize: vertical; min-height: 80px; }
+
+.card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  cursor: pointer; transition: transform 0.15s, background 0.15s;
+}
+.card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+
+.grade-option {
+  display: flex; align-items: center; gap: 12px; padding: 16px;
+  background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
+}
+.grade-option.selected { border-color: #667eea; background: rgba(102,126,234,0.15); }
+.grade-option:hover { background: rgba(255,255,255,0.1); }
+
+.player-list { margin: 16px 0; }
+.player-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: rgba(255,255,255,0.05);
+  border-radius: 10px; margin-bottom: 8px;
+}
+.player-item .name { flex: 1; font-weight: 600; }
+.player-item .status { font-size: 0.8em; color: #aaa; }
+
+.progress-bar {
+  width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+  border-radius: 3px; overflow: hidden; margin: 8px 0;
+}
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s;
+}
+
+.question-area {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 16px; margin-bottom: 16px;
+  line-height: 1.8; font-size: 1em;
+}
+
+.timer { font-size: 1.2em; font-weight: 700; color: #ffa500; text-align: center; margin: 12px 0; }
+
+.result-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px; text-align: center;
+}
+.result-rank { font-size: 2.5em; margin-bottom: 8px; }
+.result-name { font-size: 1.2em; font-weight: 700; margin-bottom: 4px; }
+.result-score { font-size: 1.5em; color: #ffd700; font-weight: 700; }
+.result-time { font-size: 0.9em; color: #aaa; }
+
+.scoring-status {
+  text-align: center; padding: 24px; color: #aaa;
+}
+.scoring-status .spinner {
+  display: inline-block; width: 24px; height: 24px;
+  border: 3px solid rgba(255,255,255,0.2); border-top-color: #667eea;
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.room-code-display {
+  font-size: 2em; font-weight: 700; letter-spacing: 8px;
+  text-align: center; color: #ffd700; margin: 16px 0;
+  background: rgba(255,215,0,0.1); border-radius: 12px; padding: 16px;
+}
+
+.opponent-progress {
+  background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px;
+  margin-bottom: 8px; font-size: 0.85em;
+}
+
+.error-msg { color: #ff6b6b; font-size: 0.9em; margin-top: 8px; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back" onclick="leaveBattle()">←</a>
+  <h1>⚔️ 算数バトル</h1>
+  <a href="math-olympiad.html" style="margin-left:auto; color:#eee; text-decoration:none; font-size:1.3em;">🧮</a>
+</div>
+
+<!-- View: Lobby -->
+<div id="view-lobby" class="view">
+  <div class="container">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:3em; margin-bottom:12px;">⚔️</div>
+      <p style="color:#aaa;">友達と算数バトル！<br>同じ10問を同時に解いてスコアを競おう</p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <input type="text" id="battle-name-input" placeholder="なまえを入れてね" maxlength="20" style="text-align:center;">
+    </div>
+    <button class="btn" style="width:100%; margin-bottom:12px;" onclick="goCreate()">🏠 部屋をつくる</button>
+    <button class="btn btn-secondary" style="width:100%;" onclick="goJoin()">🚪 部屋に入る</button>
+    <div id="lobby-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Create Room -->
+<div id="view-create" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:16px;">🏠 部屋をつくる</h2>
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:16px;">学年を選んでね</p>
+    <div id="grade-options">
+      <div class="grade-option" onclick="selectBattleGrade('grade1')" data-grade="grade1">
+        <span style="font-size:1.5em;">🌱</span>
+        <div><div style="font-weight:600;">小学1年</div><div style="font-size:0.8em;color:#aaa;">たしざん・ひきざん・かたち</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade2')" data-grade="grade2">
+        <span style="font-size:1.5em;">🌱</span>
+        <div><div style="font-weight:600;">小学2年</div><div style="font-size:0.8em;color:#aaa;">くり上がり・長さ・時計</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade3')" data-grade="grade3">
+        <span style="font-size:1.5em;">🌿</span>
+        <div><div style="font-weight:600;">小学3年</div><div style="font-size:0.8em;color:#aaa;">わり算・図形・きまり</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade4')" data-grade="grade4">
+        <span style="font-size:1.5em;">🌿</span>
+        <div><div style="font-weight:600;">小学4年</div><div style="font-size:0.8em;color:#aaa;">約数・面積・角度</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade5')" data-grade="grade5">
+        <span style="font-size:1.5em;">🌳</span>
+        <div><div style="font-weight:600;">小学5年</div><div style="font-size:0.8em;color:#aaa;">思考力・論理・場合の数</div></div>
+      </div>
+      <div class="grade-option" onclick="selectBattleGrade('grade6')" data-grade="grade6">
+        <span style="font-size:1.5em;">🌳</span>
+        <div><div style="font-weight:600;">小学6年</div><div style="font-size:0.8em;color:#aaa;">比・速さ・場合の数</div></div>
+      </div>
+    </div>
+    <div style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.04); border-radius:12px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9em;">
+        <input type="checkbox" id="passcode-toggle" onchange="togglePasscodeInput()">
+        <span>🔒 パスコードを設定する</span>
+      </label>
+      <div id="passcode-create-area" class="hidden" style="margin-top:10px;">
+        <input type="text" id="passcode-create-input" placeholder="数字4桁" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="text-align:center; font-size:1.2em; letter-spacing:6px;">
+      </div>
+    </div>
+    <button class="btn" style="width:100%; margin-top:16px;" onclick="createRoom()" id="create-room-btn" disabled>部屋をつくる</button>
+    <button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="showView('view-lobby')">← 戻る</button>
+    <div id="create-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Join Room -->
+<div id="view-join" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:16px;">🚪 部屋に入る</h2>
+    <div id="room-list-area">
+      <p style="color:#aaa; font-size:0.9em; margin-bottom:12px;">待機中の部屋</p>
+      <div id="room-list" style="margin-bottom:16px;"><div style="color:#aaa; text-align:center; padding:20px;">読み込み中...</div></div>
+      <button class="btn btn-secondary btn-small" onclick="loadRoomList()">🔄 更新</button>
+    </div>
+    <div id="passcode-entry-area" class="hidden" style="margin-top:16px;">
+      <p style="color:#ffa500; font-size:0.9em; margin-bottom:8px;">🔒 この部屋にはパスコードが必要です</p>
+      <input type="text" id="passcode-input" placeholder="パスコード（数字4桁）" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="text-align:center; font-size:1.3em; letter-spacing:6px;">
+      <button class="btn" style="width:100%; margin-top:12px;" onclick="submitPasscode()">入室する</button>
+      <button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="cancelPasscode()">← 部屋一覧に戻る</button>
+      <div id="passcode-error" class="error-msg"></div>
+    </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1);">
+      <p style="color:#aaa; font-size:0.85em; margin-bottom:8px;">コードで入室</p>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="join-code-input" placeholder="部屋コード（4文字）" maxlength="4" style="text-align:center; font-size:1.1em; letter-spacing:4px; text-transform:uppercase; flex:1;">
+        <button class="btn btn-small" onclick="joinRoom()">入室</button>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-small" style="margin-top:16px;" onclick="showView('view-lobby')">← 戻る</button>
+    <div id="join-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Waiting Room -->
+<div id="view-waiting" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:8px;">⏳ 待機中...</h2>
+    <p style="color:#aaa; font-size:0.85em; margin-bottom:12px;">部屋コードを友達に教えてね</p>
+    <div class="room-code-display" id="waiting-room-code"></div>
+    <button class="btn btn-secondary btn-small" style="display:block; margin:8px auto;" onclick="copyRoomUrl()" id="copy-url-btn">📋 URLをコピーして招待</button>
+    <div id="waiting-grade" style="text-align:center; color:#aaa; font-size:0.9em; margin-bottom:16px;"></div>
+    <div class="player-list" id="waiting-players"></div>
+    <button class="btn" style="width:100%;" onclick="startBattle()" id="start-battle-btn" disabled>🚀 バトル開始！</button>
+    <p id="start-hint" style="color:#aaa; font-size:0.8em; text-align:center; margin-top:8px;">2人以上で開始できます（部屋を作った人だけ開始できます）</p>
+    <button class="btn btn-secondary btn-small" style="margin-top:16px;" onclick="leaveRoom()">退出する</button>
+  </div>
+</div>
+
+<!-- View: Battle (solving problems) -->
+<div id="view-battle" class="view hidden">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span id="battle-progress" style="font-weight:600;"></span>
+      <span class="timer" id="battle-timer">00:00</span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="battle-progress-bar"></div></div>
+    <div id="opponent-status" style="margin:12px 0;"></div>
+    <h3 id="battle-problem-title" style="margin-bottom:8px;"></h3>
+    <div id="battle-question" class="question-area"></div>
+    <textarea id="battle-answer" placeholder="答えを書いてね" rows="3"></textarea>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <button class="btn" style="flex:1;" onclick="submitBattleAnswer()" id="battle-submit-btn">次へ →</button>
+      <button class="btn btn-secondary btn-small" onclick="skipBattleProblem()">スキップ</button>
+    </div>
+    <div id="battle-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- View: Scoring (waiting for AI) -->
+<div id="view-scoring" class="view hidden">
+  <div class="container">
+    <div class="scoring-status">
+      <div class="spinner"></div>
+      <div style="font-size:1.1em; margin-bottom:8px;">🤖 AI採点中...</div>
+      <div id="scoring-progress" style="color:#aaa;">0 / 10 問採点完了</div>
+    </div>
+  </div>
+</div>
+
+<!-- View: My Results (自分の採点結果確認 + チャット) -->
+<div id="view-my-results" class="view hidden">
+  <div class="container">
+    <h2 style="font-size:1.1em; margin-bottom:4px;">📝 あなたの採点結果</h2>
+    <div id="my-total-score" style="text-align:center; font-size:1.4em; font-weight:700; color:#ffd700; margin-bottom:12px;"></div>
+    <div id="waiting-others-msg" style="text-align:center; color:#aaa; font-size:0.85em; margin-bottom:16px;"></div>
+    <div id="my-results-list"></div>
+    <div id="dispute-notifications" style="margin-top:16px;"></div>
+    <button class="btn" style="width:100%; margin-top:16px;" onclick="goToFinalResults()" id="go-final-btn" disabled>🏆 最終結果を見る</button>
+  </div>
+</div>
+
+<!-- View: Chat (個別問題のAIチャット) -->
+<div id="view-chat" class="view hidden">
+  <div class="container">
+    <button class="btn btn-secondary btn-small" style="margin-bottom:12px;" onclick="backToMyResults()">← 結果一覧に戻る</button>
+    <h3 id="chat-problem-title" style="margin-bottom:8px;"></h3>
+    <div id="chat-question" class="question-area" style="font-size:0.9em; max-height:120px; overflow-y:auto;"></div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px;">
+        <div style="font-size:0.75em; color:#aaa;">あなたの回答</div>
+        <div id="chat-my-answer" style="font-size:0.9em; margin-top:4px;"></div>
+      </div>
+      <div style="text-align:center; padding:10px;">
+        <div style="font-size:0.75em; color:#aaa;">点数</div>
+        <div id="chat-current-score" style="font-size:1.5em; font-weight:700; color:#ffd700;"></div>
+      </div>
+    </div>
+    <div id="chat-messages" style="max-height:250px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px; font-size:0.85em;"></div>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="chat-input" placeholder="採点に不満があれば入力..." style="flex:1;">
+      <button class="btn btn-small" onclick="sendBattleChat()" id="chat-send-btn">送信</button>
+    </div>
+    <div id="chat-propose-area" style="display:none; margin-top:12px; background:rgba(102,126,234,0.1); border-radius:10px; padding:12px;">
+      <p style="font-size:0.9em; margin-bottom:8px;">🔔 AIが点数変更を提案しました。全員の承認が必要です。</p>
+      <button class="btn btn-small" onclick="submitDispute()" id="propose-btn">みんなに承認を求める</button>
+    </div>
+  </div>
+</div>
+
+<!-- View: Results (最終結果) -->
+<div id="view-results" class="view hidden">
+  <div class="container">
+    <h2 style="text-align:center; margin-bottom:20px;">🏆 バトル結果</h2>
+    <div id="results-ranking"></div>
+    <div id="results-detail" style="margin-top:20px;"></div>
+    <button class="btn" style="width:100%; margin-top:20px;" onclick="showView('view-lobby'); cleanupRoom();">もう一回あそぶ</button>
+    <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="location.href='math-olympiad.html'">算数オリンピックに戻る</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script src="../js/common.js"></script>
+<script>
+
+// === Config ===
+const GRADE_CONFIG = {
+  grade1: { label: '小学1年', file: '../data/math-olympiad-grade1.json', icon: '🌱' },
+  grade2: { label: '小学2年', file: '../data/math-olympiad-grade2.json', icon: '🌱' },
+  grade3: { label: '小学3年', file: '../data/math-olympiad-grade3.json', icon: '🌿' },
+  grade4: { label: '小学4年', file: '../data/math-olympiad-grade4.json', icon: '🌿' },
+  grade5: { label: '小学5年', file: '../data/math-olympiad-grade5.json', icon: '🌳' },
+  grade6: { label: '小学6年', file: '../data/math-olympiad-grade6.json', icon: '🌳' }
+};
+const BATTLE_PROBLEM_COUNT = 10;
+
+// === State ===
+let allProblems = {};
+let battleGrade = null;
+let currentRoom = null;
+let currentPlayerId = null;
+let battleProblems = []; // 10 problems for this battle
+let battleIndex = 0;
+let battleTimerInterval = null;
+let battleStartTime = null;
+let problemStartTime = null;
+let subscription = null;
+let playerSubscription = null;
+let aiApiKeys = null;
+let isRoomHost = false; // この端末が部屋を作ったかどうか
+let battleUserName = ''; // この対戦で使う名前
+let battleUserId = ''; // この対戦で使うID
+let roomHasAdmin = false; // ルーム内にadminがいるか
+
+// === Utilities ===
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById(id)?.classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) el.textContent = msg;
+}
+
+function getUserId() {
+  if (!battleUserId) battleUserId = crypto.randomUUID();
+  return battleUserId;
+}
+
+function getUserName() {
+  return battleUserName;
+}
+
+function validateName() {
+  const name = document.getElementById('battle-name-input').value.trim();
+  if (!name) {
+    showError('lobby-error', 'なまえを入れてね');
+    return false;
+  }
+  battleUserName = name;
+  battleUserId = crypto.randomUUID();
+  document.getElementById('lobby-error').textContent = '';
+  return true;
+}
+
+function goCreate() {
+  if (!validateName()) return;
+  showView('view-create');
+}
+
+function goJoin() {
+  if (!validateName()) return;
+  showView('view-join');
+  loadRoomList();
+}
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+// === Data Loading ===
+async function loadAllProblems() {
+  for (const [grade, config] of Object.entries(GRADE_CONFIG)) {
+    try {
+      const res = await fetch(config.file);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      allProblems[grade] = await res.json();
+    } catch (e) {
+      console.error('Failed to load', grade, e);
+      allProblems[grade] = [];
+    }
+  }
+}
+
+function pickRandomProblems(grade) {
+  const pool = allProblems[grade] || [];
+  if (pool.length <= BATTLE_PROBLEM_COUNT) return pool.map(p => p.id);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, BATTLE_PROBLEM_COUNT).map(p => p.id);
+}
+
+function findProblem(problemId) {
+  for (const probs of Object.values(allProblems)) {
+    const p = probs.find(x => x.id === problemId);
+    if (p) return p;
+  }
+  return null;
+}
+
+// === Grade Selection ===
+function selectBattleGrade(grade) {
+  battleGrade = grade;
+  document.querySelectorAll('.grade-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.grade === grade);
+  });
+  document.getElementById('create-room-btn').disabled = false;
+}
+
+function togglePasscodeInput() {
+  const checked = document.getElementById('passcode-toggle').checked;
+  document.getElementById('passcode-create-area').classList.toggle('hidden', !checked);
+  if (!checked) document.getElementById('passcode-create-input').value = '';
+}
+
+// === Room List ===
+let pendingJoinRoom = null;
+
+async function loadRoomList() {
+  const container = document.getElementById('room-list');
+  container.innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">読み込み中...</div>';
+
+  try {
+    const { data: rooms, error } = await client.from('math_battle_rooms')
+      .select('*')
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    if (!rooms || rooms.length === 0) {
+      container.innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">待機中の部屋はありません</div>';
+      return;
+    }
+
+    // Get player counts
+    const roomIds = rooms.map(r => r.id);
+    const { data: players } = await client.from('math_battle_players')
+      .select('room_id')
+      .in('room_id', roomIds);
+    const playerCounts = {};
+    (players || []).forEach(p => { playerCounts[p.room_id] = (playerCounts[p.room_id] || 0) + 1; });
+
+    container.innerHTML = rooms.map(r => {
+      const config = GRADE_CONFIG[r.grade] || { label: r.grade, icon: '📚' };
+      const count = playerCounts[r.id] || 0;
+      const hasPasscode = !!r.passcode;
+      const lockIcon = hasPasscode ? '🔒 ' : '';
+      return `<div class="card" onclick="tryJoinRoom('${r.id}', ${hasPasscode})" style="padding:12px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:0.95em;">${lockIcon}${config.icon} ${config.label}</div>
+            <div style="font-size:0.8em;color:#aaa;margin-top:2px;">コード: ${r.room_code} ・ ${count}人待機中</div>
+          </div>
+          <span style="font-size:1.2em;">→</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div style="color:#ff6b6b; text-align:center; padding:20px;">読み込みに失敗しました</div>';
+  }
+}
+
+async function tryJoinRoom(roomId, hasPasscode) {
+  if (hasPasscode) {
+    pendingJoinRoom = roomId;
+    document.getElementById('room-list-area').classList.add('hidden');
+    document.getElementById('passcode-entry-area').classList.remove('hidden');
+    document.getElementById('passcode-input').value = '';
+    document.getElementById('passcode-error').textContent = '';
+    setTimeout(() => document.getElementById('passcode-input').focus(), 100);
+  } else {
+    await joinRoomById(roomId);
+  }
+}
+
+async function submitPasscode() {
+  const code = document.getElementById('passcode-input').value.trim();
+  if (!/^\d{4}$/.test(code)) {
+    showError('passcode-error', '数字4桁を入力してね');
+    return;
+  }
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*').eq('id', pendingJoinRoom).eq('passcode', code).single();
+    if (error || !data) {
+      showError('passcode-error', 'パスコードが違います');
+      return;
+    }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('passcode-error', '入室に失敗しました');
+  }
+}
+
+function cancelPasscode() {
+  pendingJoinRoom = null;
+  document.getElementById('passcode-entry-area').classList.add('hidden');
+  document.getElementById('room-list-area').classList.remove('hidden');
+}
+
+async function joinRoomById(roomId) {
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*').eq('id', roomId).eq('status', 'waiting').single();
+    if (error || !data) { showError('join-error', '部屋が見つかりません'); return; }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('join-error', '入室に失敗しました');
+  }
+}
+
+// === Room Creation ===
+async function createRoom() {
+  if (!battleGrade) return;
+
+  const btn = document.getElementById('create-room-btn');
+  btn.disabled = true;
+
+  const roomCode = generateRoomCode();
+  const problemIds = pickRandomProblems(battleGrade);
+
+  // Passcode (optional)
+  let passcode = null;
+  if (document.getElementById('passcode-toggle').checked) {
+    const code = document.getElementById('passcode-create-input').value.trim();
+    if (!/^\d{4}$/.test(code)) {
+      showError('create-error', 'パスコードは数字4桁で入力してね');
+      btn.disabled = false;
+      return;
+    }
+    passcode = code;
+  }
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms').insert({
+      room_code: roomCode,
+      grade: battleGrade,
+      problem_ids: problemIds,
+      status: 'waiting',
+      created_by: getUserId(),
+      passcode: passcode
+    }).select().single();
+
+    if (error) throw error;
+    currentRoom = data;
+    isRoomHost = true;
+
+    // Join as player
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('create-error', '部屋の作成に失敗しました');
+    btn.disabled = false;
+  }
+}
+
+// === Room Joining ===
+async function joinRoom() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (code.length !== 4) { showError('join-error', '4文字のコードを入力してね'); return; }
+
+  try {
+    const { data, error } = await client.from('math_battle_rooms')
+      .select('*')
+      .eq('room_code', code)
+      .eq('status', 'waiting')
+      .single();
+
+    if (error || !data) { showError('join-error', '部屋が見つかりません'); return; }
+    currentRoom = data;
+    await joinAsPlayer(data.id);
+    showWaitingRoom();
+  } catch (e) {
+    showError('join-error', '入室に失敗しました');
+  }
+}
+
+async function joinAsPlayer(roomId) {
+  const { data, error } = await client.from('math_battle_players').insert({
+    room_id: roomId,
+    user_id: getUserId(),
+    user_name: getUserName(),
+    is_admin: isAdmin
+  }).select().single();
+
+  if (error && error.code === '23505') {
+    // Already joined
+    const { data: existing } = await client.from('math_battle_players')
+      .select('*').eq('room_id', roomId).eq('user_id', getUserId()).single();
+    if (existing) { currentPlayerId = existing.id; return; }
+  }
+  if (error) throw error;
+  currentPlayerId = data.id;
+}
+
+// === Waiting Room ===
+function showWaitingRoom() {
+  document.getElementById('waiting-room-code').textContent = currentRoom.room_code;
+  const config = GRADE_CONFIG[currentRoom.grade];
+  document.getElementById('waiting-grade').textContent = config.icon + ' ' + config.label + '（10問）';
+  showView('view-waiting');
+  loadPlayers();
+  subscribeToRoom();
+}
+
+function copyRoomUrl() {
+  const url = location.origin + location.pathname + '?room=' + currentRoom.room_code;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copy-url-btn');
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📋 URLをコピーして招待'; }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    prompt('このURLを共有してね:', location.origin + location.pathname + '?room=' + currentRoom.room_code);
+  });
+}
+
+async function loadPlayers() {
+  const { data } = await client.from('math_battle_players')
+    .select('*').eq('room_id', currentRoom.id).order('joined_at');
+  renderPlayers(data || []);
+}
+
+function renderPlayers(players) {
+  const container = document.getElementById('waiting-players');
+  container.innerHTML = players.map(p => {
+    const isMe = p.user_id === getUserId();
+    const hostPlayer = isRoomHost ? getUserId() : currentRoom.created_by;
+    const isPlayerHost = p.user_id === hostPlayer;
+    const badge = isPlayerHost ? '👑' : '';
+    const meTag = isMe ? ' <span style="color:#667eea;">(あなた)</span>' : '';
+    return `<div class="player-item"><span class="name">${badge} ${p.user_name}${meTag}</span><span class="status">参加中</span></div>`;
+  }).join('');
+
+  // Enable start button only for host with 2+ players
+  const isHost = isRoomHost;
+  const startBtn = document.getElementById('start-battle-btn');
+  startBtn.disabled = !(isHost && players.length >= 2);
+  document.getElementById('start-hint').style.display = isHost ? 'block' : 'none';
+  if (!isHost) {
+    document.getElementById('start-hint').textContent = 'ホストがバトルを開始するのを待っています...';
+    document.getElementById('start-hint').style.display = 'block';
+  }
+}
+
+function subscribeToRoom() {
+  // Subscribe to player changes
+  playerSubscription = client.channel('battle-players-' + currentRoom.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'math_battle_players', filter: 'room_id=eq.' + currentRoom.id }, () => {
+      loadPlayers();
+    })
+    .subscribe();
+
+  // Subscribe to room status changes
+  subscription = client.channel('battle-room-' + currentRoom.id)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'math_battle_rooms', filter: 'id=eq.' + currentRoom.id }, (payload) => {
+      currentRoom = payload.new;
+      if (currentRoom.status === 'playing') {
+        startBattlePlay();
+      } else if (currentRoom.status === 'finished') {
+        showResults();
+      }
+    })
+    .subscribe();
+}
+
+// === Start Battle ===
+async function startBattle() {
+  if (!isRoomHost) return;
+
+  try {
+    const { error } = await client.from('math_battle_rooms')
+      .update({ status: 'playing', started_at: new Date().toISOString() })
+      .eq('id', currentRoom.id);
+    if (error) throw error;
+    // The subscription will trigger startBattlePlay for everyone
+  } catch (e) {
+    alert('開始に失敗しました');
+  }
+}
+
+function startBattlePlay() {
+  // Load battle problems
+  const problemIds = currentRoom.problem_ids;
+  battleProblems = problemIds.map(id => findProblem(id)).filter(Boolean);
+  battleIndex = 0;
+  battleStartTime = Date.now();
+  problemStartTime = Date.now();
+
+  showView('view-battle');
+  renderBattleProblem();
+  startBattleTimer();
+  subscribeToOpponentProgress();
+}
+
+// === Battle Timer ===
+function startBattleTimer() {
+  if (battleTimerInterval) clearInterval(battleTimerInterval);
+  battleTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+    document.getElementById('battle-timer').textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function stopBattleTimer() {
+  if (battleTimerInterval) { clearInterval(battleTimerInterval); battleTimerInterval = null; }
+}
+
+// === Render Battle Problem ===
+function renderBattleProblem() {
+  if (battleIndex >= battleProblems.length) {
+    finishBattle();
+    return;
+  }
+  const p = battleProblems[battleIndex];
+  document.getElementById('battle-progress').textContent = `問${battleIndex + 1} / ${battleProblems.length}`;
+  document.getElementById('battle-progress-bar').style.width = ((battleIndex / battleProblems.length) * 100) + '%';
+  document.getElementById('battle-problem-title').textContent = p.title;
+  document.getElementById('battle-question').innerHTML = DOMPurify.sanitize(p.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] });
+  document.getElementById('battle-answer').value = '';
+  document.getElementById('battle-submit-btn').disabled = false;
+  problemStartTime = Date.now();
+}
+
+// === Submit Answer ===
+async function submitBattleAnswer() {
+  const answerText = document.getElementById('battle-answer').value.trim();
+  if (!answerText) { showError('battle-error', '答えを入力してね'); return; }
+
+  const btn = document.getElementById('battle-submit-btn');
+  btn.disabled = true;
+  document.getElementById('battle-error').textContent = '';
+
+  const elapsed = Math.floor((Date.now() - problemStartTime) / 1000);
+  const problem = battleProblems[battleIndex];
+
+  try {
+    await client.from('math_battle_answers').insert({
+      room_id: currentRoom.id,
+      user_id: getUserId(),
+      problem_id: problem.id,
+      answer_text: answerText,
+      elapsed_seconds: elapsed
+    });
+  } catch (e) {
+    // Ignore duplicate errors
+  }
+
+  // Update progress
+  battleIndex++;
+  await client.from('math_battle_players')
+    .update({ current_problem_index: battleIndex })
+    .eq('id', currentPlayerId);
+
+  renderBattleProblem();
+}
+
+function skipBattleProblem() {
+  // Submit empty answer with 0 score
+  const elapsed = Math.floor((Date.now() - problemStartTime) / 1000);
+  const problem = battleProblems[battleIndex];
+
+  client.from('math_battle_answers').insert({
+    room_id: currentRoom.id,
+    user_id: getUserId(),
+    problem_id: problem.id,
+    answer_text: '（スキップ）',
+    elapsed_seconds: elapsed,
+    score: 0,
+    ai_comment: 'スキップされました'
+  }).then(() => {});
+
+  battleIndex++;
+  client.from('math_battle_players')
+    .update({ current_problem_index: battleIndex })
+    .eq('id', currentPlayerId).then(() => {});
+
+  renderBattleProblem();
+}
+
+// === Opponent Progress ===
+function subscribeToOpponentProgress() {
+  // Poll opponent progress every 3 seconds
+  const interval = setInterval(async () => {
+    if (!currentRoom || currentRoom.status === 'finished') { clearInterval(interval); return; }
+    const { data } = await client.from('math_battle_players')
+      .select('user_name, current_problem_index, finished')
+      .eq('room_id', currentRoom.id)
+      .neq('user_id', getUserId());
+
+    const container = document.getElementById('opponent-status');
+    if (data && data.length > 0) {
+      container.innerHTML = data.map(p => {
+        const status = p.finished ? '✅ 完了！' : `問${p.current_problem_index + 1}を解答中`;
+        return `<div class="opponent-progress">👤 ${p.user_name}: ${status}</div>`;
+      }).join('');
+    }
+  }, 3000);
+}
+
+// === Finish Battle ===
+async function finishBattle() {
+  stopBattleTimer();
+  const totalElapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+
+  await client.from('math_battle_players')
+    .update({
+      finished: true,
+      finished_at: new Date().toISOString(),
+      total_elapsed_seconds: totalElapsed,
+      current_problem_index: battleProblems.length
+    })
+    .eq('id', currentPlayerId);
+
+  // Show scoring view
+  showView('view-scoring');
+
+  // AI grade my answers
+  await gradeMyAnswers();
+
+  // 採点完了 → 自分の結果確認画面へ（全員完了を待たない）
+  showMyResults();
+}
+
+// === AI Grading ===
+async function loadAiApiKeys() {
+  if (aiApiKeys) return aiApiKeys;
+  const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
+  aiApiKeys = {};
+  if (data) data.forEach(row => { aiApiKeys[row.key] = row.value; });
+  return aiApiKeys;
+}
+
+async function gradeMyAnswers() {
+  const keys = await loadAiApiKeys();
+  const { data: answers } = await client.from('math_battle_answers')
+    .select('*')
+    .eq('room_id', currentRoom.id)
+    .eq('user_id', getUserId())
+    .is('score', null);
+
+  if (!answers || answers.length === 0) { updateScoringProgress(10, 10); return; }
+
+  let graded = battleProblems.length - answers.length;
+  updateScoringProgress(graded, battleProblems.length);
+
+  for (const answer of answers) {
+    const problem = findProblem(answer.problem_id);
+    if (!problem) { graded++; updateScoringProgress(graded, battleProblems.length); continue; }
+
+    const prompt = buildGradePrompt(problem, answer.answer_text);
+    let result = null;
+
+    try {
+      if (keys.gemini_api_key) {
+        result = await callGemini(keys.gemini_api_key, prompt);
+      }
+      if (!result && keys.groq_api_key) {
+        result = await callGroq(keys.groq_api_key, prompt);
+      }
+    } catch (e) {
+      if (keys.groq_api_key) {
+        try { result = await callGroq(keys.groq_api_key, prompt); } catch (e2) {}
+      }
+    }
+
+    let score = 0;
+    let comment = '';
+    if (result) {
+      const scoreMatch = result.match(/点数[：:]\s*(\d+)/) || result.match(/(\d+)\s*[\/／]\s*10/) || result.match(/(\d+)\s*点/);
+      if (scoreMatch) score = Math.min(10, Math.max(0, parseInt(scoreMatch[1])));
+      const commentMatch = result.match(/コメント[：:]\s*([\s\S]*)/);
+      comment = commentMatch ? commentMatch[1].trim() : result.substring(0, 200);
+    }
+
+    await client.from('math_battle_answers')
+      .update({ score, ai_comment: comment })
+      .eq('id', answer.id);
+
+    graded++;
+    updateScoringProgress(graded, battleProblems.length);
+  }
+
+  // Update total score
+  await updateMyTotalScore();
+}
+
+async function updateMyTotalScore() {
+  const { data: allMyAnswers } = await client.from('math_battle_answers')
+    .select('score').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+  const totalScore = (allMyAnswers || []).reduce((sum, a) => sum + (a.score || 0), 0);
+
+  await client.from('math_battle_players')
+    .update({ total_score: totalScore })
+    .eq('id', currentPlayerId);
+}
+
+function buildGradePrompt(problem, answerText) {
+  return `あなたは小学生向け算数コンテストの採点官です。以下の問題と解答を採点してください。
+あなた自身で問題を解いて正解を導き出し、それと受験者の解答を比較して採点してください。
+
+【問題】
+${problem.question.replace(/<[^>]+>/g, '')}
+
+【受験者の解答】
+${answerText}
+
+【採点ルール】
+- 10点満点で採点する
+- まずあなた自身で問題を解き、正解を確認する
+- 受験者の解答が正しければ満点（10点）
+- 表現が違っても論理的に同じ結論なら正解
+- 小学生の回答なので言葉遣いの稚拙さは減点しない
+- 部分的に正しければ部分点を与える
+
+回答は必ず以下の形式で（形式厳守）:
+点数: X
+コメント: （短い一言コメント）`;
+}
+
+async function callGemini(apiKey, prompt) {
+  const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body = model.includes('2.5')
+        ? { contents: [{ parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }
+        : { contents: [{ parts: [{ text: prompt }] }] };
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find(p => p.text !== undefined);
+      if (textPart?.text) return textPart.text;
+    } catch (e) { continue; }
+  }
+  throw new Error('Gemini failed');
+}
+
+async function callGroq(apiKey, prompt) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+  });
+  if (!res.ok) throw new Error('Groq error');
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function updateScoringProgress(done, total) {
+  document.getElementById('scoring-progress').textContent = `${done} / ${total} 問採点完了`;
+}
+
+// === My Results View ===
+let myAnswersData = [];
+let allFinishedPolling = null;
+
+async function showMyResults() {
+  showView('view-my-results');
+
+  // Check if room has admin player
+  const { data: players } = await client.from('math_battle_players')
+    .select('is_admin').eq('room_id', currentRoom.id);
+  roomHasAdmin = players ? players.some(p => p.is_admin) : false;
+
+  const { data } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+  myAnswersData = data || [];
+
+  const totalScore = myAnswersData.reduce((sum, a) => sum + (a.score || 0), 0);
+  document.getElementById('my-total-score').textContent = `${totalScore} / ${battleProblems.length * 10} 点`;
+
+  renderMyResultsList();
+  startWaitingForOthers();
+  if (roomHasAdmin) subscribeToDisputes();
+}
+
+function renderMyResultsList() {
+  const container = document.getElementById('my-results-list');
+  container.innerHTML = myAnswersData.map((a, i) => {
+    const problem = findProblem(a.problem_id);
+    const title = problem ? problem.title : '問題' + a.problem_id;
+    const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
+    const chatHint = roomHasAdmin
+      ? '<div style="font-size:0.75em;color:#667eea;margin-top:4px;">💬 タップして採点に異議を申し立てる</div>'
+      : '';
+    return `<div class="card" ${roomHasAdmin ? `onclick="openChat(${i})"` : ''} style="${roomHasAdmin ? 'cursor:pointer;' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:600;font-size:0.9em;">${title}</span>
+        <span style="color:${scoreColor};font-weight:700;">${a.score ?? '?'}/10</span>
+      </div>
+      <div style="font-size:0.8em;color:#aaa;margin-top:4px;">${a.ai_comment || ''}</div>
+      ${chatHint}
+    </div>`;
+  }).join('');
+}
+
+function startWaitingForOthers() {
+  checkOthersFinished();
+  allFinishedPolling = setInterval(checkOthersFinished, 5000);
+}
+
+async function checkOthersFinished() {
+  const { data: players } = await client.from('math_battle_players')
+    .select('user_name, finished').eq('room_id', currentRoom.id);
+  if (!players) return;
+
+  const notFinished = players.filter(p => !p.finished);
+  const msgEl = document.getElementById('waiting-others-msg');
+  const btn = document.getElementById('go-final-btn');
+
+  if (notFinished.length === 0) {
+    msgEl.textContent = '✅ 全員の採点が完了しました！';
+    btn.disabled = false;
+    if (allFinishedPolling) { clearInterval(allFinishedPolling); allFinishedPolling = null; }
+  } else {
+    const names = notFinished.map(p => p.user_name).join('、');
+    msgEl.textContent = `⏳ ${names} がまだ解答中...`;
+    btn.disabled = true;
+  }
+}
+
+async function goToFinalResults() {
+  if (allFinishedPolling) { clearInterval(allFinishedPolling); allFinishedPolling = null; }
+  await showResults();
+}
+
+// === AI Chat for Disputes ===
+let chatAnswerIndex = null;
+let chatHistory = [];
+let proposedScore = null;
+
+function openChat(index) {
+  chatAnswerIndex = index;
+  chatHistory = [];
+  proposedScore = null;
+  const answer = myAnswersData[index];
+  const problem = findProblem(answer.problem_id);
+
+  document.getElementById('chat-problem-title').textContent = problem ? problem.title : '問題' + answer.problem_id;
+  document.getElementById('chat-question').innerHTML = problem
+    ? DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] }) : '';
+  document.getElementById('chat-my-answer').textContent = answer.answer_text;
+  document.getElementById('chat-current-score').textContent = answer.score + '点';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-input').value = '';
+  document.getElementById('chat-propose-area').style.display = 'none';
+
+  if (answer.ai_comment) {
+    chatHistory.push({ role: 'assistant', content: answer.ai_comment });
+    renderChatMessages();
+  }
+
+  showView('view-chat');
+  document.getElementById('chat-input').onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendBattleChat(); }
+  };
+}
+
+function backToMyResults() {
+  showView('view-my-results');
+  renderMyResultsList();
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = chatHistory.map(msg => {
+    const isUser = msg.role === 'user';
+    const align = isUser ? 'text-align:right;' : '';
+    const bg = isUser ? 'background:rgba(102,126,234,0.2);' : 'background:rgba(255,255,255,0.05);';
+    const label = isUser ? '👤' : '🤖';
+    return `<div style="${align}margin-bottom:6px;"><div style="display:inline-block;${bg}border-radius:8px;padding:6px 10px;max-width:90%;text-align:left;">${label} ${msg.content.replace(/\n/g, '<br>')}</div></div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendBattleChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  chatHistory.push({ role: 'user', content: msg });
+  renderChatMessages();
+
+  const answer = myAnswersData[chatAnswerIndex];
+  const problem = findProblem(answer.problem_id);
+  const keys = await loadAiApiKeys();
+
+  const systemContext = `あなたは小学生向け算数コンテストの採点官です。対戦モードで採点結果に異議が出ています。
+
+【問題】
+${problem ? problem.question.replace(/<[^>]+>/g, '') : ''}
+
+【受験者の解答】
+${answer.answer_text}
+
+【現在の採点】${answer.score}点
+
+受験者からの質問や反論に対して、採点の根拠を説明してください。
+もし受験者の主張が正当で点数を変更すべきと判断した場合は「修正提案: X点」と明記してください。
+安易に点数を変えず、正当な理由がある場合のみ変更を提案してください。`;
+
+  const fullPrompt = systemContext + '\n\n会話:\n' +
+    chatHistory.map(m => (m.role === 'user' ? '受験者: ' : 'AI: ') + m.content).join('\n');
+
+  let reply = '';
+  try {
+    if (keys.gemini_api_key) {
+      reply = await callGemini(keys.gemini_api_key, fullPrompt);
+    }
+    if (!reply && keys.groq_api_key) {
+      reply = await callGroq(keys.groq_api_key, fullPrompt);
+    }
+  } catch (e) {
+    if (keys.groq_api_key) {
+      try { reply = await callGroq(keys.groq_api_key, fullPrompt); } catch (e2) {}
+    }
+    if (!reply) reply = 'エラーが発生しました';
+  }
+
+  chatHistory.push({ role: 'assistant', content: reply });
+  renderChatMessages();
+
+  // Check if AI proposed a score change
+  const scoreChange = reply.match(/修正提案[：:]\s*(\d+)点?/);
+  if (scoreChange) {
+    const newScore = parseInt(scoreChange[1]);
+    if (newScore !== answer.score && newScore >= 0 && newScore <= 10) {
+      proposedScore = newScore;
+      document.getElementById('chat-propose-area').style.display = 'block';
+      document.getElementById('chat-propose-area').innerHTML = `
+        <p style="font-size:0.9em; margin-bottom:8px;">🔔 AIが <strong>${answer.score}点 → ${newScore}点</strong> への変更を提案しました。</p>
+        <p style="font-size:0.8em; color:#aaa; margin-bottom:8px;">全員の承認が必要です。</p>
+        <button class="btn btn-small" onclick="submitDispute()">みんなに承認を求める</button>
+      `;
+    }
+  }
+}
+
+// === Dispute System ===
+async function submitDispute() {
+  if (proposedScore === null || chatAnswerIndex === null) return;
+  const answer = myAnswersData[chatAnswerIndex];
+
+  const { data: inserted, error } = await client.from('math_battle_disputes').insert({
+    room_id: currentRoom.id,
+    answer_id: answer.id,
+    requester_user_id: getUserId(),
+    requester_user_name: getUserName(),
+    original_score: answer.score,
+    proposed_score: proposedScore,
+    reason: chatHistory.filter(m => m.role === 'assistant').pop()?.content?.substring(0, 300) || ''
+  }).select().single();
+
+  if (error) { alert('送信に失敗しました'); return; }
+
+  // Self-approve
+  await client.from('math_battle_dispute_votes').insert({
+    dispute_id: inserted.id,
+    voter_user_id: getUserId(),
+    voter_user_name: getUserName(),
+    vote: 'approve'
+  });
+
+  document.getElementById('chat-propose-area').innerHTML = `
+    <p style="font-size:0.9em; color:#4caf50;">✅ 承認リクエストを送信しました。全員が承認すると点数が変わります。</p>
+  `;
+  proposedScore = null;
+}
+
+// === Dispute Notifications ===
+let disputePolling = null;
+
+function subscribeToDisputes() {
+  checkDisputes();
+  disputePolling = setInterval(checkDisputes, 5000);
+}
+
+async function checkDisputes() {
+  if (!currentRoom) return;
+  const { data: disputes } = await client.from('math_battle_disputes')
+    .select('*, math_battle_dispute_votes(*)')
+    .eq('room_id', currentRoom.id)
+    .eq('status', 'pending');
+
+  if (!disputes || disputes.length === 0) {
+    document.getElementById('dispute-notifications').innerHTML = '';
+    return;
+  }
+
+  const { data: players } = await client.from('math_battle_players')
+    .select('user_id').eq('room_id', currentRoom.id);
+  const totalPlayers = players ? players.length : 1;
+
+  const container = document.getElementById('dispute-notifications');
+  container.innerHTML = '<h3 style="font-size:0.95em; margin-bottom:8px;">🔔 採点変更リクエスト</h3>' +
+    disputes.map(d => {
+      const votes = d.math_battle_dispute_votes || [];
+      const approveCount = votes.filter(v => v.vote === 'approve').length;
+      const myVote = votes.find(v => v.voter_user_id === getUserId());
+      const isRequester = d.requester_user_id === getUserId();
+
+      let actionHtml = '';
+      if (myVote) {
+        actionHtml = `<span style="color:#4caf50; font-size:0.85em;">✅ 投票済み</span>`;
+      } else if (!isRequester) {
+        actionHtml = `
+          <button class="btn btn-small" style="margin-right:6px;" onclick="voteDispute('${d.id}', 'approve')">👍 承認</button>
+          <button class="btn btn-secondary btn-small" onclick="voteDispute('${d.id}', 'reject')">👎 却下</button>
+        `;
+      } else {
+        actionHtml = `<span style="color:#aaa; font-size:0.85em;">承認待ち...</span>`;
+      }
+
+      return `<div style="background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:12px; margin-bottom:8px;">
+        <div style="font-size:0.9em; font-weight:600;">${d.requester_user_name} が採点変更を申請</div>
+        <div style="font-size:0.85em; color:#ffa500; margin:4px 0;">${d.original_score}点 → ${d.proposed_score}点</div>
+        <div style="font-size:0.8em; color:#ccc; margin-bottom:8px;">${d.reason.substring(0, 100)}...</div>
+        <div style="font-size:0.8em; color:#aaa; margin-bottom:6px;">承認: ${approveCount}/${totalPlayers}人</div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+
+  // Check if any dispute got fully approved or rejected
+  for (const d of disputes) {
+    const votes = d.math_battle_dispute_votes || [];
+    const approveCount = votes.filter(v => v.vote === 'approve').length;
+    const rejectCount = votes.filter(v => v.vote === 'reject').length;
+
+    if (approveCount >= totalPlayers) {
+      await applyDisputeScoreChange(d);
+    } else if (rejectCount > 0) {
+      await client.from('math_battle_disputes')
+        .update({ status: 'rejected' }).eq('id', d.id);
+    }
+  }
+}
+
+async function voteDispute(disputeId, vote) {
+  await client.from('math_battle_dispute_votes').insert({
+    dispute_id: disputeId,
+    voter_user_id: getUserId(),
+    voter_user_name: getUserName(),
+    vote: vote
+  });
+  await checkDisputes();
+}
+
+async function applyDisputeScoreChange(dispute) {
+  await client.from('math_battle_answers')
+    .update({ score: dispute.proposed_score })
+    .eq('id', dispute.answer_id);
+
+  await client.from('math_battle_disputes')
+    .update({ status: 'approved' }).eq('id', dispute.id);
+
+  // Update requester's total score
+  const { data: requesterAnswers } = await client.from('math_battle_answers')
+    .select('score').eq('room_id', currentRoom.id).eq('user_id', dispute.requester_user_id);
+  const newTotal = (requesterAnswers || []).reduce((sum, a) => sum + (a.score || 0), 0);
+  await client.from('math_battle_players')
+    .update({ total_score: newTotal })
+    .eq('room_id', currentRoom.id)
+    .eq('user_id', dispute.requester_user_id);
+
+  // Refresh if I'm the requester
+  if (dispute.requester_user_id === getUserId()) {
+    const { data } = await client.from('math_battle_answers')
+      .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+    myAnswersData = data || [];
+    const totalScore = myAnswersData.reduce((sum, a) => sum + (a.score || 0), 0);
+    document.getElementById('my-total-score').textContent = `${totalScore} / ${battleProblems.length * 10} 点`;
+    renderMyResultsList();
+  }
+}
+
+// === Final Results ===
+async function showResults() {
+  showView('view-results');
+  if (disputePolling) { clearInterval(disputePolling); disputePolling = null; }
+
+  const { data: players } = await client.from('math_battle_players')
+    .select('*').eq('room_id', currentRoom.id).order('total_score', { ascending: false });
+
+  if (!players || players.length === 0) return;
+
+  players.sort((a, b) => {
+    if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+    return a.total_elapsed_seconds - b.total_elapsed_seconds;
+  });
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+
+  document.getElementById('results-ranking').innerHTML = players.map((p, i) => {
+    const medal = medals[i] || (i + 1) + '位';
+    const color = colors[i] || '#aaa';
+    const isMe = p.user_id === getUserId();
+    const border = isMe ? 'border: 2px solid #667eea;' : '';
+    return `<div class="result-card" style="${border}">
+      <div class="result-rank">${medal}</div>
+      <div class="result-name" style="color:${color};">${p.user_name}${isMe ? ' (あなた)' : ''}</div>
+      <div class="result-score">${p.total_score} / ${battleProblems.length * 10} 点</div>
+      <div class="result-time">⏱️ ${formatTime(p.total_elapsed_seconds)}</div>
+    </div>`;
+  }).join('');
+
+  const { data: myAnswers } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id).eq('user_id', getUserId());
+
+  // 全プレイヤーの回答を取得
+  const { data: allAnswers } = await client.from('math_battle_answers')
+    .select('*').eq('room_id', currentRoom.id);
+
+  if (allAnswers && allAnswers.length > 0) {
+    // 問題ごとにグループ化して表示
+    let detailHtml = '<h3 style="margin-bottom:12px;">📝 全員の回答</h3>';
+    const playerMap = {};
+    players.forEach(p => { playerMap[p.user_id] = p.user_name; });
+
+    for (const problem of battleProblems) {
+      const answersForProblem = allAnswers.filter(a => a.problem_id === problem.id);
+      if (answersForProblem.length === 0) continue;
+
+      detailHtml += `<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-weight:600;margin-bottom:8px;">${problem.title}</div>
+        <div style="font-size:0.8em;color:#888;margin-bottom:10px;line-height:1.6;">${DOMPurify.sanitize(problem.question, { ALLOWED_TAGS: ['ruby', 'rt', 'br'] })}</div>`;
+
+      for (const a of answersForProblem) {
+        const pName = playerMap[a.user_id] || '???';
+        const isMe = a.user_id === getUserId();
+        const scoreColor = a.score >= 8 ? '#4caf50' : a.score >= 5 ? '#ffa500' : '#ff6b6b';
+        const highlight = isMe ? 'border-left:3px solid #667eea;padding-left:10px;' : 'padding-left:13px;';
+        detailHtml += `<div style="margin-bottom:8px;${highlight}">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.85em;font-weight:600;">${pName}${isMe ? ' (あなた)' : ''}</span>
+            <span style="color:${scoreColor};font-weight:700;font-size:0.9em;">${a.score ?? '?'}/10</span>
+          </div>
+          <div style="font-size:0.8em;color:#ccc;margin-top:2px;">💬 ${a.answer_text}</div>
+          <div style="font-size:0.75em;color:#aaa;margin-top:2px;">🤖 ${a.ai_comment || ''}</div>
+        </div>`;
+      }
+      detailHtml += '</div>';
+    }
+    document.getElementById('results-detail').innerHTML = detailHtml;
+  }
+}
+
+// === Leave / Cleanup ===
+function leaveBattle() {
+  if (currentRoom && currentRoom.status === 'playing') {
+    if (!confirm('バトル中です。退出しますか？')) return;
+  }
+  leaveRoom();
+  location.href = 'math-olympiad.html';
+}
+
+async function leaveRoom() {
+  cleanupSubscriptions();
+  if (currentRoom && currentPlayerId) {
+    await client.from('math_battle_players').delete().eq('id', currentPlayerId);
+  }
+  currentRoom = null;
+  currentPlayerId = null;
+  showView('view-lobby');
+}
+
+function cleanupRoom() {
+  cleanupSubscriptions();
+  currentRoom = null;
+  currentPlayerId = null;
+  isRoomHost = false;
+  roomHasAdmin = false;
+  battleUserName = '';
+  battleUserId = '';
+  battleProblems = [];
+  battleIndex = 0;
+  stopBattleTimer();
+}
+
+function cleanupSubscriptions() {
+  if (subscription) { client.removeChannel(subscription); subscription = null; }
+  if (playerSubscription) { client.removeChannel(playerSubscription); playerSubscription = null; }
+}
+
+// === Init ===
+async function init() {
+  if (isNightTime()) {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;"><div><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div></div>';
+    return;
+  }
+  await loadAllProblems();
+
+  // URLパラメータに部屋コードがあれば名前入力後に自動入室
+  const params = new URLSearchParams(location.search);
+  const roomCode = params.get('room');
+  if (roomCode) {
+    // 部屋コードをjoin画面にプリセット
+    document.getElementById('join-code-input').value = roomCode.toUpperCase();
+  }
+
+  showView('view-lobby');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

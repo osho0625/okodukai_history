@@ -106,6 +106,28 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   .child-name, .child-balance { font-size: 1.1em; }
 }
 
+/* リマインダーバナー */
+.reminder-item {
+  background: #fff0f3; border-radius: 6px; padding: 6px 10px;
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.reminder-item.event { background: #f0f4ff; }
+.reminder-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+.reminder-child { font-size: 0.65em; color: #999; flex-shrink: 0; }
+.reminder-msg { font-size: 0.82em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reminder-meta { font-size: 0.65em; color: #888; flex-shrink: 0; white-space: nowrap; }
+.reminder-snooze-badge { font-size: 0.65em; color: #ff9800; margin-left: 2px; }
+.reminder-btns { display: flex; gap: 4px; flex-shrink: 0; }
+.reminder-btn {
+  width: 22px; height: 22px; border: none; border-radius: 5px;
+  font-size: 0.7em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.reminder-btn.delete { background: #ffebee; color: #e53935; }
+.reminder-btn.snooze { background: #fff3e0; color: #ff9800; }
+.reminder-btn:hover { opacity: 0.8; }
+.reminder-section-label { font-size: 0.7em; color: #888; font-weight: 600; margin: 6px 0 2px; }
+
 /* 承認UI（TOP画面admin用） */
 .approval-section {
   max-width: 480px; margin: -4px auto 12px; padding: 0 8px;
@@ -206,6 +228,20 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 <!-- 隠しボタン（左上透明） -->
 <div id="secretBtn" style="position:fixed; top:0; left:0; width:60px; height:60px; z-index:90; cursor:default;"></div>
 <h1><span id="gardenBtn" style="cursor:pointer; font-size:1.2em;">&#x1FAB4;</span> <a href="pages/arcade.html" style="text-decoration:none; font-size:1.2em;">&#x1F579;&#xFE0F;</a> &#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
+
+<div id="mathReviewNotice" style="display:none; text-align:center; margin:8px 0;">
+  <a href="pages/math-olympiad.html#admin-review" style="color:#ffa500; font-weight:600; text-decoration:none; font-size:0.85em;">
+    🧮🔔 算数オリンピック：<span id="mathPendingCount"></span>件の採点待ち
+  </a>
+</div>
+
+<div id="pushBanner" style="display:none; max-width:480px; margin:0 auto 10px; padding:8px 14px; background:#e3f2fd; border-radius:10px; text-align:center; font-size:0.85em; color:#1565c0;">
+  <span>📲 通知を受け取りますか？</span>
+  <button id="pushEnableBtn" onclick="enablePushNotification()" style="margin-left:8px; padding:4px 12px; border:none; border-radius:6px; background:#1976d2; color:#fff; font-size:0.85em; cursor:pointer;">許可する</button>
+  <button onclick="dismissPushBanner()" style="margin-left:4px; padding:4px 8px; border:none; border-radius:6px; background:#e0e0e0; color:#555; font-size:0.85em; cursor:pointer;">後で</button>
+</div>
+
+<div id="reminderBanner" style="display:none; max-width:480px; margin:0 auto 12px; padding:0 8px;"></div>
 
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
@@ -454,6 +490,26 @@ async function load() {
     (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
   } catch(e) {}
 
+  // チケット残数を取得
+  let ticketCountByOwner = {};
+  try {
+    const { data: tktData } = await client.from('tickets').select('owner').eq('status', 'unused');
+    (tktData || []).forEach(t => { ticketCountByOwner[t.owner] = (ticketCountByOwner[t.owner] || 0) + 1; });
+  } catch(e) {}
+
+  // チケット予約待ち（pending）を取得
+  let ticketPendingByOwner = {};
+  let ticketApprovedAll = [];
+  try {
+    const { data: tktPending } = await client.from('tickets').select('*').eq('status', 'pending').order('reserved_at', { ascending: true });
+    (tktPending || []).forEach(t => {
+      if (!ticketPendingByOwner[t.owner]) ticketPendingByOwner[t.owner] = [];
+      ticketPendingByOwner[t.owner].push(t);
+    });
+    const { data: tktApproved } = await client.from('tickets').select('*').in('status', ['approved']).order('reserved_at', { ascending: true });
+    ticketApprovedAll = tktApproved || [];
+  } catch(e) {}
+
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const hasPassword = c.require_password && c.password;
@@ -477,6 +533,7 @@ async function load() {
     // ポイント情報（返済用アカウントは除外）
     let ptsHtml = '';
     let starsHtml = '';
+    let ticketHtml = '';
     if (!c.name.endsWith('が返すお金')) {
       const totalPts = pointsByChild[c.id] || 0;
       const sheetNum = totalPts > 0 ? Math.floor((totalPts - 1) / 400) + 1 : 1;
@@ -513,6 +570,16 @@ async function load() {
         }
         starsHtml = ' <span style="font-size:0.7em;">' + icons + '</span>';
       }
+
+      // チケット残数 + 予約待ち表示
+      const tktCount = ticketCountByOwner[c.name] || 0;
+      const tktPendingCount = (ticketPendingByOwner[c.name] || []).length;
+      if (tktCount > 0 || tktPendingCount > 0) {
+        let tktParts = [];
+        if (tktCount > 0) tktParts.push('🎫×' + tktCount);
+        if (tktPendingCount > 0) tktParts.push('⏳' + tktPendingCount + '件');
+        ticketHtml = '<a href="pages/ticket.html?owner=' + encodeURIComponent(c.name) + '" onclick="event.stopPropagation();" style="display:block;font-size:0.7em;color:#888;margin-top:2px;text-decoration:none;">' + tktParts.join(' ') + '</a>';
+      }
     }
 
     container.innerHTML += `
@@ -522,6 +589,7 @@ async function load() {
           <div style="flex:1;">
             <span class="child-name">${c.name}${starsHtml}${lock}</span>
             ${ptsHtml}
+            ${ticketHtml}
           </div>
           <span class="child-balance${displayNeg}">${balanceText}</span>
         </div>
@@ -543,6 +611,36 @@ async function load() {
       });
       approvalHtml += '</div>';
       container.innerHTML += approvalHtml;
+    }
+
+    // admin用: チケット予約承認UI
+    if (localStorage.getItem('deviceRole') === 'admin' && ticketPendingByOwner[c.name]) {
+      let tktHtml = '<div class="approval-section" data-child-ticket="' + c.name + '">';
+      ticketPendingByOwner[c.name].forEach(t => {
+        const rd = new Date(t.reserved_at);
+        const rdStr = (rd.getMonth()+1) + '/' + rd.getDate() + ' ' + rd.getHours() + ':' + String(rd.getMinutes()).padStart(2,'0');
+        tktHtml += '<div class="approval-item" id="tkt-approval-' + t.id + '">'
+          + '<div class="approval-info"><span class="approval-chore">🎫 No.' + t.ticket_no + ' ' + t.duration_minutes + '分</span><span class="approval-date">' + rdStr + '〜</span></div>'
+          + '<div class="approval-btns">'
+          + '<button class="approval-btn approve" onclick="approveTicketFromTop(\'' + t.id + '\')">承認</button>'
+          + '<button class="approval-btn reject" onclick="rejectTicketFromTop(\'' + t.id + '\')">却下</button>'
+          + '</div></div>';
+      });
+      tktHtml += '</div>';
+      container.innerHTML += tktHtml;
+    }
+
+    // 全ユーザー: 承認済み予約チケット表示
+    const myApproved = ticketApprovedAll.filter(t => t.owner === c.name);
+    if (myApproved.length > 0) {
+      let resHtml = '<div style="max-width:480px;margin:-4px auto 12px;padding:0 8px;">';
+      myApproved.forEach(t => {
+        const rd = new Date(t.reserved_at);
+        const rdStr = (rd.getMonth()+1) + '/' + rd.getDate() + ' ' + rd.getHours() + ':' + String(rd.getMinutes()).padStart(2,'0');
+        resHtml += '<div style="background:#e8f5e9;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:0.85em;color:#2e7d32;">🎫 ' + rdStr + '〜 あそびチケット（' + t.duration_minutes + '分）</div>';
+      });
+      resHtml += '</div>';
+      container.innerHTML += resHtml;
     }
   });
 
@@ -611,6 +709,11 @@ document.getElementById('pwOverlay').addEventListener('click', e => {
 
 // --- 管理者認証 ---
 function goAdmin() {
+  // admin権限ならパスワード不要で直接遷移
+  if (localStorage.getItem('deviceRole') === 'admin') {
+    window.location.href = 'pages/admin.html';
+    return;
+  }
   document.getElementById('adminError').style.display = 'none';
   document.getElementById('adminPwInput').value = '';
   document.getElementById('adminOverlay').classList.add('active');
@@ -825,6 +928,28 @@ async function rejectFromTop(pointId, childId) {
   setTimeout(() => location.reload(), 300);
 }
 
+// --- チケット予約承認/却下（TOP画面admin用） ---
+async function approveTicketFromTop(ticketId) {
+  const { data, error } = await client.from('tickets').update({ status: 'approved' }).eq('id', ticketId).eq('status', 'pending').select();
+  if (error || !data || data.length === 0) { alert('承認に失敗しました'); return; }
+  const t = data[0];
+  try { await notifyDiscord('✅ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を承認しました'); } catch(e) {}
+  const el = document.getElementById('tkt-approval-' + ticketId);
+  if (el) el.remove();
+  setTimeout(() => location.reload(), 300);
+}
+
+async function rejectTicketFromTop(ticketId) {
+  if (!confirm('チケット予約を却下しますか？')) return;
+  const { data, error } = await client.from('tickets').update({ status: 'unused', reserved_at: null }).eq('id', ticketId).eq('status', 'pending').select();
+  if (error || !data || data.length === 0) { alert('却下に失敗しました'); return; }
+  const t = data[0];
+  try { await notifyDiscord('❌ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を却下しました'); } catch(e) {}
+  const el = document.getElementById('tkt-approval-' + ticketId);
+  if (el) el.remove();
+  setTimeout(() => location.reload(), 300);
+}
+
 async function giveAllowanceFromTop(targetChild, amount) {
   const repayChild = allChildren.find(c => c.name === targetChild.name + 'が返すお金');
   const hasRepay = !!repayChild;
@@ -852,15 +977,237 @@ async function giveAllowanceFromTop(targetChild, amount) {
   }
 }
 
+// --- リマインダーバナー ---
+function getJSTToday() {
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  return new Date(jst.getFullYear(), jst.getMonth(), jst.getDate());
+}
+
+function formatDateJST(dateStr) {
+  const d = new Date(dateStr);
+  const jst = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  return (jst.getMonth() + 1) + '/' + jst.getDate();
+}
+
+function calcDaysRemaining(eventDateStr, today) {
+  const eventDate = new Date(eventDateStr + 'T00:00:00+09:00');
+  const diff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function calcSnoozeDaysRemaining(snoozeUntilStr) {
+  const today = getJSTToday();
+  const snoozeDate = new Date(snoozeUntilStr + 'T00:00:00+09:00');
+  const diff = Math.ceil((snoozeDate - today) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
+
+async function loadReminders() {
+  const banner = document.getElementById('reminderBanner');
+  try {
+    // Memo reminders: all active, sorted by created_at desc
+    const { data: memos } = await client.from('reminders')
+      .select('*')
+      .eq('type', 'memo')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    // Event reminders: all active
+    const { data: events } = await client.from('reminders')
+      .select('*')
+      .eq('type', 'event')
+      .is('deleted_at', null)
+      .order('event_date', { ascending: true });
+
+    const today = getJSTToday();
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+
+    // Filter events: event_date between today and today+7 days (inclusive)
+    const filteredEvents = (events || []).filter(e => {
+      const eventDate = new Date(e.event_date + 'T00:00:00+09:00');
+      return eventDate >= today && eventDate <= sevenDaysLater;
+    });
+
+    const memoList = memos || [];
+    if (memoList.length === 0 && filteredEvents.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    banner.style.display = 'block';
+    let html = '';
+
+    if (memoList.length > 0) {
+      html += '<div class="reminder-section-label">📝 メモ</div>';
+      memoList.forEach(r => {
+        html += renderReminderItem(r, 'memo', today);
+      });
+    }
+
+    if (filteredEvents.length > 0) {
+      html += '<div class="reminder-section-label">📅 行事</div>';
+      filteredEvents.forEach(r => {
+        html += renderReminderItem(r, 'event', today);
+      });
+    }
+
+    banner.innerHTML = html;
+  } catch (e) {
+    banner.style.display = 'none';
+  }
+}
+
+function renderReminderItem(r, type, today) {
+  const adminMode = localStorage.getItem('deviceRole') === 'admin';
+  let meta = '';
+  let snoozeBadge = '';
+
+  if (type === 'event') {
+    const days = calcDaysRemaining(r.event_date, today);
+    const dateStr = formatDateJST(r.event_date + 'T00:00:00+09:00');
+    meta = days === 0 ? '今日' : dateStr + ' あと' + days + '日';
+  }
+
+  if (r.snooze_until) {
+    const snoozeDays = calcSnoozeDaysRemaining(r.snooze_until);
+    if (snoozeDays > 0) snoozeBadge = '<span class="reminder-snooze-badge">💤' + snoozeDays + '日</span>';
+  }
+
+  let btnsHtml = '';
+  if (adminMode) {
+    btnsHtml = '<div class="reminder-btns">'
+      + '<button class="reminder-btn snooze" onclick="snoozeReminder(\'' + r.id + '\')" title="スヌーズ">💤</button>'
+      + '<button class="reminder-btn delete" onclick="deleteReminderBanner(\'' + r.id + '\')" title="削除">×</button>'
+      + '</div>';
+  }
+
+  const metaHtml = meta ? '<span class="reminder-meta">' + meta + snoozeBadge + '</span>' : (snoozeBadge || '');
+
+  return '<div class="reminder-item' + (type === 'event' ? ' event' : '') + '" id="reminder-' + r.id + '">'
+    + '<div class="reminder-info">'
+    + '<span class="reminder-child">' + escHtml(r.child_name) + '</span>'
+    + '<span class="reminder-msg">' + escHtml(r.message) + '</span>'
+    + metaHtml
+    + '</div>'
+    + btnsHtml
+    + '</div>';
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function deleteReminderBanner(id) {
+  if (!confirm('このリマインダーを削除しますか？')) return;
+  try {
+    await client.from('reminders').update({ deleted_at: new Date().toISOString() }).eq('id', id).is('deleted_at', null);
+    const el = document.getElementById('reminder-' + id);
+    if (el) el.remove();
+    // Hide banner if empty
+    const banner = document.getElementById('reminderBanner');
+    if (banner && banner.querySelectorAll('.reminder-item').length === 0) {
+      banner.style.display = 'none';
+    }
+  } catch (e) {
+    alert('削除に失敗しました');
+  }
+}
+
+async function snoozeReminder(id) {
+  const input = prompt('スヌーズ日数を入力してください（1〜365）');
+  if (input === null) return;
+  const days = parseInt(input, 10);
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    alert('1〜365の整数を入力してください');
+    return;
+  }
+  // Calculate snooze_until: current JST date + N days
+  const today = getJSTToday();
+  const snoozeUntil = new Date(today);
+  snoozeUntil.setDate(snoozeUntil.getDate() + days);
+  const snoozeStr = snoozeUntil.getFullYear() + '-' + String(snoozeUntil.getMonth() + 1).padStart(2, '0') + '-' + String(snoozeUntil.getDate()).padStart(2, '0');
+  try {
+    await client.from('reminders').update({ snooze_until: snoozeStr }).eq('id', id);
+    loadReminders(); // Refresh banner
+  } catch (e) {
+    alert('スヌーズ設定に失敗しました');
+  }
+}
+
+// チケット予約日時が過ぎたapprovedを自動used化
+async function autoConsumeTickets() {
+  try {
+    const now = new Date().toISOString();
+    await client.from('tickets').update({ status: 'used', used_at: now }).eq('status', 'approved').lte('reserved_at', now);
+  } catch(e) {}
+}
+
+// --- Push通知バナー ---
+(async function initPushBanner() {
+  if (!('PushManager' in window) || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    // 既に許可済み → 購読確認/再登録
+    const subscribed = await isPushSubscribed();
+    if (!subscribed) await subscribePush();
+    return;
+  }
+  if (Notification.permission === 'denied') return; // 拒否済み
+  // まだ聞いてない → バナー表示（ただし「後で」を押した場合は1日非表示）
+  const dismissed = localStorage.getItem('push_banner_dismissed');
+  if (dismissed && Date.now() - parseInt(dismissed) < 86400000) return;
+  document.getElementById('pushBanner').style.display = 'block';
+})();
+
+async function enablePushNotification() {
+  const btn = document.getElementById('pushEnableBtn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  const ok = await subscribePush();
+  if (ok) {
+    document.getElementById('pushBanner').style.display = 'none';
+  } else {
+    btn.textContent = '許可する';
+    btn.disabled = false;
+    alert('通知の許可が必要です。ブラウザの設定を確認してください。');
+  }
+}
+
+function dismissPushBanner() {
+  document.getElementById('pushBanner').style.display = 'none';
+  localStorage.setItem('push_banner_dismissed', String(Date.now()));
+}
+
+autoConsumeTickets();
 load();
+loadReminders();
 loadPuyoCounts();
 loadPasswords();
+
+// Admin: check math olympiad pending reviews
+if (localStorage.getItem('deviceRole') === 'admin') {
+  (async function() {
+    try {
+      const { data } = await client.from('math_olympiad_answers')
+        .select('id')
+        .eq('status', 'pending');
+      const count = (data || []).length;
+      if (count > 0) {
+        document.getElementById('mathReviewNotice').style.display = 'block';
+        document.getElementById('mathPendingCount').textContent = count;
+      }
+    } catch(e) {}
+  })();
+}
 </script>
 
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.60.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.84.0</a></div>
 
 </body>
 </html>

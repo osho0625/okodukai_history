@@ -12,6 +12,102 @@ async function notifyDiscord(content) {
   } catch (e) {}
 }
 
+// --- Web Push通知 ---
+// VAPID公開鍵（GitHub Secretsに対応する秘密鍵を保存）
+const VAPID_PUBLIC_KEY = 'BHgHz0m_5AB7lMyEKx2T_stxMjDbIYS8_D-q2IdVqFxOLUdhn2iuRIN1pV40yu95IKAv5J7HGEnlIe4GcEbvpEA';
+
+/**
+ * Push通知の購読を登録/更新
+ * @param {string} [childName] - 紐づける子供の名前（任意）
+ * @returns {Promise<boolean>} 成功したら true
+ */
+async function subscribePush(childName) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return false;
+
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey
+      });
+    }
+
+    // device_id を取得/生成
+    let deviceId = localStorage.getItem('push_device_id');
+    if (!deviceId) {
+      deviceId = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+      localStorage.setItem('push_device_id', deviceId);
+    }
+
+    const role = localStorage.getItem('deviceRole') === 'admin' ? 'admin' : 'user';
+
+    // Supabase に upsert
+    await client.from('push_subscriptions').upsert({
+      device_id: deviceId,
+      subscription: sub.toJSON(),
+      child_name: childName || null,
+      role: role,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'device_id' });
+
+    localStorage.setItem('push_subscribed', 'true');
+    return true;
+  } catch (e) {
+    console.error('Push subscription failed:', e);
+    return false;
+  }
+}
+
+/**
+ * Push通知の購読を解除
+ */
+async function unsubscribePush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+
+    const deviceId = localStorage.getItem('push_device_id');
+    if (deviceId) {
+      await client.from('push_subscriptions').delete().eq('device_id', deviceId);
+    }
+    localStorage.removeItem('push_subscribed');
+  } catch (e) {
+    console.error('Push unsubscribe failed:', e);
+  }
+}
+
+/**
+ * Push通知が購読済みか確認
+ * @returns {Promise<boolean>}
+ */
+async function isPushSubscribed() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return !!sub;
+  } catch (e) {
+    return false;
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 function getAllowanceForMilestone(pts) {
   if (pts === 400) return 400;
   if (pts === 200) return 200;

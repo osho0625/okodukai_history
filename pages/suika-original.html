@@ -27,8 +27,15 @@ body {
 .warn { color: #fa0; font-size: 0.8rem; margin-top: 12px; text-align: center; max-width: 380px; }
 </style>
 <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+<script src="../js/common.js"></script>
 </head>
 <body>
+<script>
+if (isNightTime()) {
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;background:#000;"><div><div style="font-size:4em;margin-bottom:16px;">🌙</div><h2 style="color:#eee;margin-bottom:8px;">今日はおしまい！</h2><p style="color:#aaa;">また明日ね</p></div></div>';
+  window._nightBlock = true;
+}
+</script>
 <div class="header">
   <a class="back" onclick="history.back()">←</a>
   <h1>🍉 すいかが食べたい（原作Java版）</h1>
@@ -51,7 +58,7 @@ body {
 </div>
 
 <script>
-cheerpjInit();
+if (!window._nightBlock) cheerpjInit();
 </script>
 </body>
 </html>

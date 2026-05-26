@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/13 v1.60.0
+最終更新: 2026/05/26 v1.84.0
 
 ## プロジェクト概要
 
@@ -17,7 +17,7 @@
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用🧹⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v5)
+├── sw.js               # Service Worker (v5, Push通知対応)
 ├── CONTEXT.md          # この引継ぎドキュメント
 ├── pages/
 │   ├── child.html      # 個別アカウントページ（残高・承認・ポイント表・家事選択・入出金・履歴）
@@ -26,6 +26,7 @@
 │   ├── allowance.html  # お小遣い入出金ページ（admin専用）
 │   ├── arcade.html     # ゲームセンター（ゲーム一覧）
 │   ├── game.html       # ぷよぷよ風パズルゲーム（難易度選択対応）
+│   ├── puyo-battle.html # ぴくぴく対戦（オンライン2人対戦、お邪魔ぷよ）
 │   ├── tetris.html     # テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
 │   ├── blast.html      # ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
@@ -34,18 +35,26 @@
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
-│   └── release-notes.html # リリースノート
+│   ├── release-notes.html # リリースノート
+│   ├── ticket.html    # あそびチケット（一覧・使用・履歴）
+│   ├── math-olympiad.html # 算数オリンピック（思考力チャレンジ）
+│   └── trpg-cthulhu.html # クトゥルフTRPGシナリオリーダー（KP用・admin限定）
 ├── images/
 │   ├── 2728.png        # アプリアイコン（PWA用）
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
 │   └── puyo_1〜9.avif  # ピクミン画像（1:紫, 2:赤, 3:青, 4:黄, 5:白, 6:氷, 7:岩, 8:羽, 9:光）
 ├── js/
-│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知等）
+│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知、Web Push等）
 │   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
+│   ├── trpg-poisoned-soup-scenario.js # クトゥルフTRPG「毒入りスープ」シナリオデータ（10ノード）
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
 │   ├── roach.js        # ゴキブリ演出
 │   └── garden.js       # ぷよ畑演出
+├── css/
+│   └── puyo-escape.css # ぷよ逃走アニメーション共通CSS（game.html, puyo-battle.htmlで共有）
 ├── backups/            # 自動バックアップJSON
+├── data/
+│   └── math-olympiad-problems.json # 算数オリンピック問題データ（小5:170問、小3:40問、小1:40問）
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 │   ├── web/            # HTML5版エンジン（main.js + engine/21モジュール）
 │   ├── data/           # ゲームデータ（モデル/ステージ/イベント/パラメータ）
@@ -53,8 +62,15 @@
 │   ├── efc_00-29.au    # 効果音
 │   ├── decompiled/     # 逆コンパイル済みJavaソース（参考用）
 │   └── ANALYSIS.md     # 解析ドキュメント
-└── .github/workflows/
-    └── backup.yml      # 毎日AM3:00 JST自動バックアップ
+├── sql/
+│   ├── create_tickets_table.sql # ticketsテーブルマイグレーション
+│   └── math_olympiad_answers.sql # 算数オリンピックテーブルマイグレーション
+├── scripts/
+│   ├── reminder-notify.js  # リマインダーCron通知（Discord + Web Push）
+│   └── generate-vapid-keys.js # VAPID鍵ペア生成ヘルパー
+├── .github/workflows/
+│   ├── backup.yml      # 毎日AM3:00 JST自動バックアップ
+    └── reminder-notify.yml # 5分毎リマインダー通知（Discord + Web Push）
 ```
 
 ## Supabaseテーブル構成
@@ -84,13 +100,70 @@
 ### blast_rankings（ブロックブラストランキング）
 - id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
 
+### math_olympiad_answers（算数オリンピック回答）
+- id: UUID (PK), user_id: UUID NOT NULL, user_name: TEXT NOT NULL
+- problem_id: INT NOT NULL, answer_text: TEXT NOT NULL, thinking_note: TEXT DEFAULT ''
+- elapsed_seconds: INT NOT NULL, hints_used: INT DEFAULT 0
+- status: TEXT DEFAULT 'pending' CHECK IN ('pending', 'reviewed')
+- score: INT (nullable), admin_comment: TEXT (nullable)
+- submitted_at: TIMESTAMPTZ DEFAULT now(), reviewed_at: TIMESTAMPTZ (nullable)
+- UNIQUE(user_id, problem_id)
+- INDEX: idx_math_answers_user_id, idx_math_answers_status
+- RLS有効: SELECT/INSERT全許可、UPDATE=status='pending'のみ
+
+### puyo_battles（ぷよ対戦ルーム）
+- id: UUID (PK), room_code: TEXT UNIQUE, player1_name: TEXT, player2_name: TEXT
+- passcode: TEXT (nullable、数字4桁、NULLならパスコードなし)
+- difficulty: JSONB DEFAULT '{"type":"normal"}' (type: easy/normal/hard/special/custom、custom時はsettingsオブジェクト含む)
+- status: TEXT DEFAULT 'waiting' CHECK IN ('waiting', 'playing', 'finished')
+- winner: TEXT, created_at: TIMESTAMPTZ, finished_at: TIMESTAMPTZ
+- RLS無効
+
 ### game_settings（各種設定、id=1の1行）
 - night_password: TEXT, night_limit_enabled: BOOLEAN
 - allowance_password: TEXT, admin_password: TEXT
-- game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,...})
+- game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,"game_math_olympiad":true,...})
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
+
+### push_subscriptions（Web Push通知サブスクリプション）
+- id: UUID (PK), device_id: TEXT UNIQUE, subscription: JSONB NOT NULL
+- child_name: TEXT (nullable), role: TEXT NOT NULL DEFAULT 'user' CHECK IN ('admin','user')
+- created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
+- INDEX: idx_push_subscriptions_device_id
+- RLS無効
+
+### push_messages（Push通知メッセージキュー）
+- id: UUID (PK), target_role: TEXT NOT NULL DEFAULT 'user' CHECK IN ('admin','user','all')
+- target_child_name: TEXT (nullable), title: TEXT NOT NULL (1-100文字), body: TEXT NOT NULL (1-500文字)
+- sent: BOOLEAN NOT NULL DEFAULT false, created_at: TIMESTAMPTZ
+- INDEX: idx_push_messages_unsent (sent=false)
+- RLS無効
+- admin.htmlから投入 → GitHub Actions cron（5分毎）で配信
+
+### tickets（あそびチケット）
+- id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')
+- duration_minutes: INT CHECK 5-480, status: TEXT DEFAULT 'unused' CHECK IN ('unused','pending','approved','used')
+- created_at: TIMESTAMPTZ, used_at: TIMESTAMPTZ, reserved_at: TIMESTAMPTZ
+- CONSTRAINT chk_ticket_status_consistency (status/used_at/reserved_at整合性)
+- INDEX: idx_tickets_owner_status, idx_tickets_used_at, idx_tickets_status_ticket_no, idx_tickets_status_reserved
+- RLS無効（deviceRole制御のみ）
+- 予約フロー: unused→pending(予約申請)→approved(承認)→used(予約日時到来で自動消化)
+- 却下/取消: pending→unused / approved→unused（予約日時前のみ）
+
+### reminders（リマインダー）
+- id: UUID (PK), type: TEXT ('memo'|'event')
+- child_id: UUID (FK→children), child_name: TEXT (非正規化、通知用)
+- message: TEXT (1-200文字), event_date: DATE (nullable、event型のみ)
+- creator_user_id: TEXT NOT NULL (端末識別子), creator_role: TEXT ('admin'|'user')
+- custom_schedule: JSONB (nullable、例: ["06:00","21:00"])
+- snooze_until: DATE (nullable、通知再開日。current_jst_date < snooze_until で通知停止)
+- created_at: TIMESTAMPTZ (UTC), deleted_at: TIMESTAMPTZ (nullable、soft delete)
+- CHECK: chk_event_date (type='memo' OR event_date IS NOT NULL), chk_custom_schedule (NULL OR jsonb array)
+- INDEX: idx_reminders_child_id, idx_reminders_type_event_date, idx_reminders_snooze (全てWHERE deleted_at IS NULL)
+- RLS無効（既存テーブルと同様）
+- soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
 
 ## 端末権限（deviceRole）
 
@@ -104,10 +177,14 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ### TOP画面（index.html）
 - アカウント一覧（sort_order順）、ポイント数・次のお小遣い情報表示
 - 完了枚数に応じてぷよアイコン（5つでオリマーに変換）
+- 🔔 リマインダー通知バナー（タイトル下に表示）
+  - メモ型: 全件表示（created_at降順）、admin時×ボタン＋スヌーズボタン
+  - 行事型: event_dateが7日以内のもの表示（event_date昇順）
+  - スヌーズ中も表示（Discord通知のみ停止）
 - 未読入金: 🔔アイコン＋入金前残高表示
 - 承認待ち: ✅アイコン（全ユーザーに表示）
 - admin用: 🧹（入出金ページ）、⚙️（設定モーダル＝表示順変更）
-- 🪴（ぷよ畑）、�️（ゲームセンター）、🔧（管理者認証）
+- 🪴（ぷよ畑）、🕹️（ゲームセンター）、🔧（管理者認証）
 
 ### 個別アカウントページ（child.html）
 - 残高表示＋入金演出（フルスクリーンオーバーレイ＋カウントアップ＋紙吹雪）
@@ -117,6 +194,12 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
   - マイルストーン行の右に金額ラベル、達成済みにぷよシール
   - 20ptごとにお小遣い自動入金（40円/300円/200円/400円）
   - 返済用アカウント（「〇〇が返すお金」）には半額振り分け
+- 🔔 リマインダー（アコーディオンセクション）
+  - 登録フォーム: テキスト(1-200文字) + 「日付を指定しない」チェックボックス + 日付入力
+  - 日付なし→メモ型（毎日通知）、日付あり→行事型（7日前から通知）
+  - 登録時にDiscord通知送信（3秒タイムアウト）
+  - 一覧表示: 自分が作成したリマインダーのみ削除ボタン表示（creator_user_id照合）
+  - 3秒デバウンスで重複送信防止
 - 🧹 家事選択→ポイント追加（admin=即承認、user=承認待ち）
 - 💰 入出金（出金=全ユーザー、入金=adminのみ）
 - 📋 履歴
@@ -136,9 +219,14 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - ⭐ ポイント直接設定（お小遣い発生なし、合計ポイント指定、枚数表示）
 - 🔓 端末権限設定（admin/user切り替え）
 - 🔑 パスワード設定（管理者PW、夜間制限PW）
+- 🔑 AIキー設定（Gemini/Groq/OpenAI APIキーの確認・保存・テスト、app_configテーブル管理）
 - 😈 イタズラ設定（コケやすさ10倍=sessionStorage、夜間制限ON/OFF、カウントリセット、未読通知全消去）
 - 📊 アクティビティログ
 - 💾 バックアップ（手動DL/GitHub復元/ファイル復元）
+- 🔔 リマインダー管理（全リマインダー一覧、削除、スヌーズ設定、通知時間カスタマイズ）
+  - 通知時間カスタマイズ: `<input type="time">`で複数時間追加/削除、JSONB配列保存
+  - スヌーズ: 1-365日、snooze_until日まで通知停止
+  - 登録機能なし（登録はchild.htmlからのみ）
 
 ### ぷよゲーム（game.html）
 - タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始→難易度選択/ランキング）
@@ -158,10 +246,62 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 操作ボタン配置カスタマイズ（⚙️アイコン、タップ入れ替え方式、localStorage保存）
 - 夜間制限（日〜木21時、金土22時〜4時）
 
+### あそびチケット（ticket.html）
+- 紙の「あそびチケット」をデジタル化。管理者（つじ）が発行、子供が使用
+- child.htmlの🎫アイコンからアクセス（?owner=名前）
+- admin/user両方閲覧・予約可能（ownerパラメータで表示対象を決定）
+- 未使用タブ: チケットカード一覧（紙デザインCSS再現）、Admin=Owner別グループ表示
+- 予約中タブ: pending/approvedチケット一覧
+- 履歴タブ: 使用済みチケット（used_at降順）
+- 予約フロー: 「予約する」→日付選択→時間帯選択（朝/昼/夜ごはんのあと or 時間指定）→pending状態に
+- 時間帯選択: 曜日制限なし（朝/昼/夜すべて選択可能）
+- 発行: admin.htmlの「🎫 チケット発行」セクション（Owner選択、時間5-480分、枚数1-100）
+- 承認/却下/取消: admin権限のみ
+- オフライン: localStorageキャッシュ表示、操作ボタン無効化
+- Discord通知: 予約時・承認時（3秒タイムアウト、失敗してもUX止めない）
+- XSSエスケープ: esc()関数で全DB値をサニタイズ
+- URL改ざん対策: VALID_OWNERSチェック
+
 ### ゲームセンター（arcade.html）
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版の6ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、クトゥルフTRPGの8ゲームをカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
+- クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
+
+### 算数オリンピック（pages/math-olympiad.html）
+- 思考力育成アプリ。算数オリンピック風の問題を1問ずつ提示
+- 単一HTML内6ビュー切り替え（SPA風）: 登録/問題一覧/回答/提出完了/結果/管理者採点
+- 問題データ: data/math-olympiad-problems.json（70問、5ジャンル×難易度4段階）
+- ジャンル: number_pattern/geometry/logic/combinatorics/word_problem
+- 難易度: Lv1(10分)/Lv2(20分)/Lv3(30分+)
+- ユーザー識別: user_id(UUID) + user_name（表示用）、localStorage管理
+- 回答提出: select→insert/update分離（upsert不使用）、pending中は上書き可、reviewed後は不可
+- 段階ヒント: 最大3段階、sessionStorage永続化
+- タイマー: バックグラウンド計測、sessionStorage永続化（6時間で期限切れ）
+- ドラフト保存: answer/thinking入力をsessionStorageに自動保存
+- 管理者採点: deviceRole=admin限定、テンプレートコメント5種
+- DOMPurify: rubyタグ対応（ALLOWED_TAGS: ruby, rt, br）
+- オフライン: sw.jsでHTML+JSONキャッシュ、提出はオンライン時のみ
+- game_settings.game_publish.game_math_olympiad で公開制御
+
+### クトゥルフTRPG シナリオリーダー（pages/trpg-cthulhu.html + js/trpg-poisoned-soup-scenario.js）
+- KP（管理者）向けTRPGシナリオ進行ツール。admin限定アクセス
+- ゲームブック方式ではなく、KPが自由にシーン間を移動する設計
+- SPA風ビュー切り替え: シナリオ選択 → シーン表示 + オーバーレイ（目次/マップ/NPC）
+- シナリオ選択画面: SCENARIO_REGISTRY配列からカード描画、続きから/クリア済み表示
+- Dynamic script load: window.TRPG_SCENARIOS[id]方式、5000msタイムアウト、連打防止
+- シーン自由遷移: TOC/マップ/関連シーンから任意のシーンへ移動可能
+- KPメモ: 折りたたみ表示、判定値・NPC指針・演出ヒント
+- マップ: SVG描画、場所ノード＋接続線、現在地ハイライト、タップで遷移
+- NPC一覧: 折りたたみ式詳細（秘密表示）
+- フェーズ別目次: キーワードフィルタ付き
+- 進行状態: localStorage保存（シナリオごと独立）、Back/Reset対応
+- フォントサイズ: CSS custom property方式（小/中/大）
+- セッション終了: endingフェーズでボタン表示、Completion_State保存
+- ダークテーマ（クトゥルフ風: deep green/purple系）
+- game_settings.game_publish.game_trpg_cthulhu で公開制御
+- 初回シナリオ「毒入りスープ」: 10ノード、3NPC、5ロケーション、4フェーズ
+- localStorage keys: trpg_cthulhu_progress_{id}, trpg_cthulhu_completed_{id}, trpg_cthulhu_font_size
 
 ### すいかが食べたい（pages/suika.html + suika/web/）
 - Java Applet RPG「すいかが食べたい」(2002-2008 くろすけ)のHTML5/Canvas完全移植
@@ -193,6 +333,41 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - 逃走: AGI+DEX比較方式（原作準拠）
 - 初期状態: area 0, pos(16,35), 主人公1人, 1000G, 回復草×3（原作CInitGame準拠）
 - 唯一の未実装: CEfcWork（3Dエフェクト120パターン）→ 2Dスキルアニメーションで代替
+
+### ぴくぴく対戦（puyo-battle.html）
+- ぴくぴく(game.html)タイトル画面の「2人であそぶ」から遷移
+- Supabase Realtimeによるオンラインマルチプレイヤー対戦（最大6人）
+- マッチング: ルーム一覧から選んで参加（コード入力不要）
+- パスコード: 任意で数字4桁を設定可能（デフォルトなし）
+- 難易度: ルーム作成時に選択（Easy/Normal/Hard/Special/カスタム）
+  - 解放済みの難易度のみ選択可能（localStorage参照）
+  - カスタムモード: 色数/盤面サイズ/速度を自由設定
+- 再戦機能: 「もういちど」ボタンで同じ相手と連戦（両者同意制、30秒タイムアウト）
+- 3人以上入室: 先に入った2人が対戦、3人目以降は観戦/順番待ちを選択
+- 勝ち残り方式: 勝者が残り、順番待ち先頭と対戦。敗者は待ちリスト末尾へ。5秒インターバル後に自動開始
+- 観戦のみ制限: ルーム作成時チェックボックスで順番待ちを無効化（👁アイコン表示）
+- 参加者パネル: 全参加者の役割（🎮対戦/👁観戦/⏳順番待ち/👑オーナー）・連勝数表示
+- 再接続: 30秒grace period、役割保持、Active_Playerのinput即時freeze
+- オーナーシップ: heartbeat 5秒間隔、15秒タイムアウトで最古参に自動移譲、claim tie-break
+- 状態管理: Owner権威モデル、stateId={epoch,version}、epoch++でsplit-brain防止
+- お邪魔ぷよ: 連鎖スコア÷70個を相手に送信、相殺あり
+- お邪魔ぷよ仕様: puyo_10画像で表示、連鎖に参加しない、隣接消去で消える、1行に1穴
+- 予告表示: 岩(30個)/大(6個)/小(1個)
+- 連鎖演出: ノーマルモードと同等の逃走アニメーション（4段階: burst→scatter→getup→run）
+- 落下アニメーション: 連鎖消去後の重力落下を補間描画（ノーマルモードと同じ `y += (targetY - y) * 0.12`）
+- 連鎖テキスト: 2連鎖以上で「N連鎖!」をローカル盤面上部に表示
+- パーティクル: 消去時に破片エフェクト（ローカルcanvasのみ）
+- 特殊ぷよモーション: puyo_8(羽)=飛行、puyo_9(光)=浮遊（puyo-escape.js共通処理）
+- ぷよ出現順序同期: seeded PRNG（mulberry32）で両者同一のぷよ色列を生成
+  - シード: crypto.getRandomValues生成、ルーム参加時にbroadcast共有
+  - お邪魔ぷよ穴位置: 別系列PRNG（seed ^ 0xDEADBEEF）
+  - 再接続: PRNG内部state直接復元
+- 通信: Supabase Realtime Broadcast（room_state_sync権威モデル + 個別イベント）
+- アニメーションはローカル表示のみ（通信同期しない）
+- 相手の落下中ぷよ・NEXTぷよもリアルタイム描画
+- モジュール構成: js/puyo-room-state.js, js/puyo-ownership.js, js/puyo-reconnect.js, js/puyo-battle-main.js
+- DB: puyo_battlesテーブル（room_code, status, passcode, difficulty, spectator_only, owner_client_id, max_players, updated_at）
+- game_settings.game_publish不要（ぴくぴくタイトルから直接遷移）
 
 ### テトリス（tetris.html）
 - タイトル画面（ゲーム開始/ランキング/設定）
@@ -268,17 +443,35 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | suika_se_volume | すいかSE音量（0〜1） | 永続 |
 | suika_battle_speed | すいか戦闘速度（0〜3） | 永続 |
 | suika_encounter_rate | すいかエンカウント率（0〜3） | 永続 |
+| ticketCache_unused | オフライン表示用キャッシュ（未使用チケット） | 永続 |
+| ticketCache_used | オフライン表示用キャッシュ（使用済みチケット） | 永続 |
+| ticketCache_reserved | オフライン表示用キャッシュ（予約中チケット） | 永続 |
+| math_olympiad_user | 算数オリンピック ユーザー名（表示用） | 永続 |
+| math_olympiad_user_id | 算数オリンピック ユーザーUUID（DB識別子） | 永続 |
+| math_hint_history | 算数オリンピック ヒント使用履歴（問題ID→使用回数） | 永続 |
+| trpg_cthulhu_progress_{scenarioId} | TRPGシナリオ進行状態（JSON） | 永続 |
+| trpg_cthulhu_completed_{scenarioId} | TRPGシナリオ完了状態（JSON） | 永続 |
+| trpg_cthulhu_font_size | TRPGフォントサイズ設定（small/medium/large） | 永続 |
+| push_device_id | Web Push通知端末識別子（UUID） | 永続 |
+| push_subscribed | Web Push購読済みフラグ | 永続 |
+| push_banner_dismissed | Push通知バナー非表示タイムスタンプ | 永続 |
+| reminder_device_id | リマインダー作成者識別子（UUID、端末ごと） | 永続 |
 
 ## sessionStorage使用
 
 | キー | 用途 |
 |------|------|
 | tripBoost | コケやすさ10倍（タブ閉じでリセット） |
+| math_timer_start | 算数オリンピック タイマー開始時刻 |
+| math_current_problem | 算数オリンピック 現在の問題ID |
+| math_hints_revealed | 算数オリンピック 表示済みヒント数 |
+| math_answer_draft | 算数オリンピック 回答ドラフト |
+| math_thinking_draft | 算数オリンピック 考え方メモドラフト |
 
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.47.0
+- 現在: v1.84.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -306,3 +499,12 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 - chore_typesのsort_orderカラムがない場合はidでフォールバック
 - 個人ページパスワード5回間違い→ゴキブリ発生（管理者PW5回間違いと同様）
 - game_rankingsのdifficultyカラムがnullの既存データはnormal扱い
+
+
+## Git ブランチ
+
+| ブランチ | 状態 | 内容 |
+|----------|------|------|
+| main | 最新 | TSJ260512までマージ済み |
+| TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
+| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
