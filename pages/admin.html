@@ -489,6 +489,32 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- Push通知送信 -->
+<h2 onclick="toggleSection('pushSection', this)"><span class="toggle">▶</span> 📲 Push通知送信</h2>
+<div class="section-body" id="pushSection">
+  <div class="card">
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em; color:#555; font-weight:600;">送信先</label>
+      <select id="pushTarget" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em; margin-top:4px;">
+        <option value="user">子供（user端末）</option>
+        <option value="admin">管理者（admin端末）</option>
+        <option value="all">全員</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em; color:#555; font-weight:600;">タイトル</label>
+      <input type="text" id="pushTitle" placeholder="例: お知らせ" maxlength="100" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em; margin-top:4px;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em; color:#555; font-weight:600;">メッセージ</label>
+      <textarea id="pushBody" placeholder="通知内容を入力..." maxlength="500" rows="3" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em; margin-top:4px; resize:vertical;"></textarea>
+    </div>
+    <button class="btn-add" onclick="sendPushMessage()" style="width:100%;">📲 送信（次回cron実行時に配信）</button>
+    <div id="pushResult" style="margin-top:8px; font-size:0.85em; text-align:center;"></div>
+    <div style="margin-top:12px; font-size:0.75em; color:#999;">※ 送信は5分以内に配信されます（GitHub Actions cron経由）</div>
+  </div>
+</div>
+
 <script>
 let allChildren = [];
 let editingTxId = null;
@@ -1676,6 +1702,36 @@ setTimeout(() => {
   loadReminders();
   loadScheduleCache();
 }, 600);
+
+// --- Push通知送信 ---
+async function sendPushMessage() {
+  const target = document.getElementById('pushTarget').value;
+  const title = document.getElementById('pushTitle').value.trim();
+  const body = document.getElementById('pushBody').value.trim();
+  const result = document.getElementById('pushResult');
+
+  if (!title) { result.innerHTML = '<span style="color:#e53935;">タイトルを入力してください</span>'; return; }
+  if (!body) { result.innerHTML = '<span style="color:#e53935;">メッセージを入力してください</span>'; return; }
+  if (title.length > 100) { result.innerHTML = '<span style="color:#e53935;">タイトルは100文字以内</span>'; return; }
+  if (body.length > 500) { result.innerHTML = '<span style="color:#e53935;">メッセージは500文字以内</span>'; return; }
+
+  result.innerHTML = '<span style="color:#999;">送信中...</span>';
+
+  try {
+    const { error } = await client.from('push_messages').insert({
+      target_role: target,
+      title: title,
+      body: body
+    });
+    if (error) throw error;
+
+    result.innerHTML = '<span style="color:#4caf50;">✅ 送信キューに追加しました（5分以内に配信）</span>';
+    document.getElementById('pushTitle').value = '';
+    document.getElementById('pushBody').value = '';
+  } catch (e) {
+    result.innerHTML = '<span style="color:#e53935;">送信に失敗しました: ' + e.message + '</span>';
+  }
+}
 </script>
 </body>
 </html>

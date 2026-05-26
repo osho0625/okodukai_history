@@ -129,9 +129,18 @@
 
 ### push_subscriptions（Web Push通知サブスクリプション）
 - id: UUID (PK), device_id: TEXT UNIQUE, subscription: JSONB NOT NULL
-- child_name: TEXT (nullable), created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
+- child_name: TEXT (nullable), role: TEXT NOT NULL DEFAULT 'user' CHECK IN ('admin','user')
+- created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
 - INDEX: idx_push_subscriptions_device_id
 - RLS無効
+
+### push_messages（Push通知メッセージキュー）
+- id: UUID (PK), target_role: TEXT NOT NULL DEFAULT 'user' CHECK IN ('admin','user','all')
+- target_child_name: TEXT (nullable), title: TEXT NOT NULL (1-100文字), body: TEXT NOT NULL (1-500文字)
+- sent: BOOLEAN NOT NULL DEFAULT false, created_at: TIMESTAMPTZ
+- INDEX: idx_push_messages_unsent (sent=false)
+- RLS無効
+- admin.htmlから投入 → GitHub Actions cron（5分毎）で配信
 
 ### tickets（あそびチケット）
 - id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')

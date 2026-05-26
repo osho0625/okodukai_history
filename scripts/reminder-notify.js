@@ -226,23 +226,25 @@ async function main() {
   console.log(`Due reminders: ${due.length}`);
 
   if (due.length === 0) {
-    console.log('No reminders due at this time. Exiting.');
-    return;
+    console.log('No reminders due at this time.');
+  } else {
+    // メッセージをフォーマット
+    const message = formatMessage(due, now.dateStr);
+
+    // Discord通知
+    console.log('Sending Discord notification...');
+    await sendDiscord(DISCORD_WEBHOOK, message);
+
+    // Web Push通知（リマインダー → admin端末のみ）
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      console.log('Sending Web Push notifications to admin...');
+      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr);
+    }
   }
 
-  // メッセージをフォーマット
-  const message = formatMessage(due, now.dateStr);
-
-  // Discord通知
-  console.log('Sending Discord notification...');
-  await sendDiscord(DISCORD_WEBHOOK, message);
-
-  // Web Push通知
+  // push_messages キュー処理（admin→user通知）
   if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    console.log('Sending Web Push notifications...');
-    await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr);
-  } else {
-    console.log('VAPID keys not configured, skipping Web Push.');
+    await processPushMessages(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL);
   }
 
   console.log('Done.');
@@ -303,7 +305,7 @@ async function sendDiscord(webhookUrl, content) {
 }
 
 /**
- * Web Push通知を全登録端末に送信
+ * Web Push通知を admin 端末のみに送信（リマインダー用）
  * @param {string} supabaseUrl
  * @param {string} supabaseKey
  * @param {string} vapidPublicKey
@@ -323,8 +325,8 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
 
   webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
 
-  // 全サブスクリプションを取得
-  const endpoint = `${supabaseUrl}/rest/v1/push_subscriptions?select=*`;
+  // admin端末のサブスクリプションのみ取得
+  const endpoint = `${supabaseUrl}/rest/v1/push_subscriptions?role=eq.admin&select=*`;
   const res = await fetch(endpoint, {
     headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
   });
@@ -333,7 +335,7 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
     return;
   }
   const subscriptions = await res.json();
-  console.log(`Found ${subscriptions.length} push subscriptions`);
+  console.log(`Found ${subscriptions.length} admin push subscriptions`);
 
   if (subscriptions.length === 0) return;
 
@@ -354,14 +356,85 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
     url: '/okodukai_history/index.html'
   });
 
-  // 各端末に送信（失敗しても続行）
+  await sendPushToSubscriptions(webpush, subscriptions, payload, supabaseUrl, supabaseKey);
+}
+
+/**
+ * push_messages キューを処理（admin→user通知）
+ */
+async function processPushMessages(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivateKey, vapidEmail) {
+  let webpush;
+  try {
+    webpush = require('web-push');
+  } catch (e) {
+    return;
+  }
+
+  webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+
+  // 未送信メッセージを取得
+  const msgRes = await fetch(`${supabaseUrl}/rest/v1/push_messages?sent=eq.false&select=*&order=created_at.asc`, {
+    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+  });
+  if (!msgRes.ok) return;
+  const messages = await msgRes.json();
+  if (messages.length === 0) return;
+
+  console.log(`Processing ${messages.length} queued push messages`);
+
+  for (const msg of messages) {
+    // 送信先サブスクリプションを取得
+    let subEndpoint = `${supabaseUrl}/rest/v1/push_subscriptions?select=*`;
+    if (msg.target_role === 'admin') {
+      subEndpoint += '&role=eq.admin';
+    } else if (msg.target_role === 'user') {
+      subEndpoint += '&role=eq.user';
+    }
+    // target_child_name が指定されていれば更に絞り込み
+    if (msg.target_child_name) {
+      subEndpoint += '&child_name=eq.' + encodeURIComponent(msg.target_child_name);
+    }
+
+    const subRes = await fetch(subEndpoint, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+    if (!subRes.ok) continue;
+    const subs = await subRes.json();
+
+    if (subs.length > 0) {
+      const payload = JSON.stringify({
+        title: msg.title,
+        body: msg.body,
+        tag: 'msg-' + msg.id,
+        url: '/okodukai_history/index.html'
+      });
+      await sendPushToSubscriptions(webpush, subs, payload, supabaseUrl, supabaseKey);
+    }
+
+    // sent = true に更新
+    await fetch(`${supabaseUrl}/rest/v1/push_messages?id=eq.${msg.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ sent: true })
+    });
+  }
+}
+
+/**
+ * サブスクリプション一覧にPush送信（共通処理）
+ */
+async function sendPushToSubscriptions(webpush, subscriptions, payload, supabaseUrl, supabaseKey) {
   const expiredIds = [];
   for (const sub of subscriptions) {
     try {
       await webpush.sendNotification(sub.subscription, payload);
     } catch (err) {
       if (err.statusCode === 410 || err.statusCode === 404) {
-        // サブスクリプション期限切れ → 削除対象
         expiredIds.push(sub.id);
         console.log(`Subscription expired: ${sub.device_id}`);
       } else {

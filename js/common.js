@@ -44,11 +44,14 @@ async function subscribePush(childName) {
       localStorage.setItem('push_device_id', deviceId);
     }
 
+    const role = localStorage.getItem('deviceRole') === 'admin' ? 'admin' : 'user';
+
     // Supabase に upsert
     await client.from('push_subscriptions').upsert({
       device_id: deviceId,
       subscription: sub.toJSON(),
       child_name: childName || null,
+      role: role,
       updated_at: new Date().toISOString()
     }, { onConflict: 'device_id' });
 
