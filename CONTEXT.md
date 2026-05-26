@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/25 v1.83.2
+最終更新: 2026/05/26 v1.84.0
 
 ## プロジェクト概要
 
@@ -17,7 +17,7 @@
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用🧹⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v5)
+├── sw.js               # Service Worker (v5, Push通知対応)
 ├── CONTEXT.md          # この引継ぎドキュメント
 ├── pages/
 │   ├── child.html      # 個別アカウントページ（残高・承認・ポイント表・家事選択・入出金・履歴）
@@ -44,7 +44,7 @@
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
 │   └── puyo_1〜9.avif  # ピクミン画像（1:紫, 2:赤, 3:青, 4:黄, 5:白, 6:氷, 7:岩, 8:羽, 9:光）
 ├── js/
-│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知等）
+│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知、Web Push等）
 │   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
 │   ├── trpg-poisoned-soup-scenario.js # クトゥルフTRPG「毒入りスープ」シナリオデータ（10ノード）
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
@@ -65,8 +65,12 @@
 ├── sql/
 │   ├── create_tickets_table.sql # ticketsテーブルマイグレーション
 │   └── math_olympiad_answers.sql # 算数オリンピックテーブルマイグレーション
+├── scripts/
+│   ├── reminder-notify.js  # リマインダーCron通知（Discord + Web Push）
+│   └── generate-vapid-keys.js # VAPID鍵ペア生成ヘルパー
 ├── .github/workflows/
-    └── backup.yml      # 毎日AM3:00 JST自動バックアップ
+│   ├── backup.yml      # 毎日AM3:00 JST自動バックアップ
+    └── reminder-notify.yml # 5分毎リマインダー通知（Discord + Web Push）
 ```
 
 ## Supabaseテーブル構成
@@ -122,6 +126,12 @@
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
+
+### push_subscriptions（Web Push通知サブスクリプション）
+- id: UUID (PK), device_id: TEXT UNIQUE, subscription: JSONB NOT NULL
+- child_name: TEXT (nullable), created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
+- INDEX: idx_push_subscriptions_device_id
+- RLS無効
 
 ### tickets（あそびチケット）
 - id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')
@@ -406,6 +416,9 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | trpg_cthulhu_progress_{scenarioId} | TRPGシナリオ進行状態（JSON） | 永続 |
 | trpg_cthulhu_completed_{scenarioId} | TRPGシナリオ完了状態（JSON） | 永続 |
 | trpg_cthulhu_font_size | TRPGフォントサイズ設定（small/medium/large） | 永続 |
+| push_device_id | Web Push通知端末識別子（UUID） | 永続 |
+| push_subscribed | Web Push購読済みフラグ | 永続 |
+| push_banner_dismissed | Push通知バナー非表示タイムスタンプ | 永続 |
 
 ## sessionStorage使用
 
@@ -421,7 +434,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.83.3
+- 現在: v1.84.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -457,4 +470,4 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 |----------|------|------|
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
-| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加 |
+| TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
