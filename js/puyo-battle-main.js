@@ -369,13 +369,11 @@ async function joinRoom(room) {
   // Initialize managers
   initManagers(false);
 
-  // Subscribe to channel
-  subscribeToChannel(room.room_code);
-
-  // Send join event
-  setTimeout(() => {
+  // Subscribe to channel — join event will be sent after subscription is confirmed
+  subscribeToChannel(room.room_code, () => {
+    // Send join event only after channel is subscribed
     sendAction('player_join', { clientId: myClientId, name: playerName });
-  }, 500);
+  });
 
   // Show waiting state (lobby stays visible until room_state_sync arrives)
   lobbyJoin.style.display = 'none';
@@ -445,7 +443,7 @@ function broadcastHeartbeat() {
 // ============================================================
 // Task 8.1 & 8.2: Channel subscription and event wiring
 // ============================================================
-function subscribeToChannel(code) {
+function subscribeToChannel(code, onSubscribed) {
   channel = supabase.channel(`battle_${code}`, {
     config: { broadcast: { self: false } },
   });
@@ -478,6 +476,8 @@ function subscribeToChannel(code) {
       if (isOwner) startOwnerHeartbeat();
       // Start miss detection if not owner
       if (!isOwner) startMissDetection();
+      // Call onSubscribed callback (e.g., send player_join)
+      if (onSubscribed) onSubscribed();
     }
   });
 }
