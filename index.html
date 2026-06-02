@@ -571,14 +571,14 @@ async function load() {
         starsHtml = ' <span style="font-size:0.7em;">' + icons + '</span>';
       }
 
-      // チケット残数 + 予約待ち表示
+      // チケット残数 + 予約待ち表示（リンクなし、情報表示のみ）
       const tktCount = ticketCountByOwner[c.name] || 0;
       const tktPendingCount = (ticketPendingByOwner[c.name] || []).length;
       if (tktCount > 0 || tktPendingCount > 0) {
         let tktParts = [];
         if (tktCount > 0) tktParts.push('🎫×' + tktCount);
         if (tktPendingCount > 0) tktParts.push('⏳' + tktPendingCount + '件');
-        ticketHtml = '<a href="pages/ticket.html?owner=' + encodeURIComponent(c.name) + '" onclick="event.stopPropagation();" style="display:block;font-size:0.7em;color:#888;margin-top:2px;text-decoration:none;">' + tktParts.join(' ') + '</a>';
+        ticketHtml = '<span style="display:block;font-size:0.7em;color:#888;margin-top:2px;">' + tktParts.join(' ') + '</span>';
       }
     }
 
@@ -1207,7 +1207,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.85.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.85.1</a></div>
 
 </body>
 </html>
