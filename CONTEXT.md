@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/06/03 v1.88.0
+最終更新: 2026/06/03 v1.89.0
 
 ## プロジェクト概要
 
@@ -32,6 +32,7 @@
 │   ├── olimar.html     # オリマーの冒険（探索RPG）
 │   ├── suika.html      # すいかが食べたい（3D RPG HTML5移植）
 │   ├── suika-original.html # すいかが食べたい（原作Java版 CheerpJ）
+│   ├── kanji-test.html  # 漢字50問テスト（テスト/練習モード、手書き入力、管理者採点）
 │   ├── ranking.html    # ぷよランキング（難易度別タブ）
 │   ├── tetris-ranking.html  # テトリスランキング
 │   ├── blast-ranking.html   # ブロックブラストランキング
@@ -45,6 +46,14 @@
 │   └── puyo_1〜9.avif  # ピクミン画像（1:紫, 2:赤, 3:青, 4:黄, 5:白, 6:氷, 7:岩, 8:羽, 9:光）
 ├── js/
 │   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知、Web Push、Push通知キュー等）
+│   ├── kanji-storage.js       # localStorage容量超過対策ラッパー
+│   ├── kanji-registry.js      # 漢字データCRUD管理（範囲・エントリ・一括登録・エクスポート/インポート）
+│   ├── kanji-quiz-engine.js   # 出題・回答・採点ロジック（純粋関数）
+│   ├── kanji-session-manager.js # セッション自動保存・復元
+│   ├── kanji-admin-grading.js # 管理者採点ロジック（PendingGradingTest→TestResult変換）
+│   ├── kanji-notification.js  # テスト完了時Push+Discord通知
+│   ├── kanji-handwriting-canvas.js # Canvas手書き入力コンポーネント
+│   ├── kanji-test.js          # 漢字テストメインコントローラ（SPA画面遷移・イベント・統合）
 │   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
 │   ├── trpg-poisoned-soup-scenario.js # クトゥルフTRPG「毒入りスープ」シナリオデータ（10ノード）
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
@@ -54,7 +63,8 @@
 │   ├── science-list.js # サイエンスデータ定義（タイトル・画像パス）
 │   └── images/         # サイエンス画像
 ├── css/
-│   └── puyo-escape.css # ぷよ逃走アニメーション共通CSS（game.html, puyo-battle.htmlで共有）
+│   ├── puyo-escape.css # ぷよ逃走アニメーション共通CSS（game.html, puyo-battle.htmlで共有）
+│   └── kanji-test.css  # 漢字50問テストCSS（モバイルファースト）
 ├── backups/            # 自動バックアップJSON
 ├── data/
 │   └── math-olympiad-problems.json # 算数オリンピック問題データ（小5:170問、小3:40問、小1:40問）
@@ -472,6 +482,14 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | push_banner_dismissed | Push通知バナー非表示タイムスタンプ | 永続 |
 | reminder_device_id | リマインダー作成者識別子（UUID、端末ごと） | 永続 |
 | science_viewed | 今日のサイエンス閲覧済みIDリスト（JSON配列） | 永続 |
+| kanji_ranges | 漢字テスト範囲一覧 | 永続 |
+| kanji_entries_{rangeId} | 範囲ごとの漢字エントリ | 永続 |
+| kanji_test_session | 漢字テスト進行中セッション | テスト完了で削除 |
+| kanji_pending_tests | 未採点テスト一覧（PendingGradingTest[]） | 採点完了で削除 |
+| kanji_pending_strokes_{id} | 未採点手書きストローク | 採点完了で削除 |
+| kanji_test_results | 採点済みテスト結果履歴 | 永続 |
+| kanji_last_mode | 前回選択モード（test/practice） | 永続 |
+| kanji_input_mode | 回答入力モード（text/handwriting） | 永続 |
 
 ## sessionStorage使用
 
