@@ -1,8 +1,10 @@
 // KanjiRegistry - 漢字データのCRUD管理（DOM非依存）
 // localStorage キー: kanji_ranges, kanji_entries_{rangeId}
+(function() {
+'use strict';
 
-const RANGES_KEY = 'kanji_ranges';
-const ENTRIES_KEY_PREFIX = 'kanji_entries_';
+var RANGES_KEY = 'kanji_ranges';
+var ENTRIES_KEY_PREFIX = 'kanji_entries_';
 
 // --- ヘルパー ---
 
@@ -330,29 +332,12 @@ function importData(json, conflictStrategy) {
 
 // --- エクスポート ---
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    createRange,
-    updateRange,
-    deleteRange,
-    getAllRanges,
-    addEntry,
-    deleteEntry,
-    getEntriesByRange,
-    parseBulkInput,
-    addEntriesBulk,
-    exportAllData,
-    importData,
-    // テスト用にヘルパーも公開
-    _isBlank: isBlank,
-    _RANGES_KEY: RANGES_KEY,
-    _ENTRIES_KEY_PREFIX: ENTRIES_KEY_PREFIX,
-  };
-}
-if (typeof window !== 'undefined') {
-  window.KanjiRegistry = {
-    createRange, updateRange, deleteRange, getAllRanges,
-    addEntry, deleteEntry, getEntriesByRange,
-    parseBulkInput, addEntriesBulk, exportAllData, importData,
-  };
-}
+var _exports = {
+  createRange: createRange, updateRange: updateRange, deleteRange: deleteRange, getAllRanges: getAllRanges,
+  addEntry: addEntry, deleteEntry: deleteEntry, getEntriesByRange: getEntriesByRange,
+  parseBulkInput: parseBulkInput, addEntriesBulk: addEntriesBulk, exportAllData: exportAllData, importData: importData,
+  _isBlank: isBlank, _RANGES_KEY: RANGES_KEY, _ENTRIES_KEY_PREFIX: ENTRIES_KEY_PREFIX,
+};
+if (typeof module !== 'undefined' && module.exports) { module.exports = _exports; }
+if (typeof window !== 'undefined') { window.KanjiRegistry = _exports; }
+})();

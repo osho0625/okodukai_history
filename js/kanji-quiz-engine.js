@@ -1,4 +1,6 @@
 // QuizEngine - 出題・回答・採点ロジック（純粋関数。DOM非依存・localStorage非依存）
+(function() {
+'use strict';
 
 // --- ヘルパー ---
 
@@ -352,31 +354,13 @@ function getRetryEntries(result) {
 
 // --- エクスポート ---
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    startQuiz,
-    submitAnswer,
-    submitHandwritingAnswer,
-    skipQuestion,
-    showAnswer,
-    selfCheck,
-    gradeTextAnswer,
-    calculateResult,
-    finishTestMode,
-    getReviewList,
-    updateAnswer,
-    updateHandwritingAnswer,
-    getRetryEntries,
-    // テスト用にヘルパーも公開
-    _shuffle: shuffle,
-    _generateId: generateId,
-  };
-}
-if (typeof window !== 'undefined') {
-  window.QuizEngine = {
-    startQuiz, submitAnswer, submitHandwritingAnswer,
-    skipQuestion, showAnswer, selfCheck, gradeTextAnswer,
-    calculateResult, finishTestMode, getReviewList,
-    updateAnswer, updateHandwritingAnswer, getRetryEntries,
-  };
-}
+var _exports = {
+  startQuiz: startQuiz, submitAnswer: submitAnswer, submitHandwritingAnswer: submitHandwritingAnswer,
+  skipQuestion: skipQuestion, showAnswer: showAnswer, selfCheck: selfCheck, gradeTextAnswer: gradeTextAnswer,
+  calculateResult: calculateResult, finishTestMode: finishTestMode, getReviewList: getReviewList,
+  updateAnswer: updateAnswer, updateHandwritingAnswer: updateHandwritingAnswer, getRetryEntries: getRetryEntries,
+  _shuffle: shuffle, _generateId: generateId,
+};
+if (typeof module !== 'undefined' && module.exports) { module.exports = _exports; }
+if (typeof window !== 'undefined') { window.QuizEngine = _exports; }
+})();

@@ -1,12 +1,14 @@
 // HandwritingCanvas - Canvas手書き入力UIコンポーネント
+(function() {
+'use strict';
 
 // --- 状態 ---
-let canvas = null;
-let ctx = null;
-let isDrawing = false;
-let strokes = [];
-let currentStroke = [];
-let lineWidth = 4;
+var canvas = null;
+var ctx = null;
+var isDrawing = false;
+var strokes = [];
+var currentStroke = [];
+var lineWidth = 4;
 
 // --- Canvas API サポート判定 ---
 
@@ -203,16 +205,7 @@ function hasContent() {
 
 // --- エクスポート ---
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    initCanvas,
-    clearCanvas,
-    getStrokes,
-    renderStrokes,
-    hasContent,
-    isSupported,
-  };
-}
-if (typeof window !== 'undefined') {
-  window.HandwritingCanvas = { initCanvas, clearCanvas, getStrokes, renderStrokes, hasContent, isSupported };
-}
+var _exports = { initCanvas: initCanvas, clearCanvas: clearCanvas, getStrokes: getStrokes, renderStrokes: renderStrokes, hasContent: hasContent, isSupported: isSupported };
+if (typeof module !== 'undefined' && module.exports) { module.exports = _exports; }
+if (typeof window !== 'undefined') { window.HandwritingCanvas = _exports; }
+})();
