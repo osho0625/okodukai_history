@@ -210,6 +210,7 @@ async function autoConsumeApproved() {
   if (data && data.length > 0) {
     data.forEach(t => {
       notifyWithTimeout(`🎫 ${t.owner}のチケットNo.${t.ticket_no}が予約時間になりました！（${t.duration_minutes}分）`);
+      queuePushNotification('🎫 予約時間です', `${t.owner}のチケットNo.${t.ticket_no}が予約時間になりました！（${t.duration_minutes}分）`, 'all');
     });
   }
 }
@@ -507,6 +508,7 @@ async function submitReservation() {
 
     const ticket = data[0];
     notifyWithTimeout(`🎫 ${ticket.owner}がチケットNo.${ticket.ticket_no}を予約しました（${formatReservedAt(ticket.reserved_at)}〜${ticket.duration_minutes}分）`);
+    queuePushNotification('🎫 チケット予約', `${ticket.owner}がチケットNo.${ticket.ticket_no}を予約しました（${formatReservedAt(ticket.reserved_at)}〜${ticket.duration_minutes}分）`, 'admin');
     cancelReserve();
     await loadTickets();
     switchTab('reserved');
@@ -526,6 +528,7 @@ async function approveTicket(ticketId) {
   if (error || !data || data.length === 0) { showError('承認に失敗しました'); return; }
   const t = data[0];
   notifyWithTimeout(`✅ ${t.owner}のチケットNo.${t.ticket_no}予約を承認しました（${formatReservedAt(t.reserved_at)}）`);
+  queuePushNotification('✅ チケット承認', `${t.owner}のチケットNo.${t.ticket_no}予約を承認しました`, 'user', t.owner);
   await loadTickets();
   renderCurrentTab();
 }
@@ -540,6 +543,7 @@ async function rejectTicket(ticketId) {
   if (error || !data || data.length === 0) { showError('却下に失敗しました'); return; }
   const t = data[0];
   notifyWithTimeout(`❌ ${t.owner}のチケットNo.${t.ticket_no}予約を却下しました`);
+  queuePushNotification('❌ チケット却下', `${t.owner}のチケットNo.${t.ticket_no}予約を却下しました`, 'user', t.owner);
   await loadTickets();
   renderCurrentTab();
 }
@@ -554,6 +558,7 @@ async function cancelApproval(ticketId) {
   if (error || !data || data.length === 0) { showError('取消に失敗しました'); return; }
   const t = data[0];
   notifyWithTimeout(`🔄 ${t.owner}のチケットNo.${t.ticket_no}承認を取り消しました`);
+  queuePushNotification('🔄 チケット取消', `${t.owner}のチケットNo.${t.ticket_no}承認を取り消しました`, 'user', t.owner);
   await loadTickets();
   renderCurrentTab();
 }

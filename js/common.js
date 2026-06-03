@@ -12,6 +12,24 @@ async function notifyDiscord(content) {
   } catch (e) {}
 }
 
+/**
+ * Push通知をキューに追加（cron jobが配信）
+ * @param {string} title - 通知タイトル
+ * @param {string} body - 通知本文
+ * @param {string} [targetRole='admin'] - 送信先ロール ('admin' | 'user' | 'all')
+ * @param {string} [targetChildName] - 特定の子供端末に送る場合の名前
+ */
+async function queuePushNotification(title, body, targetRole, targetChildName) {
+  try {
+    await client.from('push_messages').insert({
+      title: title.slice(0, 100),
+      body: body.slice(0, 500),
+      target_role: targetRole || 'admin',
+      target_child_name: targetChildName || null
+    });
+  } catch (e) {}
+}
+
 // --- Web Push通知 ---
 // VAPID公開鍵（GitHub Secretsに対応する秘密鍵を保存）
 const VAPID_PUBLIC_KEY = 'BHgHz0m_5AB7lMyEKx2T_stxMjDbIYS8_D-q2IdVqFxOLUdhn2iuRIN1pV40yu95IKAv5J7HGEnlIe4GcEbvpEA';

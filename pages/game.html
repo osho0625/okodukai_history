@@ -485,6 +485,10 @@ let nightPwAttempts = 0;
 
 const DISCORD_WEBHOOK_GAME = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
 
+function queuePushNotification(title, body, targetRole) {
+  sbClient.from('push_messages').insert({ title: title.slice(0,100), body: body.slice(0,500), target_role: targetRole || 'admin', target_child_name: null }).then(function(){}).catch(function(){});
+}
+
 function showNightWarning() {
   nightAttempts++;
   let msg, emoji = '\u{1F620}', lock = false;
@@ -505,6 +509,7 @@ function showNightWarning() {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ content: emoji + ' ' + h + ':' + m + ' \u306B\u8AB0\u304B\u304C\u30B2\u30FC\u30E0\u3092\u904A\u307C\u3046\u3068\u3057\u307E\u3057\u305F\uFF01' + attempt + '\n\u{1F4AC} \u300C' + msg + '\u300D' })
   }).catch(function(){});
+  queuePushNotification('🎮 夜間アクセス', h + ':' + m + ' に誰かがゲームを遊ぼうとしました！' + attempt, 'admin');
 
   const limitStr = (new Date().getDay() === 5 || new Date().getDay() === 6) ? '22' : '21';
   const overlay = document.createElement('div');
@@ -569,6 +574,7 @@ async function submitNightPw() {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ content: '\u{1F6D1} \u89E3\u9664\u30D1\u30B9\u30EF\u30FC\u30C9\u30925\u56DE\u9593\u9055\u3048\u307E\u3057\u305F\uFF01\u5B8C\u5168\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\u3002' })
       }).catch(function(){});
+      queuePushNotification('🛑 完全ロック', '解除パスワードを5回間違えました！完全ロックしました。', 'admin');
       var ov = document.getElementById('nightOverlay');
       if (ov) ov.innerHTML = '<div style="font-size:4em;margin-bottom:16px;">\u{1F6D1}</div><div style="color:#e53935;font-size:1.3em;font-weight:700;text-align:center;padding:0 24px;">\u30D1\u30B9\u30EF\u30FC\u30C9\u30925\u56DE\u9593\u9055\u3048\u305F\u306E\u3067\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\u3002</div>';
     }

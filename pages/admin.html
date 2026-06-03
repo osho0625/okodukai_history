@@ -694,7 +694,7 @@ async function saveEdit() {
 
   await client.from('transactions').update({ type, amount, memo }).eq('id', editingTxId);
   notifyDiscord(`📝 履歴を編集しました（管理者操作）: ${type === 'add' ? '追加' : '使用'} ${amount.toLocaleString()}円 - ${memo || '(メモなし)'}`);
-  closeEdit();
+  queuePushNotification('📝 履歴編集', `${type === 'add' ? '追加' : '使用'} ${amount.toLocaleString()}円 - ${memo || '(メモなし)'}`, 'admin');  closeEdit();
 
   // 残高を再計算
   const childId = selectedChildId;
@@ -709,6 +709,7 @@ async function deleteTx(id, type, amount) {
   const childId = selectedChildId;
   await client.from('transactions').delete().eq('id', id);
   notifyDiscord(`🗑️ 履歴を削除しました（管理者操作）`);
+  queuePushNotification('🗑️ 履歴削除', '履歴を削除しました（管理者操作）', 'admin');
 
   await recalcBalance(childId);
   loadChildren();
@@ -946,6 +947,7 @@ async function clearAllNotifications() {
     msg.style.display = 'block';
     setTimeout(() => msg.style.display = 'none', 3000);
     notifyDiscord('🔔 未読通知を全消去しました');
+    queuePushNotification('🔔 通知消去', '未読通知を全消去しました', 'admin');
   } catch(e) { alert('消去に失敗しました: ' + e.message); }
 }
 

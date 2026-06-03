@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/05/26 v1.85.0
+最終更新: 2026/06/03 v1.86.0
 
 ## プロジェクト概要
 
@@ -44,7 +44,7 @@
 │   ├── olimar.png      # オリマー画像（透過PNG、完了枚数表示用）
 │   └── puyo_1〜9.avif  # ピクミン画像（1:紫, 2:赤, 3:青, 4:黄, 5:白, 6:氷, 7:岩, 8:羽, 9:光）
 ├── js/
-│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知、Web Push等）
+│   ├── common.js       # 共通設定・ユーティリティ（Supabaseクライアント、Discord通知、Web Push、Push通知キュー等）
 │   ├── olimar-scenario.js # オリマーの冒険シナリオデータ（62ノード）
 │   ├── trpg-poisoned-soup-scenario.js # クトゥルフTRPG「毒入りスープ」シナリオデータ（10ノード）
 │   ├── puyo-escape.js  # ぷよ逃走アニメーション共通処理
@@ -140,7 +140,8 @@
 - sent: BOOLEAN NOT NULL DEFAULT false, created_at: TIMESTAMPTZ
 - INDEX: idx_push_messages_unsent (sent=false)
 - RLS無効
-- admin.htmlから投入 → GitHub Actions cron（5分毎）で配信
+- 全Discord通知トリガー（バックアップ除く）から投入 → GitHub Actions cron（5分毎）で配信
+- 投入元: child.html(ポイント申請/入出金/リマインダー登録), index.html(承認/チケット/ログイン), admin.html(履歴編集/削除/通知消去), game.html(夜間アクセス), ticket.html(予約/承認/却下/取消), allowance.html(入出金)
 
 ### tickets（あそびチケット）
 - id: UUID (PK), ticket_no: BIGINT UNIQUE (sequence), owner: TEXT CHECK IN ('かいせい','はるちか','いろは')
@@ -473,7 +474,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.84.0
+- 現在: v1.86.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -510,3 +511,4 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
+| TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加（バックアップ除く全箇所） |

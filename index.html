@@ -726,6 +726,7 @@ function submitAdminPw() {
     adminFailCount = 0;
     document.getElementById('adminOverlay').classList.remove('active');
     notifyDiscord('🔧 管理者ページにログインしました');
+    queuePushNotification('🔧 管理者ログイン', '管理者ページにログインしました', 'admin');
     window.location.href = 'pages/admin.html';
   } else {
     adminFailCount++;
@@ -914,6 +915,11 @@ async function approveFromTop(pointId, childId) {
   if (totalAllowance > 0) content += ' 💰 ' + totalAllowance + '円発生！';
   notifyDiscord(content);
 
+  // Push通知（user端末に承認を通知）
+  let pushBody = '「' + pt.chore_name + '」' + pt.points + 'pt 承認されました！';
+  if (totalAllowance > 0) pushBody += ' 💰 ' + totalAllowance + '円！';
+  queuePushNotification('✅ ポイント承認', pushBody, 'user', child ? child.name : null);
+
   // ページをリロードして表示を更新
   setTimeout(() => location.reload(), 300);
 }
@@ -934,6 +940,7 @@ async function approveTicketFromTop(ticketId) {
   if (error || !data || data.length === 0) { alert('承認に失敗しました'); return; }
   const t = data[0];
   try { await notifyDiscord('✅ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を承認しました'); } catch(e) {}
+  queuePushNotification('✅ チケット承認', t.owner + 'のチケットNo.' + t.ticket_no + '予約を承認しました', 'user', t.owner);
   const el = document.getElementById('tkt-approval-' + ticketId);
   if (el) el.remove();
   setTimeout(() => location.reload(), 300);
@@ -945,6 +952,7 @@ async function rejectTicketFromTop(ticketId) {
   if (error || !data || data.length === 0) { alert('却下に失敗しました'); return; }
   const t = data[0];
   try { await notifyDiscord('❌ ' + t.owner + 'のチケットNo.' + t.ticket_no + '予約を却下しました'); } catch(e) {}
+  queuePushNotification('❌ チケット却下', t.owner + 'のチケットNo.' + t.ticket_no + '予約を却下しました', 'user', t.owner);
   const el = document.getElementById('tkt-approval-' + ticketId);
   if (el) el.remove();
   setTimeout(() => location.reload(), 300);
@@ -1207,7 +1215,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.85.1</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.86.0</a></div>
 
 </body>
 </html>
