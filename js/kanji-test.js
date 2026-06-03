@@ -18,6 +18,7 @@
   let currentInputMode = 'handwriting';
   let currentStrokesMap = {}; // {[questionIndex]: Point[][]}
   let editingRangeId = null; // range-edit-viewで編集中のID（null=新規）
+  let rangeEditBackTarget = 'top-view'; // 範囲編集画面の戻り先
   let gradingTestId = null;  // 採点中のPendingTestId
   let gradingQuestionIndex = 0; // 採点中の問題インデックス
   let lastTestResult = null; // 最後のテスト結果（リトライ用）
@@ -84,6 +85,8 @@
 
   function openRangeEdit(rangeId) {
     editingRangeId = rangeId || null;
+    // 編集の場合は漢字一覧へ、新規の場合はトップへ戻る
+    rangeEditBackTarget = editingRangeId ? 'kanji-list' : 'top-view';
     var title = document.getElementById('range-edit-title');
     var nameInput = document.getElementById('range-name-input');
     var deleteBtn = document.getElementById('range-delete-btn');
@@ -139,6 +142,10 @@
 
   function deleteRange() {
     if (!editingRangeId) return;
+    if (!Registry.canDeleteRange(editingRangeId)) {
+      alert('この範囲を削除する権限がありません');
+      return;
+    }
     if (!confirm('この範囲と所属する全ての漢字を削除しますか？')) return;
     Registry.deleteRange(editingRangeId);
     editingRangeId = null;
@@ -665,6 +672,45 @@
     renderReviewList();
   }
 
+  /**
+   * ストロークデータを小さなcanvasにサムネイル描画して返す
+   * @param {Array<Array<{x: number, y: number}>>} strokeData
+   * @returns {HTMLCanvasElement|null}
+   */
+  function createStrokeThumbnail(strokeData) {
+    if (!strokeData || strokeData.length === 0) return null;
+
+    var thumb = document.createElement('canvas');
+    thumb.width = 48;
+    thumb.height = 48;
+    thumb.className = 'review-item-thumb';
+    var tctx = thumb.getContext('2d');
+
+    // 元のキャンバスサイズ(300x300)から48x48に縮小描画
+    var scale = 48 / 300;
+    tctx.strokeStyle = '#000';
+    tctx.lineWidth = 2;
+    tctx.lineCap = 'round';
+    tctx.lineJoin = 'round';
+
+    for (var i = 0; i < strokeData.length; i++) {
+      var stroke = strokeData[i];
+      if (stroke.length === 0) continue;
+      tctx.beginPath();
+      tctx.moveTo(stroke[0].x * scale, stroke[0].y * scale);
+      if (stroke.length === 1) {
+        tctx.lineTo(stroke[0].x * scale, stroke[0].y * scale);
+      } else {
+        for (var j = 1; j < stroke.length; j++) {
+          tctx.lineTo(stroke[j].x * scale, stroke[j].y * scale);
+        }
+      }
+      tctx.stroke();
+    }
+
+    return thumb;
+  }
+
   function renderReviewList() {
     var list = document.getElementById('review-list');
     var reviewItems = Engine.getReviewList(currentSession);
@@ -687,6 +733,15 @@
         + '<span class="review-item-status ' + statusClass + '">' + statusText + '</span>'
         + '</div>'
         + '<button class="btn-review-action btn-small btn-secondary" data-review-index="' + item.index + '">' + btnText + '</button>';
+
+      // 回答済みのストロークがあればサムネイルを挿入
+      if (item.status !== 'skipped' && currentStrokesMap[item.index]) {
+        var thumb = createStrokeThumbnail(currentStrokesMap[item.index]);
+        if (thumb) {
+          var infoDiv = el.querySelector('.review-item-info');
+          infoDiv.appendChild(thumb);
+        }
+      }
 
       list.appendChild(el);
     }
@@ -1136,6 +1191,13 @@
     });
     document.getElementById('range-save-btn').addEventListener('click', saveRange);
     document.getElementById('range-delete-btn').addEventListener('click', deleteRange);
+    document.getElementById('range-edit-back-btn').addEventListener('click', function() {
+      if (rangeEditBackTarget === 'kanji-list' && currentRangeId) {
+        openKanjiList(currentRangeId);
+      } else {
+        showView('top-view');
+      }
+    });
 
     // Entry actions
     document.getElementById('kanji-entry-list').addEventListener('click', function(e) {

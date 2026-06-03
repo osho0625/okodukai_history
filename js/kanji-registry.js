@@ -57,6 +57,10 @@ function saveEntries(rangeId, entries) {
  * @param {string} name - 範囲名
  * @returns {object|null} 作成されたTestRange、またはバリデーション失敗時null
  */
+function getDeviceId() {
+  return localStorage.getItem('push_device_id') || '';
+}
+
 function createRange(name) {
   if (isBlank(name)) return null;
 
@@ -64,6 +68,7 @@ function createRange(name) {
     id: generateId(),
     name: name.trim(),
     createdAt: new Date().toISOString(),
+    createdBy: getDeviceId(),
   };
 
   const ranges = loadRanges();
@@ -330,10 +335,27 @@ function importData(json, conflictStrategy) {
   return result;
 }
 
+/**
+ * この範囲を削除できるか判定する（作成者 or admin）
+ * @param {string} rangeId - 範囲ID
+ * @returns {boolean}
+ */
+function canDeleteRange(rangeId) {
+  if (localStorage.getItem('deviceRole') === 'admin') return true;
+  const ranges = loadRanges();
+  const range = ranges.find(r => r.id === rangeId);
+  if (!range) return false;
+  const deviceId = getDeviceId();
+  // createdByが未設定（旧データ）の場合は削除不可
+  if (!range.createdBy || !deviceId) return false;
+  return range.createdBy === deviceId;
+}
+
 // --- エクスポート ---
 
 var _exports = {
   createRange: createRange, updateRange: updateRange, deleteRange: deleteRange, getAllRanges: getAllRanges,
+  canDeleteRange: canDeleteRange,
   addEntry: addEntry, deleteEntry: deleteEntry, getEntriesByRange: getEntriesByRange,
   parseBulkInput: parseBulkInput, addEntriesBulk: addEntriesBulk, exportAllData: exportAllData, importData: importData,
   _isBlank: isBlank, _RANGES_KEY: RANGES_KEY, _ENTRIES_KEY_PREFIX: ENTRIES_KEY_PREFIX,

@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <script src="../.kiro/specs/today-science/science-list.js"></script>
+<script src="../data/scp-list.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
@@ -524,6 +525,24 @@ h2 .toggle.open { transform: rotate(90deg); }
     <div id="sciencePickList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
     <div id="sciencePickResult" style="font-size:0.85em; text-align:center; color:#4caf50;"></div>
     <button class="btn-sm btn-warn" onclick="clearSciencePick()" style="width:100%; padding:10px; margin-top:8px;">指定をクリア（自動選択に戻す）</button>
+  </div>
+</div>
+
+<!-- 今日のSCP指定 -->
+<h2 onclick="toggleSection('scpSection', this)"><span class="toggle">▶</span> 🏛️ 今日のSCP指定</h2>
+<div class="section-body" id="scpSection">
+  <div class="card">
+    <p style="font-size:0.8em; color:#888; margin-bottom:12px;">今日表示するSCPを手動で指定できます。指定するとその日はこのSCPが全端末で表示されます（翌日自動解除）。</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em; color:#555; font-weight:600;">SCP選択</label>
+      <select id="scpOverrideSelect" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em; margin-top:4px;"></select>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn-add" onclick="setScpOverride()" style="flex:1;">指定する</button>
+      <button class="btn-sm btn-warn" onclick="clearScpOverride()" style="flex:1; padding:10px;">指定をクリア（自動選択に戻す）</button>
+    </div>
+    <div id="scpOverrideStatus" style="font-size:0.85em; color:#555; margin-bottom:8px;"></div>
+    <div id="scpOverrideResult" style="font-size:0.85em; text-align:center; color:#4caf50;"></div>
   </div>
 </div>
 
@@ -1799,6 +1818,79 @@ async function clearSciencePick() {
 }
 
 loadScienceOverride();
+
+// --- 今日のSCP指定（localStorage経由） ---
+function initScpOverrideUI() {
+  const select = document.getElementById('scpOverrideSelect');
+  if (!select) return;
+  const scpData = window.SCP_DATA || [];
+  if (scpData.length === 0) {
+    select.innerHTML = '<option value="">SCPデータがありません</option>';
+    return;
+  }
+  select.innerHTML = '';
+  scpData.forEach(function(item) {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = item.number + ' - ' + item.title;
+    select.appendChild(opt);
+  });
+  updateScpOverrideStatus();
+}
+
+function updateScpOverrideStatus() {
+  const statusEl = document.getElementById('scpOverrideStatus');
+  if (!statusEl) return;
+  var override = null;
+  try { override = JSON.parse(localStorage.getItem('scp_override')); } catch(e) {}
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var scpData = window.SCP_DATA || [];
+
+  if (override && override.date === todayStr && override.id) {
+    var entry = scpData.find(function(s) { return s.id === override.id; });
+    if (entry) {
+      statusEl.textContent = '現在の指定: ' + entry.number + ' - ' + entry.title;
+      statusEl.style.color = '#1976d2';
+    } else {
+      statusEl.textContent = '指定なし（指定IDがデータに存在しません）';
+      statusEl.style.color = '#999';
+    }
+  } else {
+    statusEl.textContent = '指定なし（自動選択）';
+    statusEl.style.color = '#999';
+  }
+}
+
+function setScpOverride() {
+  var select = document.getElementById('scpOverrideSelect');
+  var resultEl = document.getElementById('scpOverrideResult');
+  if (!select || !select.value) return;
+  var selectedId = select.value;
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var scpData = window.SCP_DATA || [];
+  var entry = scpData.find(function(s) { return s.id === selectedId; });
+  if (!entry) return;
+
+  var overrideObj = { date: todayStr, id: selectedId };
+  localStorage.setItem('scp_override', JSON.stringify(overrideObj));
+  localStorage.setItem('scp_today', JSON.stringify(overrideObj));
+
+  resultEl.textContent = '✅ 「' + entry.number + ' - ' + entry.title + '」を今日のSCPに指定しました';
+  resultEl.style.color = '#4caf50';
+  updateScpOverrideStatus();
+}
+
+function clearScpOverride() {
+  var resultEl = document.getElementById('scpOverrideResult');
+  localStorage.removeItem('scp_override');
+  if (resultEl) {
+    resultEl.textContent = '指定をクリアしました（次回読み込みで自動選択）';
+    resultEl.style.color = '#ff9800';
+  }
+  updateScpOverrideStatus();
+}
+
+initScpOverrideUI();
 </script>
 </body>
 </html>

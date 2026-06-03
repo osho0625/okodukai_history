@@ -86,7 +86,7 @@
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
 - [ ] 6. 管理者Override UI追加
-  - [ ] 6.1 `pages/admin.html` にSCP Override セクションを追加する
+  - [x] 6.1 `pages/admin.html` にSCP Override セクションを追加する
     - SCP一覧からプルダウンで当日のSCPを選択するUI
     - 指定時に `scp_override` を `{date: "YYYY-MM-DD", id}` 形式で保存
     - 指定時に `scp_today` も同じIDで更新する

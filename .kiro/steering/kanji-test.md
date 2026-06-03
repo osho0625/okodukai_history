@@ -22,6 +22,12 @@ fileMatchPattern: "*kanji*"
 
 漢字50問テスト。テスト/練習モード、手書き入力、管理者採点に対応。
 
+## 削除権限
+
+- テスト範囲の削除は「作成者（createdBy = push_device_id）」または「管理者（deviceRole = admin）」のみ可能
+- 旧データ（createdByなし）は管理者のみ削除可能
+- `KanjiRegistry.canDeleteRange(rangeId)` で権限判定
+
 ## localStorage キー
 
 | キー | 用途 | 永続性 |

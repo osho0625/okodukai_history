@@ -18,7 +18,7 @@ function hash(str) {
 }
 
 /**
- * 当日表示するSCPを選択する（純粋関数）
+ * 当日表示するSCPを選択する（日付固定・未読優先）
  * @param {Array<{id: string}>} scpData - SCP_DATA配列
  * @param {string[]} viewedIds - 閲覧済みIDリスト
  * @param {{date: string, id: string}|null} override - override設定（nullなら無し）
@@ -30,14 +30,14 @@ function selectScp(scpData, viewedIds, override, todayStr) {
     return null;
   }
 
-  const dataIds = scpData.map(function(s) { return s.id; });
+  var dataIds = scpData.map(function(s) { return s.id; });
 
   // Priority 1: override が当日日付かつIDがscpDataに存在
   if (override && override.date === todayStr && dataIds.indexOf(override.id) !== -1) {
     return override.id;
   }
 
-  // Priority 2: 未閲覧SCPから選択
+  // Priority 2: 未閲覧SCPから日付シードで決定的に選択
   var unviewed = dataIds.filter(function(id) {
     return viewedIds.indexOf(id) === -1;
   });
@@ -47,7 +47,7 @@ function selectScp(scpData, viewedIds, override, todayStr) {
     return unviewed[index];
   }
 
-  // Priority 3: 全て閲覧済み → 全体から選択
+  // Priority 3: 全て閲覧済み → 全体から日付シードで選択
   var index = hash(todayStr) % dataIds.length;
   return dataIds[index];
 }

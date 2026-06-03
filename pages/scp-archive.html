@@ -42,6 +42,7 @@ a.item.viewed {
 
 <script>
 var scpData = window.SCP_DATA || [];
+var isAdmin = localStorage.getItem('deviceRole') === 'admin';
 
 function getScpViewed() {
   try { return JSON.parse(localStorage.getItem('scp_viewed') || '[]'); }
@@ -65,25 +66,26 @@ function render() {
 
   scpData.forEach(function(item) {
     var isViewed = viewed.indexOf(item.id) !== -1;
-    var div = document.createElement('div');
 
-    if (isViewed) {
+    // admin は全て閲覧可能
+    if (isViewed || isAdmin) {
       var a = document.createElement('a');
       a.className = 'item viewed';
       a.href = item.url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.innerHTML = '<span style="font-size:1.1em;">✅</span>'
+      var icon = isViewed ? '✅' : '👁️';
+      a.innerHTML = '<span style="font-size:1.1em;">' + icon + '</span>'
         + '<span style="flex:1; font-size:0.9em; color:#333;">' + item.number + ' - ' + item.title + '</span>'
         + '<span style="color:#ccc; font-size:1em;">▶</span>';
       list.appendChild(a);
-      return;
     } else {
+      var div = document.createElement('div');
       div.className = 'item locked';
       div.innerHTML = '<span style="font-size:1.1em;">🔒</span>'
         + '<span style="flex:1; font-size:0.9em; color:#aaa;">' + item.number + ' - ？？？</span>';
+      list.appendChild(div);
     }
-    list.appendChild(div);
   });
 }
 

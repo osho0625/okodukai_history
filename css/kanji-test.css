@@ -613,6 +613,15 @@ h3 {
   flex-shrink: 0;
 }
 
+.review-item-thumb {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
 /* === Result view === */
 .result-score {
   text-align: center;

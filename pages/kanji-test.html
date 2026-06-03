@@ -18,13 +18,13 @@
       </button>
     </header>
     <div id="range-list" class="range-list"></div>
-    <button id="add-range-btn" class="btn-primary btn-full" onclick="showView('range-edit-view')">＋ 新しい範囲を作成</button>
+    <button id="add-range-btn" class="btn-primary btn-full">＋ 新しい範囲を作成</button>
   </section>
 
   <!-- 範囲作成・編集フォーム -->
   <section id="range-edit-view" class="view" style="display:none">
     <header class="view-header">
-      <button class="btn-back" onclick="showView('top-view')">← 戻る</button>
+      <button class="btn-back" id="range-edit-back-btn">← 戻る</button>
       <h2 id="range-edit-title">範囲を作成</h2>
     </header>
     <div class="form-group">

@@ -538,7 +538,7 @@ function loadTodayScp() {
     if (raw) override = JSON.parse(raw);
   } catch(e) {}
 
-  // scp_today読み取り
+  // scp_today読み取り（日付固定）
   var savedData = null;
   try {
     var saved = localStorage.getItem('scp_today');
@@ -550,12 +550,10 @@ function loadTodayScp() {
   // override適用チェック
   if (override && override.date === todayStr && scpData.find(function(s){ return s.id === override.id; })) {
     selectedId = override.id;
-    // override適用時はscp_todayも同じIDで更新
     localStorage.setItem('scp_today', JSON.stringify({ date: todayStr, id: selectedId }));
   } else if (savedData && savedData.date === todayStr && scpData.find(function(s){ return s.id === savedData.id; })) {
     selectedId = savedData.id;
   } else {
-    // selectScpで新規選択
     selectedId = selectScp(scpData, viewed, null, todayStr);
     if (selectedId) {
       localStorage.setItem('scp_today', JSON.stringify({ date: todayStr, id: selectedId }));
