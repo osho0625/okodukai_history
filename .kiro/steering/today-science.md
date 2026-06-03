@@ -21,12 +21,19 @@ TOP画面（index.html）に表示される日替わり科学tips「🔬 今日�
 
 - 未閲覧を優先して表示、全部見たらランダム表示
 - 1日1枚固定（日付が変わるまで同じ画像、localStorageで管理）
-- 管理者指定あり: admin.htmlからscience_overrideで当日の画像を手動選択可能
-- タイトルのみ表示、タップで専用ページ(today-science.html)に遷移して画像表示
+- 管理者指定: admin.htmlから当日の画像を手動選択可能（Supabase game_settings.science_override に保存、全端末反映）
+- 翌日になると管理者指定は自動失効（日付チェック）、ランダムに戻る
+- タイトルのみTOP表示、タップで専用ページ(today-science.html)に遷移して画像表示
+- 画像タップでフルスクリーン表示（黒背景オーバーレイ、タップで閉じる）
 - 閲覧実績はlocalStorage管理（science_viewed）
 - アーカイブページ(science-archive.html): 閲覧済み=✅再閲覧可、未閲覧=🔒非表示、読了数カウント
 - データ定義: .kiro/specs/today-science/science-list.js（自動生成: node scripts/generate-science-list.js）
 - 画像配置: .kiro/specs/today-science/images/（ファイル名=タイトル）
+
+## Supabase
+
+- `game_settings.science_override` (JSONB, nullable): 管理者指定データ `{date:"YYYY-MM-DD", id:"..."}`
+- ALTER文: `sql/alter_game_settings_science.sql`
 
 ## localStorage キー
 
@@ -34,4 +41,3 @@ TOP画面（index.html）に表示される日替わり科学tips「🔬 今日�
 |------|------|--------|
 | science_viewed | 今日のサイエンス閲覧済みIDリスト（JSON配列） | 永続 |
 | science_today | 今日のサイエンス当日固定ID（{date,id}） | 日替わり |
-| science_override | 管理者指定サイエンスID（{date,id}、admin.htmlから設定） | 日替わり |

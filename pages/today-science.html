@@ -7,6 +7,8 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="apple-touch-icon" href="../images/2728.png">
 <title>今日のサイエンス</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <script src="../.kiro/specs/today-science/science-list.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,19 +74,20 @@ function markScienceViewed(id) {
   }
 }
 
-function showToday() {
+async function showToday() {
   let item = null;
   if (targetId) {
     item = scienceData.find(s => s.id === targetId);
   }
   if (!item && scienceData.length > 0) {
-    // 管理者指定チェック
+    // Supabaseから管理者指定を取得
     const todayStr = new Date().toISOString().slice(0, 10);
-    let overrideData = null;
-    try { overrideData = JSON.parse(localStorage.getItem('science_override')); } catch(e) {}
-    if (overrideData && overrideData.date === todayStr) {
-      item = scienceData.find(s => s.id === overrideData.id);
-    }
+    try {
+      const { data } = await client.from('game_settings').select('science_override').eq('id', 1).maybeSingle();
+      if (data && data.science_override && data.science_override.date === todayStr) {
+        item = scienceData.find(s => s.id === data.science_override.id);
+      }
+    } catch(e) {}
     // localStorageから今日の固定IDを取得
     if (!item) {
       let savedData = null;

@@ -417,7 +417,7 @@ async function saveSortOrder() {
 let currentScienceItem = null;
 let scienceData = [];
 
-function loadTodayScience() {
+async function loadTodayScience() {
   scienceData = window.SCIENCE_DATA || [];
   if (scienceData.length === 0) {
     document.getElementById('todayScienceSection').style.display = 'none';
@@ -427,16 +427,21 @@ function loadTodayScience() {
   const viewed = getScienceViewed();
   const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-  // 今日の割り当てをlocalStorageで固定（日付が変わるまで同じ画像）
-  // 管理者指定がある場合はそちらを優先
-  const saved = localStorage.getItem('science_today');
-  const override = localStorage.getItem('science_override');
-  let savedData = null;
+  // Supabaseから管理者指定を取得
   let overrideData = null;
-  try { savedData = saved ? JSON.parse(saved) : null; } catch(e) {}
-  try { overrideData = override ? JSON.parse(override) : null; } catch(e) {}
+  try {
+    const { data } = await client.from('game_settings').select('science_override').eq('id', 1).maybeSingle();
+    if (data && data.science_override && data.science_override.date === todayStr) {
+      overrideData = data.science_override;
+    }
+  } catch(e) {}
 
-  if (overrideData && overrideData.date === todayStr && scienceData.find(s => s.id === overrideData.id)) {
+  // 今日の割り当てをlocalStorageで固定（日付が変わるまで同じ画像）
+  const saved = localStorage.getItem('science_today');
+  let savedData = null;
+  try { savedData = saved ? JSON.parse(saved) : null; } catch(e) {}
+
+  if (overrideData && scienceData.find(s => s.id === overrideData.id)) {
     currentScienceItem = scienceData.find(s => s.id === overrideData.id);
   } else if (savedData && savedData.date === todayStr && scienceData.find(s => s.id === savedData.id)) {
     currentScienceItem = scienceData.find(s => s.id === savedData.id);
@@ -449,7 +454,7 @@ function loadTodayScience() {
     if (unviewed.length > 0) {
       currentScienceItem = unviewed[dayOfYear % unviewed.length];
     } else {
-      // 全部閲覧済み → ランダム表示（日付をシードに）
+      // 全部閲覧済み → ランダム表示
       currentScienceItem = scienceData[Math.floor(Math.random() * scienceData.length)];
     }
     // 今日の選択を保存

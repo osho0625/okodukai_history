@@ -1747,7 +1747,17 @@ async function sendPushMessage() {
   }
 }
 
-// --- 今日のサイエンス指定 ---
+// --- 今日のサイエンス指定（Supabase経由で全端末反映） ---
+let scienceOverrideData = null;
+
+async function loadScienceOverride() {
+  try {
+    const { data } = await client.from('game_settings').select('science_override').eq('id', 1).maybeSingle();
+    scienceOverrideData = (data && data.science_override) || null;
+  } catch(e) {}
+  renderSciencePickList();
+}
+
 function renderSciencePickList() {
   const list = document.getElementById('sciencePickList');
   if (!list) return;
@@ -1758,13 +1768,11 @@ function renderSciencePickList() {
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  let current = null;
-  try { current = JSON.parse(localStorage.getItem('science_override')); } catch(e) {}
-  const isOverride = current && current.date === todayStr;
+  const isOverride = scienceOverrideData && scienceOverrideData.date === todayStr;
 
   list.innerHTML = '';
   scienceData.forEach(item => {
-    const isSelected = isOverride && current.id === item.id;
+    const isSelected = isOverride && scienceOverrideData.id === item.id;
     const div = document.createElement('div');
     div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; border:2px solid ' + (isSelected ? '#4caf50' : '#eee') + '; background:' + (isSelected ? '#e8f5e9' : '#fff') + ';';
     div.innerHTML = '<span style="font-size:1em;">' + (isSelected ? '✅' : '🔬') + '</span>'
@@ -1774,23 +1782,23 @@ function renderSciencePickList() {
   });
 }
 
-function pickScience(item) {
+async function pickScience(item) {
   const todayStr = new Date().toISOString().slice(0, 10);
-  localStorage.setItem('science_override', JSON.stringify({ date: todayStr, id: item.id }));
-  // science_todayも上書き（全端末はlocalStorage共有なので同端末のみ反映）
-  localStorage.setItem('science_today', JSON.stringify({ date: todayStr, id: item.id }));
-  document.getElementById('sciencePickResult').textContent = '✅ 「' + item.title + '」を今日のサイエンスに指定しました';
+  const override = { date: todayStr, id: item.id };
+  await client.from('game_settings').update({ science_override: override }).eq('id', 1);
+  scienceOverrideData = override;
+  document.getElementById('sciencePickResult').textContent = '✅ 「' + item.title + '」を今日のサイエンスに指定しました（全端末反映）';
   renderSciencePickList();
 }
 
-function clearSciencePick() {
-  localStorage.removeItem('science_override');
-  localStorage.removeItem('science_today');
+async function clearSciencePick() {
+  await client.from('game_settings').update({ science_override: null }).eq('id', 1);
+  scienceOverrideData = null;
   document.getElementById('sciencePickResult').textContent = '指定をクリアしました（次回読み込みで自動選択）';
   renderSciencePickList();
 }
 
-renderSciencePickList();
+loadScienceOverride();
 </script>
 </body>
 </html>
