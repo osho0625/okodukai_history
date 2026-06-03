@@ -34,9 +34,10 @@
 
 #### Acceptance Criteria
 
-1. THE SCP_Selector SHALL 以下の優先順位で当日のSCPを選択する: (1) `scp_override` が当日日付で存在すればそのIDを使用、(2) 未閲覧のSCPから優先選択、(3) すべて閲覧済みの場合はランダム選択
+1. THE SCP_Selector SHALL 以下の優先順位で当日のSCPを選択する: (1) `scp_override` が当日日付で存在すればそのIDを使用、(2) 未閲覧SCPが存在する場合その集合から当日日付文字列をシードとした決定的ハッシュアルゴリズム（hash(todayStr) % unviewedCount）で1件選択、(3) すべて閲覧済みの場合も同様に当日日付文字列をシードとした決定的ハッシュアルゴリズム（hash(todayStr) % totalCount）で全体から選択
 2. THE SCP_Selector SHALL 同一日付（ISO形式 "YYYY-MM-DD"）内では同じSCPを表示し続ける
 3. WHEN 日付が変わる, THE SCP_Selector SHALL 新しいSCPを選択する
+4. IF `scp_today` のIDが SCP_Data に存在しない, THEN THE SCP_Selector SHALL 新規選択を行い `scp_today` を更新する
 
 ### Requirement 3: 1日固定の仕組み（localStorage管理）
 
@@ -47,6 +48,8 @@
 1. WHEN 当日のSCPが選択される, THE SCP_System SHALL 選択結果を localStorage キー `scp_today` に `{date: "YYYY-MM-DD", id: string}` 形式で保存する
 2. WHEN TOP_Page が読み込まれる, THE SCP_System SHALL `scp_today` の日付（ISO形式 "YYYY-MM-DD"）が当日と一致する場合に保存済みIDを使用する
 3. WHEN `scp_today` の日付が当日と異なる, THE SCP_System SHALL 新しいSCPを選択し `scp_today` を更新する
+4. WHEN `scp_override` が適用される, THE SCP_System SHALL `scp_today` も同じIDで更新する（override クリア後も同日中は `scp_today` が残り、そのIDが表示され続ける。これは正常動作である）
+5. IF `scp_override` のIDが SCP_Data に存在しない, THEN THE SCP_Selector SHALL `scp_override` を無視し通常の選択ロジックで新規選択を行う
 
 ### Requirement 4: 閲覧実績管理
 
@@ -69,8 +72,8 @@
 1. THE SCP_Archive_Page SHALL 全SCPを番号・タイトル付きで一覧表示し、閲覧済み（✅）と未閲覧（🔒）を区別する
 2. WHEN ユーザーが閲覧済みSCPをタップする, THE SCP_Archive_Page SHALL SCP_External_Page を新規タブで開く
 3. THE SCP_Archive_Page SHALL 未閲覧のSCPをタップ不可のロック表示にする
-4. THE SCP_Archive_Page SHALL 読了数（閲覧済み数 / 全体数）を表示する
-5. WHEN `scp_viewed` に存在するIDが SCP_Data に存在しない場合, THE SCP_Archive_Page SHALL そのIDを無視する
+4. THE SCP_Archive_Page SHALL 読了率を「SCP_Data に存在するIDのうち `scp_viewed` に含まれる件数 / SCP_Data の全件数」として 0.0〜1.0 の数値で計算し、表示時に `Math.round(rate * 100)` でパーセント表示する
+5. WHEN `scp_viewed` に存在するIDが SCP_Data に存在しない場合, THE SCP_Archive_Page SHALL そのIDを読了率計算から除外し無視する（アーカイブ生成時に `viewed.filter(id => scpData.some(s => s.id === id))` で正規化する）
 
 ### Requirement 6: 管理者によるSCP指定
 
@@ -93,6 +96,7 @@
 2. THE SCP_Data SHALL `window.SCP_DATA` グローバル変数として scp-list.js から提供される
 3. THE SCP_Data SHALL 配列形式で全SCPを格納する
 4. THE SCP_Data SHALL url フィールドにSCP財団の該当記事への完全なURLを格納する
+5. THE SCP_Data SHALL url フィールドを `https://` で始まる完全なURLとする
 
 ### Requirement 8: プロパティテスト向け正確性保証
 

@@ -21,6 +21,7 @@
   let gradingTestId = null;  // 採点中のPendingTestId
   let gradingQuestionIndex = 0; // 採点中の問題インデックス
   let lastTestResult = null; // 最後のテスト結果（リトライ用）
+  let isReviewEditing = false; // 見直しフェーズから再回答中かどうか
 
   // --- View Routing (Task 9.1) ---
 
@@ -364,7 +365,8 @@
     document.getElementById('quiz-reading').textContent = q.reading;
 
     // Reset input
-    document.getElementById('quiz-text-input').value = q.userAnswer || '';
+    var textInput = document.getElementById('quiz-text-input');
+    if (textInput) textInput.value = q.userAnswer || '';
 
     // Show/hide action buttons based on mode
     if (currentSession.mode === 'test') {
@@ -416,7 +418,13 @@
 
     // Auto-save session (Task 10.1)
     Session.saveSession(currentSession);
-    advanceTestQuestion();
+
+    if (isReviewEditing) {
+      isReviewEditing = false;
+      showReviewView();
+    } else {
+      advanceTestQuestion();
+    }
   }
 
   function skipTestQuestion() {
@@ -425,7 +433,13 @@
 
     // Auto-save session (Task 10.1)
     Session.saveSession(currentSession);
-    advanceTestQuestion();
+
+    if (isReviewEditing) {
+      isReviewEditing = false;
+      showReviewView();
+    } else {
+      advanceTestQuestion();
+    }
   }
 
   function advanceTestQuestion() {
@@ -569,22 +583,37 @@
 
       var statusClass = item.status === 'skipped' ? 'skipped' : 'answered';
       var statusText = item.status === 'skipped' ? 'スキップ' : '回答済み';
-      var answerPreview = item.userAnswer ? escapeHtml(item.userAnswer) : (item.hasStrokes ? '（手書き）' : '—');
+      var btnText = item.status === 'skipped' ? '回答する' : '修正する';
 
-      el.innerHTML = '<div><span class="review-item-reading">' + escapeHtml(item.reading) + '</span>'
-        + ' <span style="color:#888; font-size:0.85em;">' + answerPreview + '</span></div>'
-        + '<span class="review-item-status ' + statusClass + '">' + statusText + '</span>';
-
-      el.addEventListener('click', (function(idx) {
-        return function() { goToReviewQuestion(idx); };
-      })(item.index));
+      el.innerHTML = '<div class="review-item-info">'
+        + '<span class="review-item-number">Q' + (item.index + 1) + '.</span>'
+        + '<span class="review-item-reading">' + escapeHtml(item.reading) + '</span>'
+        + '<span class="review-item-status ' + statusClass + '">' + statusText + '</span>'
+        + '</div>'
+        + '<button class="btn-review-action btn-small btn-secondary" data-review-index="' + item.index + '">' + btnText + '</button>';
 
       list.appendChild(el);
     }
+
+    // Attach button click handlers via event delegation
+    var reviewListClickHandler = function(e) {
+      var btn = e.target.closest('.btn-review-action');
+      if (btn) {
+        var idx = parseInt(btn.getAttribute('data-review-index'), 10);
+        goToReviewQuestion(idx);
+      }
+    };
+
+    // Remove previous handler to avoid stacking
+    list.removeEventListener('click', list._reviewClickHandler);
+    list._reviewClickHandler = reviewListClickHandler;
+    list.addEventListener('click', reviewListClickHandler);
   }
 
   function goToReviewQuestion(index) {
+    isReviewEditing = true;
     currentSession.currentIndex = index;
+    Canvas.clearCanvas();
     showQuizQuestion();
     // In review phase, still show test mode buttons
     document.getElementById('quiz-actions-test').style.display = 'flex';
@@ -1080,6 +1109,18 @@
     document.getElementById('grading-prev-btn').addEventListener('click', gradingPrev);
     document.getElementById('grading-next-btn').addEventListener('click', gradingNext);
     document.getElementById('grading-finish-btn').addEventListener('click', finishGradingTest);
+
+    // Home button with confirm if session active
+    document.getElementById('home-btn').addEventListener('click', function(e) {
+      if (currentSession) {
+        if (!confirm('テスト中の回答は保存されません。ホームに戻りますか？')) {
+          e.preventDefault();
+          return;
+        }
+        // Clear session before leaving
+        Session.clearSession();
+      }
+    });
 
     // Check for pending session on app load (Task 10.1)
     var resumed = checkPendingSession();

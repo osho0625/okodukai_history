@@ -551,8 +551,9 @@ h3 {
 
 .review-list {
   margin-bottom: 20px;
-  max-height: 55vh;
+  max-height: 60vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-item {
@@ -563,13 +564,26 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   min-height: 48px;
 }
 
 .review-item:active {
   background: #f0f7ff;
+}
+
+.review-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.review-item-number {
+  font-size: 0.85em;
+  color: #666;
+  white-space: nowrap;
 }
 
 .review-item-reading {
@@ -580,6 +594,7 @@ h3 {
   font-size: 0.85em;
   padding: 4px 8px;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 .review-item-status.answered {
@@ -590,6 +605,12 @@ h3 {
 .review-item-status.skipped {
   background: #fff3e0;
   color: #e65100;
+}
+
+.btn-review-action {
+  margin-left: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* === Result view === */

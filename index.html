@@ -13,6 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="js/common.js"></script>
 <script src=".kiro/specs/today-science/science-list.js"></script>
+<script src="data/scp-list.js"></script>
+<script src="js/scp-selector.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
@@ -259,6 +261,21 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   </a>
 </div>
 
+<!-- 今日のSCP -->
+<div id="todayScpSection" style="max-width:480px; margin:0 auto 16px; display:none;">
+  <a id="scpCard" href="#" target="_blank" rel="noopener noreferrer" style="display:block; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; text-decoration:none; color:inherit; transition:transform 0.15s;">
+    <div style="padding:14px 16px; display:flex; align-items:center; gap:10px;">
+      <span style="font-size:1.3em;">🏛️</span>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:0.75em; color:#999; margin-bottom:2px;">今日のSCP</div>
+        <div id="scpTitle" style="font-weight:600; color:#333; font-size:0.95em;"></div>
+      </div>
+      <span id="scpNewBadge" style="background:#e53935; color:#fff; font-size:0.65em; font-weight:700; padding:2px 7px; border-radius:8px; display:none;">NEW</span>
+      <span style="color:#ccc; font-size:1.2em;">▶</span>
+    </div>
+  </a>
+</div>
+
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
 </div>
@@ -487,6 +504,102 @@ function getScienceViewed() {
     return JSON.parse(localStorage.getItem('science_viewed') || '[]');
   } catch(e) { return []; }
 }
+
+// --- 今日のSCP ---
+let currentScpItem = null;
+
+function getScpViewed() {
+  try { return JSON.parse(localStorage.getItem('scp_viewed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function markScpViewed(id) {
+  const viewed = getScpViewed();
+  const updated = markViewed(viewed, id, window.SCP_DATA);
+  if (updated.length !== viewed.length) {
+    localStorage.setItem('scp_viewed', JSON.stringify(updated));
+  }
+}
+
+function loadTodayScp() {
+  var scpData = window.SCP_DATA || [];
+  if (scpData.length === 0) {
+    document.getElementById('todayScpSection').style.display = 'none';
+    return;
+  }
+
+  var viewed = getScpViewed();
+  var todayStr = new Date().toISOString().slice(0, 10);
+
+  // override読み取り
+  var override = null;
+  try {
+    var raw = localStorage.getItem('scp_override');
+    if (raw) override = JSON.parse(raw);
+  } catch(e) {}
+
+  // scp_today読み取り
+  var savedData = null;
+  try {
+    var saved = localStorage.getItem('scp_today');
+    if (saved) savedData = JSON.parse(saved);
+  } catch(e) {}
+
+  var selectedId = null;
+
+  // override適用チェック
+  if (override && override.date === todayStr && scpData.find(function(s){ return s.id === override.id; })) {
+    selectedId = override.id;
+    // override適用時はscp_todayも同じIDで更新
+    localStorage.setItem('scp_today', JSON.stringify({ date: todayStr, id: selectedId }));
+  } else if (savedData && savedData.date === todayStr && scpData.find(function(s){ return s.id === savedData.id; })) {
+    selectedId = savedData.id;
+  } else {
+    // selectScpで新規選択
+    selectedId = selectScp(scpData, viewed, null, todayStr);
+    if (selectedId) {
+      localStorage.setItem('scp_today', JSON.stringify({ date: todayStr, id: selectedId }));
+    }
+  }
+
+  if (!selectedId) {
+    document.getElementById('todayScpSection').style.display = 'none';
+    return;
+  }
+
+  currentScpItem = scpData.find(function(s){ return s.id === selectedId; });
+  if (!currentScpItem) {
+    document.getElementById('todayScpSection').style.display = 'none';
+    return;
+  }
+
+  // カード表示
+  document.getElementById('scpTitle').textContent = currentScpItem.number + ' - ' + currentScpItem.title;
+  document.getElementById('todayScpSection').style.display = 'block';
+
+  // リンク設定
+  var card = document.getElementById('scpCard');
+  card.href = currentScpItem.url;
+
+  // タップ時に閲覧済み登録
+  card.onclick = function() {
+    markScpViewed(currentScpItem.id);
+    document.getElementById('scpNewBadge').style.display = 'none';
+  };
+
+  // NEWバッジ（未閲覧なら表示）
+  var badge = document.getElementById('scpNewBadge');
+  if (viewed.indexOf(currentScpItem.id) === -1) {
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// bfcache復帰時にSCPセクションも再チェック
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) loadTodayScp();
+});
 
 // --- パスワード読み込み（Supabase） ---
 async function loadPasswords() {
@@ -1286,6 +1399,7 @@ loadReminders();
 loadPuyoCounts();
 loadPasswords();
 loadTodayScience();
+loadTodayScp();
 
 // Admin: check math olympiad pending reviews
 if (localStorage.getItem('deviceRole') === 'admin') {
@@ -1307,7 +1421,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.89.5</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.89.6</a></div>
 
 </body>
 </html>
