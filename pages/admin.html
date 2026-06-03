@@ -9,6 +9,7 @@
 <title>管理者ページ - お小遣い手帳</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
+<script src="../.kiro/specs/today-science/science-list.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
@@ -512,6 +513,17 @@ h2 .toggle.open { transform: rotate(90deg); }
     <button class="btn-add" onclick="sendPushMessage()" style="width:100%;">📲 送信（次回cron実行時に配信）</button>
     <div id="pushResult" style="margin-top:8px; font-size:0.85em; text-align:center;"></div>
     <div style="margin-top:12px; font-size:0.75em; color:#999;">※ 送信は5分以内に配信されます（GitHub Actions cron経由）</div>
+  </div>
+</div>
+
+<!-- 今日のサイエンス指定 -->
+<h2 onclick="toggleSection('scienceSection', this)"><span class="toggle">▶</span> 🔬 今日のサイエンス指定</h2>
+<div class="section-body" id="scienceSection">
+  <div class="card">
+    <p style="font-size:0.8em; color:#888; margin-bottom:12px;">今日表示するサイエンスを手動で指定できます。指定するとその日はこの画像が全端末で表示されます。</p>
+    <div id="sciencePickList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
+    <div id="sciencePickResult" style="font-size:0.85em; text-align:center; color:#4caf50;"></div>
+    <button class="btn-sm btn-warn" onclick="clearSciencePick()" style="width:100%; padding:10px; margin-top:8px;">指定をクリア（自動選択に戻す）</button>
   </div>
 </div>
 
@@ -1734,6 +1746,51 @@ async function sendPushMessage() {
     result.innerHTML = '<span style="color:#e53935;">送信に失敗しました: ' + e.message + '</span>';
   }
 }
+
+// --- 今日のサイエンス指定 ---
+function renderSciencePickList() {
+  const list = document.getElementById('sciencePickList');
+  if (!list) return;
+  const scienceData = window.SCIENCE_DATA || [];
+  if (scienceData.length === 0) {
+    list.innerHTML = '<div style="color:#aaa; font-size:0.85em;">サイエンスデータがありません</div>';
+    return;
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let current = null;
+  try { current = JSON.parse(localStorage.getItem('science_override')); } catch(e) {}
+  const isOverride = current && current.date === todayStr;
+
+  list.innerHTML = '';
+  scienceData.forEach(item => {
+    const isSelected = isOverride && current.id === item.id;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; border:2px solid ' + (isSelected ? '#4caf50' : '#eee') + '; background:' + (isSelected ? '#e8f5e9' : '#fff') + ';';
+    div.innerHTML = '<span style="font-size:1em;">' + (isSelected ? '✅' : '🔬') + '</span>'
+      + '<span style="flex:1; font-size:0.85em; color:#333;">' + item.title + '</span>';
+    div.onclick = () => pickScience(item);
+    list.appendChild(div);
+  });
+}
+
+function pickScience(item) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('science_override', JSON.stringify({ date: todayStr, id: item.id }));
+  // science_todayも上書き（全端末はlocalStorage共有なので同端末のみ反映）
+  localStorage.setItem('science_today', JSON.stringify({ date: todayStr, id: item.id }));
+  document.getElementById('sciencePickResult').textContent = '✅ 「' + item.title + '」を今日のサイエンスに指定しました';
+  renderSciencePickList();
+}
+
+function clearSciencePick() {
+  localStorage.removeItem('science_override');
+  localStorage.removeItem('science_today');
+  document.getElementById('sciencePickResult').textContent = '指定をクリアしました（次回読み込みで自動選択）';
+  renderSciencePickList();
+}
+
+renderSciencePickList();
 </script>
 </body>
 </html>

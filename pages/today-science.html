@@ -63,12 +63,20 @@ function showToday() {
     item = scienceData.find(s => s.id === targetId);
   }
   if (!item && scienceData.length > 0) {
-    // localStorageから今日の固定IDを取得
+    // 管理者指定チェック
     const todayStr = new Date().toISOString().slice(0, 10);
-    let savedData = null;
-    try { savedData = JSON.parse(localStorage.getItem('science_today')); } catch(e) {}
-    if (savedData && savedData.date === todayStr) {
-      item = scienceData.find(s => s.id === savedData.id);
+    let overrideData = null;
+    try { overrideData = JSON.parse(localStorage.getItem('science_override')); } catch(e) {}
+    if (overrideData && overrideData.date === todayStr) {
+      item = scienceData.find(s => s.id === overrideData.id);
+    }
+    // localStorageから今日の固定IDを取得
+    if (!item) {
+      let savedData = null;
+      try { savedData = JSON.parse(localStorage.getItem('science_today')); } catch(e) {}
+      if (savedData && savedData.date === todayStr) {
+        item = scienceData.find(s => s.id === savedData.id);
+      }
     }
     if (!item) {
       const viewed = getScienceViewed();

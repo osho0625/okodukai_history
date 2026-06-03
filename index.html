@@ -428,11 +428,17 @@ function loadTodayScience() {
   const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
   // 今日の割り当てをlocalStorageで固定（日付が変わるまで同じ画像）
+  // 管理者指定がある場合はそちらを優先
   const saved = localStorage.getItem('science_today');
+  const override = localStorage.getItem('science_override');
   let savedData = null;
+  let overrideData = null;
   try { savedData = saved ? JSON.parse(saved) : null; } catch(e) {}
+  try { overrideData = override ? JSON.parse(override) : null; } catch(e) {}
 
-  if (savedData && savedData.date === todayStr && scienceData.find(s => s.id === savedData.id)) {
+  if (overrideData && overrideData.date === todayStr && scienceData.find(s => s.id === overrideData.id)) {
+    currentScienceItem = scienceData.find(s => s.id === overrideData.id);
+  } else if (savedData && savedData.date === todayStr && scienceData.find(s => s.id === savedData.id)) {
     currentScienceItem = scienceData.find(s => s.id === savedData.id);
   } else {
     // 新しい日: 未閲覧優先で1つ選ぶ
@@ -1296,7 +1302,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.89.1</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.89.2</a></div>
 
 </body>
 </html>

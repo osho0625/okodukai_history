@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/06/03 v1.89.0
+最終更新: 2026/06/03 v1.89.1
 
 ## プロジェクト概要
 
@@ -194,12 +194,14 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - アカウント一覧（sort_order順）、ポイント数・次のお小遣い情報表示
 - 完了枚数に応じてぷよアイコン（5つでオリマーに変換）
 - 🔬 今日のサイエンス（日替わり科学tips）
-  - 未閲覧を優先して表示、全部見たら日付ベースローテーション
-  - タイトルのみ表示、タップで画像展開
+  - 未閲覧を優先して表示、全部見たらランダム表示
+  - 1日1枚固定（日付が変わるまで同じ画像、localStorageで管理）
+  - 管理者指定あり: admin.htmlからscience_overrideで当日の画像を手動選択可能
+  - タイトルのみ表示、タップで専用ページ(today-science.html)に遷移して画像表示
   - 閲覧実績はlocalStorage管理（science_viewed）
-  - アーカイブ一覧: 閲覧済み=✅タイトル表示+再閲覧可、未閲覧=🔒タイトル非表示
-  - データ定義: .kiro/specs/today-science/science-list.js
-  - 画像配置: .kiro/specs/today-science/images/
+  - アーカイブページ(science-archive.html): 閲覧済み=✅再閲覧可、未閲覧=🔒非表示、読了数カウント
+  - データ定義: .kiro/specs/today-science/science-list.js（自動生成: node scripts/generate-science-list.js）
+  - 画像配置: .kiro/specs/today-science/images/（ファイル名=タイトル）
 - 🔔 リマインダー通知バナー（タイトル下に表示）
   - メモ型: 全件表示（created_at降順）、admin時×ボタン＋スヌーズボタン
   - 行事型: event_dateが7日以内のもの表示（event_date昇順）
@@ -250,6 +252,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
   - 通知時間カスタマイズ: `<input type="time">`で複数時間追加/削除、JSONB配列保存
   - スヌーズ: 1-365日、snooze_until日まで通知停止
   - 登録機能なし（登録はchild.htmlからのみ）
+- 🔬 今日のサイエンス指定（当日表示する画像を手動選択、science_overrideに保存）
 
 ### ぷよゲーム（game.html）
 - タイトル画面（ぷよ表示＋芽→引き抜き演出、ゲーム開始→難易度選択/ランキング）
@@ -482,6 +485,8 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | push_banner_dismissed | Push通知バナー非表示タイムスタンプ | 永続 |
 | reminder_device_id | リマインダー作成者識別子（UUID、端末ごと） | 永続 |
 | science_viewed | 今日のサイエンス閲覧済みIDリスト（JSON配列） | 永続 |
+| science_today | 今日のサイエンス当日固定ID（{date,id}） | 日替わり |
+| science_override | 管理者指定サイエンスID（{date,id}、admin.htmlから設定） | 日替わり |
 | kanji_ranges | 漢字テスト範囲一覧 | 永続 |
 | kanji_entries_{rangeId} | 範囲ごとの漢字エントリ | 永続 |
 | kanji_test_session | 漢字テスト進行中セッション | テスト完了で削除 |
@@ -505,7 +510,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.88.0
+- 現在: v1.89.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
