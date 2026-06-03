@@ -444,14 +444,22 @@ function loadTodayScience() {
   document.getElementById('scienceTitle').textContent = currentScienceItem.title;
   document.getElementById('todayScienceSection').style.display = 'block';
 
-  // NEW バッジ（未閲覧なら表示）
+  // NEW バッジ（未閲覧なら表示、閲覧済みなら非表示）
+  const badge = document.getElementById('scienceNewBadge');
   if (!viewed.includes(currentScienceItem.id)) {
-    document.getElementById('scienceNewBadge').style.display = 'inline-block';
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
   }
 
   // リンクに今日のIDを付与
   document.getElementById('scienceCard').href = 'pages/today-science.html?id=' + currentScienceItem.id;
 }
+
+// bfcache復帰時にNEWバッジを再チェック
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) loadTodayScience();
+});
 
 function getScienceViewed() {
   try {
@@ -1278,7 +1286,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.88.3</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.88.4</a></div>
 
 </body>
 </html>
