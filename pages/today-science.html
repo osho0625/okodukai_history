@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>今日のサイエンス</title>
+<script src="../.kiro/specs/today-science/science-list.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
+.science-card {
+  background: #fff; border-radius: 14px; padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px;
+  text-align: center;
+}
+.science-card .title { font-weight: 700; font-size: 1.1em; color: #333; margin-bottom: 14px; }
+.science-card img {
+  width: 100%; border-radius: 10px; object-fit: contain; max-height: 400px;
+}
+.archive-section { margin-top: 24px; }
+.archive-title {
+  font-weight: 600; color: #555; font-size: 0.95em; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+</style>
+</head>
+<body>
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>🔬 今日のサイエンス</h1>
+
+<div id="todayCard" class="science-card" style="display:none;">
+  <div class="title" id="todayTitle"></div>
+  <img id="todayImg" src="" alt="">
+</div>
+
+<div class="archive-section">
+  <div class="archive-title">📚 これまでのサイエンス</div>
+  <div id="archiveList"></div>
+</div>
+
+<script>
+const scienceData = window.SCIENCE_DATA || [];
+const params = new URLSearchParams(window.location.search);
+const targetId = params.get('id');
+
+function getScienceViewed() {
+  try { return JSON.parse(localStorage.getItem('science_viewed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function markScienceViewed(id) {
+  const viewed = getScienceViewed();
+  if (!viewed.includes(id)) {
+    viewed.push(id);
+    localStorage.setItem('science_viewed', JSON.stringify(viewed));
+  }
+}
+
+// 今日のサイエンスを表示
+function showToday() {
+  let item = null;
+  if (targetId) {
+    item = scienceData.find(s => s.id === targetId);
+  }
+  if (!item && scienceData.length > 0) {
+    // 未閲覧優先
+    const viewed = getScienceViewed();
+    const unviewed = scienceData.filter(s => !viewed.includes(s.id));
+    if (unviewed.length > 0) {
+      const today = new Date();
+      const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+      item = unviewed[dayOfYear % unviewed.length];
+    } else {
+      const today = new Date();
+      const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+      item = scienceData[dayOfYear % scienceData.length];
+    }
+  }
+  if (!item) return;
+
+  document.getElementById('todayTitle').textContent = item.title;
+  document.getElementById('todayImg').src = '../' + item.image;
+  document.getElementById('todayImg').alt = item.title;
+  document.getElementById('todayCard').style.display = 'block';
+
+  // 実績保存
+  markScienceViewed(item.id);
+}
+
+// アーカイブ一覧
+function renderArchive() {
+  const list = document.getElementById('archiveList');
+  const viewed = getScienceViewed();
+  list.innerHTML = '';
+
+  scienceData.forEach(item => {
+    const isViewed = viewed.includes(item.id);
+    const div = document.createElement('div');
+
+    if (isViewed) {
+      div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; cursor:pointer; background:#fff; border:1px solid #eee; margin-bottom:8px; box-shadow:0 1px 4px rgba(0,0,0,0.04);';
+      div.innerHTML = '<span style="font-size:1.1em;">✅</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#333;">' + item.title + '</span>'
+        + '<span style="color:#ccc; font-size:1em;">▶</span>';
+      div.onclick = () => showItem(item);
+    } else {
+      div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; background:#f0f0f0; border:1px solid #e0e0e0; margin-bottom:8px; opacity:0.7;';
+      div.innerHTML = '<span style="font-size:1.1em;">🔒</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#aaa;">？？？</span>';
+    }
+    list.appendChild(div);
+  });
+}
+
+function showItem(item) {
+  document.getElementById('todayTitle').textContent = item.title;
+  document.getElementById('todayImg').src = '../' + item.image;
+  document.getElementById('todayImg').alt = item.title;
+  document.getElementById('todayCard').style.display = 'block';
+  markScienceViewed(item.id);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // アーカイブ再描画
+  renderArchive();
+}
+
+showToday();
+renderArchive();
+</script>
+</body>
+</html>
