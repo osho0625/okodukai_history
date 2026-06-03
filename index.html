@@ -12,6 +12,7 @@
 <title>お小遣い手帳 - トップ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="js/common.js"></script>
+<script src=".kiro/specs/today-science/science-list.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
@@ -243,6 +244,40 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 
 <div id="reminderBanner" style="display:none; max-width:480px; margin:0 auto 12px; padding:0 8px;"></div>
 
+<!-- 今日のサイエンス -->
+<div id="todayScienceSection" style="max-width:480px; margin:0 auto 16px; display:none;">
+  <!-- 今日のカード -->
+  <div id="scienceCard" onclick="openTodayScience()" style="background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; cursor:pointer; transition:transform 0.15s;">
+    <div style="padding:14px 16px; display:flex; align-items:center; gap:10px;">
+      <span style="font-size:1.3em;">🔬</span>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:0.75em; color:#999; margin-bottom:2px;">今日のサイエンス</div>
+        <div id="scienceTitle" style="font-weight:600; color:#333; font-size:0.95em;"></div>
+      </div>
+      <span id="scienceNewBadge" style="background:#e53935; color:#fff; font-size:0.65em; font-weight:700; padding:2px 7px; border-radius:8px; display:none;">NEW</span>
+      <span style="color:#ccc; font-size:1.2em;">▶</span>
+    </div>
+  </div>
+  <!-- 画像表示エリア（タップ後展開） -->
+  <div id="scienceImageWrap" style="display:none; margin-top:8px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); padding:12px; text-align:center;">
+    <img id="scienceImg" src="" alt="" style="width:100%; border-radius:8px; object-fit:contain;">
+    <div id="scienceCaption" style="margin-top:8px; font-size:0.8em; color:#888;"></div>
+  </div>
+  <!-- アーカイブリンク -->
+  <div style="text-align:right; margin-top:6px;">
+    <span id="scienceArchiveLink" onclick="openScienceArchive()" style="font-size:0.75em; color:#999; cursor:pointer; text-decoration:underline;">📚 これまでのサイエンス</span>
+  </div>
+</div>
+
+<!-- サイエンスアーカイブモーダル -->
+<div class="overlay" id="scienceArchiveOverlay">
+  <div class="modal" style="text-align:left; max-height:80vh; overflow-y:auto; max-width:420px;">
+    <h2 style="text-align:center; margin-bottom:16px;">📚 これまでのサイエンス</h2>
+    <div id="scienceArchiveList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    <button class="btn-cancel" onclick="closeScienceArchive()" style="width:100%; margin-top:14px;">閉じる</button>
+  </div>
+</div>
+
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
 </div>
@@ -396,6 +431,120 @@ async function saveSortOrder() {
   closeSortModal();
   load(); // 一覧を再読み込み
 }
+
+// --- 今日のサイエンス（日替わり画像 + タイトル + 実績管理） ---
+let currentScienceItem = null;
+let scienceData = [];
+
+function loadTodayScience() {
+  scienceData = window.SCIENCE_DATA || [];
+  if (scienceData.length === 0) {
+    document.getElementById('todayScienceSection').style.display = 'none';
+    return;
+  }
+
+  // 未閲覧を優先して表示、全部見てたら日付ベースローテーション
+  const viewed = getScienceViewed();
+  const unviewed = scienceData.filter(item => !viewed.includes(item.id));
+
+  if (unviewed.length > 0) {
+    // 未閲覧の中から日付ベースで1つ選ぶ
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const idx = dayOfYear % unviewed.length;
+    currentScienceItem = unviewed[idx];
+  } else {
+    // 全部見た → 日付ベースでローテーション
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const idx = dayOfYear % scienceData.length;
+    currentScienceItem = scienceData[idx];
+  }
+
+  // タイトル表示
+  document.getElementById('scienceTitle').textContent = currentScienceItem.title;
+  document.getElementById('todayScienceSection').style.display = 'block';
+
+  // NEW バッジ（未閲覧なら表示）
+  if (!viewed.includes(currentScienceItem.id)) {
+    document.getElementById('scienceNewBadge').style.display = 'inline-block';
+  }
+}
+
+function openTodayScience() {
+  if (!currentScienceItem) return;
+  showScienceItem(currentScienceItem);
+}
+
+function showScienceItem(item) {
+  const wrap = document.getElementById('scienceImageWrap');
+  const img = document.getElementById('scienceImg');
+  const caption = document.getElementById('scienceCaption');
+
+  img.src = item.image;
+  img.alt = item.title;
+  caption.textContent = item.title;
+  wrap.style.display = 'block';
+
+  // 実績保存
+  markScienceViewed(item.id);
+  document.getElementById('scienceNewBadge').style.display = 'none';
+
+  // 画像エリアまでスクロール
+  setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+}
+
+// localStorage で実績管理
+function getScienceViewed() {
+  try {
+    return JSON.parse(localStorage.getItem('science_viewed') || '[]');
+  } catch(e) { return []; }
+}
+
+function markScienceViewed(id) {
+  const viewed = getScienceViewed();
+  if (!viewed.includes(id)) {
+    viewed.push(id);
+    localStorage.setItem('science_viewed', JSON.stringify(viewed));
+  }
+}
+
+// アーカイブモーダル
+function openScienceArchive() {
+  const list = document.getElementById('scienceArchiveList');
+  const viewed = getScienceViewed();
+  list.innerHTML = '';
+
+  scienceData.forEach(item => {
+    const isViewed = viewed.includes(item.id);
+    const div = document.createElement('div');
+
+    if (isViewed) {
+      // 閲覧済み：タイトル見える、タップで再閲覧可能
+      div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; background:#f9f9f9; border:1px solid #eee;';
+      div.innerHTML = '<span style="font-size:1.1em;">✅</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#333;">' + item.title + '</span>';
+      div.onclick = () => { closeScienceArchive(); showScienceItem(item); };
+    } else {
+      // 未閲覧：鍵付き、タイトル非表示、タップ不可
+      div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:#f0f0f0; border:1px solid #e0e0e0; opacity:0.7;';
+      div.innerHTML = '<span style="font-size:1.1em;">🔒</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#aaa;">？？？</span>';
+    }
+
+    list.appendChild(div);
+  });
+
+  document.getElementById('scienceArchiveOverlay').classList.add('active');
+}
+
+function closeScienceArchive() {
+  document.getElementById('scienceArchiveOverlay').classList.remove('active');
+}
+
+document.getElementById('scienceArchiveOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeScienceArchive();
+});
 
 // --- パスワード読み込み（Supabase） ---
 async function loadPasswords() {
@@ -1194,6 +1343,7 @@ load();
 loadReminders();
 loadPuyoCounts();
 loadPasswords();
+loadTodayScience();
 
 // Admin: check math olympiad pending reviews
 if (localStorage.getItem('deviceRole') === 'admin') {
@@ -1215,7 +1365,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.87.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.88.0</a></div>
 
 </body>
 </html>
