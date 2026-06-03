@@ -15,7 +15,7 @@
   // --- State ---
   let currentRangeId = null;
   let currentSession = null;
-  let currentInputMode = localStorage.getItem('kanji_input_mode') || 'text';
+  let currentInputMode = 'handwriting';
   let currentStrokesMap = {}; // {[questionIndex]: Point[][]}
   let editingRangeId = null; // range-edit-viewで編集中のID（null=新規）
   let gradingTestId = null;  // 採点中のPendingTestId
@@ -57,6 +57,11 @@
       list.innerHTML = '<div class="empty-msg">テスト範囲がまだありません</div>';
       return;
     }
+
+    // 新しい範囲を上に表示（createdAt降順）
+    ranges.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
 
     for (var i = 0; i < ranges.length; i++) {
       var range = ranges[i];
@@ -380,23 +385,11 @@
   }
 
   function applyInputMode() {
-    var textArea = document.getElementById('quiz-text-input-area');
     var canvasArea = document.getElementById('quiz-canvas-area');
-    var toggleBtn = document.getElementById('input-mode-toggle');
-
-    if (currentInputMode === 'handwriting' && Canvas.isSupported()) {
-      textArea.style.display = 'none';
-      canvasArea.style.display = 'flex';
-      toggleBtn.textContent = 'テキストに切替';
-      // Init canvas
-      var canvasEl = document.getElementById('quiz-canvas');
-      Canvas.initCanvas(canvasEl);
-    } else {
-      textArea.style.display = 'block';
-      canvasArea.style.display = 'none';
-      toggleBtn.textContent = '手書きに切替';
-      currentInputMode = 'text';
-    }
+    canvasArea.style.display = 'flex';
+    // Always init canvas for handwriting
+    var canvasEl = document.getElementById('quiz-canvas');
+    Canvas.initCanvas(canvasEl);
   }
 
   function toggleInputMode() {
@@ -414,21 +407,12 @@
   function submitTestAnswer() {
     var index = currentSession.currentIndex;
 
-    if (currentInputMode === 'handwriting') {
-      if (!Canvas.hasContent()) {
-        alert('手書きで回答を入力してください');
-        return;
-      }
-      currentStrokesMap[index] = Canvas.getStrokes();
-      currentSession = Engine.submitHandwritingAnswer(currentSession, index);
-    } else {
-      var answer = document.getElementById('quiz-text-input').value;
-      if (!answer.trim()) {
-        alert('回答を入力してください');
-        return;
-      }
-      currentSession = Engine.submitAnswer(currentSession, index, answer.trim());
+    if (!Canvas.hasContent()) {
+      alert('手書きで回答を入力してください');
+      return;
     }
+    currentStrokesMap[index] = Canvas.getStrokes();
+    currentSession = Engine.submitHandwritingAnswer(currentSession, index);
 
     // Auto-save session (Task 10.1)
     Session.saveSession(currentSession);
@@ -448,6 +432,7 @@
     if (currentSession.currentIndex < currentSession.questions.length - 1) {
       currentSession.currentIndex++;
       Session.saveSession(currentSession);
+      Canvas.clearCanvas();
       showQuizQuestion();
     } else {
       // All questions answered → Review Phase
@@ -462,31 +447,15 @@
   function submitPracticeAnswer() {
     var index = currentSession.currentIndex;
 
-    if (currentInputMode === 'handwriting') {
-      if (!Canvas.hasContent()) {
-        alert('手書きで回答を入力してください');
-        return;
-      }
-      currentStrokesMap[index] = Canvas.getStrokes();
-      currentSession = Engine.submitHandwritingAnswer(currentSession, index);
-
-      // For handwriting in practice mode: show answer + self-check
-      showPracticeResult(true);
-    } else {
-      var answer = document.getElementById('quiz-text-input').value;
-      if (!answer.trim()) {
-        alert('回答を入力してください');
-        return;
-      }
-      currentSession = Engine.submitAnswer(currentSession, index, answer.trim());
-
-      // Auto-grade text answer
-      var q = currentSession.questions[index];
-      var isCorrect = Engine.gradeTextAnswer(q.userAnswer, q.correctAnswer);
-      currentSession.questions[index].result = isCorrect ? 'correct' : 'incorrect';
-
-      showPracticeResult(false);
+    if (!Canvas.hasContent()) {
+      alert('手書きで回答を入力してください');
+      return;
     }
+    currentStrokesMap[index] = Canvas.getStrokes();
+    currentSession = Engine.submitHandwritingAnswer(currentSession, index);
+
+    // For handwriting in practice mode: show answer + self-check
+    showPracticeResult(true);
 
     // Auto-save (Task 10.1)
     Session.saveSession(currentSession);
@@ -553,6 +522,7 @@
     if (currentSession.currentIndex < currentSession.questions.length - 1) {
       currentSession.currentIndex++;
       Session.saveSession(currentSession);
+      Canvas.clearCanvas();
       showQuizQuestion();
     } else {
       // Practice complete → Result
@@ -1093,9 +1063,6 @@
     // Next question (practice)
     document.getElementById('next-question-btn').addEventListener('click', nextPracticeQuestion);
 
-    // Input mode toggle
-    document.getElementById('input-mode-toggle').addEventListener('click', toggleInputMode);
-
     // Canvas clear
     document.getElementById('canvas-clear-btn').addEventListener('click', function() {
       Canvas.clearCanvas();
@@ -1113,32 +1080,6 @@
     document.getElementById('grading-prev-btn').addEventListener('click', gradingPrev);
     document.getElementById('grading-next-btn').addEventListener('click', gradingNext);
     document.getElementById('grading-finish-btn').addEventListener('click', finishGradingTest);
-
-    // Export/Import
-    document.getElementById('export-btn').addEventListener('click', exportData);
-    document.getElementById('import-btn').addEventListener('click', function() {
-      document.getElementById('import-file-input').click();
-    });
-    document.getElementById('import-file-input').addEventListener('change', function(e) {
-      if (e.target.files && e.target.files[0]) {
-        importData(e.target.files[0]);
-        e.target.value = ''; // Reset for re-import
-      }
-    });
-
-    // Text input: Enter key submits
-    document.getElementById('quiz-text-input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (currentSession) {
-          if (currentSession.mode === 'test') {
-            submitTestAnswer();
-          } else {
-            submitPracticeAnswer();
-          }
-        }
-      }
-    });
 
     // Check for pending session on app load (Task 10.1)
     var resumed = checkPendingSession();

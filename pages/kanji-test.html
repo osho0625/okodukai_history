@@ -18,11 +18,6 @@
     </header>
     <div id="range-list" class="range-list"></div>
     <button id="add-range-btn" class="btn-primary btn-full" onclick="showView('range-edit-view')">＋ 新しい範囲を作成</button>
-    <div class="data-actions">
-      <button id="export-btn" class="btn-secondary">エクスポート</button>
-      <button id="import-btn" class="btn-secondary">インポート</button>
-      <input type="file" id="import-file-input" accept=".json" style="display:none">
-    </div>
   </section>
 
   <!-- 範囲作成・編集フォーム -->
@@ -51,7 +46,7 @@
     <div id="kanji-entry-list" class="entry-list"></div>
     <div id="kanji-list-empty" class="empty-msg" style="display:none">漢字が登録されていません</div>
     <div class="btn-group">
-      <button id="start-test-btn" class="btn-primary btn-full">テストを開始</button>
+      <button id="start-test-btn" class="btn-primary btn-full">勉強を始める</button>
       <button id="add-kanji-btn" class="btn-secondary btn-full" onclick="showView('kanji-register-view')">＋ 漢字を追加</button>
       <button id="edit-range-btn" class="btn-link">範囲名を編集</button>
     </div>
@@ -119,19 +114,11 @@
     <!-- 読み仮名表示 -->
     <div id="quiz-reading" class="quiz-reading"></div>
 
-    <!-- テキスト入力エリア -->
-    <div id="quiz-text-input-area" class="quiz-input-area">
-      <input type="text" id="quiz-text-input" class="quiz-text-input" placeholder="漢字を入力">
-    </div>
-
     <!-- Canvas手書きエリア -->
-    <div id="quiz-canvas-area" class="quiz-canvas-area" style="display:none">
+    <div id="quiz-canvas-area" class="quiz-canvas-area">
       <canvas id="quiz-canvas" width="300" height="300"></canvas>
       <button id="canvas-clear-btn" class="btn-small btn-secondary">クリア</button>
     </div>
-
-    <!-- モード切替ボタン -->
-    <button id="input-mode-toggle" class="btn-toggle">手書きに切替</button>
 
     <!-- アクションボタン（テストモード） -->
     <div id="quiz-actions-test" class="quiz-actions">
