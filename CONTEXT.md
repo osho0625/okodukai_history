@@ -1,6 +1,6 @@
 # お小遣い手帳 - 開発コンテキスト引継ぎ
 
-最終更新: 2026/06/03 v1.86.0
+最終更新: 2026/06/03 v1.87.0
 
 ## プロジェクト概要
 
@@ -67,10 +67,12 @@
 │   └── math_olympiad_answers.sql # 算数オリンピックテーブルマイグレーション
 ├── scripts/
 │   ├── reminder-notify.js  # リマインダーCron通知（Discord + Web Push）
+│   ├── auto-chore-points.js # 自動お手伝いポイント付与（毎日7:00 JST cron）
 │   └── generate-vapid-keys.js # VAPID鍵ペア生成ヘルパー
 ├── .github/workflows/
 │   ├── backup.yml      # 毎日AM3:00 JST自動バックアップ
-    └── reminder-notify.yml # 5分毎リマインダー通知（Discord + Web Push）
+│   ├── reminder-notify.yml # 5分毎リマインダー通知（Discord + Web Push）
+    └── auto-chore-points.yml # 毎日AM7:00 JST自動お手伝いポイント付与
 ```
 
 ## Supabaseテーブル構成
@@ -474,7 +476,7 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.86.0
+- 現在: v1.87.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -511,4 +513,4 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
-| TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加（バックアップ除く全箇所） |
+| TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加 |
