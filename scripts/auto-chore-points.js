@@ -5,7 +5,6 @@
 // 環境変数:
 //   SUPABASE_URL   - Supabase プロジェクト URL
 //   SUPABASE_KEY   - Supabase anon/service key
-//   DISCORD_WEBHOOK - Discord Webhook URL
 
 // ============================================================
 // 設定: 自動付与ルール
@@ -23,7 +22,6 @@ const AUTO_CHORE_RULES = [
 async function main() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_KEY = process.env.SUPABASE_KEY;
-  const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error('Missing required environment variables: SUPABASE_URL, SUPABASE_KEY');
@@ -99,38 +97,6 @@ async function main() {
     if (results.find(r => r.startsWith(rule.childName + ':')) !== results.find(r => r === `${rule.childName}: ${rule.choreName} +${rule.points}pt`)) continue;
 
     await checkAndGiveAllowance(SUPABASE_URL, SUPABASE_KEY, child, children);
-  }
-
-  // Discord通知
-  if (results.length > 0 && DISCORD_WEBHOOK) {
-    const msg = '🤖 自動お手伝いポイント付与\n' + results.map(r => '• ' + r).join('\n');
-    try {
-      await fetch(DISCORD_WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: msg })
-      });
-    } catch (e) {}
-
-    // Push通知キューにも追加
-    for (const name of [...new Set(results.map(r => r.split(':')[0]))]) {
-      const body = results.filter(r => r.startsWith(name + ':')).map(r => r.split(': ')[1]).join(', ');
-      await fetch(`${SUPABASE_URL}/rest/v1/push_messages`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          title: '🤖 自動ポイント付与',
-          body: `${name}: ${body}`,
-          target_role: 'all',
-          target_child_name: null
-        })
-      });
-    }
   }
 
   console.log('Done.');
