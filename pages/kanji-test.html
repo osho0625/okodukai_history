@@ -81,6 +81,16 @@
     <button id="bulk-save-btn" class="btn-secondary btn-full">一括追加</button>
     <div id="bulk-error" class="error-msg" style="display:none"></div>
     <div id="bulk-success" class="success-msg" style="display:none"></div>
+
+    <!-- 写真から自動登録 -->
+    <div class="divider"><span>または</span></div>
+    <div class="form-group">
+      <label>📷 写真から自動登録（AI解析）</label>
+      <p style="font-size:0.85em; color:#888; margin-bottom:8px;">漢字テストの範囲表やプリントを撮影すると、AIが読み取って一括登録します</p>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+      <button id="photo-btn" class="btn-secondary btn-full">📷 写真を撮って登録</button>
+      <div id="photo-status" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:#f5f5f5; font-size:0.9em;"></div>
+    </div>
   </section>
 
   <!-- モード選択 -->

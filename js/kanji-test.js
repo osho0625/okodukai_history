@@ -96,7 +96,8 @@
       var ranges = Registry.getAllRanges();
       var range = ranges.find(function(r) { return r.id === editingRangeId; });
       nameInput.value = range ? range.name : '';
-      deleteBtn.style.display = 'block';
+      // 削除ボタンは作成者 or 管理者のみ表示
+      deleteBtn.style.display = Registry.canDeleteRange(editingRangeId) ? 'block' : 'none';
     } else {
       title.textContent = '範囲を作成';
       nameInput.value = '';
@@ -244,6 +245,101 @@
     bulkInput.value = '';
     successEl.textContent = added.length + '件の漢字を追加しました';
     successEl.style.display = 'block';
+  }
+
+  // --- Photo OCR Registration ---
+
+  async function handlePhotoRegistration(file) {
+    var statusEl = document.getElementById('photo-status');
+    statusEl.style.display = 'block';
+    statusEl.textContent = '🔄 画像を解析中...';
+    statusEl.style.background = '#e3f2fd';
+
+    try {
+      // Load Gemini API key from app_config
+      var keyData = await client.from('app_config').select('value').eq('key', 'gemini_api_key').maybeSingle();
+      if (!keyData || !keyData.data || !keyData.data.value) {
+        statusEl.textContent = '❌ Gemini APIキーが設定されていません（管理者ページで設定してください）';
+        statusEl.style.background = '#ffebee';
+        return;
+      }
+      var apiKey = keyData.data.value;
+
+      // Convert image to base64
+      var base64 = await fileToBase64(file);
+      var mimeType = file.type || 'image/jpeg';
+
+      // Call Gemini Vision API
+      var prompt = 'この画像は漢字テストの範囲表またはプリントです。画像から漢字の問題を読み取り、以下の形式で全て出力してください。\n\n形式: 1行に「読み仮名,漢字」（カンマ区切り）\n\n例:\nがっこう,学校\nせんせい,先生\n\n注意:\n- 読み仮名はひらがなで書いてください\n- 余計な説明は不要です。データだけ出力してください\n- 画像内の全ての漢字を漏れなく抽出してください';
+
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+      var body = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64 } }
+          ]
+        }]
+      };
+
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        // Fallback to gemini-2.5-flash-lite
+        url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + apiKey;
+        body.generationConfig = { thinkingConfig: { thinkingBudget: 0 } };
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+
+      if (!res.ok) {
+        statusEl.textContent = '❌ AI解析に失敗しました（' + res.status + '）';
+        statusEl.style.background = '#ffebee';
+        return;
+      }
+
+      var data = await res.json();
+      var text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
+
+      if (!text.trim()) {
+        statusEl.textContent = '❌ 画像から漢字を読み取れませんでした';
+        statusEl.style.background = '#ffebee';
+        return;
+      }
+
+      // Parse and register
+      var added = Registry.addEntriesBulk(currentRangeId, text);
+      if (added.length === 0) {
+        statusEl.textContent = '❌ 有効な漢字データが見つかりませんでした';
+        statusEl.style.background = '#ffebee';
+      } else {
+        statusEl.textContent = '✅ ' + added.length + '件の漢字を自動登録しました！';
+        statusEl.style.background = '#e8f5e9';
+      }
+    } catch (e) {
+      statusEl.textContent = '❌ エラー: ' + (e.message || '不明なエラー');
+      statusEl.style.background = '#ffebee';
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        // Remove the data:image/xxx;base64, prefix
+        var result = reader.result.split(',')[1];
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   // --- Export/Import (Task 9.1) ---
@@ -1054,6 +1150,18 @@
 
     document.getElementById('save-entry-btn').addEventListener('click', saveEntry);
     document.getElementById('bulk-save-btn').addEventListener('click', saveBulkEntries);
+
+    // Photo OCR registration
+    document.getElementById('photo-btn').addEventListener('click', function() {
+      document.getElementById('photo-input').click();
+    });
+    document.getElementById('photo-input').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        handlePhotoRegistration(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
     document.getElementById('kanji-register-back-btn').addEventListener('click', function() {
       document.getElementById('register-error').style.display = 'none';
       document.getElementById('register-success').style.display = 'none';
