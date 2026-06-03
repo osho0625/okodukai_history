@@ -78,7 +78,7 @@ function showToday() {
       if (unviewed.length > 0) {
         item = unviewed[dayOfYear % unviewed.length];
       } else {
-        item = scienceData[dayOfYear % scienceData.length];
+        item = scienceData[Math.floor(Math.random() * scienceData.length)];
       }
       localStorage.setItem('science_today', JSON.stringify({ date: todayStr, id: item.id }));
     }

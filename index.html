@@ -443,7 +443,8 @@ function loadTodayScience() {
     if (unviewed.length > 0) {
       currentScienceItem = unviewed[dayOfYear % unviewed.length];
     } else {
-      currentScienceItem = scienceData[dayOfYear % scienceData.length];
+      // 全部閲覧済み → ランダム表示（日付をシードに）
+      currentScienceItem = scienceData[Math.floor(Math.random() * scienceData.length)];
     }
     // 今日の選択を保存
     localStorage.setItem('science_today', JSON.stringify({ date: todayStr, id: currentScienceItem.id }));
