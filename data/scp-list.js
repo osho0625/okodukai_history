@@ -171,12 +171,12 @@ window.SCP_DATA = [
     "id": "tale-marianas-trench",
     "number": "Tale",
     "title": "マリアナ海溝から回収された文書",
-    "url": "https://scp-wiki.wikidot.com/document-recovered-from-the-marianas-trench"
+    "url": "https://scp-jp.wikidot.com/document-recovered-from-the-marianas-trench"
   },
   {
     "id": "tale-stars-do-not-wait",
     "number": "Tale",
     "title": "星はあなたを待たない",
-    "url": "https://scp-wiki.wikidot.com/the-stars-do-not-wait-for-you"
+    "url": "https://scp-jp.wikidot.com/the-stars-do-not-wait-for-you"
   }
 ];
