@@ -81,7 +81,7 @@ async function showToday() {
   }
   if (!item && scienceData.length > 0) {
     // Supabaseから管理者指定を取得
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getTodayJST();
     try {
       const { data } = await client.from('game_settings').select('science_override').eq('id', 1).maybeSingle();
       if (data && data.science_override && data.science_override.date === todayStr) {

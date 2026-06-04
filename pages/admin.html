@@ -1786,7 +1786,7 @@ function renderSciencePickList() {
     return;
   }
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayJST();
   const isOverride = scienceOverrideData && scienceOverrideData.date === todayStr;
 
   list.innerHTML = '';
@@ -1802,7 +1802,7 @@ function renderSciencePickList() {
 }
 
 async function pickScience(item) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayJST();
   const override = { date: todayStr, id: item.id };
   await client.from('game_settings').update({ science_override: override }).eq('id', 1);
   scienceOverrideData = override;
@@ -1819,7 +1819,7 @@ async function clearSciencePick() {
 
 loadScienceOverride();
 
-// --- 今日のSCP指定（localStorage経由） ---
+// --- 今日のSCP指定（Supabase経由・全端末反映） ---
 function initScpOverrideUI() {
   const select = document.getElementById('scpOverrideSelect');
   if (!select) return;
@@ -1835,19 +1835,16 @@ function initScpOverrideUI() {
     opt.textContent = item.number + ' - ' + item.title;
     select.appendChild(opt);
   });
-  updateScpOverrideStatus();
 }
 
 function updateScpOverrideStatus() {
   const statusEl = document.getElementById('scpOverrideStatus');
   if (!statusEl) return;
-  var override = null;
-  try { override = JSON.parse(localStorage.getItem('scp_override')); } catch(e) {}
-  var todayStr = new Date().toISOString().slice(0, 10);
+  var todayStr = getTodayJST();
   var scpData = window.SCP_DATA || [];
 
-  if (override && override.date === todayStr && override.id) {
-    var entry = scpData.find(function(s) { return s.id === override.id; });
+  if (scpOverrideData && scpOverrideData.date === todayStr && scpOverrideData.id) {
+    var entry = scpData.find(function(s) { return s.id === scpOverrideData.id; });
     if (entry) {
       statusEl.textContent = '現在の指定: ' + entry.number + ' - ' + entry.title;
       statusEl.style.color = '#1976d2';
@@ -1861,28 +1858,40 @@ function updateScpOverrideStatus() {
   }
 }
 
-function setScpOverride() {
+let scpOverrideData = null;
+
+async function loadScpOverride() {
+  try {
+    const { data } = await client.from('game_settings').select('scp_override').eq('id', 1).maybeSingle();
+    scpOverrideData = (data && data.scp_override) || null;
+  } catch(e) {}
+  initScpOverrideUI();
+  updateScpOverrideStatus();
+}
+
+async function setScpOverride() {
   var select = document.getElementById('scpOverrideSelect');
   var resultEl = document.getElementById('scpOverrideResult');
   if (!select || !select.value) return;
   var selectedId = select.value;
-  var todayStr = new Date().toISOString().slice(0, 10);
+  var todayStr = getTodayJST();
   var scpData = window.SCP_DATA || [];
   var entry = scpData.find(function(s) { return s.id === selectedId; });
   if (!entry) return;
 
   var overrideObj = { date: todayStr, id: selectedId };
-  localStorage.setItem('scp_override', JSON.stringify(overrideObj));
-  localStorage.setItem('scp_today', JSON.stringify(overrideObj));
+  await client.from('game_settings').update({ scp_override: overrideObj }).eq('id', 1);
+  scpOverrideData = overrideObj;
 
-  resultEl.textContent = '✅ 「' + entry.number + ' - ' + entry.title + '」を今日のSCPに指定しました';
+  resultEl.textContent = '✅ 「' + entry.number + ' - ' + entry.title + '」を今日のSCPに指定しました（全端末反映）';
   resultEl.style.color = '#4caf50';
   updateScpOverrideStatus();
 }
 
-function clearScpOverride() {
+async function clearScpOverride() {
   var resultEl = document.getElementById('scpOverrideResult');
-  localStorage.removeItem('scp_override');
+  await client.from('game_settings').update({ scp_override: null }).eq('id', 1);
+  scpOverrideData = null;
   if (resultEl) {
     resultEl.textContent = '指定をクリアしました（次回読み込みで自動選択）';
     resultEl.style.color = '#ff9800';
@@ -1890,7 +1899,7 @@ function clearScpOverride() {
   updateScpOverrideStatus();
 }
 
-initScpOverrideUI();
+loadScpOverride();
 </script>
 </body>
 </html>

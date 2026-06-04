@@ -126,6 +126,14 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+/**
+ * JST日付文字列 "YYYY-MM-DD" を返す
+ */
+function getTodayJST() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function getAllowanceForMilestone(pts) {
   if (pts === 400) return 400;
   if (pts === 200) return 200;

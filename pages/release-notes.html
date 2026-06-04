@@ -36,6 +36,17 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.93.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 今日のサイエンス/SCP：日付判定をUTC→JST に修正（翌日0時に固定が正しく解除されるように）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のSCP：管理者指定をSupabase管理に変更（全端末反映、localStorageから移行）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像23枚に更新</li>
+    <li><span class="tag tag-infra">infra</span> common.jsに getTodayJST() ヘルパー追加</li>
+    <li><span class="tag tag-infra">infra</span> game_settingsにscp_overrideカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.92.0</span><span class="date">2026/06/03</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 「今日のSCP」機能追加（TOPページに日替わりSCP記事を紹介、外部ページへリンク）</li>

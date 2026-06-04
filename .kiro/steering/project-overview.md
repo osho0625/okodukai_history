@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/03 v1.89.3
+最終更新: 2026/06/04 v1.93.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -167,7 +167,8 @@ inclusion: auto
   - 通知時間カスタマイズ: `<input type="time">`で複数時間追加/削除、JSONB配列保存
   - スヌーズ: 1-365日、snooze_until日まで通知停止
   - 登録機能なし（登録はchild.htmlからのみ）
-- 🔬 今日のサイエンス指定（当日表示する画像を手動選択、science_overrideに保存）
+- 🔬 今日のサイエンス指定（当日表示する画像を手動選択、Supabase science_overrideに保存、全端末反映）
+- 📋 今日のSCP指定（当日表示するSCPを手動選択、Supabase scp_overrideに保存、全端末反映）
 
 ## 端末権限（deviceRole）
 
@@ -193,7 +194,8 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | reminder_device_id | リマインダー作成者識別子（UUID、端末ごと） | 永続 |
 | science_viewed | 今日のサイエンス閲覧済みIDリスト（JSON配列） | 永続 |
 | science_today | 今日のサイエンス当日固定ID（{date,id}） | 日替わり |
-| science_override | 管理者指定サイエンスID（{date,id}、admin.htmlから設定） | 日替わり |
+| scp_viewed | 今日のSCP閲覧済みIDリスト（JSON配列） | 永続 |
+| scp_today | 今日のSCP当日固定ID（{date,id}） | 日替わり |
 
 ## sessionStorage 共通キー
 
@@ -204,7 +206,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.89.1
+- 現在: v1.93.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -213,13 +215,15 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 ### 🔴 毎回必ずやること（絶対に忘れないこと）
 
-**コードに変更を加えたら、作業の最後に以下3つを必ず更新すること：**
+**コードに変更を加えたら、作業の最後に以下を必ず更新してからGitプッシュすること：**
 
 1. **`pages/release-notes.html`** — 変更内容をリリースノートの先頭に追記（バージョン番号を上げる）
 2. **`sw.js`** — `CACHE_NAME` のバージョン番号を +1 する（例: `okozukai-v7` → `okozukai-v8`）
 3. **`index.html`** — 末尾のバージョン表示テキストを新バージョンに更新
+4. **`git push`** — 作業ブランチにコミット＆プッシュ（ユーザーに確認不要、自動で行う）
 
-**これを忘れると本番反映時にキャッシュが更新されず、ユーザーに変更が届かない。**
+**⚠️ これを省略・忘却してはならない。ユーザーに「プッシュして」と言われる前に自発的に実行すること。**
+**⚠️ キャッシュ更新されないとユーザーに変更が届かない。**
 
 ## Git ブランチ
 
@@ -228,7 +232,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | main | 最新 | TSJ260512までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
-| TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加 |
+| TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
 
 ## 既知の注意点
 

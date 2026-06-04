@@ -442,7 +442,7 @@ async function loadTodayScience() {
   }
 
   const viewed = getScienceViewed();
-  const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const todayStr = getTodayJST();
 
   // Supabaseから管理者指定を取得
   let overrideData = null;
@@ -521,7 +521,7 @@ function markScpViewed(id) {
   }
 }
 
-function loadTodayScp() {
+async function loadTodayScp() {
   var scpData = window.SCP_DATA || [];
   if (scpData.length === 0) {
     document.getElementById('todayScpSection').style.display = 'none';
@@ -529,13 +529,15 @@ function loadTodayScp() {
   }
 
   var viewed = getScpViewed();
-  var todayStr = new Date().toISOString().slice(0, 10);
+  var todayStr = getTodayJST();
 
-  // override読み取り
+  // Supabaseから管理者指定を取得
   var override = null;
   try {
-    var raw = localStorage.getItem('scp_override');
-    if (raw) override = JSON.parse(raw);
+    var { data } = await client.from('game_settings').select('scp_override').eq('id', 1).maybeSingle();
+    if (data && data.scp_override && data.scp_override.date === todayStr) {
+      override = data.scp_override;
+    }
   } catch(e) {}
 
   // scp_today読み取り（日付固定）
@@ -1419,7 +1421,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.90.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.93.0</a></div>
 
 </body>
 </html>
