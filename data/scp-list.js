@@ -2,19 +2,19 @@ window.SCP_DATA = [
   {
     "id": "scp-173",
     "number": "SCP-173",
-    "title": "見ていないと近づいてくる像",
+    "title": "彫刻",
     "url": "https://scp-jp.wikidot.com/scp-173"
   },
   {
     "id": "scp-096",
     "number": "SCP-096",
-    "title": "顔を見たら終わり",
+    "title": "シャイガイ",
     "url": "https://scp-jp.wikidot.com/scp-096"
   },
   {
     "id": "scp-055",
     "number": "SCP-055",
-    "title": "何なのか思い出せない",
+    "title": "何なのか分からない何か",
     "url": "https://scp-jp.wikidot.com/scp-055"
   },
   {
@@ -26,37 +26,37 @@ window.SCP_DATA = [
   {
     "id": "scp-3008",
     "number": "SCP-3008",
-    "title": "出口のない家具店",
+    "title": "無限IKEA",
     "url": "https://scp-jp.wikidot.com/scp-3008"
   },
   {
     "id": "scp-087",
     "number": "SCP-087",
-    "title": "ただの暗い階段",
+    "title": "終わらない階段",
     "url": "https://scp-jp.wikidot.com/scp-087"
   },
   {
     "id": "scp-2521",
     "number": "SCP-2521",
-    "title": "文章にすると現れるもの",
+    "title": "説明すると来る存在",
     "url": "https://scp-jp.wikidot.com/scp-2521"
   },
   {
     "id": "scp-426",
     "number": "SCP-426",
-    "title": "私はトースター",
+    "title": "私はトースターです",
     "url": "https://scp-jp.wikidot.com/scp-426"
   },
   {
     "id": "scp-3935",
     "number": "SCP-3935",
-    "title": "何かがおかしい学校",
+    "title": "存在しない場所の記録",
     "url": "https://scp-jp.wikidot.com/scp-3935"
   },
   {
     "id": "scp-2000",
     "number": "SCP-2000",
-    "title": "人類を再起動する施設",
+    "title": "Deus Ex Machina",
     "url": "https://scp-jp.wikidot.com/scp-2000"
   },
   {
@@ -98,7 +98,7 @@ window.SCP_DATA = [
   {
     "id": "scp-2089-jp",
     "number": "SCP-2089-JP",
-    "title": "炎上するブロガー",
+    "title": "すっげーバスケの上手い死体",
     "url": "https://scp-jp.wikidot.com/scp-2089-jp"
   },
   {
@@ -110,37 +110,37 @@ window.SCP_DATA = [
   {
     "id": "scp-1344-jp",
     "number": "SCP-1344-JP",
-    "title": "孤独な放送室",
+    "title": "放送室からの呼び声",
     "url": "https://scp-jp.wikidot.com/scp-1344-jp"
   },
   {
     "id": "scp-040-jp",
     "number": "SCP-040-JP",
-    "title": "ねこですよろしくおねがいします",
+    "title": "ねこです。よろしくおねがいします。",
     "url": "https://scp-jp.wikidot.com/scp-040-jp"
   },
   {
     "id": "scp-2428-jp",
     "number": "SCP-2428-JP",
-    "title": "ぬいぐるみの国",
+    "title": "ぬいぐるみたちの王国",
     "url": "https://scp-jp.wikidot.com/scp-2428-jp"
   },
   {
     "id": "scp-014-jp",
     "number": "SCP-014-JP",
-    "title": "名前についてくる声",
+    "title": "名前を呼ぶ声",
     "url": "https://scp-jp.wikidot.com/scp-014-jp"
   },
   {
     "id": "scp-129-jp",
     "number": "SCP-129-JP",
-    "title": "あなたに届くまで",
+    "title": "押し入れの奥",
     "url": "https://scp-jp.wikidot.com/scp-129-jp"
   },
   {
     "id": "scp-3001",
     "number": "SCP-3001",
-    "title": "何もない場所に閉じ込められた男",
+    "title": "赤い現実",
     "url": "https://scp-jp.wikidot.com/scp-3001"
   },
   {
