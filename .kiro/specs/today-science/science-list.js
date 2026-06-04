@@ -82,6 +82,16 @@ window.SCIENCE_DATA = [
     "image": ".kiro/specs/today-science/images/空はなんで青いの.png"
   },
   {
+    "id": "竜巻ってなに",
+    "title": "竜巻ってなに？",
+    "image": ".kiro/specs/today-science/images/竜巻ってなに.png"
+  },
+  {
+    "id": "船はなぜ浮くの",
+    "title": "船はなぜ浮くの？",
+    "image": ".kiro/specs/today-science/images/船はなぜ浮くの.png"
+  },
+  {
     "id": "虹はなぜできるの",
     "title": "虹はなぜできるの？",
     "image": ".kiro/specs/today-science/images/虹はなぜできるの.png"
@@ -107,9 +117,9 @@ window.SCIENCE_DATA = [
     "image": ".kiro/specs/today-science/images/雪ってなに.png"
   },
   {
-    "id": "雷はなんで落ちるの",
-    "title": "雷はなんで落ちるの？",
-    "image": ".kiro/specs/today-science/images/雷はなんで落ちるの.png"
+    "id": "雷ってなに",
+    "title": "雷ってなに？",
+    "image": ".kiro/specs/today-science/images/雷ってなに.png"
   },
   {
     "id": "飛行機はなぜ飛べるの",
