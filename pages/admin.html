@@ -996,6 +996,7 @@ function clearNekoInfection() {
     var viewed = JSON.parse(localStorage.getItem('scp_viewed') || '[]');
     viewed = viewed.filter(function(id) { return id !== 'scp-040-jp'; });
     localStorage.setItem('scp_viewed', JSON.stringify(viewed));
+    localStorage.removeItem('neko_infected_date');
     var msg = document.getElementById('nekoClearMsg');
     msg.style.display = 'block';
     setTimeout(function() { msg.style.display = 'none'; }, 3000);
