@@ -40,6 +40,10 @@
   var daysPassed = Math.max(0, Math.floor((Date.now() - new Date(infectedDate).getTime()) / 86400000));
   // 倍率 = 1 + (daysPassed / 100)^2
   var multiplier = 1 + Math.pow(daysPassed / 100, 2);
+  // ブーストモード（管理者設定）: さらに5倍
+  if (localStorage.getItem('neko_boost') === 'true') {
+    multiplier *= 5;
+  }
 
   // 基本確率
   var P_BG = Math.min(1, 0.05 * multiplier);

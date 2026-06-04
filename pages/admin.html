@@ -360,6 +360,15 @@ h2 .toggle.open { transform: rotate(90deg); }
     <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
       <div style="font-weight:600; margin-bottom:12px;">SCP-040-JP</div>
       <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>汚染5倍ブースト</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="nekoBoostToggle" onchange="toggleNekoBoost()">
+          <div class="toggle-track"></div>
+          <div class="toggle-knob"></div>
+        </label>
+      </div>
+      <div style="font-size:0.85em; color:#999; margin-bottom:12px;">ONにすると認識汚染の確率が5倍になります</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
         <span>ねこです認識汚染を解除</span>
         <button class="btn-sm btn-danger" onclick="clearNekoInfection()">解除する</button>
       </div>
@@ -997,11 +1006,30 @@ function clearNekoInfection() {
     viewed = viewed.filter(function(id) { return id !== 'scp-040-jp'; });
     localStorage.setItem('scp_viewed', JSON.stringify(viewed));
     localStorage.removeItem('neko_infected_date');
+    localStorage.removeItem('neko_boost');
+    document.getElementById('nekoBoostToggle').checked = false;
     var msg = document.getElementById('nekoClearMsg');
     msg.style.display = 'block';
     setTimeout(function() { msg.style.display = 'none'; }, 3000);
   } catch(e) { alert('解除に失敗しました'); }
 }
+
+function toggleNekoBoost() {
+  var on = document.getElementById('nekoBoostToggle').checked;
+  if (on) {
+    localStorage.setItem('neko_boost', 'true');
+  } else {
+    localStorage.removeItem('neko_boost');
+  }
+}
+
+// 初期化: ねこブーストトグル
+(function() {
+  var toggle = document.getElementById('nekoBoostToggle');
+  if (toggle && localStorage.getItem('neko_boost') === 'true') {
+    toggle.checked = true;
+  }
+})();
 
 // --- 月色設定 ---
 const DEFAULT_MONTH_COLORS = { 1:'#e57373', 2:'#f06292', 3:'#ba68c8', 4:'#9575cd', 5:'#7986cb', 6:'#64b5f6', 7:'#4fc3f7', 8:'#4dd0e1', 9:'#4db6ac', 10:'#81c784', 11:'#aed581', 12:'#dce775' };
