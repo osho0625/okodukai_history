@@ -184,5 +184,41 @@ window.SCP_DATA = [
     "number": "SCP-3199",
     "title": "卵を産み続ける怪物",
     "url": "https://scp-jp.wikidot.com/scp-3199"
+  },
+  {
+    "id": "scp-5000",
+    "number": "SCP-5000",
+    "title": "なぜ？",
+    "url": "https://scp-jp.wikidot.com/scp-5000"
+  },
+  {
+    "id": "scp-404-jp",
+    "number": "SCP-404-JP",
+    "title": "存在しないページ",
+    "url": "https://scp-jp.wikidot.com/scp-404-jp"
+  },
+  {
+    "id": "scp-2000-jp",
+    "number": "SCP-2000-JP",
+    "title": "忘れられた物語",
+    "url": "https://scp-jp.wikidot.com/scp-2000-jp"
+  },
+  {
+    "id": "scp-488-jp",
+    "number": "SCP-488-JP",
+    "title": "闇から来るもの",
+    "url": "https://scp-jp.wikidot.com/scp-488-jp"
+  },
+  {
+    "id": "scp-1134-jp",
+    "number": "SCP-1134-JP",
+    "title": "スシブレード",
+    "url": "https://scp-jp.wikidot.com/scp-1134-jp"
+  },
+  {
+    "id": "scp-280-jp",
+    "number": "SCP-280-JP",
+    "title": "縮小する時空間異常",
+    "url": "https://scp-jp.wikidot.com/scp-280-jp"
   }
 ];
