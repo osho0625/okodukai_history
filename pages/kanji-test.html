@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字50問テスト</title>
+  <link rel="stylesheet" href="../css/kanji-test.css">
+</head>
+<body>
+  <a id="home-btn" href="../index.html" style="position:fixed; top:12px; right:12px; font-size:1.4em; text-decoration:none; z-index:100;">🏠</a>
+
+  <!-- TOP: テスト範囲一覧 -->
+  <section id="top-view" class="view" style="display:none">
+    <header class="app-header">
+      <h1>漢字50問テスト</h1>
+      <button id="grading-link" class="btn-link" onclick="showView('grading-view')">
+        採点する <span id="pending-badge" class="badge" style="display:none">0</span>
+      </button>
+    </header>
+    <div id="range-list" class="range-list"></div>
+    <button id="add-range-btn" class="btn-primary btn-full">＋ 新しい範囲を作成</button>
+  </section>
+
+  <!-- 範囲作成・編集フォーム -->
+  <section id="range-edit-view" class="view" style="display:none">
+    <header class="view-header">
+      <button class="btn-back" id="range-edit-back-btn">← 戻る</button>
+      <h2 id="range-edit-title">範囲を作成</h2>
+    </header>
+    <div class="form-group">
+      <label for="range-name-input">範囲名</label>
+      <input type="text" id="range-name-input" placeholder="例: 3年生 第5回">
+    </div>
+    <div id="range-edit-error" class="error-msg" style="display:none"></div>
+    <div class="form-actions">
+      <button id="range-save-btn" class="btn-primary btn-full">保存</button>
+      <button id="range-delete-btn" class="btn-danger btn-full" style="display:none">この範囲を削除</button>
+    </div>
+  </section>
+
+  <!-- 漢字エントリ一覧 -->
+  <section id="kanji-list-view" class="view" style="display:none">
+    <header class="view-header">
+      <button class="btn-back" onclick="showView('top-view')">← 戻る</button>
+      <h2 id="kanji-list-title">漢字一覧</h2>
+    </header>
+    <div id="kanji-entry-list" class="entry-list"></div>
+    <div id="kanji-list-empty" class="empty-msg" style="display:none">漢字が登録されていません</div>
+    <div class="btn-group">
+      <button id="start-test-btn" class="btn-primary btn-full">勉強を始める</button>
+      <button id="add-kanji-btn" class="btn-secondary btn-full" onclick="showView('kanji-register-view')">＋ 漢字を追加</button>
+      <button id="edit-range-btn" class="btn-link">範囲名を編集</button>
+    </div>
+  </section>
+
+  <!-- 漢字登録フォーム（単体 + 一括） -->
+  <section id="kanji-register-view" class="view" style="display:none">
+    <header class="view-header">
+      <button class="btn-back" id="kanji-register-back-btn">← 戻る</button>
+      <h2>漢字を追加</h2>
+    </header>
+    <!-- 単体入力 -->
+    <div class="form-group">
+      <label for="reading-input">読み仮名</label>
+      <input type="text" id="reading-input" placeholder="例: がっこう">
+    </div>
+    <div class="form-group">
+      <label for="answer-input">正解の漢字</label>
+      <input type="text" id="answer-input" placeholder="例: 学校">
+    </div>
+    <button id="save-entry-btn" class="btn-primary btn-full">追加する</button>
+    <div id="register-error" class="error-msg" style="display:none"></div>
+    <div id="register-success" class="success-msg" style="display:none"></div>
+
+    <!-- 一括入力 -->
+    <div class="divider"><span>または</span></div>
+    <div class="form-group">
+      <label for="bulk-input">一括入力（1行に「読み仮名,漢字」）</label>
+      <textarea id="bulk-input" rows="6" placeholder="がっこう,学校&#10;せんせい,先生&#10;きょうしつ,教室"></textarea>
+    </div>
+    <button id="bulk-save-btn" class="btn-secondary btn-full">一括追加</button>
+    <div id="bulk-error" class="error-msg" style="display:none"></div>
+    <div id="bulk-success" class="success-msg" style="display:none"></div>
+
+    <!-- 写真から自動登録 -->
+    <div class="divider"><span>または</span></div>
+    <div class="form-group">
+      <label>📷 写真から自動登録（AI解析）</label>
+      <p style="font-size:0.85em; color:#888; margin-bottom:8px;">漢字テストの範囲表やプリントを撮影すると、AIが読み取って一括登録します</p>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+      <button id="photo-btn" class="btn-secondary btn-full">📷 写真を撮って登録</button>
+      <div id="photo-status" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:#f5f5f5; font-size:0.9em;"></div>
+    </div>
+  </section>
+
+  <!-- モード選択 -->
+  <section id="mode-select-view" class="view" style="display:none">
+    <header class="view-header">
+      <button class="btn-back" id="mode-select-back-btn">← 戻る</button>
+      <h2>モードを選択</h2>
+    </header>
+    <p class="mode-description">テスト範囲: <span id="mode-range-name"></span></p>
+    <p class="mode-description">登録数: <span id="mode-entry-count"></span>問</p>
+    <div class="mode-buttons">
+      <button id="test-mode-btn" class="btn-mode">
+        <span class="mode-icon">📝</span>
+        <span class="mode-label">テストモード</span>
+        <span class="mode-hint">50問連続 → 見直し → 採点</span>
+      </button>
+      <button id="practice-mode-btn" class="btn-mode">
+        <span class="mode-icon">📖</span>
+        <span class="mode-label">練習モード</span>
+        <span class="mode-hint">1問ずつ正誤確認しながら学習</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 出題画面 -->
+  <section id="quiz-view" class="view" style="display:none">
+    <header class="view-header">
+      <span id="quiz-progress" class="quiz-progress">問題 1 / 50</span>
+      <span id="quiz-mode-label" class="quiz-mode-label"></span>
+    </header>
+
+    <!-- 読み仮名表示 -->
+    <div id="quiz-reading" class="quiz-reading"></div>
+
+    <!-- Canvas手書きエリア -->
+    <div id="quiz-canvas-area" class="quiz-canvas-area">
+      <canvas id="quiz-canvas" width="300" height="300"></canvas>
+      <button id="canvas-clear-btn" class="btn-small btn-secondary">クリア</button>
+    </div>
+
+    <!-- アクションボタン（テストモード） -->
+    <div id="quiz-actions-test" class="quiz-actions">
+      <button id="submit-answer-btn" class="btn-primary btn-full">回答する</button>
+      <button id="skip-btn" class="btn-secondary btn-full">この問題を飛ばす</button>
+    </div>
+
+    <!-- アクションボタン（練習モード） -->
+    <div id="quiz-actions-practice" class="quiz-actions" style="display:none">
+      <button id="practice-submit-btn" class="btn-primary btn-full">回答する</button>
+      <button id="show-answer-btn" class="btn-secondary btn-full">答えを見る</button>
+    </div>
+
+    <!-- 正誤表示エリア（練習モード） -->
+    <div id="quiz-result-area" class="quiz-result-area" style="display:none">
+      <div id="quiz-result-icon" class="quiz-result-icon"></div>
+      <div id="quiz-correct-answer" class="quiz-correct-answer"></div>
+    </div>
+
+    <!-- Self-checkボタン（手書き練習モード用） -->
+    <div id="self-check-area" class="self-check-area" style="display:none">
+      <p class="self-check-label">自分の回答は合っていましたか？</p>
+      <div class="self-check-buttons">
+        <button id="self-check-correct" class="btn-correct">合ってた ⭕</button>
+        <button id="self-check-incorrect" class="btn-incorrect">間違ってた ❌</button>
+      </div>
+    </div>
+
+    <!-- 次の問題ボタン（練習モード） -->
+    <button id="next-question-btn" class="btn-primary btn-full" style="display:none">次の問題へ</button>
+  </section>
+
+  <!-- 見直し一覧（テストモード） -->
+  <section id="review-view" class="view" style="display:none">
+    <header class="view-header">
+      <h2>見直し</h2>
+    </header>
+    <p class="review-description">回答を確認・修正できます。完了したら採点してください。</p>
+    <div id="review-list" class="review-list"></div>
+    <button id="finish-review-btn" class="btn-primary btn-full">採点する</button>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="result-view" class="view" style="display:none">
+    <header class="view-header">
+      <h2>テスト結果</h2>
+    </header>
+    <div class="result-score">
+      <span id="result-score-value" class="score-value"></span>
+      <span class="score-unit">点</span>
+    </div>
+    <div id="result-perfect" class="result-perfect" style="display:none">🎉 満点！</div>
+    <div class="result-counts">
+      <div class="result-count-item">
+        <span class="count-label">正答</span>
+        <span id="result-correct" class="count-value correct">0</span>
+      </div>
+      <div class="result-count-item">
+        <span class="count-label">誤答</span>
+        <span id="result-incorrect" class="count-value incorrect">0</span>
+      </div>
+      <div class="result-count-item">
+        <span class="count-label">スキップ</span>
+        <span id="result-skipped" class="count-value skipped">0</span>
+      </div>
+      <div class="result-count-item">
+        <span id="result-pending-area" style="display:none">
+          <span class="count-label">採点待ち</span>
+          <span id="result-pending" class="count-value pending">0</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- 間違い一覧 -->
+    <div id="result-wrong-section" class="result-section" style="display:none">
+      <h3>間違えた問題</h3>
+      <div id="result-wrong-list" class="result-list"></div>
+    </div>
+
+    <!-- スキップ一覧 -->
+    <div id="result-skipped-section" class="result-section" style="display:none">
+      <h3>スキップした問題</h3>
+      <div id="result-skipped-list" class="result-list"></div>
+    </div>
+
+    <div class="result-actions">
+      <button id="retry-wrong-btn" class="btn-primary btn-full" style="display:none">間違いだけ再テスト</button>
+      <button id="back-to-top-btn" class="btn-secondary btn-full" onclick="showView('top-view')">トップに戻る</button>
+    </div>
+  </section>
+
+  <!-- 管理者採点画面 -->
+  <section id="grading-view" class="view" style="display:none">
+    <header class="view-header">
+      <button class="btn-back" onclick="showView('top-view')">← 戻る</button>
+      <h2>採点</h2>
+    </header>
+
+    <!-- 未採点テスト一覧 -->
+    <div id="grading-test-list" class="grading-test-list"></div>
+    <div id="grading-empty" class="empty-msg" style="display:none">未採点のテストはありません</div>
+
+    <!-- 採点インターフェース -->
+    <div id="grading-interface" style="display:none">
+      <div class="grading-header">
+        <span id="grading-test-info"></span>
+        <span id="grading-progress"></span>
+      </div>
+      <div class="grading-content">
+        <div class="grading-canvas-area">
+          <canvas id="grading-canvas" width="300" height="300"></canvas>
+        </div>
+        <div class="grading-answer">
+          <span class="grading-label">正解:</span>
+          <span id="grading-correct-answer" class="grading-correct-text"></span>
+        </div>
+        <div class="grading-reading">
+          <span class="grading-label">読み:</span>
+          <span id="grading-reading-text"></span>
+        </div>
+      </div>
+      <div class="grading-actions">
+        <button id="grade-correct-btn" class="btn-correct btn-full">正解 ⭕</button>
+        <button id="grade-incorrect-btn" class="btn-incorrect btn-full">不正解 ❌</button>
+      </div>
+      <div class="grading-nav">
+        <button id="grading-prev-btn" class="btn-secondary">← 前</button>
+        <button id="grading-next-btn" class="btn-secondary">次 →</button>
+        <button id="grading-finish-btn" class="btn-primary" style="display:none">採点完了</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/kanji-storage.js"></script>
+  <script src="../js/kanji-registry.js"></script>
+  <script src="../js/kanji-quiz-engine.js"></script>
+  <script src="../js/kanji-session-manager.js"></script>
+  <script src="../js/kanji-admin-grading.js"></script>
+  <script src="../js/kanji-notification.js"></script>
+  <script src="../js/kanji-handwriting-canvas.js"></script>
+  <script src="../js/kanji-test.js"></script>
+</body>
+</html>

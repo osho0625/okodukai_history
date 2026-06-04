@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>今日のサイエンス</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script src="../.kiro/specs/today-science/science-list.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+.header { text-align: center; margin-bottom: 4px; }
+.header h1 { color: #333; font-size: 1.3em; }
+.science-card {
+  background: #fff; border-radius: 14px; padding: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center;
+}
+.science-card img {
+  width: 100%; border-radius: 10px; object-fit: contain; cursor: pointer;
+}
+.fullscreen-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.92); z-index: 1000;
+  justify-content: center; align-items: center;
+  cursor: pointer;
+}
+.fullscreen-overlay.active { display: flex; }
+.fullscreen-overlay img {
+  max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 4px;
+}
+</style>
+</head>
+<body>
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+
+<div class="header">
+  <h1>🔬 今日のサイエンス</h1>
+</div>
+<div style="text-align:center; margin-bottom:16px;">
+  <a href="science-archive.html" style="font-size:0.8em; color:#999; text-decoration:none;">📚 これまでのサイエンス</a>
+</div>
+
+<div id="todayCard" class="science-card" style="display:none;">
+  <img id="todayImg" src="" alt="今日のサイエンス" onclick="openFullscreen()">
+</div>
+
+<!-- フルスクリーン表示 -->
+<div class="fullscreen-overlay" id="fullscreenOverlay" onclick="closeFullscreen()">
+  <img id="fullscreenImg" src="" alt="">
+</div>
+
+<script>
+const scienceData = window.SCIENCE_DATA || [];
+const params = new URLSearchParams(window.location.search);
+const targetId = params.get('id');
+
+function getScienceViewed() {
+  try { return JSON.parse(localStorage.getItem('science_viewed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function markScienceViewed(id) {
+  const viewed = getScienceViewed();
+  if (!viewed.includes(id)) {
+    viewed.push(id);
+    localStorage.setItem('science_viewed', JSON.stringify(viewed));
+  }
+}
+
+async function showToday() {
+  let item = null;
+  if (targetId) {
+    item = scienceData.find(s => s.id === targetId);
+  }
+  if (!item && scienceData.length > 0) {
+    // Supabaseから管理者指定を取得
+    const todayStr = getTodayJST();
+    try {
+      const { data } = await client.from('game_settings').select('science_override').eq('id', 1).maybeSingle();
+      if (data && data.science_override && data.science_override.date === todayStr) {
+        item = scienceData.find(s => s.id === data.science_override.id);
+      }
+    } catch(e) {}
+    // localStorageから今日の固定IDを取得
+    if (!item) {
+      let savedData = null;
+      try { savedData = JSON.parse(localStorage.getItem('science_today')); } catch(e) {}
+      if (savedData && savedData.date === todayStr) {
+        item = scienceData.find(s => s.id === savedData.id);
+      }
+    }
+    if (!item) {
+      const viewed = getScienceViewed();
+      const unviewed = scienceData.filter(s => !viewed.includes(s.id));
+      const today = new Date();
+      const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+      if (unviewed.length > 0) {
+        item = unviewed[dayOfYear % unviewed.length];
+      } else {
+        item = scienceData[Math.floor(Math.random() * scienceData.length)];
+      }
+      localStorage.setItem('science_today', JSON.stringify({ date: todayStr, id: item.id }));
+    }
+  }
+  if (!item) return;
+
+  document.getElementById('todayImg').src = '../' + item.image;
+  document.getElementById('todayImg').alt = item.title;
+  document.getElementById('todayCard').style.display = 'block';
+  markScienceViewed(item.id);
+}
+
+showToday();
+
+function openFullscreen() {
+  const img = document.getElementById('todayImg');
+  document.getElementById('fullscreenImg').src = img.src;
+  document.getElementById('fullscreenOverlay').classList.add('active');
+}
+
+function closeFullscreen() {
+  document.getElementById('fullscreenOverlay').classList.remove('active');
+}
+</script>
+</body>
+</html>

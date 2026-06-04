@@ -351,6 +351,9 @@ async function doChildTx(type) {
       body:JSON.stringify({ content: emoji + ' **' + child.name + '** ' + amount.toLocaleString() + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円' }) });
   } catch(e) {}
 
+  // Push通知
+  queuePushNotification(emoji + ' ' + action, child.name + ' ' + amount.toLocaleString() + '円 ' + action + '（残高: ' + newBal.toLocaleString() + '円）', 'all');
+
   child.balance = newBal;
   document.getElementById('childBalance').textContent = newBal.toLocaleString() + '円';
   document.getElementById('childBalance').classList.toggle('negative', newBal < 0);
@@ -1144,6 +1147,17 @@ async function addChorePoints() {
     await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) });
   } catch(e) {}
 
+  // Push通知
+  if (!isAdmin) {
+    // user申請時 → admin端末に通知
+    queuePushNotification('⭐ お手伝い申請', child.name + ' が「' + chore.name + '」で ' + currentPts + 'pt 申請しました', 'admin');
+  } else {
+    // admin即承認時 → user端末に通知
+    let pushBody = child.name + ' が「' + chore.name + '」で ' + currentPts + 'pt 獲得！（合計: ' + afterAll + '）';
+    if (milestones.length > 0) pushBody += '\n💰 ' + milestones.map(m => m.pts + 'pt→' + m.amt + '円').join(', ');
+    queuePushNotification('⭐ ポイント獲得', pushBody, 'user', child.name);
+  }
+
   const msg = document.getElementById('choreResultMsg');
   let msgText = isAdmin
     ? '✓ ' + chore.name + ' で ' + currentPts + 'pt 追加！'
@@ -1434,6 +1448,12 @@ async function submitReminder() {
     });
     clearTimeout(tid);
   } catch (e) {}
+
+  // Push通知
+  const pushBody = type === 'memo'
+    ? '📝 [' + child.name + '] ' + message
+    : '📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  queuePushNotification('🔔 リマインダー登録', pushBody, 'admin');
 
   // 一覧を更新
   loadReminders();

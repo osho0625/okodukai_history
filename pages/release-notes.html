@@ -36,6 +36,183 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.94.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のSCP：TOPに「SCP閲覧記録」リンク追加</li>
+    <li><span class="tag tag-feat">feat</span> ゲームセンターに「SCP閲覧記録」カード追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.93.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 今日のサイエンス/SCP：日付判定をUTC→JST に修正（翌日0時に固定が正しく解除されるように）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のSCP：管理者指定をSupabase管理に変更（全端末反映、localStorageから移行）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像23枚に更新</li>
+    <li><span class="tag tag-infra">infra</span> common.jsに getTodayJST() ヘルパー追加</li>
+    <li><span class="tag tag-infra">infra</span> game_settingsにscp_overrideカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.92.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 「今日のSCP」機能追加（TOPページに日替わりSCP記事を紹介、外部ページへリンク）</li>
+    <li><span class="tag tag-feat">feat</span> SCP記事24件収録（SCP-173, 096, 055, 2718, 3001, 040-JP, 014-JP, 129-JP 等）</li>
+    <li><span class="tag tag-feat">feat</span> SCPアーカイブページ追加（閲覧済み✅/未閲覧🔒、読了率表示、admin全件閲覧対応）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページにSCP Override機能追加（当日表示するSCPを手動指定）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.91.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：テスト範囲の削除権限制御（作成者 or 管理者のみ削除可能）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：見直し画面に手書き回答のサムネイルプレビュー表示</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：範囲編集画面の戻るボタンを遷移元に応じた動的戻り先に改善</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.90.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：📷写真から自動登録機能追加（Gemini Vision APIで漢字プリントを解析→一括登録）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.6</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：ホームアイコン（🏠）追加（テスト中は確認ダイアログ付き）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：見直しフェーズ改善（問題一覧に「修正する」「回答する」ボタン追加）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：見直しから再回答後、見直し一覧に戻る動作に修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.5</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：手書き入力専用に変更（テキスト入力・モード切替を削除）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：次の問題に進む際にCanvasを自動クリア</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：範囲一覧を新しい順に表示</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：「テストを開始」→「勉強を始める」に変更</li>
+    <li><span class="tag tag-feat">feat</span> 漢字テスト：インポート/エクスポートUIを削除</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.4</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：管理者指定をSupabase管理に変更（全端末反映）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像タップでフルスクリーン表示</li>
+    <li><span class="tag tag-infra">infra</span> game_settingsにscience_overrideカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.4</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 漢字テスト：ブラウザで開けない問題を修正（Supabase CDN追加、JSモジュールIIFE化でグローバル変数衝突解消）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.3</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字50問テストをゲームセンターに追加（arcade.htmlカード表示）</li>
+    <li><span class="tag tag-fix">fix</span> ゲームセンター公開制御ロジック修正（未設定ゲームはデフォルト表示に変更）</li>
+    <li><span class="tag tag-fix">fix</span> TOPページの漢字テスト直リンク削除（ゲームセンター経由に統一）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.2</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「今日のサイエンス指定」セクション追加（当日表示する画像を手動選択可能）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者指定はscience_overrideとしてlocalStorageに保存、通常選択より優先</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.1</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像を23枚に拡充</li>
+    <li><span class="tag tag-fix">fix</span> 今日のサイエンス：1日1枚固定表示、全閲覧済み時はランダム表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.89.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字50問テスト学習補助アプリ追加（テストモード/練習モード）</li>
+    <li><span class="tag tag-feat">feat</span> テスト範囲の作成・編集・削除（例:「260611はるちか」）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字登録（単体/一括）、エクスポート/インポート対応</li>
+    <li><span class="tag tag-feat">feat</span> テストモード：50問連続→見直しフェーズ→採点</li>
+    <li><span class="tag tag-feat">feat</span> 練習モード：1問ずつ正誤確認、「答えを見る」対応</li>
+    <li><span class="tag tag-feat">feat</span> Canvas手書き入力（ストローク座標保存、容量節約）</li>
+    <li><span class="tag tag-feat">feat</span> テキスト/手書き入力モード切替</li>
+    <li><span class="tag tag-feat">feat</span> 管理者（親）採点画面（手書きストローク再描画＋正解/不正解判定）</li>
+    <li><span class="tag tag-feat">feat</span> テスト完了時にPush通知＋Discord通知（管理者へ採点依頼）</li>
+    <li><span class="tag tag-feat">feat</span> セッション自動保存・中断復帰対応</li>
+    <li><span class="tag tag-feat">feat</span> 間違い＋スキップ問題の再テスト機能</li>
+    <li><span class="tag tag-feat">feat</span> localStorage容量超過対策（エラー表示、未採点データ保護）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.88.3</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：「これまでのサイエンス」リンクをタイトル下に小さく表示（矢印削除）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像自動読み込みスクリプト追加（scripts/generate-science-list.js）</li>
+    <li><span class="tag tag-feat">feat</span> 画像追加後に`node scripts/generate-science-list.js`でscience-list.jsを自動生成</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.88.2</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：画像タイトル表示を削除（画像内にタイトルがあるため）</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：アーカイブを別ページ（science-archive.html）に分離、読了数表示</li>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：ヘッダー右に「📚 これまでのサイエンス →」リンク追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.88.1</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 今日のサイエンス：専用ページに分離（TOPからリンク遷移、画像表示+アーカイブ一覧を専用ページで表示）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.88.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 「今日のサイエンス」機能追加（TOPページに日替わり科学トピックスを表示）</li>
+    <li><span class="tag tag-feat">feat</span> タイトルタップで画像表示、未閲覧を優先して出題</li>
+    <li><span class="tag tag-feat">feat</span> 閲覧実績をlocalStorageで管理、アーカイブ一覧で振り返り可能</li>
+    <li><span class="tag tag-feat">feat</span> 未閲覧は🔒で非表示、閲覧済みのみ再閲覧可能</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.87.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 自動お手伝いポイント付与（GitHub Actions cron毎日7:00 JST）</li>
+    <li><span class="tag tag-feat">feat</span> りょうすけ: 食洗器3pt(毎日)、洗濯機9pt(3日に1回)</li>
+    <li><span class="tag tag-feat">feat</span> めぐみ: 食洗器3pt(2日に1回)、料理10pt(毎日)</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.86.0</span><span class="date">2026/06/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> Discord通知と同じタイミングでWeb Push通知を送信（バックアップ除く全トリガー対応）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いポイント申請時にadmin端末へPush通知</li>
+    <li><span class="tag tag-feat">feat</span> ポイント承認・入出金・チケット予約/承認/却下・夜間アクセス等すべてPush通知対応</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.85.1</span><span class="date">2026/06/02</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> TOPページのチケットアイコンから直接チケット予約ページへ遷移するリンクを削除（個人ページ経由に統一）</li>

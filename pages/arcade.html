@@ -97,10 +97,20 @@ h1 { font-size: 1.4em; font-weight: 700; }
     <div class="game-title">算数オリンピック</div>
     <div class="game-desc">思考力チャレンジ</div>
   </a>
+  <a class="game-card" href="kanji-test.html" data-game="game_kanji_test">
+    <div class="game-icon">📝</div>
+    <div class="game-title">漢字50問テスト</div>
+    <div class="game-desc">テスト練習＋手書き</div>
+  </a>
   <a class="game-card" href="trpg-cthulhu.html" data-game="game_trpg_cthulhu" data-admin-only="true">
     <div class="game-icon">🦑</div>
     <div class="game-title">クトゥルフTRPG</div>
     <div class="game-desc">KP用シナリオリーダー</div>
+  </a>
+  <a class="game-card" href="scp-archive.html">
+    <div class="game-icon">🏛️</div>
+    <div class="game-title">SCP閲覧記録</div>
+    <div class="game-desc">SCP記事アーカイブ</div>
   </a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -124,7 +134,7 @@ h1 { font-size: 1.4em; font-weight: 700; }
     document.querySelectorAll('.game-card[data-game]').forEach(card => {
       if (card.getAttribute('data-admin-only')) return; // already hidden
       const key = card.getAttribute('data-game');
-      if (pub[key] !== true) card.style.display = 'none';
+      if (pub[key] === false) card.style.display = 'none';
     });
   } catch(e) {}
 })();

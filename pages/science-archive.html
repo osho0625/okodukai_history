@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>これまでのサイエンス</title>
+<script src="../.kiro/specs/today-science/science-list.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
+.progress { text-align: center; font-size: 0.85em; color: #888; margin-bottom: 16px; }
+.item {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  border-radius: 10px; margin-bottom: 8px;
+}
+.item.viewed {
+  background: #fff; border: 1px solid #eee; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.item.viewed:hover { border-color: #ccc; }
+.item.locked {
+  background: #f0f0f0; border: 1px solid #e0e0e0; opacity: 0.7;
+}
+</style>
+</head>
+<body>
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>📚 これまでのサイエンス</h1>
+<div class="progress" id="progress"></div>
+<div id="archiveList"></div>
+
+<script>
+const scienceData = window.SCIENCE_DATA || [];
+
+function getScienceViewed() {
+  try { return JSON.parse(localStorage.getItem('science_viewed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function render() {
+  const list = document.getElementById('archiveList');
+  const viewed = getScienceViewed();
+  list.innerHTML = '';
+
+  const viewedCount = scienceData.filter(s => viewed.includes(s.id)).length;
+  document.getElementById('progress').textContent = viewedCount + ' / ' + scienceData.length + ' 読了';
+
+  scienceData.forEach(item => {
+    const isViewed = viewed.includes(item.id);
+    const div = document.createElement('div');
+
+    if (isViewed) {
+      div.className = 'item viewed';
+      div.innerHTML = '<span style="font-size:1.1em;">✅</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#333;">' + item.title + '</span>'
+        + '<span style="color:#ccc; font-size:1em;">▶</span>';
+      div.onclick = () => { window.location.href = 'today-science.html?id=' + item.id; };
+    } else {
+      div.className = 'item locked';
+      div.innerHTML = '<span style="font-size:1.1em;">🔒</span>'
+        + '<span style="flex:1; font-size:0.9em; color:#aaa;">？？？</span>';
+    }
+    list.appendChild(div);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
