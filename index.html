@@ -1430,7 +1430,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
   try {
     var viewed = JSON.parse(localStorage.getItem('scp_viewed') || '[]');
     if (viewed.indexOf('scp-040-jp') !== -1) {
-      document.body.style.background = "url('.kiro/specs/today-scp/images/neko.png') center center / cover no-repeat fixed";
+      document.body.style.background = "url('.kiro/specs/today-scp/images/neko.png') top left / 33.333% auto repeat";
     }
   } catch(e) {}
 })();
