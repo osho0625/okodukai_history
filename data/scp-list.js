@@ -2,13 +2,13 @@ window.SCP_DATA = [
   {
     "id": "scp-173",
     "number": "SCP-173",
-    "title": "彫刻",
+    "title": "見ていないと動く彫刻",
     "url": "https://scp-jp.wikidot.com/scp-173"
   },
   {
     "id": "scp-096",
     "number": "SCP-096",
-    "title": "シャイガイ",
+    "title": "顔を見られたくない男",
     "url": "https://scp-jp.wikidot.com/scp-096"
   },
   {
@@ -26,7 +26,7 @@ window.SCP_DATA = [
   {
     "id": "scp-3008",
     "number": "SCP-3008",
-    "title": "無限IKEA",
+    "title": "無限に続くIKEA",
     "url": "https://scp-jp.wikidot.com/scp-3008"
   },
   {
@@ -56,7 +56,7 @@ window.SCP_DATA = [
   {
     "id": "scp-2000",
     "number": "SCP-2000",
-    "title": "Deus Ex Machina",
+    "title": "人類再建施設",
     "url": "https://scp-jp.wikidot.com/scp-2000"
   },
   {
@@ -74,25 +74,25 @@ window.SCP_DATA = [
   {
     "id": "scp-049",
     "number": "SCP-049",
-    "title": "ペスト医師",
+    "title": "治療したがる医者",
     "url": "https://scp-jp.wikidot.com/scp-049"
   },
   {
     "id": "scp-106",
     "number": "SCP-106",
-    "title": "オールドマン",
+    "title": "壁をすり抜ける老人",
     "url": "https://scp-jp.wikidot.com/scp-106"
   },
   {
     "id": "scp-914",
     "number": "SCP-914",
-    "title": "ぜんまい仕掛け",
+    "title": "なんでも変換する機械",
     "url": "https://scp-jp.wikidot.com/scp-914"
   },
   {
     "id": "scp-079",
     "number": "SCP-079",
-    "title": "オールドAI",
+    "title": "目覚めたAI",
     "url": "https://scp-jp.wikidot.com/scp-079"
   },
   {
@@ -140,7 +140,7 @@ window.SCP_DATA = [
   {
     "id": "scp-3001",
     "number": "SCP-3001",
-    "title": "赤い現実",
+    "title": "何もない場所に閉じ込められた男",
     "url": "https://scp-jp.wikidot.com/scp-3001"
   },
   {
