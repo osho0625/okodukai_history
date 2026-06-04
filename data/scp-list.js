@@ -142,5 +142,11 @@ window.SCP_DATA = [
     "number": "SCP-3001",
     "title": "何もない場所に閉じ込められた男",
     "url": "https://scp-jp.wikidot.com/scp-3001"
+  },
+  {
+    "id": "scp-3125",
+    "number": "SCP-3125",
+    "title": "好奇心は猫をも殺す",
+    "url": "https://scp-jp.wikidot.com/scp-3125"
   }
 ];
