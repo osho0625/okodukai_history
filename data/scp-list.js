@@ -178,5 +178,11 @@ window.SCP_DATA = [
     "number": "Tale",
     "title": "星はあなたを待たない",
     "url": "https://scp-jp.wikidot.com/the-stars-do-not-wait-for-you"
+  },
+  {
+    "id": "scp-3199",
+    "number": "SCP-3199",
+    "title": "卵を産み続ける怪物",
+    "url": "https://scp-jp.wikidot.com/scp-3199"
   }
 ];
