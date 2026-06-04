@@ -148,5 +148,35 @@ window.SCP_DATA = [
     "number": "SCP-3125",
     "title": "好奇心は猫をも殺す",
     "url": "https://scp-jp.wikidot.com/scp-3125"
+  },
+  {
+    "id": "scp-093",
+    "number": "SCP-093",
+    "title": "赤い海の向こう側",
+    "url": "https://scp-jp.wikidot.com/scp-093"
+  },
+  {
+    "id": "scp-1733",
+    "number": "SCP-1733",
+    "title": "終わらないNBAファイナル",
+    "url": "https://scp-jp.wikidot.com/scp-1733"
+  },
+  {
+    "id": "scp-3999",
+    "number": "SCP-3999",
+    "title": "世界の中心にいる男",
+    "url": "https://scp-jp.wikidot.com/scp-3999"
+  },
+  {
+    "id": "tale-marianas-trench",
+    "number": "Tale",
+    "title": "マリアナ海溝から回収された文書",
+    "url": "https://scp-wiki.wikidot.com/document-recovered-from-the-marianas-trench"
+  },
+  {
+    "id": "tale-stars-do-not-wait",
+    "number": "Tale",
+    "title": "星はあなたを待たない",
+    "url": "https://scp-wiki.wikidot.com/the-stars-do-not-wait-for-you"
   }
 ];
