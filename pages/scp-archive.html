@@ -74,6 +74,15 @@ function render() {
       a.href = item.url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
+      a.setAttribute('data-scp-id', item.id);
+      a.onclick = function() {
+        var id = this.getAttribute('data-scp-id');
+        var v = getScpViewed();
+        if (v.indexOf(id) === -1) {
+          v.push(id);
+          localStorage.setItem('scp_viewed', JSON.stringify(v));
+        }
+      };
       var icon = isViewed ? '✅' : '👁️';
       a.innerHTML = '<span style="font-size:1.1em;">' + icon + '</span>'
         + '<span style="flex:1; font-size:0.9em; color:#333;">' + item.number + ' - ' + item.title + '</span>'
