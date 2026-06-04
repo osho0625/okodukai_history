@@ -357,6 +357,14 @@ h2 .toggle.open { transform: rotate(90deg); }
       </div>
       <div class="msg" id="notifClearMsg" style="margin-top:8px;">&#x2713; 通知を全て消去しました</div>
     </div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
+      <div style="font-weight:600; margin-bottom:12px;">SCP-040-JP</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+        <span>ねこです認識汚染を解除</span>
+        <button class="btn-sm btn-danger" onclick="clearNekoInfection()">解除する</button>
+      </div>
+      <div class="msg" id="nekoClearMsg" style="margin-top:8px;">&#x2713; ねこです汚染を解除しました</div>
+    </div>
   </div>
 </div>
 
@@ -980,6 +988,18 @@ async function clearAllNotifications() {
     notifyDiscord('🔔 未読通知を全消去しました');
     queuePushNotification('🔔 通知消去', '未読通知を全消去しました', 'admin');
   } catch(e) { alert('消去に失敗しました: ' + e.message); }
+}
+
+function clearNekoInfection() {
+  if (!confirm('ねこです（SCP-040-JP）の既読履歴を消去しますか？\n認識汚染が解除されます。')) return;
+  try {
+    var viewed = JSON.parse(localStorage.getItem('scp_viewed') || '[]');
+    viewed = viewed.filter(function(id) { return id !== 'scp-040-jp'; });
+    localStorage.setItem('scp_viewed', JSON.stringify(viewed));
+    var msg = document.getElementById('nekoClearMsg');
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  } catch(e) { alert('解除に失敗しました'); }
 }
 
 // --- 月色設定 ---

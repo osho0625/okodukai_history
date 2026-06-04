@@ -1424,19 +1424,10 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/roach.js"></script>
 <script src="js/garden.js"></script>
 
-<!-- ねこです背景（SCP-040-JP既読時） -->
-<script>
-(function() {
-  try {
-    var viewed = JSON.parse(localStorage.getItem('scp_viewed') || '[]');
-    if (viewed.indexOf('scp-040-jp') !== -1) {
-      document.body.style.background = "url('.kiro/specs/today-scp/images/neko.png') top left / 33.333% auto repeat";
-    }
-  } catch(e) {}
-})();
-</script>
+<!-- ねこです認識汚染（SCP-040-JP既読時） -->
+<script src="js/neko-infection.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.96.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.97.0</a></div>
 
 </body>
 </html>
