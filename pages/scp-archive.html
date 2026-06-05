@@ -64,7 +64,26 @@ function render() {
   var rate = calcReadRate(scpData, viewed);
   document.getElementById('progress').textContent = Math.round(rate * 100) + '% 読了（' + viewed.length + ' / ' + scpData.length + '）';
 
-  scpData.forEach(function(item) {
+  // ソート: 無印SCP(番号順) → JP(番号順) → Tale
+  var sorted = scpData.slice().sort(function(a, b) {
+    var aIsJp = a.id.indexOf('-jp') !== -1;
+    var bIsJp = b.id.indexOf('-jp') !== -1;
+    var aIsTale = a.id.indexOf('tale') === 0;
+    var bIsTale = b.id.indexOf('tale') === 0;
+    // Tale は最後
+    if (aIsTale && !bIsTale) return 1;
+    if (!aIsTale && bIsTale) return -1;
+    if (aIsTale && bIsTale) return 0;
+    // JP は無印の後
+    if (aIsJp && !bIsJp) return 1;
+    if (!aIsJp && bIsJp) return -1;
+    // 同カテゴリ内は番号順
+    var aNum = parseInt((a.id.match(/\d+/) || ['0'])[0], 10);
+    var bNum = parseInt((b.id.match(/\d+/) || ['0'])[0], 10);
+    return aNum - bNum;
+  });
+
+  sorted.forEach(function(item) {
     var isViewed = viewed.indexOf(item.id) !== -1;
 
     // admin は全て閲覧可能
@@ -75,8 +94,20 @@ function render() {
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.setAttribute('data-scp-id', item.id);
-      a.onclick = function() {
+      a.onclick = function(e) {
         var id = this.getAttribute('data-scp-id');
+        var url = this.href;
+        if (id === 'scp-040-jp') {
+          e.preventDefault();
+          showMemeWarning(url, function() {
+            var v = getScpViewed();
+            if (v.indexOf(id) === -1) {
+              v.push(id);
+              localStorage.setItem('scp_viewed', JSON.stringify(v));
+            }
+          });
+          return false;
+        }
         var v = getScpViewed();
         if (v.indexOf(id) === -1) {
           v.push(id);
@@ -100,5 +131,6 @@ function render() {
 
 render();
 </script>
+<script src="../js/neko-meme-warning.js"></script>
 </body>
 </html>

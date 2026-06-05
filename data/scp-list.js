@@ -362,7 +362,7 @@ window.SCP_DATA = [
   {
     "id": "scp-2144-jp",
     "number": "SCP-2144-JP",
-    "title": "やぁ！そこの君。",
+    "title": "やぁ！そこの君。君だよ君。そこでこのページをぼうっと眺めてる君。ちょっとしたことなんだけど、このリンクをクリックしてくれないかな。",
     "url": "https://scp-jp.wikidot.com/scp-2144-jp"
   },
   {
