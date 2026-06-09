@@ -136,6 +136,10 @@
         if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'INPUT') {
           return NodeFilter.FILTER_REJECT;
         }
+        // ミーム警告モーダル内は汚染しない
+        if (parent.closest && parent.closest('#memeWarningOverlay')) {
+          return NodeFilter.FILTER_REJECT;
+        }
         if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
         if (node._nekoInfected) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
@@ -153,6 +157,9 @@
   }
 
   function infectElement(el) {
+    // ミーム警告モーダル内は汚染しない
+    if (el.id === 'memeWarningOverlay') return;
+    if (el.closest && el.closest('#memeWarningOverlay')) return;
     if (el.tagName === 'IMG') {
       infectImg(el);
     }
