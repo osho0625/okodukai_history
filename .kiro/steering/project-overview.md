@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/04 v1.94.0
+最終更新: 2026/06/09 v1.98.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -196,6 +196,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | science_today | 今日のサイエンス当日固定ID（{date,id}） | 日替わり |
 | scp_viewed | 今日のSCP閲覧済みIDリスト（JSON配列） | 永続 |
 | scp_today | 今日のSCP当日固定ID（{date,id}） | 日替わり |
+| neko_infected_date | SCP-040-JP既読日（汚染進行計算用） | 永続 |
 
 ## sessionStorage 共通キー
 
@@ -206,7 +207,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.94.0
+- 現在: v1.98.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

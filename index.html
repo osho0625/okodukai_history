@@ -584,8 +584,16 @@ async function loadTodayScp() {
   var card = document.getElementById('scpCard');
   card.href = currentScpItem.url;
 
-  // タップ時に閲覧済み登録
-  card.onclick = function() {
+  // タップ時に閲覧済み登録（SCP-040-JPはミーム警告ダイアログ）
+  card.onclick = function(e) {
+    if (currentScpItem.id === 'scp-040-jp') {
+      e.preventDefault();
+      showMemeWarning(currentScpItem.url, function() {
+        markScpViewed(currentScpItem.id);
+        document.getElementById('scpNewBadge').style.display = 'none';
+      });
+      return false;
+    }
     markScpViewed(currentScpItem.id);
     document.getElementById('scpNewBadge').style.display = 'none';
   };
@@ -1426,8 +1434,9 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 
 <!-- ねこです認識汚染（SCP-040-JP既読時） -->
 <script src="js/neko-infection.js"></script>
+<script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.97.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.98.0</a></div>
 
 </body>
 </html>
