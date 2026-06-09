@@ -62,6 +62,11 @@ window.SCIENCE_DATA = [
     "image": ".kiro/specs/today-science/images/季節はなぜ変わるの.png"
   },
   {
+    "id": "成長痛ってなに",
+    "title": "成長痛ってなに？",
+    "image": ".kiro/specs/today-science/images/成長痛ってなに.png"
+  },
+  {
     "id": "星はなんで光るの",
     "title": "星はなんで光るの？",
     "image": ".kiro/specs/today-science/images/星はなんで光るの.png"
@@ -87,6 +92,11 @@ window.SCIENCE_DATA = [
     "image": ".kiro/specs/today-science/images/竜巻ってなに.png"
   },
   {
+    "id": "筋肉痛はどうして起こるの",
+    "title": "筋肉痛はどうして起こるの？",
+    "image": ".kiro/specs/today-science/images/筋肉痛はどうして起こるの.png"
+  },
+  {
     "id": "船はなぜ浮くの",
     "title": "船はなぜ浮くの？",
     "image": ".kiro/specs/today-science/images/船はなぜ浮くの.png"
@@ -95,6 +105,11 @@ window.SCIENCE_DATA = [
     "id": "虹はなぜできるの",
     "title": "虹はなぜできるの？",
     "image": ".kiro/specs/today-science/images/虹はなぜできるの.png"
+  },
+  {
+    "id": "蚊に刺されたらなんでかゆいの",
+    "title": "蚊に刺されたらなんでかゆいの？",
+    "image": ".kiro/specs/today-science/images/蚊に刺されたらなんでかゆいの.png"
   },
   {
     "id": "血はなぜ赤いの",
