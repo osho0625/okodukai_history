@@ -45,8 +45,8 @@
     multiplier *= 5;
   }
 
-  // 基本確率（全て5%）
-  var P_BG = Math.min(1, 0.05 * multiplier);
+  // 基本確率（全て5%、背景のみ3%）
+  var P_BG = Math.min(1, 0.03 * multiplier);
   var P_ICON = Math.min(1, 0.05 * multiplier);
   var P_TEXT_REPLACE = Math.min(1, 0.05 * multiplier);
   var P_TEXT_INSERT = Math.min(1, 0.05 * multiplier);
