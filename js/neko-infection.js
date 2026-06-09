@@ -38,8 +38,8 @@
 
   // 経過日数を計算
   var daysPassed = Math.max(0, Math.floor((Date.now() - new Date(infectedDate).getTime()) / 86400000));
-  // 倍率 = 1 + (daysPassed / 50)^2
-  var multiplier = 1 + Math.pow(daysPassed / 50, 2);
+  // 倍率 = 1 + (daysPassed / 30)^2
+  var multiplier = 1 + Math.pow(daysPassed / 30, 2);
   // ブーストモード（管理者設定）: さらに5倍
   if (localStorage.getItem('neko_boost') === 'true') {
     multiplier *= 5;
