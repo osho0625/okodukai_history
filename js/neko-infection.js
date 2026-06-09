@@ -38,18 +38,18 @@
 
   // 経過日数を計算
   var daysPassed = Math.max(0, Math.floor((Date.now() - new Date(infectedDate).getTime()) / 86400000));
-  // 倍率 = 1 + (daysPassed / 100)^2
-  var multiplier = 1 + Math.pow(daysPassed / 100, 2);
+  // 倍率 = 1 + (daysPassed / 50)^2
+  var multiplier = 1 + Math.pow(daysPassed / 50, 2);
   // ブーストモード（管理者設定）: さらに5倍
   if (localStorage.getItem('neko_boost') === 'true') {
     multiplier *= 5;
   }
 
-  // 基本確率
+  // 基本確率（全て5%）
   var P_BG = Math.min(1, 0.05 * multiplier);
-  var P_ICON = Math.min(1, 0.10 * multiplier);
+  var P_ICON = Math.min(1, 0.05 * multiplier);
   var P_TEXT_REPLACE = Math.min(1, 0.05 * multiplier);
-  var P_TEXT_INSERT = Math.min(1, 0.10 * multiplier);
+  var P_TEXT_INSERT = Math.min(1, 0.05 * multiplier);
 
   var NEKO_TEXTS = ['これはねこです', 'よろしくおねがいします', 'ねこですよろしくおねがいします'];
   var NEKO_INSERT = ['これは', 'ねこです'];
