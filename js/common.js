@@ -32,7 +32,7 @@ async function queuePushNotification(title, body, targetRole, targetChildName) {
 
 // --- Web Push通知 ---
 // VAPID公開鍵（GitHub Secretsに対応する秘密鍵を保存）
-const VAPID_PUBLIC_KEY = 'BHgHz0m_5AB7lMyEKx2T_stxMjDbIYS8_D-q2IdVqFxOLUdhn2iuRIN1pV40yu95IKAv5J7HGEnlIe4GcEbvpEA';
+const VAPID_PUBLIC_KEY = 'BACPY31DgyoV3La_IdzxPvK4SrNT0NLj5KOi3PPekNv8dzU6_R4qO4tYkA4OHUptgQ_rSaPxw7S6Tu9I-j9uz08';
 
 /**
  * Push通知の購読を登録/更新
