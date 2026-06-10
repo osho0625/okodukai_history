@@ -11,7 +11,7 @@
 // ============================================================
 const AUTO_CHORE_RULES = [
   { childName: 'りょうすけ', choreName: '食洗器', points: 3, everyNDays: 1 },
-  { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 3 },
+  { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 2 },
   { childName: 'めぐみ', choreName: '食洗器', points: 3, everyNDays: 2 },
   { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
 ];

@@ -44,7 +44,9 @@ function isInWindow(scheduledHHMM, nowHHMM) {
   const scheduled = parseMinutes(scheduledHHMM);
   const current = parseMinutes(nowHHMM);
   if (scheduled === null || current === null) return false;
-  return current >= scheduled && current < scheduled + 5;
+  // 15分ウィンドウに拡大（GitHub Actions遅延対策）
+  // Edge Function移行後はこのスクリプト自体を廃止予定
+  return current >= scheduled && current < scheduled + 15;
 }
 
 /**

@@ -36,6 +36,49 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.98.1</span><span class="date">2026/06/10</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> Push通知配信をSupabase Edge Functions + pg_cronに移行（GitHub Actions cron遅延問題を解決）</li>
+    <li><span class="tag tag-fix">fix</span> リマインダー通知ウィンドウ判定を5分→15分に拡大（通知漏れ防止）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.98.0</span><span class="date">2026/06/09</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> SCPリスト大幅拡充（JP高評価作品25件追加、全63件）</li>
+    <li><span class="tag tag-feat">feat</span> SCP-040-JP閲覧時ミーム災害警告ダイアログ追加</li>
+    <li><span class="tag tag-feat">feat</span> ねこです認識汚染：経過日数で汚染確率が進行するシステム追加</li>
+    <li><span class="tag tag-fix">fix</span> ねこです認識汚染：絵文字アイコン対応・動的DOM対応・UI記号除外</li>
+    <li><span class="tag tag-fix">fix</span> SCP閲覧記録の並び順をSCPナンバー順に変更（無印→JP→Tale）</li>
+    <li><span class="tag tag-fix">fix</span> SCP-040-JPリンク遷移のポップアップブロック回避</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.97.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-fun">fun</span> SCP-040-JP「ねこです」認識汚染システム実装（背景・アイコン・テキスト汚染）</li>
+    <li><span class="tag tag-feat">feat</span> 管理者ページに「ねこです認識汚染解除」ボタン追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.96.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> SCPリスト：SCP-093, SCP-1733, SCP-3999, Tale2件追加（全31件）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.95.0</span><span class="date">2026/06/04</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> SCPリスト：SCP-3125追加、全25件のタイトルを子供向けに改善</li>
+    <li><span class="tag tag-infra">infra</span> お手伝いポイント自動付与のGitHub Actionsワークフローをmainにマージ（cron有効化）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.94.0</span><span class="date">2026/06/04</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 今日のSCP：TOPに「SCP閲覧記録」リンク追加</li>
