@@ -100,3 +100,10 @@ ALTER TABLE game_settings ADD COLUMN IF NOT EXISTS shared_docs JSONB DEFAULT '[]
 
 現在のドキュメント:
 - `docs/outdoor-parks.md` — アスレチック・公園まとめ（川和町から）
+
+
+## 関連ファイル
+
+- #[[file:pages/family-notes.html]]
+- #[[file:sql/create_family_notes_table.sql]]
+- #[[file:sql/alter_game_settings_shared_docs.sql]]
