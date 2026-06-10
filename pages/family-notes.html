@@ -18,38 +18,37 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; 
 h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 .home-btn { position: absolute; top: 20px; right: 20px; color: #333; text-decoration: none; font-size: 1.4em; }
 
-/* タブ */
 .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
-.tab { padding: 10px 16px; cursor: pointer; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; font-size: 0.9em; }
+.tab { padding: 10px 14px; cursor: pointer; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; font-size: 0.85em; }
 .tab.active { color: #4caf50; border-bottom-color: #4caf50; }
 
-/* メモ一覧 */
-.note-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; }
+.note-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; position: relative; }
 .note-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
 .note-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 4px; }
 .note-meta { font-size: 0.8em; color: #999; }
 .note-preview { font-size: 0.85em; color: #666; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shared-badge { display: inline-block; font-size: 0.7em; background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
 
-/* 新規ボタン */
 .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #4caf50; color: #fff; font-size: 2em; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(76,175,80,0.4); display: flex; align-items: center; justify-content: center; }
 
-/* エディタ */
 .editor-overlay { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 100; padding: 20px; overflow-y: auto; }
 .editor-overlay.open { display: block; }
-.editor-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.editor-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .editor-header button { padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9em; }
 .btn-save { background: #4caf50; color: #fff; }
 .btn-cancel { background: #eee; color: #333; }
 .btn-delete { background: #e53935; color: #fff; margin-left: auto; }
+.share-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 0.9em; color: #555; }
+.share-toggle input { width: 18px; height: 18px; }
 input.note-title-input { width: 100%; font-size: 1.1em; font-weight: 600; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; }
 textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em; padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; resize: vertical; line-height: 1.6; font-family: inherit; }
 
-/* マークダウンファイル一覧 */
-.md-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; }
+.md-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; position: relative; }
 .md-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
 .md-card-title { font-weight: 600; color: #1976d2; }
+.md-share-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2em; cursor: pointer; opacity: 0.6; }
+.md-share-btn:hover { opacity: 1; }
 
-/* マークダウン表示 */
 .md-viewer { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 100; padding: 20px; overflow-y: auto; }
 .md-viewer.open { display: block; }
 .md-content { background: #fff; border-radius: 12px; padding: 20px; max-width: 600px; margin: 0 auto; line-height: 1.7; font-size: 0.95em; }
@@ -67,7 +66,6 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 .md-content th { background: #f5f5f5; }
 
 .empty-msg { text-align: center; color: #999; padding: 40px 20px; }
-.access-denied { text-align: center; color: #e53935; padding: 60px 20px; font-size: 1.1em; }
 </style>
 </head>
 <body>
@@ -75,31 +73,25 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 <a href="../index.html" class="home-btn">🏠</a>
 <h1>&#x1F4DD; 家族メモ帳</h1>
 
-<div id="accessDenied" class="access-denied" style="display:none;">
-  🔒 管理者専用ページです
+<div class="tabs" id="tabsContainer">
+  <div class="tab active" data-tab="notes" onclick="switchTab('notes')">メモ</div>
+  <div class="tab" data-tab="admin-notes" onclick="switchTab('admin-notes')" id="adminNotesTabBtn" style="display:none;">🔒 管理者メモ</div>
+  <div class="tab" data-tab="docs" onclick="switchTab('docs')" id="docsTabBtn" style="display:none;">ドキュメント</div>
 </div>
 
-<div id="mainContent" style="display:none;">
-  <div class="tabs">
-    <div class="tab active" data-tab="notes" onclick="switchTab('notes')">メモ</div>
-    <div class="tab" data-tab="admin-notes" onclick="switchTab('admin-notes')">🔒 管理者メモ</div>
-    <div class="tab" data-tab="docs" onclick="switchTab('docs')">ドキュメント</div>
-  </div>
-
-  <div id="notesTab">
-    <div id="notesList"></div>
-  </div>
-
-  <div id="adminNotesTab" style="display:none;">
-    <div id="adminNotesList"></div>
-  </div>
-
-  <div id="docsTab" style="display:none;">
-    <div id="docsList"></div>
-  </div>
-
-  <button class="fab" id="fabBtn" onclick="openEditor()">+</button>
+<div id="notesTab">
+  <div id="notesList"></div>
 </div>
+
+<div id="adminNotesTab" style="display:none;">
+  <div id="adminNotesList"></div>
+</div>
+
+<div id="docsTab" style="display:none;">
+  <div id="docsList"></div>
+</div>
+
+<button class="fab" id="fabBtn" onclick="openEditor()">+</button>
 
 <!-- メモエディタ -->
 <div class="editor-overlay" id="editorOverlay">
@@ -107,6 +99,10 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
     <button class="btn-cancel" onclick="closeEditor()">← 戻る</button>
     <button class="btn-save" onclick="saveNote()">保存</button>
     <button class="btn-delete" id="deleteBtn" onclick="deleteNote()" style="display:none;">削除</button>
+  </div>
+  <div class="share-toggle" id="shareToggle" style="display:none;">
+    <input type="checkbox" id="shareCheck">
+    <label for="shareCheck">👀 みんなに公開する</label>
   </div>
   <input type="text" class="note-title-input" id="noteTitle" placeholder="タイトル">
   <textarea class="note-content-input" id="noteContent" placeholder="メモを入力..."></textarea>
@@ -122,13 +118,6 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 
 <script>
 
-// --- アクセス制御 ---
-if (!isAdmin) {
-  document.getElementById('accessDenied').style.display = '';
-} else {
-  document.getElementById('mainContent').style.display = '';
-}
-
 // --- 状態 ---
 let currentTab = 'notes';
 let editingNoteId = null;
@@ -137,10 +126,17 @@ let allNotes = [];
 let adminNotes = [];
 
 // --- マークダウンファイル一覧（リポジトリ内のmdファイル） ---
+// shared: true にすると user にも表示される
 const MD_FILES = [
-  // { title: '表示名', path: 'docs/example.md' }
+  // { title: '表示名', path: 'docs/example.md', shared: false }
   // ここにpushしたmdファイルを追加する
 ];
+
+// admin時のみタブを表示
+if (isAdmin) {
+  document.getElementById('adminNotesTabBtn').style.display = '';
+  document.getElementById('docsTabBtn').style.display = '';
+}
 
 // --- タブ切り替え ---
 function switchTab(tab) {
@@ -156,8 +152,15 @@ function switchTab(tab) {
 
 // --- メモ CRUD ---
 async function loadNotes() {
-  const { data, error } = await client.from('family_notes')
-    .select('*').eq('is_admin', false).order('updated_at', { ascending: false });
+  let query;
+  if (isAdmin) {
+    // adminは全メモ表示
+    query = client.from('family_notes').select('*').eq('is_admin', false);
+  } else {
+    // userは通常メモ + shared=trueの管理者メモ
+    query = client.from('family_notes').select('*').or('is_admin.eq.false,and(is_admin.eq.true,shared.eq.true)');
+  }
+  const { data, error } = await query.order('updated_at', { ascending: false });
   if (error) { console.error(error); return; }
   allNotes = data || [];
   renderNotes();
@@ -180,8 +183,10 @@ function renderNotes() {
   container.innerHTML = allNotes.map(n => {
     const date = new Date(n.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const preview = (n.content || '').slice(0, 60);
-    return `<div class="note-card" onclick="openEditor('${n.id}', false)">
-      <div class="note-title">${esc(n.title || '無題')}</div>
+    const sharedBadge = n.is_admin && n.shared ? '<span class="shared-badge">🔒→公開中</span>' : '';
+    const clickAction = (!isAdmin && n.is_admin) ? `openReadOnly('${n.id}')` : `openEditor('${n.id}', ${n.is_admin})`;
+    return `<div class="note-card" onclick="${clickAction}">
+      <div class="note-title">${esc(n.title || '無題')}${sharedBadge}</div>
       <div class="note-meta">${esc(n.author)} ・ ${date}</div>
       <div class="note-preview">${esc(preview)}</div>
     </div>`;
@@ -197,19 +202,43 @@ function renderAdminNotes() {
   container.innerHTML = adminNotes.map(n => {
     const date = new Date(n.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const preview = (n.content || '').slice(0, 60);
+    const sharedBadge = n.shared ? '<span class="shared-badge">👀 公開中</span>' : '';
     return `<div class="note-card" onclick="openEditor('${n.id}', true)">
-      <div class="note-title">🔒 ${esc(n.title || '無題')}</div>
+      <div class="note-title">🔒 ${esc(n.title || '無題')}${sharedBadge}</div>
       <div class="note-meta">${esc(n.author)} ・ ${date}</div>
       <div class="note-preview">${esc(preview)}</div>
     </div>`;
   }).join('');
 }
 
+// user用: 公開された管理者メモを読み取り専用で表示
+function openReadOnly(noteId) {
+  const note = allNotes.find(n => n.id === noteId);
+  if (!note) return;
+  const viewer = document.getElementById('mdViewer');
+  const content = document.getElementById('mdContent');
+  content.innerHTML = '<h1>' + esc(note.title || '無題') + '</h1>' + marked.parse(note.content || '');
+  viewer.classList.add('open');
+}
+
 function openEditor(noteId, adminFlag) {
+  if (!isAdmin) {
+    // userはメモタブの通常メモのみ編集可
+    if (adminFlag) return;
+  }
   editingNoteId = noteId || null;
   editingIsAdmin = adminFlag !== undefined ? adminFlag : (currentTab === 'admin-notes');
   const overlay = document.getElementById('editorOverlay');
   const deleteBtn = document.getElementById('deleteBtn');
+  const shareToggle = document.getElementById('shareToggle');
+  const shareCheck = document.getElementById('shareCheck');
+
+  // 管理者メモの場合のみ「公開する」チェックを表示
+  if (isAdmin && editingIsAdmin) {
+    shareToggle.style.display = '';
+  } else {
+    shareToggle.style.display = 'none';
+  }
 
   if (noteId) {
     const list = editingIsAdmin ? adminNotes : allNotes;
@@ -217,10 +246,12 @@ function openEditor(noteId, adminFlag) {
     if (!note) return;
     document.getElementById('noteTitle').value = note.title || '';
     document.getElementById('noteContent').value = note.content || '';
+    shareCheck.checked = note.shared || false;
     deleteBtn.style.display = '';
   } else {
     document.getElementById('noteTitle').value = '';
     document.getElementById('noteContent').value = '';
+    shareCheck.checked = false;
     deleteBtn.style.display = 'none';
   }
   overlay.classList.add('open');
@@ -235,13 +266,14 @@ async function saveNote() {
   const title = document.getElementById('noteTitle').value.trim() || '無題';
   const content = document.getElementById('noteContent').value;
   const author = getAuthorName();
+  const shared = editingIsAdmin ? document.getElementById('shareCheck').checked : false;
 
   if (editingNoteId) {
-    await client.from('family_notes').update({
-      title, content, author, updated_at: new Date().toISOString()
-    }).eq('id', editingNoteId);
+    const update = { title, content, author, updated_at: new Date().toISOString() };
+    if (editingIsAdmin) update.shared = shared;
+    await client.from('family_notes').update(update).eq('id', editingNoteId);
   } else {
-    await client.from('family_notes').insert({ title, content, author, is_admin: editingIsAdmin });
+    await client.from('family_notes').insert({ title, content, author, is_admin: editingIsAdmin, shared });
   }
   closeEditor();
   if (editingIsAdmin) { await loadAdminNotes(); } else { await loadNotes(); }
@@ -257,21 +289,51 @@ async function deleteNote() {
 
 function getAuthorName() {
   const params = new URLSearchParams(location.search);
-  return params.get('name') || localStorage.getItem('family_note_author') || '親';
+  return params.get('name') || localStorage.getItem('family_note_author') || (isAdmin ? '親' : 'ゲスト');
 }
 
 // --- ドキュメント（mdファイル表示） ---
+// Supabaseのgame_settingsにshared_docs JSONBを保存して公開管理
+let sharedDocPaths = [];
+
+async function loadSharedDocs() {
+  try {
+    const { data } = await client.from('game_settings').select('shared_docs').eq('id', 1).maybeSingle();
+    sharedDocPaths = (data && data.shared_docs) || [];
+  } catch (e) { sharedDocPaths = []; }
+}
+
 function loadDocs() {
   const container = document.getElementById('docsList');
-  if (MD_FILES.length === 0) {
+  const visibleFiles = isAdmin ? MD_FILES : MD_FILES.filter(f => sharedDocPaths.includes(f.path));
+
+  if (visibleFiles.length === 0) {
     container.innerHTML = '<div class="empty-msg">ドキュメントはまだありません</div>';
     return;
   }
-  container.innerHTML = MD_FILES.map((f, i) => {
-    return `<div class="md-card" onclick="openMd(${i})">
-      <div class="md-card-title">📄 ${esc(f.title)}</div>
+  container.innerHTML = visibleFiles.map((f, i) => {
+    const realIndex = MD_FILES.indexOf(f);
+    const isShared = sharedDocPaths.includes(f.path);
+    const shareBtn = isAdmin ? `<button class="md-share-btn" onclick="event.stopPropagation(); toggleDocShare(${realIndex})" title="${isShared ? '公開を解除' : 'みんなに公開'}">${isShared ? '👀' : '🔒'}</button>` : '';
+    const badge = isShared ? '<span class="shared-badge">👀 公開中</span>' : '';
+    return `<div class="md-card" onclick="openMd(${realIndex})">
+      <div class="md-card-title">📄 ${esc(f.title)}${badge}</div>
+      ${shareBtn}
     </div>`;
   }).join('');
+}
+
+async function toggleDocShare(index) {
+  const file = MD_FILES[index];
+  if (!file) return;
+  const idx = sharedDocPaths.indexOf(file.path);
+  if (idx >= 0) {
+    sharedDocPaths.splice(idx, 1);
+  } else {
+    sharedDocPaths.push(file.path);
+  }
+  await client.from('game_settings').update({ shared_docs: sharedDocPaths }).eq('id', 1);
+  loadDocs();
 }
 
 async function openMd(index) {
@@ -304,9 +366,20 @@ function esc(str) {
 }
 
 // --- 初期化 ---
-if (isAdmin) {
+async function init() {
+  await loadSharedDocs();
+
+  if (!isAdmin) {
+    // userにはメモタブ + 公開ドキュメントのみ（ドキュメントタブは公開分があれば表示）
+    const hasSharedDocs = MD_FILES.some(f => sharedDocPaths.includes(f.path));
+    if (hasSharedDocs) {
+      document.getElementById('docsTabBtn').style.display = '';
+    }
+  }
+
   loadNotes();
 }
+init();
 </script>
 </body>
 </html>

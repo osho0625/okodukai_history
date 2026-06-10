@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS family_notes (
   content TEXT NOT NULL DEFAULT '',
   author TEXT NOT NULL,
   is_admin BOOLEAN NOT NULL DEFAULT false,
+  shared BOOLEAN NOT NULL DEFAULT false,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -14,3 +15,4 @@ ALTER TABLE family_notes DISABLE ROW LEVEL SECURITY;
 
 -- インデックス
 CREATE INDEX idx_family_notes_is_admin ON family_notes (is_admin);
+CREATE INDEX idx_family_notes_shared ON family_notes (shared) WHERE shared = true;
