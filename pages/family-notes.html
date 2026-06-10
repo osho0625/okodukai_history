@@ -127,9 +127,9 @@ let adminNotes = [];
 
 // --- マークダウンファイル一覧（リポジトリ内のmdファイル） ---
 // shared: true にすると user にも表示される
-const MD_FILES = [
-  { title: 'アスレチック・公園まとめ', path: '.kiro/specs/family-notes/outdoor-parks.md' },
-];
+// --- マークダウンファイル一覧（index.jsonから自動読み込み） ---
+const DOCS_BASE = '../.kiro/specs/family-notes/docs/';
+let MD_FILES = [];
 
 // admin時のみタブを表示
 if (isAdmin) {
@@ -304,7 +304,7 @@ async function loadSharedDocs() {
 
 function loadDocs() {
   const container = document.getElementById('docsList');
-  const visibleFiles = isAdmin ? MD_FILES : MD_FILES.filter(f => sharedDocPaths.includes(f.path));
+  const visibleFiles = isAdmin ? MD_FILES : MD_FILES.filter(f => sharedDocPaths.includes(f.file));
 
   if (visibleFiles.length === 0) {
     container.innerHTML = '<div class="empty-msg">ドキュメントはまだありません</div>';
@@ -312,7 +312,7 @@ function loadDocs() {
   }
   container.innerHTML = visibleFiles.map((f, i) => {
     const realIndex = MD_FILES.indexOf(f);
-    const isShared = sharedDocPaths.includes(f.path);
+    const isShared = sharedDocPaths.includes(f.file);
     const shareBtn = isAdmin ? `<button class="md-share-btn" onclick="event.stopPropagation(); toggleDocShare(${realIndex})" title="${isShared ? '公開を解除' : 'みんなに公開'}">${isShared ? '👀' : '🔒'}</button>` : '';
     const badge = isShared ? '<span class="shared-badge">👀 公開中</span>' : '';
     return `<div class="md-card" onclick="openMd(${realIndex})">
@@ -325,11 +325,11 @@ function loadDocs() {
 async function toggleDocShare(index) {
   const file = MD_FILES[index];
   if (!file) return;
-  const idx = sharedDocPaths.indexOf(file.path);
+  const idx = sharedDocPaths.indexOf(file.file);
   if (idx >= 0) {
     sharedDocPaths.splice(idx, 1);
   } else {
-    sharedDocPaths.push(file.path);
+    sharedDocPaths.push(file.file);
   }
   await client.from('game_settings').update({ shared_docs: sharedDocPaths }).eq('id', 1);
   loadDocs();
@@ -344,7 +344,7 @@ async function openMd(index) {
   viewer.classList.add('open');
 
   try {
-    const res = await fetch('../' + file.path + '?t=' + Date.now());
+    const res = await fetch(DOCS_BASE + file.file + '?t=' + Date.now());
     if (!res.ok) throw new Error('Not found');
     const text = await res.text();
     content.innerHTML = marked.parse(text);
@@ -366,11 +366,16 @@ function esc(str) {
 
 // --- 初期化 ---
 async function init() {
+  // ドキュメント一覧をindex.jsonから読み込み
+  try {
+    const res = await fetch(DOCS_BASE + 'index.json?t=' + Date.now());
+    if (res.ok) MD_FILES = await res.json();
+  } catch (e) { MD_FILES = []; }
+
   await loadSharedDocs();
 
   if (!isAdmin) {
-    // userにはメモタブ + 公開ドキュメントのみ（ドキュメントタブは公開分があれば表示）
-    const hasSharedDocs = MD_FILES.some(f => sharedDocPaths.includes(f.path));
+    const hasSharedDocs = MD_FILES.some(f => sharedDocPaths.includes(f.file));
     if (hasSharedDocs) {
       document.getElementById('docsTabBtn').style.display = '';
     }
