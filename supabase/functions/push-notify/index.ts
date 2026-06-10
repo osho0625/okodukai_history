@@ -92,7 +92,7 @@ async function sendPushNotification(
       privateJWK,
       subscription,
       message: {
-        payload: JSON.parse(payload),
+        payload: payload,
         adminContact: vapidEmail,
         options: { ttl: 86400, urgency: "high" },
       },
