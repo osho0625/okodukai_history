@@ -20,7 +20,7 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 
 /* タブ */
 .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
-.tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; }
+.tab { padding: 10px 16px; cursor: pointer; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; font-size: 0.9em; }
 .tab.active { color: #4caf50; border-bottom-color: #4caf50; }
 
 /* メモ一覧 */
@@ -67,6 +67,7 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 .md-content th { background: #f5f5f5; }
 
 .empty-msg { text-align: center; color: #999; padding: 40px 20px; }
+.access-denied { text-align: center; color: #e53935; padding: 60px 20px; font-size: 1.1em; }
 </style>
 </head>
 <body>
@@ -74,18 +75,30 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 <a href="../index.html" class="home-btn">🏠</a>
 <h1>&#x1F4DD; 家族メモ帳</h1>
 
-<div class="tabs">
-  <div class="tab active" data-tab="notes" onclick="switchTab('notes')">メモ</div>
-  <div class="tab" data-tab="docs" onclick="switchTab('docs')">ドキュメント</div>
+<div id="accessDenied" class="access-denied" style="display:none;">
+  🔒 管理者専用ページです
 </div>
 
-<div id="notesTab">
-  <div id="notesList"></div>
-  <button class="fab" onclick="openEditor()">+</button>
-</div>
+<div id="mainContent" style="display:none;">
+  <div class="tabs">
+    <div class="tab active" data-tab="notes" onclick="switchTab('notes')">メモ</div>
+    <div class="tab" data-tab="admin-notes" onclick="switchTab('admin-notes')">🔒 管理者メモ</div>
+    <div class="tab" data-tab="docs" onclick="switchTab('docs')">ドキュメント</div>
+  </div>
 
-<div id="docsTab" style="display:none;">
-  <div id="docsList"></div>
+  <div id="notesTab">
+    <div id="notesList"></div>
+  </div>
+
+  <div id="adminNotesTab" style="display:none;">
+    <div id="adminNotesList"></div>
+  </div>
+
+  <div id="docsTab" style="display:none;">
+    <div id="docsList"></div>
+  </div>
+
+  <button class="fab" id="fabBtn" onclick="openEditor()">+</button>
 </div>
 
 <!-- メモエディタ -->
@@ -109,10 +122,19 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 
 <script>
 
+// --- アクセス制御 ---
+if (!isAdmin) {
+  document.getElementById('accessDenied').style.display = '';
+} else {
+  document.getElementById('mainContent').style.display = '';
+}
+
 // --- 状態 ---
 let currentTab = 'notes';
 let editingNoteId = null;
+let editingIsAdmin = false;
 let allNotes = [];
+let adminNotes = [];
 
 // --- マークダウンファイル一覧（リポジトリ内のmdファイル） ---
 const MD_FILES = [
@@ -125,18 +147,28 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('notesTab').style.display = tab === 'notes' ? '' : 'none';
+  document.getElementById('adminNotesTab').style.display = tab === 'admin-notes' ? '' : 'none';
   document.getElementById('docsTab').style.display = tab === 'docs' ? '' : 'none';
-  document.querySelector('.fab').style.display = tab === 'notes' ? 'flex' : 'none';
+  document.getElementById('fabBtn').style.display = (tab === 'notes' || tab === 'admin-notes') ? 'flex' : 'none';
   if (tab === 'docs') loadDocs();
+  if (tab === 'admin-notes') loadAdminNotes();
 }
 
 // --- メモ CRUD ---
 async function loadNotes() {
   const { data, error } = await client.from('family_notes')
-    .select('*').order('updated_at', { ascending: false });
+    .select('*').eq('is_admin', false).order('updated_at', { ascending: false });
   if (error) { console.error(error); return; }
   allNotes = data || [];
   renderNotes();
+}
+
+async function loadAdminNotes() {
+  const { data, error } = await client.from('family_notes')
+    .select('*').eq('is_admin', true).order('updated_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  adminNotes = data || [];
+  renderAdminNotes();
 }
 
 function renderNotes() {
@@ -148,7 +180,7 @@ function renderNotes() {
   container.innerHTML = allNotes.map(n => {
     const date = new Date(n.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const preview = (n.content || '').slice(0, 60);
-    return `<div class="note-card" onclick="openEditor('${n.id}')">
+    return `<div class="note-card" onclick="openEditor('${n.id}', false)">
       <div class="note-title">${esc(n.title || '無題')}</div>
       <div class="note-meta">${esc(n.author)} ・ ${date}</div>
       <div class="note-preview">${esc(preview)}</div>
@@ -156,13 +188,32 @@ function renderNotes() {
   }).join('');
 }
 
-function openEditor(noteId) {
+function renderAdminNotes() {
+  const container = document.getElementById('adminNotesList');
+  if (adminNotes.length === 0) {
+    container.innerHTML = '<div class="empty-msg">管理者メモがありません<br>＋ボタンで作成しよう</div>';
+    return;
+  }
+  container.innerHTML = adminNotes.map(n => {
+    const date = new Date(n.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const preview = (n.content || '').slice(0, 60);
+    return `<div class="note-card" onclick="openEditor('${n.id}', true)">
+      <div class="note-title">🔒 ${esc(n.title || '無題')}</div>
+      <div class="note-meta">${esc(n.author)} ・ ${date}</div>
+      <div class="note-preview">${esc(preview)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openEditor(noteId, adminFlag) {
   editingNoteId = noteId || null;
+  editingIsAdmin = adminFlag !== undefined ? adminFlag : (currentTab === 'admin-notes');
   const overlay = document.getElementById('editorOverlay');
   const deleteBtn = document.getElementById('deleteBtn');
 
   if (noteId) {
-    const note = allNotes.find(n => n.id === noteId);
+    const list = editingIsAdmin ? adminNotes : allNotes;
+    const note = list.find(n => n.id === noteId);
     if (!note) return;
     document.getElementById('noteTitle').value = note.title || '';
     document.getElementById('noteContent').value = note.content || '';
@@ -190,10 +241,10 @@ async function saveNote() {
       title, content, author, updated_at: new Date().toISOString()
     }).eq('id', editingNoteId);
   } else {
-    await client.from('family_notes').insert({ title, content, author });
+    await client.from('family_notes').insert({ title, content, author, is_admin: editingIsAdmin });
   }
   closeEditor();
-  await loadNotes();
+  if (editingIsAdmin) { await loadAdminNotes(); } else { await loadNotes(); }
 }
 
 async function deleteNote() {
@@ -201,13 +252,12 @@ async function deleteNote() {
   if (!confirm('このメモを削除しますか？')) return;
   await client.from('family_notes').delete().eq('id', editingNoteId);
   closeEditor();
-  await loadNotes();
+  if (editingIsAdmin) { await loadAdminNotes(); } else { await loadNotes(); }
 }
 
 function getAuthorName() {
-  // URLパラメータかlocalStorageから名前を取得
   const params = new URLSearchParams(location.search);
-  return params.get('name') || localStorage.getItem('family_note_author') || (isAdmin ? '親' : 'ゲスト');
+  return params.get('name') || localStorage.getItem('family_note_author') || '親';
 }
 
 // --- ドキュメント（mdファイル表示） ---
@@ -254,7 +304,9 @@ function esc(str) {
 }
 
 // --- 初期化 ---
-loadNotes();
+if (isAdmin) {
+  loadNotes();
+}
 </script>
 </body>
 </html>
