@@ -416,9 +416,8 @@ function openReserveDialog(ticketId) {
   pendingTicketId = ticketId;
   selectedSlot = null;
   useCustomTime = false;
-  // デフォルト: 今日
-  const today = new Date();
-  document.getElementById('reserveDate').value = today.toISOString().split('T')[0];
+  // デフォルト: 今日（JST）
+  document.getElementById('reserveDate').value = getTodayJST();
   document.getElementById('customTimeArea').style.display = 'none';
   document.getElementById('timeSlotsArea').style.display = 'block';
   updateTimeSlots();

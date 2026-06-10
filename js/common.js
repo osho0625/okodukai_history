@@ -32,7 +32,7 @@ async function queuePushNotification(title, body, targetRole, targetChildName) {
 
 // --- Web Push通知 ---
 // VAPID公開鍵（GitHub Secretsに対応する秘密鍵を保存）
-const VAPID_PUBLIC_KEY = 'BHgHz0m_5AB7lMyEKx2T_stxMjDbIYS8_D-q2IdVqFxOLUdhn2iuRIN1pV40yu95IKAv5J7HGEnlIe4GcEbvpEA';
+const VAPID_PUBLIC_KEY = 'BACPY31DgyoV3La_IdzxPvK4SrNT0NLj5KOi3PPekNv8dzU6_R4qO4tYkA4OHUptgQ_rSaPxw7S6Tu9I-j9uz08';
 
 /**
  * Push通知の購読を登録/更新
@@ -47,6 +47,19 @@ async function subscribePush(childName) {
 
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+
+    // VAPID鍵が変わった場合、古いsubscriptionを破棄して再購読
+    if (sub) {
+      const currentKey = sub.options && sub.options.applicationServerKey
+        ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+        : null;
+      if (currentKey !== VAPID_PUBLIC_KEY) {
+        await sub.unsubscribe();
+        sub = null;
+      }
+    }
+
     if (!sub) {
       const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       sub = await reg.pushManager.subscribe({
@@ -109,7 +122,13 @@ async function isPushSubscribed() {
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    return !!sub;
+    if (!sub) return false;
+    // VAPID鍵が一致するか確認
+    const currentKey = sub.options && sub.options.applicationServerKey
+      ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      : null;
+    return currentKey === VAPID_PUBLIC_KEY;
   } catch (e) {
     return false;
   }

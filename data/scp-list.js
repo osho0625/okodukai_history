@@ -110,7 +110,7 @@ window.SCP_DATA = [
   {
     "id": "scp-1344-jp",
     "number": "SCP-1344-JP",
-    "title": "放送室からの呼び声",
+    "title": "布団から足を出してはいけない",
     "url": "https://scp-jp.wikidot.com/scp-1344-jp"
   },
   {

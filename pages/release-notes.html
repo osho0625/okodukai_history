@@ -36,6 +36,15 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.98.2</span><span class="date">2026/06/10</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> チケット予約ダイアログのデフォルト日付をJST基準に修正（深夜に前日が表示される問題）</li>
+    <li><span class="tag tag-fix">fix</span> リマインダー過去日付チェックをgetTodayJST()に統一</li>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: 洗濯機を3日→2日に1回に変更</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.98.1</span><span class="date">2026/06/10</span></div>
   <ul>
     <li><span class="tag tag-infra">infra</span> Push通知配信をSupabase Edge Functions + pg_cronに移行（GitHub Actions cron遅延問題を解決）</li>
