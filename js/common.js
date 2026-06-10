@@ -47,6 +47,19 @@ async function subscribePush(childName) {
 
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+
+    // VAPID鍵が変わった場合、古いsubscriptionを破棄して再購読
+    if (sub) {
+      const currentKey = sub.options && sub.options.applicationServerKey
+        ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+        : null;
+      if (currentKey !== VAPID_PUBLIC_KEY) {
+        await sub.unsubscribe();
+        sub = null;
+      }
+    }
+
     if (!sub) {
       const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       sub = await reg.pushManager.subscribe({
@@ -109,7 +122,13 @@ async function isPushSubscribed() {
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    return !!sub;
+    if (!sub) return false;
+    // VAPID鍵が一致するか確認
+    const currentKey = sub.options && sub.options.applicationServerKey
+      ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      : null;
+    return currentKey === VAPID_PUBLIC_KEY;
   } catch (e) {
     return false;
   }
