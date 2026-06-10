@@ -1386,8 +1386,7 @@ async function submitReminder() {
       return;
     }
     // 過去日付チェック（JST基準）
-    const today = new Date();
-    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    const todayStr = getTodayJST();
     if (dateInput.value < todayStr) {
       resultMsg.textContent = '⚠️ 過去の日付は指定できません';
       resultMsg.style.color = '#e53935';
