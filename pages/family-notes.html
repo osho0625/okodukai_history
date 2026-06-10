@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>家族メモ帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; max-width: 600px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; }
+.back:hover { opacity: 0.6; }
+h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
+.home-btn { position: absolute; top: 20px; right: 20px; color: #333; text-decoration: none; font-size: 1.4em; }
+
+/* タブ */
+.tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
+.tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.2s; }
+.tab.active { color: #4caf50; border-bottom-color: #4caf50; }
+
+/* メモ一覧 */
+.note-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; }
+.note-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+.note-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 4px; }
+.note-meta { font-size: 0.8em; color: #999; }
+.note-preview { font-size: 0.85em; color: #666; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 新規ボタン */
+.fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #4caf50; color: #fff; font-size: 2em; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(76,175,80,0.4); display: flex; align-items: center; justify-content: center; }
+
+/* エディタ */
+.editor-overlay { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 100; padding: 20px; overflow-y: auto; }
+.editor-overlay.open { display: block; }
+.editor-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.editor-header button { padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9em; }
+.btn-save { background: #4caf50; color: #fff; }
+.btn-cancel { background: #eee; color: #333; }
+.btn-delete { background: #e53935; color: #fff; margin-left: auto; }
+input.note-title-input { width: 100%; font-size: 1.1em; font-weight: 600; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; }
+textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em; padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; resize: vertical; line-height: 1.6; font-family: inherit; }
+
+/* マークダウンファイル一覧 */
+.md-card { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.15s; }
+.md-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+.md-card-title { font-weight: 600; color: #1976d2; }
+
+/* マークダウン表示 */
+.md-viewer { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 100; padding: 20px; overflow-y: auto; }
+.md-viewer.open { display: block; }
+.md-content { background: #fff; border-radius: 12px; padding: 20px; max-width: 600px; margin: 0 auto; line-height: 1.7; font-size: 0.95em; }
+.md-content h1 { font-size: 1.4em; margin: 16px 0 8px; color: #333; }
+.md-content h2 { font-size: 1.2em; margin: 14px 0 6px; color: #444; }
+.md-content h3 { font-size: 1.05em; margin: 12px 0 4px; color: #555; }
+.md-content p { margin: 8px 0; }
+.md-content ul, .md-content ol { margin: 8px 0 8px 20px; }
+.md-content code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+.md-content pre { background: #f0f0f0; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
+.md-content pre code { background: none; padding: 0; }
+.md-content blockquote { border-left: 3px solid #4caf50; padding-left: 12px; color: #666; margin: 10px 0; }
+.md-content table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+.md-content th, .md-content td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
+.md-content th { background: #f5f5f5; }
+
+.empty-msg { text-align: center; color: #999; padding: 40px 20px; }
+</style>
+</head>
+<body>
+<a href="javascript:history.back()" class="back">←</a>
+<a href="../index.html" class="home-btn">🏠</a>
+<h1>&#x1F4DD; 家族メモ帳</h1>
+
+<div class="tabs">
+  <div class="tab active" data-tab="notes" onclick="switchTab('notes')">メモ</div>
+  <div class="tab" data-tab="docs" onclick="switchTab('docs')">ドキュメント</div>
+</div>
+
+<div id="notesTab">
+  <div id="notesList"></div>
+  <button class="fab" onclick="openEditor()">+</button>
+</div>
+
+<div id="docsTab" style="display:none;">
+  <div id="docsList"></div>
+</div>
+
+<!-- メモエディタ -->
+<div class="editor-overlay" id="editorOverlay">
+  <div class="editor-header">
+    <button class="btn-cancel" onclick="closeEditor()">← 戻る</button>
+    <button class="btn-save" onclick="saveNote()">保存</button>
+    <button class="btn-delete" id="deleteBtn" onclick="deleteNote()" style="display:none;">削除</button>
+  </div>
+  <input type="text" class="note-title-input" id="noteTitle" placeholder="タイトル">
+  <textarea class="note-content-input" id="noteContent" placeholder="メモを入力..."></textarea>
+</div>
+
+<!-- マークダウンビューア -->
+<div class="md-viewer" id="mdViewer">
+  <div style="margin-bottom: 16px;">
+    <button class="btn-cancel" onclick="closeMdViewer()">← 戻る</button>
+  </div>
+  <div class="md-content" id="mdContent"></div>
+</div>
+
+<script>
+
+// --- 状態 ---
+let currentTab = 'notes';
+let editingNoteId = null;
+let allNotes = [];
+
+// --- マークダウンファイル一覧（リポジトリ内のmdファイル） ---
+const MD_FILES = [
+  // { title: '表示名', path: 'docs/example.md' }
+  // ここにpushしたmdファイルを追加する
+];
+
+// --- タブ切り替え ---
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('notesTab').style.display = tab === 'notes' ? '' : 'none';
+  document.getElementById('docsTab').style.display = tab === 'docs' ? '' : 'none';
+  document.querySelector('.fab').style.display = tab === 'notes' ? 'flex' : 'none';
+  if (tab === 'docs') loadDocs();
+}
+
+// --- メモ CRUD ---
+async function loadNotes() {
+  const { data, error } = await client.from('family_notes')
+    .select('*').order('updated_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  allNotes = data || [];
+  renderNotes();
+}
+
+function renderNotes() {
+  const container = document.getElementById('notesList');
+  if (allNotes.length === 0) {
+    container.innerHTML = '<div class="empty-msg">メモがありません<br>＋ボタンで作成しよう</div>';
+    return;
+  }
+  container.innerHTML = allNotes.map(n => {
+    const date = new Date(n.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const preview = (n.content || '').slice(0, 60);
+    return `<div class="note-card" onclick="openEditor('${n.id}')">
+      <div class="note-title">${esc(n.title || '無題')}</div>
+      <div class="note-meta">${esc(n.author)} ・ ${date}</div>
+      <div class="note-preview">${esc(preview)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openEditor(noteId) {
+  editingNoteId = noteId || null;
+  const overlay = document.getElementById('editorOverlay');
+  const deleteBtn = document.getElementById('deleteBtn');
+
+  if (noteId) {
+    const note = allNotes.find(n => n.id === noteId);
+    if (!note) return;
+    document.getElementById('noteTitle').value = note.title || '';
+    document.getElementById('noteContent').value = note.content || '';
+    deleteBtn.style.display = '';
+  } else {
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    deleteBtn.style.display = 'none';
+  }
+  overlay.classList.add('open');
+}
+
+function closeEditor() {
+  document.getElementById('editorOverlay').classList.remove('open');
+  editingNoteId = null;
+}
+
+async function saveNote() {
+  const title = document.getElementById('noteTitle').value.trim() || '無題';
+  const content = document.getElementById('noteContent').value;
+  const author = getAuthorName();
+
+  if (editingNoteId) {
+    await client.from('family_notes').update({
+      title, content, author, updated_at: new Date().toISOString()
+    }).eq('id', editingNoteId);
+  } else {
+    await client.from('family_notes').insert({ title, content, author });
+  }
+  closeEditor();
+  await loadNotes();
+}
+
+async function deleteNote() {
+  if (!editingNoteId) return;
+  if (!confirm('このメモを削除しますか？')) return;
+  await client.from('family_notes').delete().eq('id', editingNoteId);
+  closeEditor();
+  await loadNotes();
+}
+
+function getAuthorName() {
+  // URLパラメータかlocalStorageから名前を取得
+  const params = new URLSearchParams(location.search);
+  return params.get('name') || localStorage.getItem('family_note_author') || (isAdmin ? '親' : 'ゲスト');
+}
+
+// --- ドキュメント（mdファイル表示） ---
+function loadDocs() {
+  const container = document.getElementById('docsList');
+  if (MD_FILES.length === 0) {
+    container.innerHTML = '<div class="empty-msg">ドキュメントはまだありません</div>';
+    return;
+  }
+  container.innerHTML = MD_FILES.map((f, i) => {
+    return `<div class="md-card" onclick="openMd(${i})">
+      <div class="md-card-title">📄 ${esc(f.title)}</div>
+    </div>`;
+  }).join('');
+}
+
+async function openMd(index) {
+  const file = MD_FILES[index];
+  if (!file) return;
+  const viewer = document.getElementById('mdViewer');
+  const content = document.getElementById('mdContent');
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">読み込み中...</div>';
+  viewer.classList.add('open');
+
+  try {
+    const res = await fetch('../' + file.path + '?t=' + Date.now());
+    if (!res.ok) throw new Error('Not found');
+    const text = await res.text();
+    content.innerHTML = marked.parse(text);
+  } catch (e) {
+    content.innerHTML = '<div style="color:#e53935;text-align:center;padding:40px;">ファイルを読み込めませんでした</div>';
+  }
+}
+
+function closeMdViewer() {
+  document.getElementById('mdViewer').classList.remove('open');
+}
+
+// --- ユーティリティ ---
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// --- 初期化 ---
+loadNotes();
+</script>
+</body>
+</html>
