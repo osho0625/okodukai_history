@@ -65,62 +65,33 @@ function uint8ArrayToBase64url(arr: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** Import VAPID private key (base64url-encoded raw P-256 scalar) */
-async function importVapidPrivateKey(privateKeyBase64url: string): Promise<CryptoKey> {
-  const raw = base64urlToUint8Array(privateKeyBase64url);
+/** Import VAPID private key using JWK (needs public key to derive x,y) */
+async function importVapidPrivateKey(privateKeyBase64url: string, publicKeyBase64url?: string): Promise<CryptoKey> {
+  const rawPrivate = base64urlToUint8Array(privateKeyBase64url);
+
+  if (!publicKeyBase64url) {
+    throw new Error("VAPID_PUBLIC_KEY is required to import private key");
+  }
+
+  // Uncompressed P-256 public key: 0x04 || x(32) || y(32)
+  const rawPublic = base64urlToUint8Array(publicKeyBase64url);
+  const x = rawPublic.slice(1, 33);
+  const y = rawPublic.slice(33, 65);
+
   const jwk = {
     kty: "EC",
     crv: "P-256",
-    d: uint8ArrayToBase64url(raw),
-    // We'll derive x,y from signing — but actually need them for JWK import
-    // Use a dummy approach: import as PKCS8 instead
+    x: uint8ArrayToBase64url(x),
+    y: uint8ArrayToBase64url(y),
+    d: uint8ArrayToBase64url(rawPrivate),
   };
-  // For ECDSA with Web Crypto, we need the full JWK (x, y, d)
-  // Alternative: construct PKCS8 DER from raw private key
-  const pkcs8 = buildPKCS8FromRaw(raw);
-  return crypto.subtle.importKey("pkcs8", pkcs8, { name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]);
+
+  return crypto.subtle.importKey(
+    "jwk", jwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]
+  );
 }
 
-/** Build PKCS8 DER from raw 32-byte P-256 private key */
-function buildPKCS8FromRaw(raw: Uint8Array): ArrayBuffer {
-  // PKCS8 wrapping for EC P-256 private key
-  const prefix = new Uint8Array([
-    0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13,
-    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
-    0x03, 0x01, 0x07, 0x04, 0x6d, 0x30, 0x6b, 0x02,
-    0x01, 0x01, 0x04, 0x20
-  ]);
-  const suffix = new Uint8Array([
-    0xa1, 0x44, 0x03, 0x42, 0x00
-  ]);
-  // We need the public key point here - derive it
-  // Actually, we can omit the public key in PKCS8 for import
-  // Simpler: use a minimal ECPrivateKey without public key
-  const ecPrivateKey = new Uint8Array([
-    0x30, 0x77, 0x02, 0x01, 0x01, 0x04, 0x20,
-    ...raw,
-    0xa0, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce,
-    0x3d, 0x03, 0x01, 0x07
-  ]);
-  // PKCS8 wrapper
-  const pkcs8Prefix = new Uint8Array([
-    0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13,
-    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
-    0x03, 0x01, 0x07, 0x04, 0x6d
-  ]);
-  const result = new Uint8Array(pkcs8Prefix.length + ecPrivateKey.length);
-  result.set(pkcs8Prefix);
-  result.set(ecPrivateKey, pkcs8Prefix.length);
-  return result.buffer;
-}
-
-/** Import VAPID public key (base64url-encoded uncompressed P-256 point, 65 bytes) */
-async function importVapidPublicKey(publicKeyBase64url: string): Promise<CryptoKey> {
-  const raw = base64urlToUint8Array(publicKeyBase64url);
-  return crypto.subtle.importKey("raw", raw, { name: "ECDSA", namedCurve: "P-256" }, true, ["verify"]);
-}
+// (importVapidPublicKey removed - not needed, public key used via JWK in importVapidPrivateKey)
 
 /** Create VAPID Authorization header (JWT) */
 async function createVapidAuthHeader(
@@ -444,7 +415,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Missing env vars" }), { status: 500 });
     }
 
-    const vapidPrivateKey = await importVapidPrivateKey(VAPID_PRIVATE_KEY);
+    const vapidPrivateKey = await importVapidPrivateKey(VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY);
     const now = getCurrentJST();
     console.log(`JST: ${now.dateStr} ${now.timeStr}`);
 
