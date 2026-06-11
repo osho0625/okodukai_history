@@ -92,7 +92,7 @@ async function sendPushNotification(
       privateJWK,
       subscription,
       message: {
-        payload: payload,
+        payload: JSON.parse(payload),
         adminContact: vapidEmail,
         options: { ttl: 86400, urgency: "high" },
       },
@@ -104,6 +104,7 @@ async function sendPushNotification(
       body,
     });
 
+    console.log(`Push to ${subscription.endpoint.slice(0, 50)}...: ${response.status}`);
     return { success: response.ok, statusCode: response.status };
   } catch (e) {
     console.error("Push send error:", e);
