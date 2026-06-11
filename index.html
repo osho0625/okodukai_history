@@ -244,12 +244,6 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <button onclick="dismissPushBanner()" style="margin-left:4px; padding:4px 8px; border:none; border-radius:6px; background:#e0e0e0; color:#555; font-size:0.85em; cursor:pointer;">後で</button>
 </div>
 
-<!-- 一時テストボタン（動作確認後に削除） -->
-<div id="pushTestBanner" style="max-width:480px; margin:0 auto 10px; padding:8px 14px; background:#fff3e0; border-radius:10px; text-align:center; font-size:0.85em; color:#e65100;">
-  <button onclick="testLocalNotification()" style="padding:4px 12px; border:none; border-radius:6px; background:#ff9800; color:#fff; font-size:0.85em; cursor:pointer;">🔔 通知テスト</button>
-  <span id="pushTestResult" style="margin-left:8px;"></span>
-</div>
-
 <div id="reminderBanner" style="display:none; max-width:480px; margin:0 auto 12px; padding:0 8px;"></div>
 
 <!-- 今日のサイエンス -->
@@ -1408,23 +1402,6 @@ async function enablePushNotification() {
 function dismissPushBanner() {
   document.getElementById('pushBanner').style.display = 'none';
   localStorage.setItem('push_banner_dismissed', String(Date.now()));
-}
-
-// 一時テスト関数（動作確認後に削除）
-async function testLocalNotification() {
-  const el = document.getElementById('pushTestResult');
-  el.textContent = 'permission: ' + Notification.permission;
-  if (Notification.permission !== 'granted') {
-    el.textContent += ' ← 許可されてない!';
-    return;
-  }
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification('🔔 テスト通知', { body: 'Service Worker直接テスト', icon: './images/2728.png' });
-    el.textContent += ' → 通知送信OK!';
-  } catch(e) {
-    el.textContent += ' → エラー: ' + e.message;
-  }
 }
 
 autoConsumeTickets();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v159';
+const CACHE_NAME = 'okozukai-v160';
 const ASSETS = [
   './',
   './index.html',
@@ -51,7 +51,17 @@ self.addEventListener('activate', e => {
 
 // Push通知受信
 self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : {};
+  let data = {};
+  if (e.data) {
+    try {
+      data = e.data.json();
+      // 二重エンコード対策: もし文字列が返ってきたら再パース
+      if (typeof data === 'string') data = JSON.parse(data);
+    } catch (err) {
+      // JSONパース失敗時はテキストとして扱う
+      data = { title: '🔔 通知', body: e.data.text() };
+    }
+  }
   const title = data.title || '🔔 リマインダー';
   const options = {
     body: data.body || '',
