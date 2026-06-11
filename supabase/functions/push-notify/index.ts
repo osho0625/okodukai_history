@@ -53,6 +53,9 @@ function vapidKeysToJWK(privateKeyBase64url: string, publicKeyBase64url: string)
   const y = uint8ArrayToBase64url(rawPublic.slice(33, 65));
 
   return {
+    alg: "ES256",
+    key_ops: ["sign"],
+    ext: true,
     kty: "EC",
     crv: "P-256",
     x,
