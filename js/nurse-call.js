@@ -269,9 +269,26 @@
       parentSection.style.display = 'none';
     }
 
-    // 理由ボタン: タップで即座に送信
+    // 理由ボタン: タップで即座に送信（はきそうはサブ選択表示）
     reasonBtns.forEach(btn => {
-      btn.addEventListener('click', () => sendCall(btn.dataset.reason));
+      btn.addEventListener('click', () => {
+        if (btn.dataset.hasSub) {
+          // サブ選択を表示
+          const sub = document.getElementById('hakisoSub');
+          sub.classList.toggle('active');
+        } else {
+          document.getElementById('hakisoSub')?.classList.remove('active');
+          sendCall(btn.dataset.reason);
+        }
+      });
+    });
+
+    // はきそうサブ選択ボタン
+    document.querySelectorAll('.reason-sub-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('hakisoSub')?.classList.remove('active');
+        sendCall(btn.dataset.reason);
+      });
     });
 
     // 🔔ボタン: 理由なしで送信

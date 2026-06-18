@@ -39,9 +39,9 @@ body {
 /* ホームビュー */
 .call-btn {
   width: 220px; height: 220px; border-radius: 50%; border: none;
-  background: linear-gradient(145deg, #e53935, #c62828); color: #fff;
+  background: linear-gradient(145deg, #4caf50, #388e3c); color: #fff;
   font-size: 4.5em; cursor: pointer;
-  box-shadow: 0 8px 24px rgba(229,57,53,0.4);
+  box-shadow: 0 8px 24px rgba(76,175,80,0.4);
   transition: transform 0.1s;
   display: flex; align-items: center; justify-content: center;
 }
@@ -51,6 +51,10 @@ body {
 .reason-btn { padding: 14px 8px; border: 2px solid #ff8a65; border-radius: 12px; background: #fff; font-size: 1em; cursor: pointer; transition: background 0.2s, transform 0.1s; }
 .reason-btn:active:not(:disabled) { background: #ff8a65; color: #fff; transform: scale(0.95); }
 .reason-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.reason-sub { display:none; margin-top:8px; width:100%; }
+.reason-sub.active { display:block; }
+.reason-sub-btn { width:100%; padding:12px; margin-bottom:6px; border:2px solid #e53935; border-radius:10px; background:#fff; font-size:1em; cursor:pointer; font-weight:600; }
+.reason-sub-btn:active { background:#e53935; color:#fff; }
 .nav-icons { display: flex; gap: 20px; margin-top: 16px; }
 .nav-icon-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #ff8a65; background: #fff; font-size: 1.6em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.1s; }
 .nav-icon-btn:active { transform: scale(0.9); }
@@ -110,16 +114,22 @@ body {
 <!-- ===== ホームビュー ===== -->
 <div class="view active" id="viewHome">
   <button class="call-btn" id="callBtn">&#x1F514;</button>
-  <div style="font-weight:700; color:#c62828; font-size:1.1em; margin-top:8px;">ヘルプ！</div>
   <div class="nav-icons">
     <button class="nav-icon-btn" id="chatIconBtn">💬</button>
     <button class="nav-icon-btn" id="phoneIconBtn">📞</button>
   </div>
   <div class="reason-btns" id="reasonBtns">
     <button class="reason-btn" data-reason="のどかわいた">🥤 のどかわいた</button>
-    <button class="reason-btn" data-reason="きもちわるい">🤒 きもちわるい</button>
+    <button class="reason-btn" data-reason="きもちわるい">🤢 きもちわるい</button>
+    <button class="reason-btn" data-reason="はきそう" data-has-sub="true">🤮 はきそう</button>
     <button class="reason-btn" data-reason="トイレ">🚽 トイレ</button>
-    <button class="reason-btn" data-reason="はなしたい">💬 はなしたい</button>
+    <button class="reason-btn" data-reason="あつい">🥵 あつい</button>
+    <button class="reason-btn" data-reason="さむい">🥶 さむい</button>
+  </div>
+  <!-- はきそうサブ選択 -->
+  <div class="reason-sub" id="hakisoSub">
+    <button class="reason-sub-btn" data-reason="今すぐ吐きそう">🚨 今すぐ吐きそう</button>
+    <button class="reason-sub-btn" data-reason="ちょっと吐きそう">⚠️ ちょっと吐きそう</button>
   </div>
   <div class="status-msg" id="statusMsg"></div>
   <!-- 親側 -->
