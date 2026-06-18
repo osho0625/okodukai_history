@@ -30,8 +30,8 @@ graph TB
             NOTES[family-notes.html<br/>家族ノート]
         end
         
-        subgraph "ナースコール 🆕"
-            NURSE[nurse-call.html<br/>ナースコール]
+        subgraph "ナースコール"
+            NURSE[nurse-call.html<br/>ナースコール<br/>3ビュー: ホーム/チャット/通話]
         end
         
         subgraph "共通JS"

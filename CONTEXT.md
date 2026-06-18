@@ -16,6 +16,7 @@
 | `games-misc.md` | `*tetris*,*blast*,*olimar*` を開いた時 | テトリス・ブラスト・オリマー・ゲームセンター |
 | `today-science.md` | `*science*` ファイルを開いた時 | 今日のサイエンス |
 | `today-scp.md` | `*scp*` ファイルを開いた時 | 今日のSCP |
+| `nurse-call.md` | `*nurse*` ファイルを開いた時 | ナースコール |
 
 ## 運用
 

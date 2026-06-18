@@ -141,6 +141,10 @@ body {
 
 <!-- ===== チャットビュー ===== -->
 <div class="view" id="viewChat">
+  <div style="display:flex; gap:12px; margin-bottom:12px;">
+    <button class="nav-icon-btn" onclick="switchView('viewHome')">🔔</button>
+    <button class="nav-icon-btn" onclick="switchView('viewPhone')">📞</button>
+  </div>
   <div style="font-weight:700; font-size:1.2em; margin-bottom:12px;">💬 チャット</div>
   <div id="chatMessages"></div>
   <div class="quick-replies" id="quickReplies" style="display:none;">
@@ -157,6 +161,10 @@ body {
 
 <!-- ===== 通話ビュー ===== -->
 <div class="view" id="viewPhone">
+  <div style="display:flex; gap:12px; margin-bottom:12px;">
+    <button class="nav-icon-btn" onclick="switchView('viewHome')">🔔</button>
+    <button class="nav-icon-btn" onclick="switchView('viewChat')">💬</button>
+  </div>
   <div style="font-weight:700; font-size:1.2em; margin-bottom:16px;">📞 でんわ</div>
   <div class="voice-view-content">
     <div id="voiceStatus" class="voice-status"></div>
