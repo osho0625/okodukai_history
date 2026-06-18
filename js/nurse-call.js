@@ -522,9 +522,11 @@
       });
     }
 
-    // 親側: 電話着信ハンドリング
-    if (state.channel) {
-      state.channel.on('broadcast', { event: 'voice_state' }, (payload) => {
+    // 親側: 音声チャネルに事前接続（子供からの着信を受信するため）
+    const voiceChannelName = `nurse-voice:${state.childId}:${state.callId || 'default'}`;
+    const voiceChannel = client.channel(voiceChannelName);
+    voiceChannel
+      .on('broadcast', { event: 'voice_state' }, (payload) => {
         const msg = payload.payload;
         if (msg.state === 'ringing') {
           // 子供から着信 → 「でんわにでる」表示
@@ -543,8 +545,8 @@
           if (parentCallBtn) parentCallBtn.style.display = 'block';
           if (statusEl) statusEl.textContent = '';
         }
-      });
-    }
+      })
+      .subscribe();
 
     // でんわにでるボタン
     const parentAcceptBtn = document.getElementById('parentAcceptCallBtn');
