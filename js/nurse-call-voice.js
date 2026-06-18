@@ -197,10 +197,8 @@
     };
 
     pc.onconnectionstatechange = () => {
-      const connEl = document.getElementById('voiceConnectionState');
-      if (connEl) {
-        const map = { 'new':'🔄 せつぞくじゅんび...', 'connecting':'🔄 つなげているよ...', 'connected':'✅ つながったよ！', 'disconnected':'⚠️ きれちゃった', 'failed':'❌ つながらなかった', 'closed':'⏹️ おわり' };
-        connEl.textContent = map[pc.connectionState] || '';
+      if (pc.connectionState === 'connected') {
+        showVoiceStatus('つながったよ！', 'success');
       }
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         showVoiceStatus('きれちゃったよ', 'error');
@@ -217,31 +215,33 @@
 
   async function handleSignalEvent(data) {
     try {
+      const pc = voiceState.peerConnection;
+
       if (data.signal_type === 'offer') {
-        // 受信側（answerer）: offer受信 → PeerConnection作成 → answer返信
-        const pc = createPeerConnection();
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        // 自分が発信側（既にoffer送った側）なら無視
+        if (pc && pc.signalingState === 'have-local-offer') return;
+        // 受信側: offer受信 → PeerConnection作成 → answer返信
+        const newPc = createPeerConnection();
+        await newPc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+        const answer = await newPc.createAnswer();
+        await newPc.setLocalDescription(answer);
         broadcastSignal('answer', answer.sdp);
       }
 
       if (data.signal_type === 'answer') {
-        // 発信側（offerer）: answer受信
-        const pc = voiceState.peerConnection;
+        // 自分がoffer送信済みの場合のみ処理
         if (pc && pc.signalingState === 'have-local-offer') {
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
         }
       }
 
       if (data.signal_type === 'ice') {
-        const pc = voiceState.peerConnection;
         if (pc && data.candidate) {
           await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
         }
       }
     } catch (e) {
-      console.error('Signal handling error:', e);
+      // エラーは無視（タイミング競合）
     }
   }
 
@@ -356,22 +356,10 @@
     const connEl = document.getElementById('voiceConnectionState');
 
     if (callBtn) callBtn.style.display = (state === 'idle') ? 'block' : 'none';
-    if (acceptBtn) acceptBtn.style.display = (voiceState.role === 'child' && state === 'ringing') ? 'block' : 'none';
+    if (acceptBtn) acceptBtn.style.display = (state === 'ringing') ? 'block' : 'none';
     if (endBtn) endBtn.style.display = (state === 'ringing' || state === 'connected') ? 'block' : 'none';
     if (timerEl) timerEl.style.display = (state === 'connected') ? 'block' : 'none';
-
-    // 状態テキスト
-    if (connEl) {
-      const stateText = {
-        'idle': '📵 たいき中',
-        'ringing': '📳 よびだし中...',
-        'connected': '📞 つうわ中',
-        'ended': '⏹️ おわり'
-      };
-      if (!voiceState.peerConnection) {
-        connEl.textContent = stateText[state] || '';
-      }
-    }
+    if (connEl) connEl.textContent = ''; // 二重表示防止: voiceStatusだけで管理
   }
 
   function destroy() {
