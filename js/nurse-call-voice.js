@@ -112,7 +112,7 @@
       return false;
     }
 
-    // マイク取得（発信側は自動）
+    // マイク取得
     try {
       voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     } catch (e) {
@@ -122,49 +122,39 @@
 
     if (!voiceState.stateMachine.transition('ringing')) return false;
 
-    // broadcast ringing（相手に着信通知）+ リトライ
     broadcastVoiceState('ringing');
-    // 2秒後にリトライ（相手がまだsubscribeしていない場合に備えて）
     setTimeout(() => {
-      if (voiceState.stateMachine.getState() === 'ringing') {
-        broadcastVoiceState('ringing');
-      }
+      if (voiceState.stateMachine.getState() === 'ringing') broadcastVoiceState('ringing');
     }, 2000);
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
-
-    // 発信側はPeerConnectionを作成するがofferはまだ送らない
-    // （相手がconnected状態をbroadcastした後にofferを送る）
-    createPeerConnection(false); // offer送信しない
     return true;
   }
 
   // ============================================================
-  // 応答（子供側）
+  // 応答（受信側 - 自動呼び出し）
   // ============================================================
 
   async function acceptCall() {
-    // マイクパーミッション取得
-    try {
-      voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    } catch (e) {
-      showVoiceStatus('マイクが使えないよ', 'error');
-      voiceState.stateMachine.transition('ended');
-      broadcastVoiceState('ended');
-      updateVoiceUI();
-      return false;
+    // マイク取得
+    if (!voiceState.localStream) {
+      try {
+        voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (e) {
+        showVoiceStatus('マイクが使えないよ', 'error');
+        voiceState.stateMachine.transition('ended');
+        broadcastVoiceState('ended');
+        updateVoiceUI();
+        return false;
+      }
     }
 
     if (!voiceState.stateMachine.transition('connected')) return false;
     broadcastVoiceState('connected');
-
-    // PeerConnection作成（子供側=answerer）
-    createPeerConnection();
-
-    // 親側がofferを送ってくるのを待つ（既にringing中にoffer来ている可能性あり）
     showVoiceStatus('つなげているよ...', 'info');
     updateVoiceUI();
     startCallTimer();
+    // PeerConnectionは作らない。offerを受信した時にhandleSignalEventで作る。
     return true;
   }
 
@@ -184,44 +174,30 @@
   // WebRTC PeerConnection
   // ============================================================
 
-  function createPeerConnection(sendOffer = true) {
+  function createPeerConnection() {
+    if (voiceState.peerConnection) return voiceState.peerConnection;
+
     const pc = new RTCPeerConnection({ iceServers: voiceState.iceServers });
     voiceState.peerConnection = pc;
 
-    // ローカルストリーム追加
     if (voiceState.localStream) {
-      voiceState.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, voiceState.localStream);
-      });
+      voiceState.localStream.getTracks().forEach(track => pc.addTrack(track, voiceState.localStream));
     }
 
-    // リモートストリーム処理
     pc.ontrack = (event) => {
       const audio = document.getElementById('voiceRemoteAudio');
-      if (audio && event.streams[0]) {
-        audio.srcObject = event.streams[0];
-      }
+      if (audio && event.streams[0]) audio.srcObject = event.streams[0];
     };
 
-    // ICE候補送信
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        broadcastSignal('ice', null, event.candidate);
-      }
+      if (event.candidate) broadcastSignal('ice', null, event.candidate);
     };
 
     pc.onconnectionstatechange = () => {
       const connEl = document.getElementById('voiceConnectionState');
       if (connEl) {
-        const stateMap = {
-          'new': '🔄 せつぞくじゅんび...',
-          'connecting': '🔄 つなげているよ...',
-          'connected': '✅ つながったよ！',
-          'disconnected': '⚠️ せつぞくがきれた',
-          'failed': '❌ つながらなかった',
-          'closed': '⏹️ おわり'
-        };
-        connEl.textContent = stateMap[pc.connectionState] || pc.connectionState;
+        const map = { 'new':'🔄 せつぞくじゅんび...', 'connecting':'🔄 つなげているよ...', 'connected':'✅ つながったよ！', 'disconnected':'⚠️ きれちゃった', 'failed':'❌ つながらなかった', 'closed':'⏹️ おわり' };
+        connEl.textContent = map[pc.connectionState] || '';
       }
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         showVoiceStatus('きれちゃったよ', 'error');
@@ -229,51 +205,7 @@
       }
     };
 
-    pc.oniceconnectionstatechange = () => {
-      const connEl = document.getElementById('voiceConnectionState');
-      if (connEl && pc.connectionState !== 'connected') {
-        const iceMap = {
-          'checking': '🔍 あいてをさがしているよ...',
-          'connected': '✅ つながったよ！',
-          'completed': '✅ つながったよ！',
-          'failed': '❌ つながらなかった',
-          'disconnected': '⚠️ きれちゃった'
-        };
-        if (iceMap[pc.iceConnectionState]) {
-          connEl.textContent = iceMap[pc.iceConnectionState];
-        }
-      }
-    };
-
-    // 親側/発信側: offer作成＆送信（sendOffer=trueの時のみ）
-    if (sendOffer && voiceState.role === 'parent') {
-      createAndSendOffer(pc);
-    }
-  }
-
-  async function createAndSendOffer(pc) {
-    // 親側/発信側: localStreamは既にstartCallで取得済みの場合あり
-    if (!voiceState.localStream) {
-      try {
-        voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      } catch (e) {
-        showVoiceStatus('マイクが使えないよ', 'error');
-        endCall();
-        return;
-      }
-    }
-
-    // トラックがまだ追加されていなければ追加
-    const senders = pc.getSenders();
-    if (senders.length === 0) {
-      voiceState.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, voiceState.localStream);
-      });
-    }
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    broadcastSignal('offer', offer.sdp);
+    return pc;
   }
 
   // ============================================================
@@ -281,51 +213,57 @@
   // ============================================================
 
   async function handleSignalEvent(data) {
-    const pc = voiceState.peerConnection;
-
-    if (data.signal_type === 'offer' && voiceState.role === 'child') {
-      if (!pc) createPeerConnection();
-      await voiceState.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
-      const answer = await voiceState.peerConnection.createAnswer();
-      await voiceState.peerConnection.setLocalDescription(answer);
-      broadcastSignal('answer', answer.sdp);
-    }
-
-    if (data.signal_type === 'answer' && voiceState.role === 'parent') {
-      if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+    try {
+      if (data.signal_type === 'offer') {
+        // 受信側（answerer）: offer受信 → PeerConnection作成 → answer返信
+        const pc = createPeerConnection();
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        broadcastSignal('answer', answer.sdp);
       }
-    }
 
-    if (data.signal_type === 'ice') {
-      if (pc && data.candidate) {
-        try {
+      if (data.signal_type === 'answer') {
+        // 発信側（offerer）: answer受信
+        const pc = voiceState.peerConnection;
+        if (pc && pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+        }
+      }
+
+      if (data.signal_type === 'ice') {
+        const pc = voiceState.peerConnection;
+        if (pc && data.candidate) {
           await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) {}
+        }
       }
+    } catch (e) {
+      console.error('Signal handling error:', e);
     }
   }
 
   function handleVoiceStateEvent(data) {
-    if (data.state === 'ringing' && voiceState.role === 'child') {
+    if (data.state === 'ringing' && voiceState.stateMachine.getState() === 'idle') {
       voiceState.stateMachine.transition('ringing');
       showVoiceStatus('でんわがきているよ！', 'info');
       updateVoiceUI();
-      // 子供側は自動応答
+      // 受信側は自動応答
       acceptCall();
     }
 
-    if (data.state === 'connected') {
-      if (voiceState.role === 'parent') {
-        voiceState.stateMachine.transition('connected');
-        // 相手が接続準備完了 → offerを送信
-        if (voiceState.peerConnection) {
-          createAndSendOffer(voiceState.peerConnection);
-        }
-      }
+    if (data.state === 'connected' && voiceState.stateMachine.getState() === 'ringing') {
+      // 発信側: 相手が接続完了 → offer送信
+      voiceState.stateMachine.transition('connected');
+      const pc = createPeerConnection();
       showVoiceStatus('つながったよ！', 'success');
       updateVoiceUI();
       startCallTimer();
+      // offer作成＆送信
+      (async () => {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        broadcastSignal('offer', offer.sdp);
+      })();
     }
 
     if (data.state === 'ended') {
