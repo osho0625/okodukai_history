@@ -135,8 +135,7 @@
       } else {
         // 初回: 名前選択モーダル表示
         await showNamePicker();
-        // body表示してreturn（名前選択後にcontinueInitが呼ばれる）
-        document.body.style.visibility = 'visible';
+        // 名前選択後にcontinueInitが呼ばれる
         return;
       }
     }
@@ -177,8 +176,7 @@
       initChildMode();
     }
 
-    // body表示
-    document.body.style.visibility = 'visible';
+    // 初期化完了
   }
 
   // 名前から子供を特定
