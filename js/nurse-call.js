@@ -610,14 +610,13 @@
   }
 
   function showResponseOverlay() {
-    const popup = document.getElementById('ikuyoPopup');
-    if (!popup) return;
-    popup.style.display = 'block';
-    popup.style.animation = 'popIn 0.3s ease-out';
-    setTimeout(() => {
-      popup.style.animation = 'popOut 0.5s ease-in forwards';
-      setTimeout(() => { popup.style.display = 'none'; }, 500);
-    }, 4000);
+    const container = document.getElementById('ikuyoPopupContainer');
+    if (!container) return;
+    const popup = document.createElement('div');
+    popup.style.cssText = 'background:#fff; border-radius:16px; padding:14px 20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); font-size:1.2em; font-weight:600; color:#333; cursor:pointer; animation:popIn 0.3s ease-out;';
+    popup.textContent = '今行くよ💨';
+    popup.addEventListener('click', () => popup.remove());
+    container.appendChild(popup);
   }
 
   // ============================================================
