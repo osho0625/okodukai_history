@@ -73,14 +73,14 @@ body {
   cursor: not-allowed;
 }
 .action-icon-btn {
-  width: 70px;
-  height: 70px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  border: 3px solid #ff8a65;
+  border: 2px solid #ff8a65;
   background: #fff;
-  font-size: 2em;
+  font-size: 1.5em;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   transition: transform 0.1s, background 0.2s;
   display: flex;
   align-items: center;
@@ -185,13 +185,13 @@ body {
 </div>
 
 <div class="call-section" id="callSection">
-  <div style="display:flex; align-items:center; justify-content:center; gap:24px; margin-bottom:20px;">
-    <button class="action-icon-btn" id="chatIconBtn" title="チャット">💬</button>
-    <div style="display:flex; flex-direction:column; align-items:center;">
-      <button class="call-btn" id="callBtn">&#x1F514;</button>
-      <div style="margin-top:8px; font-weight:700; color:#c62828; font-size:1.1em;">ヘルプ！</div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:20px;">
+    <button class="call-btn" id="callBtn">&#x1F514;</button>
+    <div style="font-weight:700; color:#c62828; font-size:1.1em;">ヘルプ！</div>
+    <div style="display:flex; gap:16px;">
+      <button class="action-icon-btn" id="chatIconBtn" title="チャット">💬</button>
+      <button class="action-icon-btn" id="phoneIconBtn" title="でんわ">📞</button>
     </div>
-    <button class="action-icon-btn" id="phoneIconBtn" title="でんわ">📞</button>
   </div>
 
   <div class="reason-btns" id="reasonBtns">
