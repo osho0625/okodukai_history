@@ -287,11 +287,10 @@
     reasonBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.dataset.hasSub) {
-          // サブ選択を表示
-          const sub = document.getElementById('hakisoSub');
-          sub.classList.toggle('active');
+          // モーダル表示
+          const modal = document.getElementById('hakisoModal');
+          modal.style.display = 'flex';
         } else {
-          document.getElementById('hakisoSub')?.classList.remove('active');
           sendCall(btn.dataset.reason);
         }
       });
@@ -300,9 +299,16 @@
     // はきそうサブ選択ボタン
     document.querySelectorAll('.reason-sub-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('hakisoSub')?.classList.remove('active');
+        document.getElementById('hakisoModal').style.display = 'none';
         sendCall(btn.dataset.reason);
       });
+    });
+
+    // モーダル背景タップで閉じる
+    document.getElementById('hakisoModal')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('hakisoModal')) {
+        document.getElementById('hakisoModal').style.display = 'none';
+      }
     });
 
     // 🔔ボタン: 理由なしで送信
