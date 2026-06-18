@@ -76,6 +76,8 @@ body {
 /* テンキー */
 .temp-key { padding:16px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:1.4em; font-weight:600; cursor:pointer; transition:background 0.1s; }
 .temp-key:active { background:#e3f2fd; }
+.temp-filter-btn { padding:6px 14px; border:1px solid #ddd; border-radius:16px; background:#fff; font-size:0.85em; cursor:pointer; font-weight:600; }
+.temp-filter-btn.temp-filter-active { background:#1976d2; color:#fff; border-color:#1976d2; }
 
 /* 親側 */
 .parent-section { display:none; width:100%; max-width:400px; margin-top:24px; }
@@ -402,25 +404,74 @@ async function loadTemperatureHistory() {
   const { data } = await client.from('temperature_logs')
     .select('*')
     .order('measured_at', { ascending: false })
-    .limit(20);
+    .limit(200);
   if (!data || data.length === 0) return;
 
   const section = document.getElementById('parentSection');
   if (!section) return;
 
+  // 子供名一覧を取得
+  const childNames = [...new Set(data.map(r => r.child_name))];
+
   let html = '<div style="margin-top:20px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">';
   html += '<div style="font-weight:700; margin-bottom:10px;">🌡️ たいおんの記録</div>';
-  data.forEach(row => {
-    const d = new Date(row.measured_at);
-    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`;
-    const color = row.temperature >= 37.5 ? '#e53935' : row.temperature >= 37.0 ? '#f57c00' : '#333';
-    html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f0f0;">
-      <span style="color:#666; font-size:0.9em;">${dateStr} ${row.child_name}</span>
-      <span style="font-weight:700; color:${color};">${row.temperature}℃</span>
-    </div>`;
+
+  // 子供フィルタ
+  html += '<div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">';
+  html += '<button class="temp-filter-btn temp-filter-active" data-name="">ぜんぶ</button>';
+  childNames.forEach(name => {
+    html += `<button class="temp-filter-btn" data-name="${name}">${name}</button>`;
   });
   html += '</div>';
+
+  // 日付ごとにグループ化
+  html += '<div id="tempHistoryList"></div>';
+  html += '</div>';
   section.insertAdjacentHTML('beforeend', html);
+
+  // フィルタボタンイベント
+  let currentFilter = '';
+  document.querySelectorAll('.temp-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.temp-filter-btn').forEach(b => b.classList.remove('temp-filter-active'));
+      btn.classList.add('temp-filter-active');
+      currentFilter = btn.dataset.name;
+      renderTempHistory(data, currentFilter);
+    });
+  });
+
+  renderTempHistory(data, '');
+}
+
+function renderTempHistory(data, filterName) {
+  const filtered = filterName ? data.filter(r => r.child_name === filterName) : data;
+  const listEl = document.getElementById('tempHistoryList');
+  if (!listEl) return;
+
+  // 日付ごとにグループ化
+  const grouped = {};
+  filtered.forEach(row => {
+    const d = new Date(row.measured_at);
+    const dateKey = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(row);
+  });
+
+  let html = '';
+  Object.entries(grouped).forEach(([dateKey, rows]) => {
+    html += `<div style="font-weight:600; font-size:0.85em; color:#1976d2; margin-top:12px; margin-bottom:4px;">📅 ${dateKey}</div>`;
+    rows.forEach(row => {
+      const d = new Date(row.measured_at);
+      const time = d.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+      const color = row.temperature >= 37.5 ? '#e53935' : row.temperature >= 37.0 ? '#f57c00' : '#333';
+      html += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #f5f5f5; font-size:0.9em;">
+        <span style="color:#666;">${time} ${row.child_name}</span>
+        <span style="font-weight:700; color:${color};">${row.temperature}℃</span>
+      </div>`;
+    });
+  });
+
+  listEl.innerHTML = html || '<div style="color:#999; text-align:center; padding:8px;">まだ記録がないよ</div>';
 }
 </script>
 </body>
