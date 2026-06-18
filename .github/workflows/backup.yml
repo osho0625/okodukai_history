@@ -31,6 +31,102 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/transactions?select=*" \
             -o backups/transactions_$(date +%Y%m%d).json
 
+      - name: Backup chore_types table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/chore_types?select=*" \
+            -o backups/chore_types_$(date +%Y%m%d).json
+
+      - name: Backup chore_points table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/chore_points?select=*" \
+            -o backups/chore_points_$(date +%Y%m%d).json
+
+      - name: Backup game_settings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/game_settings?select=*" \
+            -o backups/game_settings_$(date +%Y%m%d).json
+
+      - name: Backup game_rankings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/game_rankings?select=*" \
+            -o backups/game_rankings_$(date +%Y%m%d).json
+
+      - name: Backup reminders table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/reminders?select=*" \
+            -o backups/reminders_$(date +%Y%m%d).json
+
+      - name: Backup tickets table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/tickets?select=*" \
+            -o backups/tickets_$(date +%Y%m%d).json
+
+      - name: Backup push_subscriptions table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/push_subscriptions?select=*" \
+            -o backups/push_subscriptions_$(date +%Y%m%d).json
+
+      - name: Backup family_notes table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/family_notes?select=*" \
+            -o backups/family_notes_$(date +%Y%m%d).json
+
+      - name: Backup math_olympiad_answers table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/math_olympiad_answers?select=*" \
+            -o backups/math_olympiad_answers_$(date +%Y%m%d).json
+
+      - name: Backup temperature_logs table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/temperature_logs?select=*" \
+            -o backups/temperature_logs_$(date +%Y%m%d).json
+
+      - name: Backup nurse_calls table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/nurse_calls?select=*" \
+            -o backups/nurse_calls_$(date +%Y%m%d).json
+
+      - name: Backup nurse_call_messages table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/nurse_call_messages?select=*" \
+            -o backups/nurse_call_messages_$(date +%Y%m%d).json
+
       - name: Delete backups older than 14 days
         run: |
           find backups/ -name "*.json" -mtime +14 -delete 2>/dev/null || true

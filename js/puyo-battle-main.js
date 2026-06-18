@@ -1328,8 +1328,8 @@ function spawnPair() {
     rotation: 0, // 0=up, 1=right, 2=down, 3=left
   };
 
-  // Check game over
-  if (grid[0][currentPair.x] !== -1 || grid[1][currentPair.x] !== -1) {
+  // Check game over (only colored puyo block spawn, not garbage)
+  if (grid[0][currentPair.x] >= 0 || grid[1][currentPair.x] >= 0) {
     gameOver();
     return;
   }
