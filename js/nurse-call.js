@@ -529,13 +529,18 @@
         if (window.NurseCallVoice) {
           await NurseCallVoice.startCall();
         }
-        // 子供端末にPush通知を送る（画面を閉じている場合に備えて）
+        // 子供端末にPush即時通知を送る（画面を閉じている場合に備えて）
         try {
-          await client.from('push_messages').insert({
-            title: '📞 でんわがきてるよ',
-            body: 'ナースコールをひらいてね',
-            target_role: 'user',
-            target_child_name: null
+          const token = getAccessToken();
+          await fetch(EDGE_FUNCTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_KEY },
+            body: JSON.stringify({
+              child_id: state.childId || '',
+              child_name: state.childName || '',
+              reason: '📞 でんわしたい',
+              device_id: localStorage.getItem('push_device_id') || ''
+            })
           });
         } catch(e) {}
       });

@@ -124,9 +124,16 @@
     if (!voiceState.stateMachine.transition('ringing')) return false;
 
     broadcastVoiceState('ringing');
-    setTimeout(() => {
-      if (voiceState.stateMachine.getState() === 'ringing') broadcastVoiceState('ringing');
-    }, 2000);
+    // 相手が接続するまで3秒間隔でringingをリトライ（最大30秒）
+    let ringingRetry = 0;
+    const ringingInterval = setInterval(() => {
+      ringingRetry++;
+      if (voiceState.stateMachine.getState() !== 'ringing' || ringingRetry > 10) {
+        clearInterval(ringingInterval);
+        return;
+      }
+      broadcastVoiceState('ringing');
+    }, 3000);
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
     return true;
