@@ -53,6 +53,9 @@
   // メッセージ送信
   // ============================================================
 
+  const CHAT_NOTIFY_KEY = 'nurse_call_last_chat_notify';
+  const CHAT_NOTIFY_INTERVAL = 60000; // 1分
+
   async function sendMessage(text) {
     if (!text || !text.trim()) return;
     const trimmed = text.trim().slice(0, 500);
@@ -81,6 +84,23 @@
       sender_role: chatState.senderRole,
       message_text: trimmed
     });
+
+    // 子供からのメッセージ時、1分以上経過ならPush通知
+    if (chatState.senderRole === 'child') {
+      const lastNotify = parseInt(localStorage.getItem(CHAT_NOTIFY_KEY) || '0');
+      if (Date.now() - lastNotify > CHAT_NOTIFY_INTERVAL) {
+        localStorage.setItem(CHAT_NOTIFY_KEY, String(Date.now()));
+        // push_messagesキューに追加（5分毎のcronで配信）
+        try {
+          await client.from('push_messages').insert({
+            title: '💬 チャット',
+            body: trimmed.slice(0, 100),
+            target_role: 'admin',
+            target_child_name: null
+          });
+        } catch(e) {}
+      }
+    }
 
     // ローカルUI追加
     addMessageToUI(msg);
