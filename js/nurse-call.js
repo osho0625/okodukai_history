@@ -529,6 +529,15 @@
         if (window.NurseCallVoice) {
           await NurseCallVoice.startCall();
         }
+        // 子供端末にPush通知を送る（画面を閉じている場合に備えて）
+        try {
+          await client.from('push_messages').insert({
+            title: '📞 でんわがきてるよ',
+            body: 'ナースコールをひらいてね',
+            target_role: 'user',
+            target_child_name: null
+          });
+        } catch(e) {}
       });
     }
 
