@@ -97,14 +97,31 @@
     const childId = params.get('child_id');
     const callId = params.get('call_id');
 
-    if (childId && callId && isAdmin) {
-      // 親側モード
+    if (isAdmin) {
+      // 親側モード（admin端末は常に親画面）
       state.isParent = true;
-      state.childId = childId;
-      state.callId = callId;
-      // 子供名をDBから取得
-      const { data } = await client.from('children').select('name').eq('id', childId).maybeSingle();
-      state.childName = data?.name || '';
+      if (childId && callId) {
+        state.childId = childId;
+        state.callId = callId;
+      } else {
+        // URLにcall_idなし → 最新のactive callを取得
+        const { data: latestCall } = await client.from('nurse_calls')
+          .select('id, child_id, child_name')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestCall) {
+          state.childId = latestCall.child_id;
+          state.childName = latestCall.child_name;
+          state.callId = latestCall.id;
+        }
+      }
+      // 子供名をDBから取得（childIdがある場合）
+      if (state.childId && !state.childName) {
+        const { data } = await client.from('children').select('name').eq('id', state.childId).maybeSingle();
+        state.childName = data?.name || '';
+      }
       initParentMode();
     } else {
       // 子供側: 名前ベースで特定
@@ -450,6 +467,22 @@
   function initParentMode() {
     document.getElementById('callSection').style.display = 'none';
     parentSection.classList.add('visible');
+
+    // active callがない場合
+    if (!state.callId) {
+      showStatus('よびだしはまだないよ', 'info');
+      ikuyoBtn.disabled = true;
+      resolveBtn.disabled = true;
+      // Realtimeで新しい呼び出しを待機（全active callのチャネル）
+      pollForNewCalls();
+      return;
+    }
+
+    // 呼び出し元の名前を表示
+    if (state.childName) {
+      showStatus(`📳 ${state.childName}からよばれています`, 'info');
+    }
+
     subscribeChannel(state.callId);
 
     ikuyoBtn.addEventListener('click', async () => {
@@ -470,6 +503,7 @@
 
       ikuyoBtn.disabled = true;
       ikuyoBtn.textContent = 'おくったよ！';
+      showStatus('✅ いくよ！をおくりました', 'success');
     });
 
     resolveBtn.addEventListener('click', async () => {
@@ -492,6 +526,31 @@
       resolveBtn.textContent = '完了しました';
       localStorage.removeItem(CURRENT_CALL_KEY);
     });
+  }
+
+  // ============================================================
+  // 親側: 新しい呼び出しをポーリングで待機
+  // ============================================================
+
+  function pollForNewCalls() {
+    const pollInterval = setInterval(async () => {
+      const { data } = await client.from('nurse_calls')
+        .select('id, child_id, child_name')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        clearInterval(pollInterval);
+        state.childId = data.child_id;
+        state.childName = data.child_name;
+        state.callId = data.id;
+        showStatus(`📳 ${data.child_name}からよばれています`, 'info');
+        ikuyoBtn.disabled = false;
+        resolveBtn.disabled = false;
+        subscribeChannel(data.id);
+      }
+    }, 5000); // 5秒毎にチェック
   }
 
   // ============================================================
