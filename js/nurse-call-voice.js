@@ -168,6 +168,9 @@
     cleanup();
     showVoiceStatus('つうわおわり', 'info');
     updateVoiceUI();
+    // ボタンを明示的にリセット（インラインスクリプトで手動非表示された場合の復旧）
+    const callBtn = document.getElementById('voiceCallBtn');
+    if (callBtn) callBtn.style.display = 'block';
   }
 
   // ============================================================
@@ -271,6 +274,8 @@
       cleanup();
       showVoiceStatus('つうわおわり', 'info');
       updateVoiceUI();
+      const callBtn = document.getElementById('voiceCallBtn');
+      if (callBtn) callBtn.style.display = 'block';
     }
   }
 
