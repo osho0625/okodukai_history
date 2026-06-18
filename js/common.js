@@ -199,3 +199,49 @@ function confirmLeaveGame(isPlayingFn, pauseFn, dest, action) {
     action();
   }
 }
+
+// --- ナースコールモード（デバイスロック制御） ---
+// DOMContentLoaded後に実行（document.bodyがnullにならないよう）
+// .single()→.maybeSingle()で406エラー回避（レコード0件時）
+document.addEventListener('DOMContentLoaded', async function() {
+  // admin端末はロック対象外
+  if (isAdmin) return;
+  // nurse-call.html自体はリダイレクト不要
+  if (location.pathname.includes('nurse-call.html')) return;
+
+  const deviceId = localStorage.getItem('push_device_id');
+  if (!deviceId) return;
+
+  const CACHE_KEY = 'device_lock_cache';
+  const TTL = 5 * 60 * 1000; // 5分
+
+  let nurseCallMode = false;
+
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    const now = Date.now();
+
+    if (cache && cache.updated_at && (now - new Date(cache.updated_at).getTime()) < TTL) {
+      nurseCallMode = cache.nurse_call_mode;
+    } else {
+      const { data } = await client.from('device_settings')
+        .select('nurse_call_mode')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+      nurseCallMode = data?.nurse_call_mode || false;
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        nurse_call_mode: nurseCallMode,
+        updated_at: new Date().toISOString()
+      }));
+    }
+  } catch (e) {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    nurseCallMode = cache?.nurse_call_mode || false;
+  }
+
+  if (nurseCallMode) {
+    location.href = location.pathname.includes('/pages/')
+      ? 'nurse-call.html'
+      : 'pages/nurse-call.html';
+  }
+});

@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/11 v1.99.3
+最終更新: 2026/06/18 v2.4.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -47,7 +47,7 @@ inclusion: auto
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 ├── scripts/            # Cron/ユーティリティスクリプト
 ├── sql/                # DBマイグレーション
-├── backups/            # 自動バックアップJSON
+├── backups/            # 自動バックアップJSON（13テーブル: children, transactions, chore_types, chore_points, game_settings, game_rankings, reminders, tickets, push_subscriptions, family_notes, math_olympiad_answers, temperature_logs, nurse_calls, nurse_call_messages）
 ├── .kiro/specs/today-science/ # 今日のサイエンス機能データ
 └── .github/workflows/  # GitHub Actions
 ```
@@ -207,7 +207,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v1.98.0
+- 現在: v2.1.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

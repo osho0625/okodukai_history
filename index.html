@@ -279,6 +279,13 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   </div>
 </div>
 
+<!-- ナースコールリンク -->
+<div id="nurseCallLink" style="display:none; max-width:480px; margin:0 auto 16px;">
+  <a href="pages/nurse-call.html" style="display:block; background:linear-gradient(135deg,#ff7043,#e53935); border-radius:12px; box-shadow:0 2px 8px rgba(229,57,53,0.3); padding:16px; text-decoration:none; color:#fff; text-align:center; font-weight:700; font-size:1.2em;">
+    🏥 ナースコール
+  </a>
+</div>
+
 <div class="children-list" id="children">
   <div class="loading">読み込み中...</div>
 </div>
@@ -295,6 +302,12 @@ if (localStorage.getItem('deviceRole') === 'admin') {
   document.getElementById('adminIcons').style.display = 'flex';
 }
 </script>
+
+<!-- ナースコール常設アイコン（常に表示） -->
+<div style="text-align:center; margin-top:24px; margin-bottom:16px;">
+  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">🏥</a>
+  <div style="font-size:0.75em; color:#999; margin-top:4px;">ナースコール</div>
+</div>
 
 <!-- お手伝いアイコン（アカウント一覧の下に配置） -->
 
@@ -1412,6 +1425,16 @@ loadPasswords();
 loadTodayScience();
 loadTodayScp();
 
+// ナースコールリンク表示
+(async function() {
+  try {
+    const { data } = await client.from('game_settings').select('nurse_call_enabled').eq('id', 1).single();
+    if (data && data.nurse_call_enabled) {
+      document.getElementById('nurseCallLink').style.display = 'block';
+    }
+  } catch(e) {}
+})();
+
 // Admin: check math olympiad pending reviews
 if (localStorage.getItem('deviceRole') === 'admin') {
   (async function() {
@@ -1436,7 +1459,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v1.99.3</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.3.0</a></div>
 
 </body>
 </html>

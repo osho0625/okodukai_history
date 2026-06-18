@@ -1,6 +1,6 @@
 {
   "name": "okodukai-history",
-  "version": "1.95.0",
+  "version": "2.4.0",
   "private": true,
   "scripts": {
     "test": "vitest --run",

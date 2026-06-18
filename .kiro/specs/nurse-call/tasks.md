@@ -12,8 +12,8 @@
 
 ## Tasks
 
-- [ ] 1. DBテーブル定義とマイグレーション作成
-  - [ ] 1.1 `sql/create_nurse_call_tables.sql` を作成し、`nurse_calls`、`nurse_call_messages`、`device_settings` テーブルを定義する
+- [x] 1. DBテーブル定義とマイグレーション作成
+  - [x] 1.1 `sql/create_nurse_call_tables.sql` を作成し、`nurse_calls`、`nurse_call_messages`、`device_settings` テーブルを定義する
     - nurse_calls: id UUID PK, child_id, child_name, reason, status, notification_status, created_at, responded_at
     - nurse_call_messages: id UUID PK, call_id FK, child_id, sender_role, message_text, created_at
     - device_settings: device_id TEXT PK, child_id UUID, nurse_call_mode BOOLEAN, updated_at
@@ -21,12 +21,12 @@
     - 自動resolve用pg_cronジョブ（30分無活動でresolved）
     - 90日超過メッセージ自動削除用pg_cronジョブ
     - _Requirements: 4.1, 4.2, 9.4, 9.12, 4.6_
-  - [ ] 1.2 `sql/alter_game_settings_nurse_call.sql` を作成し、game_settingsにnurse_call関連カラムを追加する
+  - [x] 1.2 `sql/alter_game_settings_nurse_call.sql` を作成し、game_settingsにnurse_call関連カラムを追加する
     - nurse_call_enabled BOOLEAN, nurse_call_notify_targets JSONB, nurse_call_child_ids JSONB, nurse_call_ice_servers JSONB
     - _Requirements: 7.1, 2.6, 10.17_
 
-- [ ] 2. Supabase Anonymous Auth導入とEdge Function実装
-  - [ ] 2.1 `supabase/functions/push-nurse-call/index.ts` にEdge Functionを作成する
+- [x] 2. Supabase Anonymous Auth導入とEdge Function実装
+  - [x] 2.1 `supabase/functions/push-nurse-call/index.ts` にEdge Functionを作成する
     - JWT検証（Authorization: Bearer ヘッダー）→ 無効/欠落で401
     - device_id存在確認 + child_id整合性チェック → 不一致で403
     - サーバー側クールダウン判定（nurse_callsの最新created_atから30秒）→ 429
@@ -49,8 +49,8 @@
     - `isCooldownActive(lastCreatedAt, now)` を純粋関数として抽出しテスト
     - **Validates: Requirements 3.5, 3.6, 8.8, 11.9**
 
-- [ ] 3. ナースコール画面（子供側UI）の基本実装
-  - [ ] 3.1 `pages/nurse-call.html` を作成する
+- [x] 3. ナースコール画面（子供側UI）の基本実装
+  - [x] 3.1 `pages/nurse-call.html` を作成する
     - 大きな「よんで！」ボタン（画面幅80%以上）
     - 理由プリセットボタン（のどかわいた、きもちわるい、トイレ、はなしたい）
     - クールダウンカウントダウン表示
@@ -58,7 +58,7 @@
     - 「いくよ！」応答メッセージ表示エリア
     - Supabase client読み込み + Anonymous Auth初期化
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 3.1, 3.2, 3.3, 3.4, 5.3, 11.1_
-  - [ ] 3.2 `js/nurse-call.js` にメインロジックを実装する
+  - [x] 3.2 `js/nurse-call.js` にメインロジックを実装する
     - `ensureAuthSession()`: Anonymous Auth セッション確立（signInAnonymously）
     - `sendCall(reason)`: Edge Function呼び出し（JWT付きfetch）+ call_id受け取り
     - クライアント側クールダウン（30秒、残り秒数表示）
@@ -82,7 +82,7 @@
     - **Validates: Requirements 8.3, 8.6**
 
 - [ ] 4. 親側UIと応答機能の実装
-  - [ ] 4.1 `pages/nurse-call.html` に親側UI（クエリパラメータ `child_id` + `call_id` 時）を実装する
+  - [x] 4.1 `pages/nurse-call.html` に親側UI（クエリパラメータ `child_id` + `call_id` 時）を実装する
     - 「いくよ！」ボタン表示
     - 「対応完了」ボタン表示（statusが'active'の時）
     - Realtimeチャネル購読 + broadcast（response type）
@@ -94,19 +94,19 @@
   - Ensure all tests pass, ask the user if questions arise.
   - Edge Function + 呼び出しボタン + Push通知 + 応答の一連フローが動作すること
 
-- [ ] 6. デバイスロックモード実装
-  - [ ] 6.1 `js/common.js` を修正してデバイスロック制御を追加する
+- [x] 6. デバイスロックモード実装
+  - [x] 6.1 `js/common.js` を修正してデバイスロック制御を追加する
     - `document.body.style.visibility = 'hidden'` でフラッシュ防止
     - `checkNurseCallMode()`: device_lock_cacheの確認（5分TTL）→ 期限切れならDB取得
     - nurse_call_mode=true かつ nurse-call.html以外 → リダイレクト
     - asyncラッパーでawait完了後にbody表示
     - localStorageクリア時のDB復元動作
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.10, 6.11, 6.12, 7.7_
-  - [ ] 6.2 `pages/nurse-call.html` にロック中表示を追加する
+  - [x] 6.2 `pages/nurse-call.html` にロック中表示を追加する
     - 「おやすみモード中」の視覚表示
     - 他ページへのナビゲーション阻止
     - _Requirements: 6.5, 6.6_
-  - [ ] 6.3 `pages/admin.html` にナースコールモード管理UIを追加する
+  - [x] 6.3 `pages/admin.html` にナースコールモード管理UIを追加する
     - ナースコールモードON/OFF切り替え（device_settings更新）
     - admin権限チェック（admin PW/deviceRole必須）
     - nurse_call_enabled ON/OFF切り替え（game_settings更新）
@@ -121,8 +121,8 @@
     - `shouldRedirect(nurseCallMode, currentPath)` のテスト
     - **Validates: Requirements 6.4, 6.5, 7.7**
 
-- [ ] 7. ナビゲーション連携（TOP・子供ページ）
-  - [ ] 7.1 `index.html` と `pages/child.html` にナースコールリンクを条件付き表示する
+- [x] 7. ナビゲーション連携（TOP・子供ページ）
+  - [x] 7.1 `index.html` と `pages/child.html` にナースコールリンクを条件付き表示する
     - game_settings.nurse_call_enabled=true時のみ表示
     - nurse_call_child_idsが設定されている場合、対象child_idのみ表示
     - _Requirements: 7.2, 7.3, 7.4, 7.6_
@@ -131,15 +131,15 @@
   - Ensure all tests pass, ask the user if questions arise.
   - デバイスロックモードON/OFF、リダイレクト動作、管理者UI操作が正常動作すること
 
-- [ ] 9. チャット機能実装
-  - [ ] 9.1 `js/nurse-call-chat.js` にチャットモジュールを実装する
+- [x] 9. チャット機能実装
+  - [x] 9.1 `js/nurse-call-chat.js` にチャットモジュールを実装する
     - `init(callId, childId, senderRole)`: 初期化 + Realtimeチャネルのchatイベント購読
     - `sendMessage(text)`: nurse_call_messagesにINSERT + broadcast
     - `sendQuickReply(presetKey)`: Quick Replyテキスト送信（だいじょうぶ、ありがとう、まだつらい、おなかすいた）
     - `loadHistory(callId, limit=50)`: 現在のcall_idに紐付くメッセージ履歴取得
     - メッセージ受信時のコールバック + 自動スクロール
     - _Requirements: 9.1, 9.2, 9.3, 9.5, 9.6, 9.7, 9.8, 9.9, 9.11_
-  - [ ] 9.2 `pages/nurse-call.html` にチャットUIを追加する
+  - [x] 9.2 `pages/nurse-call.html` にチャットUIを追加する
     - 吹き出し形式メッセージ表示（sender_roleで左右配置）
     - 子供側: Quick Replyボタン + テキスト入力フィールド
     - 親側: テキスト入力フィールド + 送信ボタン
@@ -149,8 +149,8 @@
 - [ ] 10. チェックポイント — チャット確認
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. 音声通話実装（WebRTC）
-  - [ ] 11.1 `js/nurse-call-voice.js` に音声通話モジュールを実装する
+- [x] 11. 音声通話実装（WebRTC）
+  - [x] 11.1 `js/nurse-call-voice.js` に音声通話モジュールを実装する
     - Voice_Call_State状態機械: idle→ringing→connected→ended→idle
     - `startCall()`: 親側から発信（state=ringing broadcast）、既に通話中なら拒否
     - `acceptCall()`: 子供側応答（マイクパーミッション要求 + PeerConnection作成）
@@ -160,7 +160,7 @@
     - 通話タイマー表示
     - エラーハンドリング（マイク拒否、接続失敗、通話中断）
     - _Requirements: 10.1-10.21_
-  - [ ] 11.2 `pages/nurse-call.html` に音声通話UIを追加する
+  - [x] 11.2 `pages/nurse-call.html` に音声通話UIを追加する
     - 親側: 「でんわする」ボタン
     - 子供側: 「でんわにでる」ボタン（着信時表示）+ マイクパーミッション案内
     - 通話中: 「きる」ボタン + 通話時間表示
