@@ -124,12 +124,21 @@
     if (!voiceState.stateMachine.transition('ringing')) return false;
 
     broadcastVoiceState('ringing');
-    // 相手が接続するまで3秒間隔でringingをリトライ（最大30秒）
+    // 相手が接続するまで3秒間隔でringingをリトライ（最大1分）
     let ringingRetry = 0;
     const ringingInterval = setInterval(() => {
       ringingRetry++;
-      if (voiceState.stateMachine.getState() !== 'ringing' || ringingRetry > 10) {
+      if (voiceState.stateMachine.getState() !== 'ringing' || ringingRetry > 20) {
         clearInterval(ringingInterval);
+        // タイムアウト: まだringing状態なら切断
+        if (voiceState.stateMachine.getState() === 'ringing') {
+          voiceState.stateMachine.transition('ended');
+          cleanup();
+          showVoiceStatus('つながらなかったよ', 'error');
+          updateVoiceUI();
+          const callBtn = document.getElementById('voiceCallBtn');
+          if (callBtn) callBtn.style.display = 'block';
+        }
         return;
       }
       broadcastVoiceState('ringing');

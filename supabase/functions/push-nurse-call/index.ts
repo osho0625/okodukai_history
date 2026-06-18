@@ -47,8 +47,8 @@ export function filterNotifyTargets(
   if (targets && targets.length > 0) {
     return subscriptions.filter(s => targets.includes(s.device_id));
   }
-  // デフォルト: 全端末に送信（家庭内利用）
-  return subscriptions;
+  // デフォルト: role='admin'の全端末
+  return subscriptions.filter(s => s.role === "admin");
 }
 
 export function isCooldownActive(lastCreatedAt: string | null, now: Date, cooldownMs = 30000): boolean {
