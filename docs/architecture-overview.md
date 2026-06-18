@@ -31,7 +31,7 @@ graph TB
         end
         
         subgraph "ナースコール"
-            NURSE[nurse-call.html<br/>4ビュー: ホーム/チャット/通話/体温]
+            NURSE[nurse-call.html<br/>4ビュー: ホーム/チャット/通話/体温<br/>WebRTC通話(1分リトライ)<br/>即時Push通知]
         end
         
         subgraph "共通JS"
