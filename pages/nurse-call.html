@@ -72,6 +72,21 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   cursor: not-allowed;
 }
+.action-icon-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid #ff8a65;
+  background: #fff;
+  font-size: 2em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.1s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-icon-btn:active { transform: scale(0.9); background: #fff3e0; }
 .reason-btns {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -170,7 +185,11 @@ body {
 </div>
 
 <div class="call-section" id="callSection">
-  <button class="call-btn" id="callBtn">&#x1F514;</button>
+  <div style="display:flex; align-items:center; justify-content:center; gap:24px; margin-bottom:20px;">
+    <button class="action-icon-btn" id="chatIconBtn" title="チャット">💬</button>
+    <button class="call-btn" id="callBtn">&#x1F514;</button>
+    <button class="action-icon-btn" id="phoneIconBtn" title="でんわ">📞</button>
+  </div>
 
   <div class="reason-btns" id="reasonBtns">
     <button class="reason-btn" data-reason="のどかわいた">🥤 のどかわいた</button>
@@ -282,6 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('voiceStartBtn')?.addEventListener('click', () => NurseCallVoice.startCall());
       document.getElementById('voiceAcceptBtn')?.addEventListener('click', () => NurseCallVoice.acceptCall());
       document.getElementById('voiceEndBtn')?.addEventListener('click', () => NurseCallVoice.endCall());
+
+      // アイコンボタン: 💬チャットへスクロール、📞電話開始
+      document.getElementById('chatIconBtn')?.addEventListener('click', () => {
+        document.getElementById('chatSection').scrollIntoView({ behavior: 'smooth' });
+      });
+      document.getElementById('phoneIconBtn')?.addEventListener('click', () => {
+        NurseCallVoice.startCall();
+        document.getElementById('voiceSection').scrollIntoView({ behavior: 'smooth' });
+      });
     }
   }, 500);
 });
