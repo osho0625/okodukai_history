@@ -186,9 +186,37 @@
     };
 
     pc.onconnectionstatechange = () => {
+      const connEl = document.getElementById('voiceConnectionState');
+      if (connEl) {
+        const stateMap = {
+          'new': '🔄 せつぞくじゅんび...',
+          'connecting': '🔄 つなげているよ...',
+          'connected': '✅ つながったよ！',
+          'disconnected': '⚠️ せつぞくがきれた',
+          'failed': '❌ つながらなかった',
+          'closed': '⏹️ おわり'
+        };
+        connEl.textContent = stateMap[pc.connectionState] || pc.connectionState;
+      }
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         showVoiceStatus('きれちゃったよ', 'error');
         endCall();
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      const connEl = document.getElementById('voiceConnectionState');
+      if (connEl && pc.connectionState !== 'connected') {
+        const iceMap = {
+          'checking': '🔍 あいてをさがしているよ...',
+          'connected': '✅ つながったよ！',
+          'completed': '✅ つながったよ！',
+          'failed': '❌ つながらなかった',
+          'disconnected': '⚠️ きれちゃった'
+        };
+        if (iceMap[pc.iceConnectionState]) {
+          connEl.textContent = iceMap[pc.iceConnectionState];
+        }
       }
     };
 
@@ -341,15 +369,29 @@
 
   function updateVoiceUI() {
     const state = voiceState.stateMachine.getState();
-    const startBtn = document.getElementById('voiceStartBtn');
+    const callBtn = document.getElementById('voiceCallBtn');
     const acceptBtn = document.getElementById('voiceAcceptBtn');
     const endBtn = document.getElementById('voiceEndBtn');
     const timerEl = document.getElementById('voiceTimer');
+    const connEl = document.getElementById('voiceConnectionState');
 
-    if (startBtn) startBtn.style.display = (voiceState.role === 'parent' && state === 'idle') ? 'block' : 'none';
+    if (callBtn) callBtn.style.display = (state === 'idle') ? 'block' : 'none';
     if (acceptBtn) acceptBtn.style.display = (voiceState.role === 'child' && state === 'ringing') ? 'block' : 'none';
-    if (endBtn) endBtn.style.display = (state === 'connected') ? 'block' : 'none';
+    if (endBtn) endBtn.style.display = (state === 'ringing' || state === 'connected') ? 'block' : 'none';
     if (timerEl) timerEl.style.display = (state === 'connected') ? 'block' : 'none';
+
+    // 状態テキスト
+    if (connEl) {
+      const stateText = {
+        'idle': '📵 たいき中',
+        'ringing': '📳 よびだし中...',
+        'connected': '📞 つうわ中',
+        'ended': '⏹️ おわり'
+      };
+      if (!voiceState.peerConnection) {
+        connEl.textContent = stateText[state] || '';
+      }
+    }
   }
 
   function destroy() {
