@@ -133,8 +133,9 @@
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
 
-    // 発信側はPeerConnectionを先に作成して待機
-    createPeerConnection();
+    // 発信側はPeerConnectionを作成するがofferはまだ送らない
+    // （相手がconnected状態をbroadcastした後にofferを送る）
+    createPeerConnection(false); // offer送信しない
     return true;
   }
 
@@ -183,7 +184,7 @@
   // WebRTC PeerConnection
   // ============================================================
 
-  function createPeerConnection() {
+  function createPeerConnection(sendOffer = true) {
     const pc = new RTCPeerConnection({ iceServers: voiceState.iceServers });
     voiceState.peerConnection = pc;
 
@@ -244,8 +245,8 @@
       }
     };
 
-    // 親側: offer作成＆送信
-    if (voiceState.role === 'parent') {
+    // 親側/発信側: offer作成＆送信（sendOffer=trueの時のみ）
+    if (sendOffer && voiceState.role === 'parent') {
       createAndSendOffer(pc);
     }
   }
@@ -310,11 +311,18 @@
       voiceState.stateMachine.transition('ringing');
       showVoiceStatus('でんわがきているよ！', 'info');
       updateVoiceUI();
+      // 子供側は自動応答
+      acceptCall();
     }
 
-    if (data.state === 'connected' && voiceState.role === 'parent') {
-      voiceState.stateMachine.transition('connected');
-      createPeerConnection();
+    if (data.state === 'connected') {
+      if (voiceState.role === 'parent') {
+        voiceState.stateMachine.transition('connected');
+        // 相手が接続準備完了 → offerを送信
+        if (voiceState.peerConnection) {
+          createAndSendOffer(voiceState.peerConnection);
+        }
+      }
       showVoiceStatus('つながったよ！', 'success');
       updateVoiceUI();
       startCallTimer();
