@@ -116,14 +116,14 @@
         const { data } = await client.from('device_settings')
           .select('child_id')
           .eq('device_id', deviceId)
-          .single();
+          .maybeSingle();
         if (data && data.child_id) {
           state.childId = data.child_id;
           // 子供名取得
           const { data: childData } = await client.from('children')
             .select('name')
             .eq('id', data.child_id)
-            .single();
+            .maybeSingle();
           if (childData) state.childName = childData.name;
         } else {
           // device_settingsにレコードなし → 子供一覧から最初の子供を使用
@@ -136,7 +136,7 @@
             const pushSub = await client.from('push_subscriptions')
               .select('child_name')
               .eq('device_id', deviceId)
-              .single();
+              .maybeSingle();
             const matched = pushSub?.data?.child_name
               ? children.find(c => c.name === pushSub.data.child_name)
               : null;
