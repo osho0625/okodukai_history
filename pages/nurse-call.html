@@ -62,8 +62,6 @@ body {
 
 /* チャットビュー */
 #chatMessages { background:#fff; border-radius:12px; padding:12px; height:55vh; overflow-y:auto; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:10px; width:100%; }
-.quick-replies { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; width:100%; }
-.quick-reply-btn { padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em; }
 .chat-input-row { display:flex; gap:8px; width:100%; }
 .chat-input-row input { flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1em; }
 .chat-input-row button { padding:12px 18px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer; }
@@ -124,7 +122,7 @@ body {
   </div>
   <div class="reason-btns" id="reasonBtns">
     <button class="reason-btn" data-reason="のどかわいた">🥤 のどかわいた</button>
-    <button class="reason-btn" data-reason="きもちわるい">🤢 きもちわるい</button>
+    <button class="reason-btn" data-reason="おなかすいた">🍙 おなかすいた</button>
     <button class="reason-btn" data-reason="はきそう" data-has-sub="true">🤮 はきそう</button>
     <button class="reason-btn" data-reason="トイレ">🚽 トイレ</button>
     <button class="reason-btn" data-reason="あつい">🥵 あつい</button>
@@ -155,12 +153,6 @@ body {
   </div>
   <div style="font-weight:700; font-size:1.2em; margin-bottom:12px;">💬 チャット</div>
   <div id="chatMessages"></div>
-  <div class="quick-replies" id="quickReplies" style="display:none;">
-    <button class="quick-reply-btn" data-key="ok">😊 だいじょうぶ</button>
-    <button class="quick-reply-btn" data-key="thanks">🙏 ありがとう</button>
-    <button class="quick-reply-btn" data-key="still_sick">😢 まだつらい</button>
-    <button class="quick-reply-btn" data-key="hungry">🍙 おなかすいた</button>
-  </div>
   <div class="chat-input-row">
     <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500">
     <button id="chatSendBtn">送信</button>
@@ -268,11 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // チャット初期化
       NurseCallChat.init(callId, state.childId, senderRole);
-      if (!state.isParent) document.getElementById('quickReplies').style.display = 'grid';
 
-      document.querySelectorAll('.quick-reply-btn').forEach(btn => {
-        btn.addEventListener('click', () => NurseCallChat.sendQuickReply(btn.dataset.key));
-      });
       document.getElementById('chatSendBtn').addEventListener('click', () => {
         const input = document.getElementById('chatInput');
         if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
