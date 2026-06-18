@@ -31,7 +31,7 @@ graph TB
         end
         
         subgraph "ナースコール"
-            NURSE[nurse-call.html<br/>ナースコール<br/>3ビュー: ホーム/チャット/通話]
+            NURSE[nurse-call.html<br/>4ビュー: ホーム/チャット/通話/体温]
         end
         
         subgraph "共通JS"
@@ -51,8 +51,8 @@ graph TB
         DISCORD[Discord Webhook<br/>通知]
         GITHUB_ACTIONS[GitHub Actions<br/>Cron Jobs]
         WEB_PUSH[Web Push API<br/>ブラウザ通知]
-        WEBRTC[WebRTC<br/>音声通話 🆕]
-        STUN_TURN[STUN/TURN Server<br/>NAT越え 🆕]
+        WEBRTC[WebRTC<br/>音声通話]
+        STUN_TURN[STUN/TURN Server<br/>NAT越え]
     end
     
     INDEX --> CHILD
@@ -99,10 +99,8 @@ sequenceDiagram
     EDGE->>PUSH: 即時Push通知送信<br/>(role='admin'の全端末)
     PUSH->>P: 🔔 ○○がよんでいます
     
-    Note over C: 30秒クールダウン開始
-    
     P->>SB_RT: broadcast "response"<br/>{type: "iku_yo", call_id}
-    SB_RT->>C: 「いくよ！」表示
+    SB_RT->>C: 「今行くよ💨」ポップ表示
     P->>SB_DB: UPDATE nurse_calls<br/>SET responded_at
     
     Note over C,P: === チャットフロー ===
@@ -110,23 +108,35 @@ sequenceDiagram
     C->>SB_RT: broadcast "chat"<br/>{sender: "child", text}
     SB_RT->>P: メッセージ受信・表示
     C->>SB_DB: INSERT nurse_call_messages
+    C->>EDGE: 即時Push通知（1分間隔制限）
+    EDGE->>PUSH: 💬チャット通知
     
     P->>SB_RT: broadcast "chat"<br/>{sender: "parent", text}
     SB_RT->>C: メッセージ受信・表示
     P->>SB_DB: INSERT nurse_call_messages
     
-    Note over C,P: === 音声通話フロー (オプション) ===
+    Note over C,P: === 体温記録フロー ===
     
-    P->>SB_RT: broadcast "call_offer"<br/>{sdp_offer}
-    SB_RT->>C: 着信 → 自動応答
-    C->>SB_RT: broadcast "call_answer"<br/>{sdp_answer}
-    SB_RT->>P: Answer受信
+    C->>SB_DB: INSERT temperature_logs<br/>{child_name, temperature, measured_at}
+    C->>SB_RT: broadcast "chat"<br/>🌡️ 36.8℃
+    C->>EDGE: 即時Push通知<br/>🌡️ たいおん 36.8℃
+    EDGE->>PUSH: Push配信
+    
+    Note over C,P: === 音声通話フロー ===
+    
+    C->>SB_RT: broadcast "voice_state"<br/>{state: "ringing"}
+    SB_RT->>P: 着信表示「でんわにでる」
+    P->>P: ユーザータップ → マイク取得
+    C->>SB_RT: broadcast "signal"<br/>{type: "offer", sdp}
+    SB_RT->>P: SDP Offer受信
+    P->>SB_RT: broadcast "signal"<br/>{type: "answer", sdp}
+    SB_RT->>C: SDP Answer受信
     
     loop ICE候補交換
-        P->>SB_RT: broadcast "ice_candidate"
-        SB_RT->>C: ICE受信
         C->>SB_RT: broadcast "ice_candidate"
         SB_RT->>P: ICE受信
+        P->>SB_RT: broadcast "ice_candidate"
+        SB_RT->>C: ICE受信
     end
     
     P<-->WEBRTC: 音声ストリーム確立
