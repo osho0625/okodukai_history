@@ -79,7 +79,6 @@
   const callBtn = document.getElementById('callBtn');
   const reasonBtns = document.querySelectorAll('.reason-btn');
   const statusMsg = document.getElementById('statusMsg');
-  const responseOverlay = document.getElementById('responseOverlay');
   const parentSection = document.getElementById('parentSection');
   const ikuyoBtn = document.getElementById('ikuyoBtn');
   const modeBadge = document.getElementById('modeBadge');
@@ -611,10 +610,14 @@
   }
 
   function showResponseOverlay() {
-    responseOverlay.classList.add('visible');
+    const popup = document.getElementById('ikuyoPopup');
+    if (!popup) return;
+    popup.style.display = 'block';
+    popup.style.animation = 'popIn 0.3s ease-out';
     setTimeout(() => {
-      responseOverlay.classList.remove('visible');
-    }, 5000);
+      popup.style.animation = 'popOut 0.5s ease-in forwards';
+      setTimeout(() => { popup.style.display = 'none'; }, 500);
+    }, 4000);
   }
 
   // ============================================================
