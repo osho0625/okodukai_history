@@ -30,12 +30,9 @@
         }
         state = newState;
         listeners.forEach(fn => fn(state));
-        // ended→idle自動復帰
+        // ended→idle即時復帰
         if (state === 'ended') {
-          setTimeout(() => {
-            state = 'idle';
-            listeners.forEach(fn => fn(state));
-          }, 2000);
+          state = 'idle';
         }
         return true;
       },
@@ -58,7 +55,8 @@
     stateMachine: createStateMachine(),
     callTimer: null,
     callStartTime: null,
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    senderId: Math.random().toString(36).slice(2, 10) // 自分のbroadcastを識別
   };
 
   // ============================================================
@@ -88,9 +86,11 @@
     await new Promise((resolve) => {
       voiceState.channel
         .on('broadcast', { event: 'voice_state' }, (payload) => {
+          if (payload.payload.sender === voiceState.senderId) return; // 自分のは無視
           handleVoiceStateEvent(payload.payload);
         })
         .on('broadcast', { event: 'signal' }, (payload) => {
+          if (payload.payload.sender === voiceState.senderId) return; // 自分のは無視
           handleSignalEvent(payload.payload);
         })
         .subscribe((status) => {
@@ -168,6 +168,9 @@
     cleanup();
     showVoiceStatus('つうわおわり', 'info');
     updateVoiceUI();
+    // ボタンを明示的にリセット（インラインスクリプトで手動非表示された場合の復旧）
+    const callBtn = document.getElementById('voiceCallBtn');
+    if (callBtn) callBtn.style.display = 'block';
   }
 
   // ============================================================
@@ -271,6 +274,8 @@
       cleanup();
       showVoiceStatus('つうわおわり', 'info');
       updateVoiceUI();
+      const callBtn = document.getElementById('voiceCallBtn');
+      if (callBtn) callBtn.style.display = 'block';
     }
   }
 
@@ -283,7 +288,7 @@
       voiceState.channel.send({
         type: 'broadcast',
         event: 'voice_state',
-        payload: { state, call_id: voiceState.callId }
+        payload: { state, sender: voiceState.senderId }
       }).catch(() => {});
     }
   }
@@ -293,7 +298,7 @@
       voiceState.channel.send({
         type: 'broadcast',
         event: 'signal',
-        payload: { signal_type: signalType, sdp: sdp || null, candidate: candidate || null }
+        payload: { signal_type: signalType, sdp: sdp || null, candidate: candidate || null, sender: voiceState.senderId }
       }).catch(() => {});
     }
   }
