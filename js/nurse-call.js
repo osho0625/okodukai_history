@@ -12,7 +12,6 @@
   // 設定
   // ============================================================
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/push-nurse-call`;
-  const COOLDOWN_SEC = 30;
   const OFFLINE_QUEUE_KEY = 'nurse_call_offline_queue';
   const CURRENT_CALL_KEY = 'nurse_call_current_call_id';
 
@@ -68,8 +67,6 @@
     childName: null,
     callId: null,
     selectedReason: null,
-    cooldownRemaining: 0,
-    cooldownInterval: null,
     channel: null,
     isParent: false,
     authSession: null
@@ -285,8 +282,7 @@
   // ============================================================
 
   async function sendCall(reason) {
-    if (state.cooldownRemaining > 0) return;
-    if (!state.childId) {
+    if (!state.childId && !state.childName) {
       showStatus('設定がまだだよ', 'error');
       return;
     }
@@ -294,19 +290,19 @@
     // オフライン時
     if (!navigator.onLine) {
       offlineQueue.push({
-        child_id: state.childId,
+        child_id: state.childId || '',
         child_name: state.childName || '',
         reason: reason || null,
         device_id: localStorage.getItem('push_device_id') || '',
         queued_at: new Date().toISOString()
       });
       showStatus('ネットがつながっていないけど、つながったらおくるね', 'info');
-      startCooldown();
       return;
     }
 
     // Edge Function呼び出し
     callBtn.disabled = true;
+    reasonBtns.forEach(btn => btn.disabled = true);
     showStatus('おくっているよ...', 'info');
 
     try {
@@ -319,7 +315,7 @@
           'apikey': SUPABASE_KEY
         },
         body: JSON.stringify({
-          child_id: state.childId,
+          child_id: state.childId || '',
           child_name: state.childName || '',
           reason: reason || null,
           device_id: localStorage.getItem('push_device_id') || ''
@@ -333,9 +329,7 @@
         localStorage.setItem(CURRENT_CALL_KEY, data.call_id);
         subscribeChannel(data.call_id);
 
-        if (data.notification_status === 'sent') {
-          showStatus('おくったよ！', 'success');
-        } else if (data.notification_status === 'partial') {
+        if (data.notification_status === 'sent' || data.notification_status === 'partial') {
           showStatus('おくったよ！', 'success');
         } else {
           showStatus('おくったけど、とどかなかったかも', 'info');
@@ -343,7 +337,6 @@
       } else if (res.status === 429) {
         showStatus('まだおくれないよ。すこしまってね', 'info');
       } else if (res.status === 401) {
-        // JWT期限切れ → 再認証してリトライ
         await ensureAuthSession();
         showStatus('おくれなかったよ。もういちどおしてね', 'error');
       } else {
@@ -352,7 +345,7 @@
     } catch (e) {
       if (!navigator.onLine) {
         offlineQueue.push({
-          child_id: state.childId,
+          child_id: state.childId || '',
           child_name: state.childName || '',
           reason: reason || null,
           device_id: localStorage.getItem('push_device_id') || '',
@@ -364,7 +357,9 @@
       }
     }
 
-    startCooldown();
+    // ボタン即再有効化（クールダウンなし）
+    callBtn.disabled = false;
+    reasonBtns.forEach(btn => btn.disabled = false);
   }
 
   // ============================================================
@@ -398,34 +393,6 @@
     } catch (e) {
       // リトライは次のonlineイベントで
     }
-  }
-
-  // ============================================================
-  // クールダウン
-  // ============================================================
-
-  function startCooldown() {
-    state.cooldownRemaining = COOLDOWN_SEC;
-    callBtn.disabled = true;
-    reasonBtns.forEach(btn => btn.disabled = true);
-    updateCooldownDisplay();
-
-    state.cooldownInterval = setInterval(() => {
-      state.cooldownRemaining--;
-      if (state.cooldownRemaining <= 0) {
-        clearInterval(state.cooldownInterval);
-        state.cooldownInterval = null;
-        callBtn.disabled = false;
-        reasonBtns.forEach(btn => btn.disabled = false);
-        callBtn.innerHTML = '&#x1F514;';
-      } else {
-        updateCooldownDisplay();
-      }
-    }, 1000);
-  }
-
-  function updateCooldownDisplay() {
-    callBtn.textContent = `${state.cooldownRemaining}`;
   }
 
   // ============================================================
