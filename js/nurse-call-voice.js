@@ -81,17 +81,24 @@
     } catch (e) {}
 
     // シグナリングチャネル購読
-    const channelName = `nurse-call:${childId}:${callId}`;
+    // nurse-call.jsが同名チャネルを既に使っている可能性があるのでユニーク名にする
+    const channelName = `nurse-voice:${childId}:${callId}`;
     voiceState.channel = client.channel(channelName);
 
-    voiceState.channel
-      .on('broadcast', { event: 'voice_state' }, (payload) => {
-        handleVoiceStateEvent(payload.payload);
-      })
-      .on('broadcast', { event: 'signal' }, (payload) => {
-        handleSignalEvent(payload.payload);
-      })
-      .subscribe();
+    await new Promise((resolve) => {
+      voiceState.channel
+        .on('broadcast', { event: 'voice_state' }, (payload) => {
+          handleVoiceStateEvent(payload.payload);
+        })
+        .on('broadcast', { event: 'signal' }, (payload) => {
+          handleSignalEvent(payload.payload);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') resolve();
+        });
+      // タイムアウト: 5秒以内にsubscribeできなくても続行
+      setTimeout(resolve, 5000);
+    });
   }
 
   // ============================================================
@@ -115,8 +122,14 @@
 
     if (!voiceState.stateMachine.transition('ringing')) return false;
 
-    // broadcast ringing（相手に着信通知）
+    // broadcast ringing（相手に着信通知）+ リトライ
     broadcastVoiceState('ringing');
+    // 2秒後にリトライ（相手がまだsubscribeしていない場合に備えて）
+    setTimeout(() => {
+      if (voiceState.stateMachine.getState() === 'ringing') {
+        broadcastVoiceState('ringing');
+      }
+    }, 2000);
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
 
@@ -325,7 +338,7 @@
         type: 'broadcast',
         event: 'voice_state',
         payload: { state, call_id: voiceState.callId }
-      });
+      }).catch(() => {});
     }
   }
 
@@ -335,7 +348,7 @@
         type: 'broadcast',
         event: 'signal',
         payload: { signal_type: signalType, sdp: sdp || null, candidate: candidate || null }
-      });
+      }).catch(() => {});
     }
   }
 
