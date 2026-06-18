@@ -85,18 +85,27 @@
       message_text: trimmed
     });
 
-    // 子供からのメッセージ時、1分以上経過ならPush通知
+    // 子供からのメッセージ時、1分以上経過ならPush即時通知
     if (chatState.senderRole === 'child') {
       const lastNotify = parseInt(localStorage.getItem(CHAT_NOTIFY_KEY) || '0');
       if (Date.now() - lastNotify > CHAT_NOTIFY_INTERVAL) {
         localStorage.setItem(CHAT_NOTIFY_KEY, String(Date.now()));
-        // push_messagesキューに追加（5分毎のcronで配信）
+        // Edge Function経由で即時Push配信
         try {
-          await client.from('push_messages').insert({
-            title: '💬 チャット',
-            body: trimmed.slice(0, 100),
-            target_role: 'admin',
-            target_child_name: null
+          const token = window.NurseCall?.getAccessToken?.() || '';
+          await fetch(`${SUPABASE_URL}/functions/v1/push-nurse-call`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({
+              child_id: chatState.childId || '',
+              child_name: localStorage.getItem('nurse_call_child_name') || '',
+              reason: '💬 ' + trimmed.slice(0, 50),
+              device_id: localStorage.getItem('push_device_id') || ''
+            })
           });
         } catch(e) {}
       }
