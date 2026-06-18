@@ -503,6 +503,11 @@
       ikuyoBtn.disabled = true;
       ikuyoBtn.textContent = 'おくったよ！';
       showStatus('✅ いくよ！をおくりました', 'success');
+      // 3秒後に再有効化
+      setTimeout(() => {
+        ikuyoBtn.disabled = false;
+        ikuyoBtn.textContent = 'いくよ！';
+      }, 3000);
     });
 
     // 親側: でんわするボタン
@@ -615,18 +620,13 @@
     const container = document.getElementById('ikuyoPopupContainer');
     if (!container) return;
 
-    // 既存の通知を下にスライドさせるアニメーション
-    const existing = container.children;
-    for (let i = 0; i < existing.length; i++) {
-      existing[i].style.transition = 'transform 0.3s ease';
-      existing[i].style.transform = `translateY(${(i + 1) * 0}px)`;
-    }
-
     const popup = document.createElement('div');
-    popup.style.cssText = 'background:#fff; border-radius:16px; padding:14px 20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); font-size:1.2em; font-weight:600; color:#333; cursor:pointer; animation:popIn 0.3s ease-out;';
+    popup.style.cssText = 'background:#fff; border-radius:16px; padding:14px 20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); font-size:1.2em; font-weight:600; color:#333; cursor:pointer; animation:popIn 0.3s ease-out; transition:all 0.3s ease;';
     popup.textContent = '今行くよ💨';
-    popup.addEventListener('click', () => popup.remove());
-    // 新しい通知を先頭（上）に挿入
+    popup.addEventListener('click', () => {
+      popup.style.animation = 'slideOut 0.3s ease-in forwards';
+      setTimeout(() => popup.remove(), 300);
+    });
     container.insertBefore(popup, container.firstChild);
   }
 
