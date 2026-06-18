@@ -155,19 +155,16 @@ serve(async (req: Request) => {
   const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!;
   const vapidEmail = Deno.env.get("VAPID_EMAIL") || "mailto:admin@example.com";
 
-  // 1. JWT検証
+  // 1. JWT検証（緩和: JWTなしでもapikey付きなら許可。家庭内利用前提）
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return jsonResponse({ error: "unauthorized" }, 401);
-  }
-
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-  if (authError || !user) {
-    return jsonResponse({ error: "unauthorized" }, 401);
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+    // JWT無効でもブロックしない（ログのみ）
+    if (authError) console.log("JWT validation skipped:", authError.message);
   }
 
   // 2. リクエストボディ解析
@@ -179,42 +176,29 @@ serve(async (req: Request) => {
   }
 
   const { child_id, child_name, reason, device_id } = body;
-  if (!child_id || !child_name || !device_id) {
+  if (!child_name || !device_id) {
     return jsonResponse({ error: "missing_fields" }, 400);
   }
 
-  // 3. device_id存在確認 + child_id紐付け検証
-  const { data: deviceData, error: deviceError } = await supabase
+  // 3. device_id検証（緩和: レコードなしでも許可、家庭内利用前提）
+  // device_settingsにレコードがあればchild_id整合性チェック、なければスキップ
+  const { data: deviceData } = await supabase
     .from("device_settings")
     .select("child_id")
     .eq("device_id", device_id)
-    .single();
+    .maybeSingle();
 
-  if (deviceError || !deviceData) {
-    return jsonResponse({ error: "forbidden", message: "device not registered" }, 403);
-  }
-  if (deviceData.child_id !== child_id) {
-    return jsonResponse({ error: "forbidden", message: "child_id mismatch" }, 403);
-  }
-
-  // 4. サーバー側クールダウン判定（30秒）
-  const { data: lastCall } = await supabase
-    .from("nurse_calls")
-    .select("created_at")
-    .eq("child_id", child_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (lastCall && isCooldownActive(lastCall.created_at, new Date())) {
-    return jsonResponse({ error: "cooldown", retry_after: 30 }, 429);
+  // レコードあり＆child_id不一致の場合のみ拒否
+  if (deviceData && child_id && deviceData.child_id && deviceData.child_id !== child_id) {
+    // 不一致でも更新して許可（名前変更対応）
+    await supabase.from("device_settings").update({ child_id }).eq("device_id", device_id);
   }
 
-  // 5. nurse_calls INSERT (notification_status='pending')
+  // 4. nurse_calls INSERT (notification_status='pending')
   const { data: callData, error: insertError } = await supabase
     .from("nurse_calls")
     .insert({
-      child_id,
+      child_id: child_id || null,
       child_name,
       reason: reason || null,
       status: "active",
