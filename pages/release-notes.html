@@ -36,6 +36,41 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v1.99.3</span><span class="date">2026/06/11</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> Push通知配信をSupabase Edge Functions + pg_cronに移行（GitHub Actions cron遅延問題を解決）</li>
+    <li><span class="tag tag-fix">fix</span> VAPID鍵変更時に自動で再購読する処理を追加</li>
+    <li><span class="tag tag-fix">fix</span> Service WorkerのPushハンドラを二重エンコード対策で強化</li>
+    <li><span class="tag tag-fix">fix</span> SCP-1344-JPのタイトルを修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.99.2</span><span class="date">2026/06/10</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 全員アクセス可能に変更（管理者メモ・ドキュメントタブはadminのみ表示）</li>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 管理者メモの「みんなに公開」機能（メモ単位で一時公開）</li>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: ドキュメントの「みんなに公開」機能（ファイル単位で一時公開）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.99.1</span><span class="date">2026/06/10</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 管理者専用ページに変更（admin以外はアクセス不可）</li>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 管理者メモタブ追加（通常メモと分離）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v1.99.0</span><span class="date">2026/06/10</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 共有メモの作成・編集・削除機能</li>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: リポジトリ内マークダウンファイルの閲覧機能</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.98.2</span><span class="date">2026/06/10</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> チケット予約ダイアログのデフォルト日付をJST基準に修正（深夜に前日が表示される問題）</li>
