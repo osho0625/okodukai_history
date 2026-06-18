@@ -125,6 +125,49 @@
             .eq('id', data.child_id)
             .single();
           if (childData) state.childName = childData.name;
+        } else {
+          // device_settingsにレコードなし → 子供一覧から最初の子供を使用
+          // (家庭内利用なので子供が1-2人の想定)
+          const { data: children } = await client.from('children')
+            .select('id, name')
+            .order('sort_order', { ascending: true });
+          if (children && children.length > 0) {
+            // 子供が1人ならそのまま使う、複数ならpush_subscriptionsのchild_nameで照合
+            const pushSub = await client.from('push_subscriptions')
+              .select('child_name')
+              .eq('device_id', deviceId)
+              .single();
+            const matched = pushSub?.data?.child_name
+              ? children.find(c => c.name === pushSub.data.child_name)
+              : null;
+            const child = matched || children[0];
+            state.childId = child.id;
+            state.childName = child.name;
+            // device_settingsに自動登録
+            await client.from('device_settings').upsert({
+              device_id: deviceId,
+              child_id: child.id,
+              nurse_call_mode: false,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'device_id' });
+          }
+        }
+      } else {
+        // push_device_idもない → 生成してchildrenから取得
+        let newDeviceId = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+        localStorage.setItem('push_device_id', newDeviceId);
+        const { data: children } = await client.from('children')
+          .select('id, name')
+          .order('sort_order', { ascending: true });
+        if (children && children.length > 0) {
+          state.childId = children[0].id;
+          state.childName = children[0].name;
+          await client.from('device_settings').upsert({
+            device_id: newDeviceId,
+            child_id: children[0].id,
+            nurse_call_mode: false,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'device_id' });
         }
       }
     }
