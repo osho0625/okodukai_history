@@ -510,18 +510,9 @@ h2 .toggle.open { transform: rotate(90deg); }
         <span style="font-weight:600;">ナースコール機能を有効にする</span>
       </label>
     </div>
-    <div id="nurseCallDevices" style="margin-bottom:16px;">
+    <div id="nurseCallDevices">
       <div style="font-weight:600; margin-bottom:8px;">デバイスロック（おやすみモード）</div>
       <div id="nurseCallDeviceList" style="color:#999;">読み込み中...</div>
-    </div>
-    <div style="margin-bottom:16px;">
-      <div style="font-weight:600; margin-bottom:8px;">対象の子供</div>
-      <div id="nurseCallChildTargets">読み込み中...</div>
-    </div>
-    <div>
-      <div style="font-weight:600; margin-bottom:8px;">通知先の制限</div>
-      <p style="font-size:0.8em; color:#999; margin-bottom:8px;">空欄の場合はadmin全端末に通知</p>
-      <div id="nurseCallNotifyTargets">読み込み中...</div>
     </div>
   </div>
 </div>
@@ -1978,9 +1969,8 @@ loadScpOverride();
 
 // --- ナースコール管理 ---
 async function loadNurseCallAdmin() {
-  // 設定読み込み
   const { data: settings } = await client.from('game_settings')
-    .select('nurse_call_enabled, nurse_call_child_ids, nurse_call_notify_targets')
+    .select('nurse_call_enabled')
     .eq('id', 1).single();
 
   const enabledCb = document.getElementById('nurseCallEnabled');
@@ -2015,21 +2005,6 @@ async function loadNurseCallAdmin() {
       </div>`;
     }).join('');
   }
-
-  // 対象子供
-  const targetChildIds = settings?.nurse_call_child_ids || [];
-  const childTargetsEl = document.getElementById('nurseCallChildTargets');
-  childTargetsEl.innerHTML = (children || []).map(c => {
-    const checked = targetChildIds.length === 0 || targetChildIds.includes(c.id);
-    return `<label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer;">
-      <input type="checkbox" class="nc-child-target" data-id="${c.id}" ${checked ? 'checked' : ''} style="width:18px; height:18px;">
-      <span>${c.name}</span>
-    </label>`;
-  }).join('');
-
-  document.querySelectorAll('.nc-child-target').forEach(cb => {
-    cb.addEventListener('change', saveNurseCallChildTargets);
-  });
 }
 
 async function toggleNurseCallMode(deviceId, newMode) {
@@ -2037,17 +2012,6 @@ async function toggleNurseCallMode(deviceId, newMode) {
     .update({ nurse_call_mode: newMode, updated_at: new Date().toISOString() })
     .eq('device_id', deviceId);
   loadNurseCallAdmin();
-}
-
-async function saveNurseCallChildTargets() {
-  const checked = [...document.querySelectorAll('.nc-child-target:checked')].map(el => el.dataset.id);
-  const { data: allChildren } = await client.from('children').select('id');
-  const allIds = (allChildren || []).map(c => c.id);
-  // 全選択 = null (制限なし)
-  const value = checked.length === allIds.length ? null : checked;
-  await client.from('game_settings')
-    .update({ nurse_call_child_ids: value })
-    .eq('id', 1);
 }
 
 loadNurseCallAdmin();
