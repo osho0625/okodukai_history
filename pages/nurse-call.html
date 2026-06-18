@@ -26,291 +26,250 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
-.back { color: #333; text-decoration: none; font-size: 1.6em; padding: 8px 12px; }
+.back { color: #333; text-decoration: none; font-size: 1.6em; padding: 8px 12px; cursor:pointer; }
 .home-link { color: #333; text-decoration: none; font-size: 1.4em; padding: 8px 12px; }
-.mode-badge {
-  background: #ff7043;
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8em;
-  font-weight: 600;
-  display: none;
-}
-.call-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  margin-top: 20px;
-  width: 100%;
-  max-width: 400px;
-}
+.mode-badge { background: #ff7043; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 600; display: none; }
+
+/* ビュー切り替え */
+.view { display: none; width: 100%; max-width: 420px; flex-direction: column; align-items: center; }
+.view.active { display: flex; }
+
+/* ホームビュー */
 .call-btn {
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(145deg, #e53935, #c62828);
-  color: #fff;
-  font-size: 5em;
-  font-weight: 700;
-  cursor: pointer;
+  width: 220px; height: 220px; border-radius: 50%; border: none;
+  background: linear-gradient(145deg, #e53935, #c62828); color: #fff;
+  font-size: 4.5em; cursor: pointer;
   box-shadow: 0 8px 24px rgba(229,57,53,0.4);
-  transition: transform 0.1s, box-shadow 0.1s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: transform 0.1s;
+  display: flex; align-items: center; justify-content: center;
 }
-.call-btn:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 4px 12px rgba(229,57,53,0.3); }
-.call-btn:disabled {
-  background: linear-gradient(145deg, #bdbdbd, #9e9e9e);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  cursor: not-allowed;
-}
-.action-icon-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid #ff8a65;
-  background: #fff;
-  font-size: 1.5em;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: transform 0.1s, background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.action-icon-btn:active { transform: scale(0.9); background: #fff3e0; }
-.reason-btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 100%;
-}
-.reason-btn {
-  padding: 14px 8px;
-  border: 2px solid #ff8a65;
-  border-radius: 12px;
-  background: #fff;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
+.call-btn:active:not(:disabled) { transform: scale(0.93); }
+.call-btn:disabled { background: linear-gradient(145deg, #bdbdbd, #9e9e9e); box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: not-allowed; }
+.reason-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 16px; }
+.reason-btn { padding: 14px 8px; border: 2px solid #ff8a65; border-radius: 12px; background: #fff; font-size: 1em; cursor: pointer; transition: background 0.2s, transform 0.1s; }
 .reason-btn:active:not(:disabled) { background: #ff8a65; color: #fff; transform: scale(0.95); }
 .reason-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.nav-icons { display: flex; gap: 20px; margin-top: 16px; }
+.nav-icon-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #ff8a65; background: #fff; font-size: 1.6em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.1s; }
+.nav-icon-btn:active { transform: scale(0.9); }
+.status-msg { text-align: center; font-size: 1.1em; min-height: 2em; padding: 8px; font-weight: 600; margin-top: 8px; }
+.status-msg.success { color: #2e7d32; } .status-msg.error { color: #c62828; } .status-msg.info { color: #f57c00; }
 
-.status-msg {
-  text-align: center;
-  font-size: 1.1em;
-  min-height: 2em;
-  padding: 8px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-.status-msg.success { color: #2e7d32; }
-.status-msg.error { color: #c62828; }
-.status-msg.info { color: #f57c00; }
+/* 応答オーバーレイ */
+.response-overlay { display:none; position:fixed; inset:0; background:rgba(76,175,80,0.95); z-index:1000; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+.response-overlay.visible { display:flex; }
+.response-text { font-size:3em; color:#fff; font-weight:700; }
+.response-sub { font-size:1.2em; color:rgba(255,255,255,0.9); }
 
-.response-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(76,175,80,0.95);
-  z-index: 1000;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-.response-overlay.visible { display: flex; }
-.response-text { font-size: 3em; color: #fff; font-weight: 700; }
-.response-sub { font-size: 1.2em; color: rgba(255,255,255,0.9); }
+/* チャットビュー */
+#chatMessages { background:#fff; border-radius:12px; padding:12px; height:55vh; overflow-y:auto; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:10px; width:100%; }
+.quick-replies { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; width:100%; }
+.quick-reply-btn { padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em; }
+.chat-input-row { display:flex; gap:8px; width:100%; }
+.chat-input-row input { flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1em; }
+.chat-input-row button { padding:12px 18px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer; }
 
-/* 親側UI */
-.parent-section {
-  display: none;
-  width: 100%;
-  max-width: 400px;
-  margin-top: 24px;
-}
-.parent-section.visible { display: block; }
-.parent-btn {
-  width: 100%;
-  padding: 18px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.3em;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 12px;
-  color: #fff;
-}
-.btn-ikuyo { background: #4caf50; }
-.btn-resolve { background: #78909c; }
-.parent-btn:active { transform: scale(0.97); }
+/* 通話ビュー */
+.voice-view-content { background:#fff; border-radius:16px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center; width:100%; }
+.voice-status { font-weight:600; min-height:1.5em; margin-bottom:12px; }
+.voice-status.info { color:#f57c00; } .voice-status.success { color:#2e7d32; } .voice-status.error { color:#c62828; }
+.voice-big-btn { width:100%; padding:20px; border:none; border-radius:14px; font-size:1.3em; font-weight:700; cursor:pointer; margin-bottom:10px; color:#fff; }
+@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
 
-/* チャットエリア（後で実装） */
-.chat-section { display: none; }
-
-/* 音声通話エリア（後で実装） */
-.voice-section { display: none; }
+/* 親側 */
+.parent-section { display:none; width:100%; max-width:400px; margin-top:24px; }
+.parent-section.visible { display:block; }
+.parent-btn { width:100%; padding:18px; border:none; border-radius:12px; font-size:1.3em; font-weight:700; cursor:pointer; margin-bottom:12px; color:#fff; }
+.btn-ikuyo { background:#4caf50; } .btn-resolve { background:#78909c; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <a class="back" href="javascript:history.back()">&#8592;</a>
+  <a class="back" id="backBtn">&#8592;</a>
   <span class="mode-badge" id="modeBadge">おやすみモード中</span>
   <a class="home-link" href="../index.html">&#x1F3E0;</a>
 </div>
 
-<!-- 名前表示（タップで変更） -->
-<div id="nameDisplay" style="text-align:center; margin-bottom:12px; display:none;">
+<!-- 名前表示 -->
+<div id="nameDisplay" style="text-align:center; margin-bottom:8px; display:none;">
   <span id="nameLabel" style="font-size:1.1em; font-weight:600; color:#555; cursor:pointer; border-bottom:2px dashed #ff8a65; padding-bottom:2px;"></span>
-  <span style="font-size:0.8em; color:#999; margin-left:6px;">✏️</span>
+  <span style="font-size:0.8em; color:#999; margin-left:6px; cursor:pointer;">✏️</span>
 </div>
 
-<!-- 名前入力モーダル -->
-<div id="nameOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:900; display:none; align-items:center; justify-content:center;">
+<!-- 名前選択モーダル -->
+<div id="nameOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:900; align-items:center; justify-content:center;">
   <div style="background:#fff; border-radius:16px; padding:24px; width:85%; max-width:360px; text-align:center;">
     <div style="font-size:1.2em; font-weight:700; margin-bottom:16px;">だれがつかう？</div>
     <div id="nameButtons" style="display:flex; flex-direction:column; gap:10px;"></div>
   </div>
 </div>
 
-<div class="call-section" id="callSection">
-  <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:20px;">
-    <button class="call-btn" id="callBtn">&#x1F514;</button>
-    <div style="font-weight:700; color:#c62828; font-size:1.1em;">ヘルプ！</div>
-    <div style="display:flex; gap:16px;">
-      <button class="action-icon-btn" id="chatIconBtn" title="チャット">💬</button>
-      <button class="action-icon-btn" id="phoneIconBtn" title="でんわ">📞</button>
-    </div>
+<!-- ===== ホームビュー ===== -->
+<div class="view active" id="viewHome">
+  <button class="call-btn" id="callBtn">&#x1F514;</button>
+  <div style="font-weight:700; color:#c62828; font-size:1.1em; margin-top:8px;">ヘルプ！</div>
+  <div class="nav-icons">
+    <button class="nav-icon-btn" id="chatIconBtn">💬</button>
+    <button class="nav-icon-btn" id="phoneIconBtn">📞</button>
   </div>
-
   <div class="reason-btns" id="reasonBtns">
     <button class="reason-btn" data-reason="のどかわいた">🥤 のどかわいた</button>
     <button class="reason-btn" data-reason="きもちわるい">🤒 きもちわるい</button>
     <button class="reason-btn" data-reason="トイレ">🚽 トイレ</button>
     <button class="reason-btn" data-reason="はなしたい">💬 はなしたい</button>
   </div>
-
   <div class="status-msg" id="statusMsg"></div>
+  <!-- 親側 -->
+  <div class="parent-section" id="parentSection">
+    <button class="parent-btn btn-ikuyo" id="ikuyoBtn">いくよ！</button>
+    <button class="parent-btn btn-resolve" id="resolveBtn">対応完了</button>
+  </div>
 </div>
 
-<!-- 親側: いくよ + 対応完了 -->
-<div class="parent-section" id="parentSection">
-  <button class="parent-btn btn-ikuyo" id="ikuyoBtn">いくよ！</button>
-  <button class="parent-btn btn-resolve" id="resolveBtn">対応完了</button>
+<!-- ===== チャットビュー ===== -->
+<div class="view" id="viewChat">
+  <div style="font-weight:700; font-size:1.2em; margin-bottom:12px;">💬 チャット</div>
+  <div id="chatMessages"></div>
+  <div class="quick-replies" id="quickReplies" style="display:none;">
+    <button class="quick-reply-btn" data-key="ok">😊 だいじょうぶ</button>
+    <button class="quick-reply-btn" data-key="thanks">🙏 ありがとう</button>
+    <button class="quick-reply-btn" data-key="still_sick">😢 まだつらい</button>
+    <button class="quick-reply-btn" data-key="hungry">🍙 おなかすいた</button>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500">
+    <button id="chatSendBtn">送信</button>
+  </div>
 </div>
 
-<!-- いくよ応答オーバーレイ -->
+<!-- ===== 通話ビュー ===== -->
+<div class="view" id="viewPhone">
+  <div style="font-weight:700; font-size:1.2em; margin-bottom:16px;">📞 でんわ</div>
+  <div class="voice-view-content">
+    <div id="voiceStatus" class="voice-status"></div>
+    <div id="voiceTimer" style="display:none; font-size:2.2em; font-weight:700; color:#333; margin-bottom:16px;">0:00</div>
+    <button id="voiceCallBtn" class="voice-big-btn" style="background:#4caf50;">📞 でんわする</button>
+    <button id="voiceAcceptBtn" class="voice-big-btn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 でんわにでる</button>
+    <button id="voiceEndBtn" class="voice-big-btn" style="display:none; background:#e53935;">きる</button>
+    <audio id="voiceRemoteAudio" autoplay></audio>
+  </div>
+</div>
+
+<!-- 応答オーバーレイ -->
 <div class="response-overlay" id="responseOverlay">
   <div class="response-text">いくよ！</div>
   <div class="response-sub">もうすぐいくからね</div>
 </div>
 
-<!-- チャット -->
-<div class="chat-section" id="chatSection" style="display:none; width:100%; max-width:400px; margin-top:20px;">
-  <div style="font-weight:600; margin-bottom:8px; color:#555;">💬 チャット</div>
-  <div id="chatMessages" style="background:#fff; border-radius:12px; padding:12px; height:250px; overflow-y:auto; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:10px;"></div>
-  <div id="quickReplies" style="display:none; margin-bottom:8px;">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-      <button class="quick-reply-btn" data-key="ok" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">😊 だいじょうぶ</button>
-      <button class="quick-reply-btn" data-key="thanks" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">🙏 ありがとう</button>
-      <button class="quick-reply-btn" data-key="still_sick" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">😢 まだつらい</button>
-      <button class="quick-reply-btn" data-key="hungry" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">🍙 おなかすいた</button>
-    </div>
-  </div>
-  <div style="display:flex; gap:8px;">
-    <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
-    <button id="chatSendBtn" style="padding:12px 18px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
-  </div>
-</div>
-
-<!-- 音声通話 -->
-<div class="voice-section" id="voiceSection" style="display:none; width:100%; max-width:400px; margin-top:20px;">
-  <div style="font-weight:600; margin-bottom:8px; color:#555;">📞 でんわ</div>
-  <div style="background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center;">
-    <div id="voiceStatus" class="voice-status" style="margin-bottom:12px; font-weight:600; min-height:1.5em;"></div>
-    <div id="voiceTimer" style="display:none; font-size:1.8em; font-weight:700; color:#333; margin-bottom:12px;">0:00</div>
-    <button id="voiceStartBtn" style="display:none; width:100%; padding:16px; border:none; border-radius:12px; background:#4caf50; color:#fff; font-size:1.2em; font-weight:700; cursor:pointer; margin-bottom:8px;">📞 でんわする</button>
-    <button id="voiceAcceptBtn" style="display:none; width:100%; padding:20px; border:none; border-radius:16px; background:#4caf50; color:#fff; font-size:1.4em; font-weight:700; cursor:pointer; margin-bottom:8px; animation: pulse 1.5s infinite;">📞 でんわにでる</button>
-    <button id="voiceEndBtn" style="display:none; width:100%; padding:16px; border:none; border-radius:12px; background:#e53935; color:#fff; font-size:1.2em; font-weight:700; cursor:pointer;">きる</button>
-    <audio id="voiceRemoteAudio" autoplay></audio>
-  </div>
-</div>
-<style>
-@keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
-.voice-status.info { color:#f57c00; }
-.voice-status.success { color:#2e7d32; }
-.voice-status.error { color:#c62828; }
-</style>
-
 <script src="../js/nurse-call-chat.js"></script>
 <script src="../js/nurse-call-voice.js"></script>
 <script src="../js/nurse-call.js"></script>
 <script>
-// チャット＋音声通話UI初期化（nurse-call.js init完了後）
+// ビュー切り替え
+let currentView = 'viewHome';
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  currentView = viewId;
+}
+
+// 戻るボタン
+document.getElementById('backBtn').addEventListener('click', () => {
+  if (currentView !== 'viewHome') {
+    switchView('viewHome');
+  } else {
+    history.back();
+  }
+});
+
+// ナビアイコン
+document.getElementById('chatIconBtn').addEventListener('click', () => switchView('viewChat'));
+document.getElementById('phoneIconBtn').addEventListener('click', () => {
+  switchView('viewPhone');
+  // 子供が📞タップ → 自動で発信（LINE風）
+  const state = window.NurseCall?.state;
+  if (state && !state.isParent) {
+    initiateCallFromChild();
+  }
+});
+
+// 子供から電話をかける（LINE風: 自動接続 + 親にPush通知）
+async function initiateCallFromChild() {
+  const state = window.NurseCall?.state;
+  if (!state?.childId) return;
+
+  document.getElementById('voiceStatus').textContent = 'よびだし中...';
+  document.getElementById('voiceStatus').className = 'voice-status info';
+  document.getElementById('voiceCallBtn').style.display = 'none';
+  document.getElementById('voiceEndBtn').style.display = 'block';
+
+  // Push通知で親に電話を知らせる
+  try {
+    const token = window.NurseCall?.getAccessToken?.() || '';
+    await fetch(`${SUPABASE_URL}/functions/v1/push-nurse-call`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({
+        child_id: state.childId,
+        child_name: state.childName || '',
+        reason: 'でんわしたい📞',
+        device_id: localStorage.getItem('push_device_id') || ''
+      })
+    });
+  } catch(e) {}
+
+  // WebRTC: 子供側は発信者として接続開始
+  if (window.NurseCallVoice) {
+    NurseCallVoice.startCall();
+  }
+}
+
+// チャット＋通話初期化
 document.addEventListener('DOMContentLoaded', () => {
-  const checkChat = setInterval(() => {
+  const checkState = setInterval(() => {
     const state = window.NurseCall?.state;
-    if (state && state.callId && state.childId) {
-      clearInterval(checkChat);
+    if (state && state.childId) {
+      clearInterval(checkState);
       const senderRole = state.isParent ? 'parent' : 'child';
+      const callId = state.callId || 'default';
 
       // チャット初期化
-      NurseCallChat.init(state.callId, state.childId, senderRole);
-      document.getElementById('chatSection').style.display = 'block';
-
-      if (!state.isParent) {
-        document.getElementById('quickReplies').style.display = 'block';
-      }
+      NurseCallChat.init(callId, state.childId, senderRole);
+      if (!state.isParent) document.getElementById('quickReplies').style.display = 'grid';
 
       document.querySelectorAll('.quick-reply-btn').forEach(btn => {
         btn.addEventListener('click', () => NurseCallChat.sendQuickReply(btn.dataset.key));
       });
-
       document.getElementById('chatSendBtn').addEventListener('click', () => {
         const input = document.getElementById('chatInput');
-        if (input.value.trim()) {
-          NurseCallChat.sendMessage(input.value);
-          input.value = '';
-        }
+        if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
       });
-
       document.getElementById('chatInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.isComposing) {
-          e.preventDefault();
-          document.getElementById('chatSendBtn').click();
-        }
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('chatSendBtn').click(); }
       });
 
       // 音声通話初期化
-      NurseCallVoice.init(state.callId, state.childId, senderRole);
-      document.getElementById('voiceSection').style.display = 'block';
+      NurseCallVoice.init(callId, state.childId, senderRole);
 
-      // 親側: でんわするボタン表示
-      if (state.isParent) {
-        document.getElementById('voiceStartBtn').style.display = 'block';
+      // 通話ボタン
+      document.getElementById('voiceCallBtn').addEventListener('click', () => {
+        if (state.isParent) {
+          NurseCallVoice.startCall();
+        } else {
+          initiateCallFromChild();
+        }
+      });
+      document.getElementById('voiceAcceptBtn').addEventListener('click', () => NurseCallVoice.acceptCall());
+      document.getElementById('voiceEndBtn').addEventListener('click', () => NurseCallVoice.endCall());
+
+      // 親が通知タップで通話ビューに来た場合のURL判定
+      const params = new URLSearchParams(location.search);
+      if (params.get('mode') === 'phone') {
+        switchView('viewPhone');
       }
-
-      document.getElementById('voiceStartBtn')?.addEventListener('click', () => NurseCallVoice.startCall());
-      document.getElementById('voiceAcceptBtn')?.addEventListener('click', () => NurseCallVoice.acceptCall());
-      document.getElementById('voiceEndBtn')?.addEventListener('click', () => NurseCallVoice.endCall());
-
-      // アイコンボタン: 💬チャットへスクロール、📞電話開始
-      document.getElementById('chatIconBtn')?.addEventListener('click', () => {
-        document.getElementById('chatSection').scrollIntoView({ behavior: 'smooth' });
-      });
-      document.getElementById('phoneIconBtn')?.addEventListener('click', () => {
-        NurseCallVoice.startCall();
-        document.getElementById('voiceSection').scrollIntoView({ behavior: 'smooth' });
-      });
     }
   }, 500);
 });

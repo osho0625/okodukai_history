@@ -507,6 +507,7 @@
     isCacheValid,
     shouldRedirect,
     offlineQueue,
+    getAccessToken,
     state
   };
 
