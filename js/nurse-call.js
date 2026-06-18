@@ -123,6 +123,7 @@
         state.childName = data?.name || '';
       }
       initParentMode();
+      await continueInit();
     } else {
       // 子供側: 名前ベースで特定
       const savedName = localStorage.getItem(NURSE_CALL_NAME_KEY);
