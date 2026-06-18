@@ -536,6 +536,56 @@
       resolveBtn.textContent = '完了しました';
       localStorage.removeItem(CURRENT_CALL_KEY);
     });
+
+    // 親側: 電話着信ハンドリング
+    if (state.channel) {
+      state.channel.on('broadcast', { event: 'voice_state' }, (payload) => {
+        const msg = payload.payload;
+        if (msg.state === 'ringing') {
+          // 子供から着信 → 「でんわにでる」表示
+          const acceptBtn = document.getElementById('parentAcceptCallBtn');
+          const statusEl = document.getElementById('parentVoiceStatus');
+          if (acceptBtn) acceptBtn.style.display = 'block';
+          if (statusEl) statusEl.textContent = '📳 でんわがきています...';
+        }
+        if (msg.state === 'ended') {
+          const acceptBtn = document.getElementById('parentAcceptCallBtn');
+          const endBtn = document.getElementById('parentEndCallBtn');
+          const statusEl = document.getElementById('parentVoiceStatus');
+          if (acceptBtn) acceptBtn.style.display = 'none';
+          if (endBtn) endBtn.style.display = 'none';
+          if (statusEl) statusEl.textContent = '';
+        }
+      });
+    }
+
+    // でんわにでるボタン
+    const parentAcceptBtn = document.getElementById('parentAcceptCallBtn');
+    if (parentAcceptBtn) {
+      parentAcceptBtn.addEventListener('click', async () => {
+        parentAcceptBtn.style.display = 'none';
+        const endBtn = document.getElementById('parentEndCallBtn');
+        const statusEl = document.getElementById('parentVoiceStatus');
+        if (endBtn) endBtn.style.display = 'block';
+        if (statusEl) statusEl.textContent = '📞 つうわ中...';
+        // 音声通話初期化＆応答
+        if (window.NurseCallVoice) {
+          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
+          await NurseCallVoice.acceptCall();
+        }
+      });
+    }
+
+    // きるボタン
+    const parentEndBtn = document.getElementById('parentEndCallBtn');
+    if (parentEndBtn) {
+      parentEndBtn.addEventListener('click', () => {
+        parentEndBtn.style.display = 'none';
+        const statusEl = document.getElementById('parentVoiceStatus');
+        if (statusEl) statusEl.textContent = '';
+        if (window.NurseCallVoice) NurseCallVoice.endCall();
+      });
+    }
   }
 
   // ============================================================
