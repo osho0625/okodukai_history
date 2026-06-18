@@ -82,7 +82,6 @@
   const responseOverlay = document.getElementById('responseOverlay');
   const parentSection = document.getElementById('parentSection');
   const ikuyoBtn = document.getElementById('ikuyoBtn');
-  const resolveBtn = document.getElementById('resolveBtn');
   const modeBadge = document.getElementById('modeBadge');
 
   // ============================================================
@@ -474,7 +473,6 @@
     if (!state.callId) {
       showStatus('よびだしはまだないよ', 'info');
       ikuyoBtn.disabled = true;
-      resolveBtn.disabled = true;
       // Realtimeで新しい呼び出しを待機（全active callのチャネル）
       pollForNewCalls();
       return;
@@ -508,26 +506,22 @@
       showStatus('✅ いくよ！をおくりました', 'success');
     });
 
-    resolveBtn.addEventListener('click', async () => {
-      // DB更新
-      await client.from('nurse_calls')
-        .update({ status: 'resolved' })
-        .eq('id', state.callId);
-
-      // Realtime通知
-      const channelName = buildChannelName(state.childId, state.callId);
-      const channel = client.channel(channelName);
-      await channel.subscribe();
-      await channel.send({
-        type: 'broadcast',
-        event: 'session',
-        payload: { action: 'resolved' }
+    // 親側: でんわするボタン
+    const parentCallBtn = document.getElementById('parentCallBtn');
+    if (parentCallBtn) {
+      parentCallBtn.addEventListener('click', async () => {
+        parentCallBtn.style.display = 'none';
+        const endBtn = document.getElementById('parentEndCallBtn');
+        const statusEl = document.getElementById('parentVoiceStatus');
+        if (endBtn) endBtn.style.display = 'block';
+        if (statusEl) statusEl.textContent = '📳 よびだし中...';
+        // 音声通話初期化＆発信
+        if (window.NurseCallVoice) {
+          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
+          await NurseCallVoice.startCall();
+        }
       });
-
-      resolveBtn.disabled = true;
-      resolveBtn.textContent = '完了しました';
-      localStorage.removeItem(CURRENT_CALL_KEY);
-    });
+    }
 
     // 親側: 電話着信ハンドリング
     if (state.channel) {
@@ -538,6 +532,7 @@
           const acceptBtn = document.getElementById('parentAcceptCallBtn');
           const statusEl = document.getElementById('parentVoiceStatus');
           if (acceptBtn) acceptBtn.style.display = 'block';
+          if (parentCallBtn) parentCallBtn.style.display = 'none';
           if (statusEl) statusEl.textContent = '📳 でんわがきています...';
         }
         if (msg.state === 'ended') {
@@ -546,6 +541,7 @@
           const statusEl = document.getElementById('parentVoiceStatus');
           if (acceptBtn) acceptBtn.style.display = 'none';
           if (endBtn) endBtn.style.display = 'none';
+          if (parentCallBtn) parentCallBtn.style.display = 'block';
           if (statusEl) statusEl.textContent = '';
         }
       });
@@ -573,6 +569,7 @@
     if (parentEndBtn) {
       parentEndBtn.addEventListener('click', () => {
         parentEndBtn.style.display = 'none';
+        if (parentCallBtn) parentCallBtn.style.display = 'block';
         const statusEl = document.getElementById('parentVoiceStatus');
         if (statusEl) statusEl.textContent = '';
         if (window.NurseCallVoice) NurseCallVoice.endCall();
@@ -599,7 +596,6 @@
         state.callId = data.id;
         showStatus(`📳 ${data.child_name}からよばれています`, 'info');
         ikuyoBtn.disabled = false;
-        resolveBtn.disabled = false;
         subscribeChannel(data.id);
       }
     }, 5000); // 5秒毎にチェック
