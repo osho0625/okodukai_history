@@ -302,6 +302,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // 音声通話初期化
       NurseCallVoice.init(callId, state.childId, senderRole);
 
+      // 子供側: 通話接続時に自動で通話ビューに遷移
+      if (!state.isParent) {
+        NurseCallVoice.onStateChange((vState) => {
+          if (vState === 'connected' || vState === 'ringing') {
+            switchView('viewPhone');
+          }
+        });
+      }
+
       // 通話ボタン
       document.getElementById('voiceCallBtn').addEventListener('click', () => {
         if (state.isParent) {
