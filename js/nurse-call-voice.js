@@ -81,8 +81,8 @@
     } catch (e) {}
 
     // シグナリングチャネル購読
-    // nurse-call.jsが同名チャネルを既に使っている可能性があるのでユニーク名にする
-    const channelName = `nurse-voice:${childId}:${callId}`;
+    // 家庭内利用: 固定チャネル名（同時通話は1つだけ）
+    const channelName = `nurse-voice-call`;
     voiceState.channel = client.channel(channelName);
 
     await new Promise((resolve) => {

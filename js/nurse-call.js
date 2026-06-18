@@ -528,30 +528,29 @@
     }
 
     // 親側: 音声チャネルに事前接続（子供からの着信を受信するため）
-    const voiceChannelName = `nurse-voice:${state.childId}:${state.callId || 'default'}`;
+    const voiceChannelName = `nurse-voice-call`;
     const voiceChannel = client.channel(voiceChannelName);
     voiceChannel
-      .on('broadcast', { event: 'voice_state' }, (payload) => {
-        const msg = payload.payload;
-        if (msg.state === 'ringing') {
-          // 子供から着信 → 「でんわにでる」表示
-          const acceptBtn = document.getElementById('parentAcceptCallBtn');
-          const statusEl = document.getElementById('parentVoiceStatus');
-          if (acceptBtn) acceptBtn.style.display = 'block';
-          if (parentCallBtn) parentCallBtn.style.display = 'none';
-          if (statusEl) statusEl.textContent = '📳 でんわがきています...';
-        }
-        if (msg.state === 'ended') {
-          const acceptBtn = document.getElementById('parentAcceptCallBtn');
-          const endBtn = document.getElementById('parentEndCallBtn');
-          const statusEl = document.getElementById('parentVoiceStatus');
-          if (acceptBtn) acceptBtn.style.display = 'none';
-          if (endBtn) endBtn.style.display = 'none';
-          if (parentCallBtn) parentCallBtn.style.display = 'block';
-          if (statusEl) statusEl.textContent = '';
-        }
-      })
-      .subscribe();
+        .on('broadcast', { event: 'voice_state' }, (payload) => {
+          const msg = payload.payload;
+          if (msg.state === 'ringing') {
+            const acceptBtn = document.getElementById('parentAcceptCallBtn');
+            const statusEl = document.getElementById('parentVoiceStatus');
+            if (acceptBtn) acceptBtn.style.display = 'block';
+            if (parentCallBtn) parentCallBtn.style.display = 'none';
+            if (statusEl) statusEl.textContent = '📳 でんわがきています...';
+          }
+          if (msg.state === 'ended') {
+            const acceptBtn = document.getElementById('parentAcceptCallBtn');
+            const endBtn = document.getElementById('parentEndCallBtn');
+            const statusEl = document.getElementById('parentVoiceStatus');
+            if (acceptBtn) acceptBtn.style.display = 'none';
+            if (endBtn) endBtn.style.display = 'none';
+            if (parentCallBtn) parentCallBtn.style.display = 'block';
+            if (statusEl) statusEl.textContent = '';
+          }
+        })
+        .subscribe();
 
     // でんわにでるボタン
     const parentAcceptBtn = document.getElementById('parentAcceptCallBtn');
