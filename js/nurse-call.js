@@ -193,22 +193,23 @@
     }
   }
 
-  // 名前選択モーダル
-  async function showNamePicker() {
-    const { data: children } = await client.from('children')
-      .select('id, name')
-      .order('sort_order', { ascending: true });
+  // 名前選択モーダル（ハードコード: はるちか、いろは、かいせい）
+  const NURSE_CALL_CHILDREN = [
+    { name: 'はるちか' },
+    { name: 'いろは' },
+    { name: 'かいせい' }
+  ];
 
+  async function showNamePicker() {
     const overlay = document.getElementById('nameOverlay');
     const btnsContainer = document.getElementById('nameButtons');
 
-    btnsContainer.innerHTML = (children || []).map(c =>
-      `<button class="name-pick-btn" data-id="${c.id}" data-name="${c.name}" style="padding:16px; border:2px solid #ff8a65; border-radius:12px; background:#fff; font-size:1.2em; font-weight:600; cursor:pointer;">${c.name}</button>`
+    btnsContainer.innerHTML = NURSE_CALL_CHILDREN.map(c =>
+      `<button class="name-pick-btn" data-name="${c.name}" style="padding:16px; border:2px solid #ff8a65; border-radius:12px; background:#fff; font-size:1.2em; font-weight:600; cursor:pointer;">${c.name}</button>`
     ).join('');
 
     overlay.style.display = 'flex';
 
-    // ボタンクリック
     btnsContainer.querySelectorAll('.name-pick-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const name = btn.dataset.name;
