@@ -389,13 +389,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // 親にPush即時通知
         try {
           const token = window.NurseCall?.getAccessToken?.() || '';
+          const timeStr2 = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
           await fetch(`${SUPABASE_URL}/functions/v1/push-nurse-call`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_KEY },
             body: JSON.stringify({
               child_id: state?.childId || '',
-              child_name: childName,
-              reason: `🌡️ たいおん ${temp}℃`,
+              child_name: `${childName}が体温を測りました`,
+              reason: `${temp}℃（${timeStr2}）`,
               device_id: deviceId
             })
           });

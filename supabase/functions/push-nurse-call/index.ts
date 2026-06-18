@@ -34,6 +34,11 @@ interface PushSubscriptionRow {
 
 export function formatNotificationMessage(childName: string, reason?: string | null): { title: string; body: string } {
   const title = "🔔 ナースコール";
+  // 体温測定の場合: child_nameに「体温を測りました」が含まれる
+  if (childName.includes('体温を測りました')) {
+    const body = reason ? `🌡️ ${childName}（${reason}）` : `🌡️ ${childName}`;
+    return { title, body };
+  }
   const body = reason
     ? `${childName}がよんでいます（${reason}）`
     : `${childName}がよんでいます`;
