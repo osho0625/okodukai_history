@@ -443,7 +443,7 @@
     state.channel
       .on('broadcast', { event: 'response' }, (payload) => {
         const msg = payload.payload;
-        if (msg.action === 'iku_yo') {
+        if (msg.action === 'iku_yo' && !state.isParent) {
           showResponseOverlay();
         }
       })
