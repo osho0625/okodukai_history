@@ -144,9 +144,9 @@ body {
   <!-- 親側 -->
   <div class="parent-section" id="parentSection">
     <button class="btn-ikuyo" id="ikuyoBtn">いくよ！</button>
-    <button class="parent-btn" id="parentCallBtn" style="background:#1976d2;">📞 でんわする</button>
-    <button class="parent-btn" id="parentAcceptCallBtn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 でんわにでる</button>
-    <button class="parent-btn" id="parentEndCallBtn" style="display:none; background:#e53935;">きる</button>
+    <button class="parent-btn" id="parentCallBtn" style="background:#1976d2;">📞 電話する</button>
+    <button class="parent-btn" id="parentAcceptCallBtn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 電話に出る</button>
+    <button class="parent-btn" id="parentEndCallBtn" style="display:none; background:#e53935;">切る</button>
     <div id="parentVoiceStatus" style="text-align:center; font-size:0.9em; color:#999; margin:12px 0;"></div>
     <audio id="voiceRemoteAudio" autoplay></audio>
   </div>
@@ -417,7 +417,7 @@ async function loadTemperatureHistory() {
   const childNames = [...new Set(data.map(r => r.child_name))];
 
   let html = '<div id="tempHistorySection" style="margin-top:20px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">';
-  html += '<div style="font-weight:700; margin-bottom:10px;">🌡️ たいおんの記録</div>';
+  html += '<div style="font-weight:700; margin-bottom:10px;">🌡️ 体温の記録</div>';
 
   // 子供フィルタ
   html += '<div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">';

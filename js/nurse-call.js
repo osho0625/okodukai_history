@@ -470,7 +470,7 @@
 
     // active callがない場合
     if (!state.callId) {
-      showStatus('よびだしはまだないよ', 'info');
+      showStatus('呼び出しはまだありません', 'info');
       ikuyoBtn.disabled = true;
       // Realtimeで新しい呼び出しを待機（全active callのチャネル）
       pollForNewCalls();
@@ -479,7 +479,7 @@
 
     // 呼び出し元の名前を表示
     if (state.childName) {
-      showStatus(`📳 ${state.childName}からよばれています`, 'info');
+      showStatus(`📳 ${state.childName}から呼ばれています`, 'info');
     }
 
     subscribeChannel(state.callId);
@@ -518,7 +518,7 @@
         const endBtn = document.getElementById('parentEndCallBtn');
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
-        if (statusEl) statusEl.textContent = '📳 よびだし中...';
+        if (statusEl) statusEl.textContent = '📳 呼び出し中...';
         // 音声通話初期化＆発信
         if (window.NurseCallVoice) {
           NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
@@ -538,7 +538,7 @@
             const statusEl = document.getElementById('parentVoiceStatus');
             if (acceptBtn) acceptBtn.style.display = 'block';
             if (parentCallBtn) parentCallBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = '📳 でんわがきています...';
+            if (statusEl) statusEl.textContent = '📳 電話がきています...';
           }
           if (msg.state === 'ended') {
             const acceptBtn = document.getElementById('parentAcceptCallBtn');
@@ -599,7 +599,7 @@
         state.childId = data.child_id;
         state.childName = data.child_name;
         state.callId = data.id;
-        showStatus(`📳 ${data.child_name}からよばれています`, 'info');
+        showStatus(`📳 ${data.child_name}から呼ばれています`, 'info');
         ikuyoBtn.disabled = false;
         subscribeChannel(data.id);
       }
