@@ -464,8 +464,19 @@
   // ============================================================
 
   function initParentMode() {
+    // ホームビューを親用に切り替え
+    // 子供用のボタン類を非表示
     document.getElementById('callSection').style.display = 'none';
+    // viewHomeのcallSection以外にボタン等があればhide
+    const callBtn = document.getElementById('callBtn');
+    if (callBtn) callBtn.style.display = 'none';
+    const reasonBtns = document.getElementById('reasonBtns');
+    if (reasonBtns) reasonBtns.style.display = 'none';
+    const navIcons = document.querySelector('.nav-icons');
+    if (navIcons) navIcons.style.display = 'none';
+
     parentSection.classList.add('visible');
+    parentSection.style.display = 'block';
 
     // active callがない場合
     if (!state.callId) {
