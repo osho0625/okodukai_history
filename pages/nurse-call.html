@@ -190,7 +190,7 @@ body {
   </div>
   <div style="font-weight:700; font-size:1.2em; margin-bottom:16px;">🌡️ たいおんけい</div>
   <div style="background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.08); width:100%; text-align:center;">
-    <div id="tempDisplay" style="font-size:3em; font-weight:700; color:#333; margin-bottom:16px; min-height:1.5em;">36.5</div>
+    <div id="tempDisplay" style="font-size:3em; font-weight:700; color:#333; margin-bottom:16px; min-height:1.5em;">--.-</div>
     <div id="tempKeypad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:280px; margin:0 auto;">
       <button class="temp-key" data-val="7">7</button>
       <button class="temp-key" data-val="8">8</button>
@@ -201,9 +201,8 @@ body {
       <button class="temp-key" data-val="1">1</button>
       <button class="temp-key" data-val="2">2</button>
       <button class="temp-key" data-val="3">3</button>
-      <button class="temp-key" data-val=".">.</button>
-      <button class="temp-key" data-val="0">0</button>
-      <button class="temp-key" data-val="del" style="font-size:0.9em;">⌫</button>
+      <button class="temp-key" data-val="0" style="grid-column:span 2;">0</button>
+      <button class="temp-key" data-val="del">⌫</button>
     </div>
     <button id="tempSendBtn" style="width:100%; margin-top:16px; padding:16px; border:none; border-radius:12px; background:#1976d2; color:#fff; font-size:1.2em; font-weight:700; cursor:pointer;">そうしん</button>
     <div id="tempStatus" style="margin-top:8px; font-weight:600; min-height:1.5em;"></div>
@@ -323,28 +322,39 @@ document.addEventListener('DOMContentLoaded', () => {
       // 体温計ボタン → 体温入力ビュー
       document.getElementById('tempBtn')?.addEventListener('click', () => switchView('viewTemp'));
 
-      // テンキーロジック
-      let tempValue = '';
+      // テンキーロジック（3桁入力で自動XX.X形式）
+      let tempDigits = ''; // 数字のみ保持（最大3桁）
       const tempDisplay = document.getElementById('tempDisplay');
+
+      function formatTempDisplay(digits) {
+        if (digits.length === 0) return '--.-';
+        if (digits.length === 1) return digits + '-.-';
+        if (digits.length === 2) return digits + '._';
+        return digits.slice(0, 2) + '.' + digits.slice(2);
+      }
+
       document.querySelectorAll('.temp-key').forEach(key => {
         key.addEventListener('click', () => {
           const val = key.dataset.val;
           if (val === 'del') {
-            tempValue = tempValue.slice(0, -1);
-          } else if (val === '.' && tempValue.includes('.')) {
-            return;
-          } else if (tempValue.length >= 4) {
+            tempDigits = tempDigits.slice(0, -1);
+          } else if (tempDigits.length >= 3) {
             return;
           } else {
-            tempValue += val;
+            tempDigits += val;
           }
-          tempDisplay.textContent = tempValue || '0';
+          tempDisplay.textContent = formatTempDisplay(tempDigits);
         });
       });
 
       // 体温送信
       document.getElementById('tempSendBtn')?.addEventListener('click', async () => {
-        const temp = parseFloat(tempValue);
+        if (tempDigits.length !== 3) {
+          document.getElementById('tempStatus').textContent = '⚠️ 3けたいれてね';
+          document.getElementById('tempStatus').style.color = '#e53935';
+          return;
+        }
+        const temp = parseFloat(tempDigits.slice(0, 2) + '.' + tempDigits.slice(2));
         if (isNaN(temp) || temp < 34 || temp > 42) {
           document.getElementById('tempStatus').textContent = '⚠️ ただしいたいおんをいれてね';
           document.getElementById('tempStatus').style.color = '#e53935';
@@ -384,8 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('tempStatus').textContent = '✅ おくったよ！';
         document.getElementById('tempStatus').style.color = '#2e7d32';
-        tempValue = '';
-        tempDisplay.textContent = '0';
+        tempDigits = '';
+        tempDisplay.textContent = '--.-';
         setTimeout(() => switchView('viewHome'), 1500);
       });
 
