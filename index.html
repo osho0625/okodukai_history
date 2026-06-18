@@ -293,21 +293,22 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 <div id="adminIcons" style="text-align:center; margin-top:16px; display:none; justify-content:center; gap:20px;">
   <a href="#" onclick="goAllowance(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
   <a href="pages/kenka-chat.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F916;</a>
+  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F3E5;</a>
   <a href="#" onclick="openSortModal(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x2699;&#xFE0F;</a>
 </div>
 
+<!-- 非admin用ナースコールアイコン -->
+<div id="userNurseCallIcon" style="text-align:center; margin-top:16px;">
+  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">🏥</a>
+</div>
+
 <script>
-// admin権限ならアイコン表示
+// admin権限ならアイコン表示 + user用ナースコール非表示
 if (localStorage.getItem('deviceRole') === 'admin') {
   document.getElementById('adminIcons').style.display = 'flex';
+  document.getElementById('userNurseCallIcon').style.display = 'none';
 }
 </script>
-
-<!-- ナースコール常設アイコン（常に表示） -->
-<div style="text-align:center; margin-top:24px; margin-bottom:16px;">
-  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">🏥</a>
-  <div style="font-size:0.75em; color:#999; margin-top:4px;">ナースコール</div>
-</div>
 
 <!-- お手伝いアイコン（アカウント一覧の下に配置） -->
 
