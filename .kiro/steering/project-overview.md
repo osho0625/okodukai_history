@@ -20,6 +20,7 @@ inclusion: auto
 | TRPG、クトゥルフ | `.kiro/steering/trpg.md` |
 | テトリス、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
+| ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
