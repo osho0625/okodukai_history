@@ -33,6 +33,7 @@
         // ended→idle即時復帰
         if (state === 'ended') {
           state = 'idle';
+          listeners.forEach(fn => fn(state));
         }
         return true;
       },

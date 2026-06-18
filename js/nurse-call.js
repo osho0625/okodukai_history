@@ -525,38 +525,37 @@
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
         if (statusEl) statusEl.textContent = '📳 呼び出し中...';
-        // 音声通話初期化＆発信
+        // 発信（init済みなのでstartCallのみ）
         if (window.NurseCallVoice) {
-          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
           await NurseCallVoice.startCall();
         }
       });
     }
 
-    // 親側: 音声チャネルに事前接続（子供からの着信を受信するため）
-    const voiceChannelName = `nurse-voice-call`;
-    const voiceChannel = client.channel(voiceChannelName);
-    voiceChannel
-        .on('broadcast', { event: 'voice_state' }, (payload) => {
-          const msg = payload.payload;
-          if (msg.state === 'ringing') {
-            const acceptBtn = document.getElementById('parentAcceptCallBtn');
-            const statusEl = document.getElementById('parentVoiceStatus');
-            if (acceptBtn) acceptBtn.style.display = 'block';
-            if (parentCallBtn) parentCallBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = '📳 電話がきています...';
-          }
-          if (msg.state === 'ended') {
-            const acceptBtn = document.getElementById('parentAcceptCallBtn');
-            const endBtn = document.getElementById('parentEndCallBtn');
-            const statusEl = document.getElementById('parentVoiceStatus');
-            if (acceptBtn) acceptBtn.style.display = 'none';
-            if (endBtn) endBtn.style.display = 'none';
-            if (parentCallBtn) parentCallBtn.style.display = 'block';
-            if (statusEl) statusEl.textContent = '';
-          }
-        })
-        .subscribe();
+    // 親側: 音声通話初期化（ページ読み込み時に1回だけ。チャネル重複防止）
+    if (window.NurseCallVoice) {
+      NurseCallVoice.init(state.callId || 'default', state.childId || '', 'parent');
+      NurseCallVoice.onStateChange((voiceState) => {
+        const statusEl = document.getElementById('parentVoiceStatus');
+        const acceptBtn = document.getElementById('parentAcceptCallBtn');
+        const endBtn = document.getElementById('parentEndCallBtn');
+        if (voiceState === 'ringing') {
+          if (acceptBtn) acceptBtn.style.display = 'block';
+          if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (statusEl) statusEl.textContent = '📳 電話がきています...';
+        } else if (voiceState === 'connected') {
+          if (acceptBtn) acceptBtn.style.display = 'none';
+          if (endBtn) endBtn.style.display = 'block';
+          if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (statusEl) statusEl.textContent = '📞 通話中';
+        } else if (voiceState === 'idle') {
+          if (acceptBtn) acceptBtn.style.display = 'none';
+          if (endBtn) endBtn.style.display = 'none';
+          if (parentCallBtn) parentCallBtn.style.display = 'block';
+          if (statusEl) statusEl.textContent = '';
+        }
+      });
+    }
 
     // でんわにでるボタン
     const parentAcceptBtn = document.getElementById('parentAcceptCallBtn');
@@ -566,12 +565,8 @@
         const endBtn = document.getElementById('parentEndCallBtn');
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
-        if (statusEl) statusEl.textContent = '📞 つうわ中...';
-        // 音声通話初期化＆応答
-        if (window.NurseCallVoice) {
-          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
-          await NurseCallVoice.acceptCall();
-        }
+        if (statusEl) statusEl.textContent = '📞 通話中';
+        if (window.NurseCallVoice) await NurseCallVoice.acceptCall();
       });
     }
 
