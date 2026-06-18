@@ -36,6 +36,20 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.0.0</span><span class="date">2026/06/18</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🏥 ナースコール機能を追加（病気の子供が親を即時呼び出し）</li>
+    <li><span class="tag tag-feat">feat</span> Edge Function即時Push通知配信（push-nurse-call）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコールモード（おやすみモード）— デバイスロックで安静促進</li>
+    <li><span class="tag tag-feat">feat</span> 親子リアルタイムチャット（Quick Reply対応）</li>
+    <li><span class="tag tag-feat">feat</span> WebRTC音声通話（ブラウザ内P2P通話）</li>
+    <li><span class="tag tag-feat">feat</span> オフラインキュー（ネット不通時も呼び出し保存→復帰時自動送信）</li>
+    <li><span class="tag tag-infra">infra</span> Supabase Anonymous Auth導入（ナースコール認証用）</li>
+    <li><span class="tag tag-infra">infra</span> device_settings / nurse_calls / nurse_call_messages テーブル追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v1.99.3</span><span class="date">2026/06/11</span></div>
   <ul>
     <li><span class="tag tag-infra">infra</span> Push通知配信をSupabase Edge Functions + pg_cronに移行（GitHub Actions cron遅延問題を解決）</li>

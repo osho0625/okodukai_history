@@ -286,6 +286,13 @@ h2 { margin-bottom: 12px; color: #333; }
   </div>
 </div>
 
+<!-- ナースコールリンク -->
+<div id="nurseCallChildLink" style="display:none; max-width:480px; margin-bottom:16px;">
+  <a id="nurseCallChildAnchor" href="#" style="display:block; background:linear-gradient(135deg,#ff7043,#e53935); border-radius:12px; box-shadow:0 2px 8px rgba(229,57,53,0.3); padding:14px 16px; text-decoration:none; color:#fff; text-align:center; font-weight:700; font-size:1.1em;">
+    🏥 ナースコール
+  </a>
+</div>
+
 <!-- リマインダーセクション -->
 <div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
   <div onclick="toggleAccordion('reminderBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
@@ -1520,6 +1527,23 @@ function escHtml(str) {
 load().then(() => {
   loadPointsGrid();
   loadReminders();
+  // ナースコールリンク表示
+  (async function() {
+    try {
+      const { data } = await client.from('game_settings').select('nurse_call_enabled, nurse_call_child_ids').eq('id', 1).single();
+      if (data && data.nurse_call_enabled) {
+        const targetIds = data.nurse_call_child_ids;
+        if (!targetIds || targetIds.length === 0 || targetIds.includes(childId)) {
+          const el = document.getElementById('nurseCallChildLink');
+          const anchor = document.getElementById('nurseCallChildAnchor');
+          if (el && anchor) {
+            anchor.href = `nurse-call.html?child_id=${childId}&name=${encodeURIComponent(child?.name || '')}`;
+            el.style.display = 'block';
+          }
+        }
+      }
+    } catch(e) {}
+  })();
 });
 </script>
 

@@ -500,6 +500,32 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- ナースコール管理 -->
+<h2 onclick="toggleSection('nurseCallSection', this)"><span class="toggle">▶</span> 🏥 ナースコール管理</h2>
+<div class="section-body" id="nurseCallSection">
+  <div class="card">
+    <div style="margin-bottom:16px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="nurseCallEnabled" style="width:20px; height:20px;">
+        <span style="font-weight:600;">ナースコール機能を有効にする</span>
+      </label>
+    </div>
+    <div id="nurseCallDevices" style="margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">デバイスロック（おやすみモード）</div>
+      <div id="nurseCallDeviceList" style="color:#999;">読み込み中...</div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:8px;">対象の子供</div>
+      <div id="nurseCallChildTargets">読み込み中...</div>
+    </div>
+    <div>
+      <div style="font-weight:600; margin-bottom:8px;">通知先の制限</div>
+      <p style="font-size:0.8em; color:#999; margin-bottom:8px;">空欄の場合はadmin全端末に通知</p>
+      <div id="nurseCallNotifyTargets">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
 <!-- リマインダー管理 -->
 <h2 onclick="toggleSection('reminderSection', this)"><span class="toggle">▶</span> 🔔 リマインダー管理</h2>
 <div class="section-body" id="reminderSection">
@@ -1949,6 +1975,82 @@ async function clearScpOverride() {
 }
 
 loadScpOverride();
+
+// --- ナースコール管理 ---
+async function loadNurseCallAdmin() {
+  // 設定読み込み
+  const { data: settings } = await client.from('game_settings')
+    .select('nurse_call_enabled, nurse_call_child_ids, nurse_call_notify_targets')
+    .eq('id', 1).single();
+
+  const enabledCb = document.getElementById('nurseCallEnabled');
+  enabledCb.checked = settings?.nurse_call_enabled || false;
+  enabledCb.addEventListener('change', async () => {
+    await client.from('game_settings')
+      .update({ nurse_call_enabled: enabledCb.checked })
+      .eq('id', 1);
+  });
+
+  // デバイス一覧
+  const { data: devices } = await client.from('device_settings').select('device_id, child_id, nurse_call_mode');
+  const { data: children } = await client.from('children').select('id, name');
+  const childMap = {};
+  (children || []).forEach(c => childMap[c.id] = c.name);
+
+  const deviceListEl = document.getElementById('nurseCallDeviceList');
+  if (!devices || devices.length === 0) {
+    deviceListEl.innerHTML = '<div style="color:#999; font-size:0.85em;">登録済みデバイスなし</div>';
+  } else {
+    deviceListEl.innerHTML = devices.map(d => {
+      const childName = d.child_id ? (childMap[d.child_id] || '不明') : '未設定';
+      return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
+        <div>
+          <span style="font-weight:600;">${childName}</span>
+          <span style="font-size:0.75em; color:#999; margin-left:8px;">${d.device_id.slice(0,8)}...</span>
+        </div>
+        <button class="btn-sm ${d.nurse_call_mode ? 'btn-danger' : 'btn-primary'}"
+          onclick="toggleNurseCallMode('${d.device_id}', ${!d.nurse_call_mode})">
+          ${d.nurse_call_mode ? 'ロック解除' : 'ロックON'}
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  // 対象子供
+  const targetChildIds = settings?.nurse_call_child_ids || [];
+  const childTargetsEl = document.getElementById('nurseCallChildTargets');
+  childTargetsEl.innerHTML = (children || []).map(c => {
+    const checked = targetChildIds.length === 0 || targetChildIds.includes(c.id);
+    return `<label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer;">
+      <input type="checkbox" class="nc-child-target" data-id="${c.id}" ${checked ? 'checked' : ''} style="width:18px; height:18px;">
+      <span>${c.name}</span>
+    </label>`;
+  }).join('');
+
+  document.querySelectorAll('.nc-child-target').forEach(cb => {
+    cb.addEventListener('change', saveNurseCallChildTargets);
+  });
+}
+
+async function toggleNurseCallMode(deviceId, newMode) {
+  await client.from('device_settings')
+    .update({ nurse_call_mode: newMode, updated_at: new Date().toISOString() })
+    .eq('device_id', deviceId);
+  loadNurseCallAdmin();
+}
+
+async function saveNurseCallChildTargets() {
+  const checked = [...document.querySelectorAll('.nc-child-target:checked')].map(el => el.dataset.id);
+  const { data: allChildren } = await client.from('children').select('id');
+  const allIds = (allChildren || []).map(c => c.id);
+  // 全選択 = null (制限なし)
+  const value = checked.length === allIds.length ? null : checked;
+  await client.from('game_settings')
+    .update({ nurse_call_child_ids: value })
+    .eq('id', 1);
+}
+
+loadNurseCallAdmin();
 </script>
 </body>
 </html>

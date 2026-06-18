@@ -180,12 +180,97 @@ body {
   <div class="response-sub">もうすぐいくからね</div>
 </div>
 
-<!-- チャット（タスク9で実装） -->
-<div class="chat-section" id="chatSection"></div>
+<!-- チャット -->
+<div class="chat-section" id="chatSection" style="display:none; width:100%; max-width:400px; margin-top:20px;">
+  <div style="font-weight:600; margin-bottom:8px; color:#555;">💬 チャット</div>
+  <div id="chatMessages" style="background:#fff; border-radius:12px; padding:12px; height:250px; overflow-y:auto; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:10px;"></div>
+  <div id="quickReplies" style="display:none; margin-bottom:8px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+      <button class="quick-reply-btn" data-key="ok" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">😊 だいじょうぶ</button>
+      <button class="quick-reply-btn" data-key="thanks" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">🙏 ありがとう</button>
+      <button class="quick-reply-btn" data-key="still_sick" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">😢 まだつらい</button>
+      <button class="quick-reply-btn" data-key="hungry" style="padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:0.9em;">🍙 おなかすいた</button>
+    </div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+    <button id="chatSendBtn" style="padding:12px 18px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
+  </div>
+</div>
 
-<!-- 音声通話（タスク11で実装） -->
-<div class="voice-section" id="voiceSection"></div>
+<!-- 音声通話 -->
+<div class="voice-section" id="voiceSection" style="display:none; width:100%; max-width:400px; margin-top:20px;">
+  <div style="font-weight:600; margin-bottom:8px; color:#555;">📞 でんわ</div>
+  <div style="background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center;">
+    <div id="voiceStatus" class="voice-status" style="margin-bottom:12px; font-weight:600; min-height:1.5em;"></div>
+    <div id="voiceTimer" style="display:none; font-size:1.8em; font-weight:700; color:#333; margin-bottom:12px;">0:00</div>
+    <button id="voiceStartBtn" style="display:none; width:100%; padding:16px; border:none; border-radius:12px; background:#4caf50; color:#fff; font-size:1.2em; font-weight:700; cursor:pointer; margin-bottom:8px;">📞 でんわする</button>
+    <button id="voiceAcceptBtn" style="display:none; width:100%; padding:20px; border:none; border-radius:16px; background:#4caf50; color:#fff; font-size:1.4em; font-weight:700; cursor:pointer; margin-bottom:8px; animation: pulse 1.5s infinite;">📞 でんわにでる</button>
+    <button id="voiceEndBtn" style="display:none; width:100%; padding:16px; border:none; border-radius:12px; background:#e53935; color:#fff; font-size:1.2em; font-weight:700; cursor:pointer;">きる</button>
+    <audio id="voiceRemoteAudio" autoplay></audio>
+  </div>
+</div>
+<style>
+@keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
+.voice-status.info { color:#f57c00; }
+.voice-status.success { color:#2e7d32; }
+.voice-status.error { color:#c62828; }
+</style>
 
+<script src="../js/nurse-call-chat.js"></script>
+<script src="../js/nurse-call-voice.js"></script>
 <script src="../js/nurse-call.js"></script>
+<script>
+// チャット＋音声通話UI初期化（nurse-call.js init完了後）
+document.addEventListener('DOMContentLoaded', () => {
+  const checkChat = setInterval(() => {
+    const state = window.NurseCall?.state;
+    if (state && state.callId && state.childId) {
+      clearInterval(checkChat);
+      const senderRole = state.isParent ? 'parent' : 'child';
+
+      // チャット初期化
+      NurseCallChat.init(state.callId, state.childId, senderRole);
+      document.getElementById('chatSection').style.display = 'block';
+
+      if (!state.isParent) {
+        document.getElementById('quickReplies').style.display = 'block';
+      }
+
+      document.querySelectorAll('.quick-reply-btn').forEach(btn => {
+        btn.addEventListener('click', () => NurseCallChat.sendQuickReply(btn.dataset.key));
+      });
+
+      document.getElementById('chatSendBtn').addEventListener('click', () => {
+        const input = document.getElementById('chatInput');
+        if (input.value.trim()) {
+          NurseCallChat.sendMessage(input.value);
+          input.value = '';
+        }
+      });
+
+      document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          document.getElementById('chatSendBtn').click();
+        }
+      });
+
+      // 音声通話初期化
+      NurseCallVoice.init(state.callId, state.childId, senderRole);
+      document.getElementById('voiceSection').style.display = 'block';
+
+      // 親側: でんわするボタン表示
+      if (state.isParent) {
+        document.getElementById('voiceStartBtn').style.display = 'block';
+      }
+
+      document.getElementById('voiceStartBtn')?.addEventListener('click', () => NurseCallVoice.startCall());
+      document.getElementById('voiceAcceptBtn')?.addEventListener('click', () => NurseCallVoice.acceptCall());
+      document.getElementById('voiceEndBtn')?.addEventListener('click', () => NurseCallVoice.endCall());
+    }
+  }, 500);
+});
+</script>
 </body>
 </html>
