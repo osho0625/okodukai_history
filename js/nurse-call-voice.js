@@ -95,7 +95,7 @@
   }
 
   // ============================================================
-  // 発信（親側のみ）
+  // 発信（かけた側は自動接続）
   // ============================================================
 
   async function startCall() {
@@ -105,12 +105,23 @@
       return false;
     }
 
+    // マイク取得（発信側は自動）
+    try {
+      voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch (e) {
+      showVoiceStatus('マイクが使えないよ', 'error');
+      return false;
+    }
+
     if (!voiceState.stateMachine.transition('ringing')) return false;
 
-    // broadcast ringing
+    // broadcast ringing（相手に着信通知）
     broadcastVoiceState('ringing');
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
+
+    // 発信側はPeerConnectionを先に作成して待機
+    createPeerConnection();
     return true;
   }
 
@@ -227,18 +238,23 @@
   }
 
   async function createAndSendOffer(pc) {
-    // マイク取得（親側）
+    // 親側/発信側: localStreamは既にstartCallで取得済みの場合あり
     if (!voiceState.localStream) {
       try {
         voiceState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        voiceState.localStream.getTracks().forEach(track => {
-          pc.addTrack(track, voiceState.localStream);
-        });
       } catch (e) {
         showVoiceStatus('マイクが使えないよ', 'error');
         endCall();
         return;
       }
+    }
+
+    // トラックがまだ追加されていなければ追加
+    const senders = pc.getSenders();
+    if (senders.length === 0) {
+      voiceState.localStream.getTracks().forEach(track => {
+        pc.addTrack(track, voiceState.localStream);
+      });
     }
 
     const offer = await pc.createOffer();
