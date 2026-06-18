@@ -1,4 +1,7 @@
 // 共通設定・ユーティリティ
+// ナースコールモード: リダイレクト判定完了までbody非表示（フラッシュ防止）
+if (document.body) document.body.style.visibility = 'hidden';
+
 const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -199,3 +202,52 @@ function confirmLeaveGame(isPlayingFn, pauseFn, dest, action) {
     action();
   }
 }
+
+// --- ナースコールモード（デバイスロック制御） ---
+// body非表示 → DB/キャッシュ確認 → リダイレクトまたはbody表示
+(async function checkNurseCallMode() {
+  // admin端末はロック対象外
+  if (isAdmin) { document.body.style.visibility = 'visible'; return; }
+  // nurse-call.html自体はリダイレクト不要
+  if (location.pathname.includes('nurse-call.html')) { document.body.style.visibility = 'visible'; return; }
+
+  const deviceId = localStorage.getItem('push_device_id');
+  if (!deviceId) { document.body.style.visibility = 'visible'; return; }
+
+  const CACHE_KEY = 'device_lock_cache';
+  const TTL = 5 * 60 * 1000; // 5分
+
+  let nurseCallMode = false;
+
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    const now = Date.now();
+
+    if (cache && cache.updated_at && (now - new Date(cache.updated_at).getTime()) < TTL) {
+      nurseCallMode = cache.nurse_call_mode;
+    } else {
+      const { data } = await client.from('device_settings')
+        .select('nurse_call_mode')
+        .eq('device_id', deviceId)
+        .single();
+      nurseCallMode = data?.nurse_call_mode || false;
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        nurse_call_mode: nurseCallMode,
+        updated_at: new Date().toISOString()
+      }));
+    }
+  } catch (e) {
+    // DB接続失敗時はキャッシュのフォールバック
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    nurseCallMode = cache?.nurse_call_mode || false;
+  }
+
+  if (nurseCallMode) {
+    location.href = location.pathname.includes('/pages/')
+      ? 'nurse-call.html'
+      : 'pages/nurse-call.html';
+    return;
+  }
+
+  document.body.style.visibility = 'visible';
+})();
