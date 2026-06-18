@@ -85,10 +85,10 @@ body {
   background: #fff;
   font-size: 1em;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
-.reason-btn.selected { background: #ff8a65; color: #fff; border-color: #e64a19; }
-.reason-btn:active { transform: scale(0.97); }
+.reason-btn:active:not(:disabled) { background: #ff8a65; color: #fff; transform: scale(0.95); }
+.reason-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .status-msg {
   text-align: center;
@@ -155,8 +155,22 @@ body {
   <a class="home-link" href="../index.html">&#x1F3E0;</a>
 </div>
 
+<!-- 名前表示（タップで変更） -->
+<div id="nameDisplay" style="text-align:center; margin-bottom:12px; display:none;">
+  <span id="nameLabel" style="font-size:1.1em; font-weight:600; color:#555; cursor:pointer; border-bottom:2px dashed #ff8a65; padding-bottom:2px;"></span>
+  <span style="font-size:0.8em; color:#999; margin-left:6px;">✏️</span>
+</div>
+
+<!-- 名前入力モーダル -->
+<div id="nameOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:900; display:none; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:16px; padding:24px; width:85%; max-width:360px; text-align:center;">
+    <div style="font-size:1.2em; font-weight:700; margin-bottom:16px;">だれがつかう？</div>
+    <div id="nameButtons" style="display:flex; flex-direction:column; gap:10px;"></div>
+  </div>
+</div>
+
 <div class="call-section" id="callSection">
-  <button class="call-btn" id="callBtn">よんで！</button>
+  <button class="call-btn" id="callBtn">&#x1F514;</button>
 
   <div class="reason-btns" id="reasonBtns">
     <button class="reason-btn" data-reason="のどかわいた">🥤 のどかわいた</button>

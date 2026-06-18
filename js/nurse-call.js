@@ -92,6 +92,8 @@
   // 初期化
   // ============================================================
 
+  const NURSE_CALL_NAME_KEY = 'nurse_call_child_name';
+
   async function init() {
     // URLパラメータ確認
     const params = new URLSearchParams(location.search);
@@ -103,73 +105,35 @@
       state.isParent = true;
       state.childId = childId;
       state.callId = callId;
+      // 子供名をDBから取得
+      const { data } = await client.from('children').select('name').eq('id', childId).maybeSingle();
+      state.childName = data?.name || '';
       initParentMode();
-    } else if (childId) {
-      // 子供側（child_id指定あり）
-      state.childId = childId;
-      state.childName = params.get('name') || '';
-      if (callId) state.callId = callId;
     } else {
-      // child_id未指定 → localStorageやdevice_settingsから取得
-      const deviceId = localStorage.getItem('push_device_id');
-      if (deviceId) {
-        const { data } = await client.from('device_settings')
-          .select('child_id')
-          .eq('device_id', deviceId)
-          .maybeSingle();
-        if (data && data.child_id) {
-          state.childId = data.child_id;
-          // 子供名取得
-          const { data: childData } = await client.from('children')
-            .select('name')
-            .eq('id', data.child_id)
-            .maybeSingle();
-          if (childData) state.childName = childData.name;
-        } else {
-          // device_settingsにレコードなし → 子供一覧から最初の子供を使用
-          // (家庭内利用なので子供が1-2人の想定)
-          const { data: children } = await client.from('children')
-            .select('id, name')
-            .order('sort_order', { ascending: true });
-          if (children && children.length > 0) {
-            // 子供が1人ならそのまま使う、複数ならpush_subscriptionsのchild_nameで照合
-            const pushSub = await client.from('push_subscriptions')
-              .select('child_name')
-              .eq('device_id', deviceId)
-              .maybeSingle();
-            const matched = pushSub?.data?.child_name
-              ? children.find(c => c.name === pushSub.data.child_name)
-              : null;
-            const child = matched || children[0];
-            state.childId = child.id;
-            state.childName = child.name;
-            // device_settingsに自動登録
-            await client.from('device_settings').upsert({
-              device_id: deviceId,
-              child_id: child.id,
-              nurse_call_mode: false,
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'device_id' });
-          }
-        }
+      // 子供側: 名前ベースで特定
+      const savedName = localStorage.getItem(NURSE_CALL_NAME_KEY);
+
+      if (savedName) {
+        // 保存済み名前あり → そのまま使用
+        await resolveChildByName(savedName);
+        showNameDisplay(savedName);
       } else {
-        // push_device_idもない → 生成してchildrenから取得
-        let newDeviceId = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-        localStorage.setItem('push_device_id', newDeviceId);
-        const { data: children } = await client.from('children')
-          .select('id, name')
-          .order('sort_order', { ascending: true });
-        if (children && children.length > 0) {
-          state.childId = children[0].id;
-          state.childName = children[0].name;
-          await client.from('device_settings').upsert({
-            device_id: newDeviceId,
-            child_id: children[0].id,
-            nurse_call_mode: false,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'device_id' });
-        }
+        // 初回: 名前選択モーダル表示
+        await showNamePicker();
+        // body表示してreturn（名前選択後にcontinueInitが呼ばれる）
+        document.body.style.visibility = 'visible';
+        return;
       }
+    }
+
+    await continueInit();
+  }
+
+  async function continueInit() {
+    // push_device_id確保
+    if (!localStorage.getItem('push_device_id')) {
+      const newId = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+      localStorage.setItem('push_device_id', newId);
     }
 
     // ナースコールモード表示
@@ -200,6 +164,79 @@
 
     // body表示
     document.body.style.visibility = 'visible';
+  }
+
+  // 名前から子供を特定
+  async function resolveChildByName(name) {
+    const { data } = await client.from('children')
+      .select('id, name')
+      .eq('name', name)
+      .maybeSingle();
+    if (data) {
+      state.childId = data.id;
+      state.childName = data.name;
+    } else {
+      // 名前がDB内に見つからない → フリー入力の名前をそのまま使う
+      state.childName = name;
+      // child_id無しでもEdge Functionは動く（child_nameで通知）
+      // childrenテーブルに存在しない場合は最初の子供のIDを仮使用
+      const { data: first } = await client.from('children')
+        .select('id').order('sort_order', { ascending: true }).limit(1).maybeSingle();
+      if (first) state.childId = first.id;
+    }
+    // device_settings更新
+    const deviceId = localStorage.getItem('push_device_id');
+    if (deviceId && state.childId) {
+      await client.from('device_settings').upsert({
+        device_id: deviceId,
+        child_id: state.childId,
+        nurse_call_mode: false,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'device_id' }).then(() => {}).catch(() => {});
+    }
+  }
+
+  // 名前選択モーダル
+  async function showNamePicker() {
+    const { data: children } = await client.from('children')
+      .select('id, name')
+      .order('sort_order', { ascending: true });
+
+    const overlay = document.getElementById('nameOverlay');
+    const btnsContainer = document.getElementById('nameButtons');
+
+    btnsContainer.innerHTML = (children || []).map(c =>
+      `<button class="name-pick-btn" data-id="${c.id}" data-name="${c.name}" style="padding:16px; border:2px solid #ff8a65; border-radius:12px; background:#fff; font-size:1.2em; font-weight:600; cursor:pointer;">${c.name}</button>`
+    ).join('');
+
+    overlay.style.display = 'flex';
+
+    // ボタンクリック
+    btnsContainer.querySelectorAll('.name-pick-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const name = btn.dataset.name;
+        localStorage.setItem(NURSE_CALL_NAME_KEY, name);
+        overlay.style.display = 'none';
+        await resolveChildByName(name);
+        showNameDisplay(name);
+        await continueInit();
+      });
+    });
+  }
+
+  // 名前表示（タップで変更）
+  function showNameDisplay(name) {
+    const display = document.getElementById('nameDisplay');
+    const label = document.getElementById('nameLabel');
+    display.style.display = 'block';
+    label.textContent = name;
+
+    label.onclick = async () => {
+      localStorage.removeItem(NURSE_CALL_NAME_KEY);
+      await showNamePicker();
+    };
+    // ✏️もクリック対象
+    display.querySelector('span:last-child').onclick = label.onclick;
   }
 
 
@@ -234,17 +271,13 @@
       parentSection.style.display = 'none';
     }
 
-    // 理由選択
+    // 理由ボタン: タップで即座に送信
     reasonBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        reasonBtns.forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        state.selectedReason = btn.dataset.reason;
-      });
+      btn.addEventListener('click', () => sendCall(btn.dataset.reason));
     });
 
-    // 呼び出しボタン
-    callBtn.addEventListener('click', () => sendCall(state.selectedReason));
+    // 🔔ボタン: 理由なしで送信
+    callBtn.addEventListener('click', () => sendCall(null));
   }
 
   // ============================================================
@@ -374,6 +407,7 @@
   function startCooldown() {
     state.cooldownRemaining = COOLDOWN_SEC;
     callBtn.disabled = true;
+    reasonBtns.forEach(btn => btn.disabled = true);
     updateCooldownDisplay();
 
     state.cooldownInterval = setInterval(() => {
@@ -382,7 +416,8 @@
         clearInterval(state.cooldownInterval);
         state.cooldownInterval = null;
         callBtn.disabled = false;
-        callBtn.textContent = 'よんで！';
+        reasonBtns.forEach(btn => btn.disabled = false);
+        callBtn.innerHTML = '&#x1F514;';
       } else {
         updateCooldownDisplay();
       }
