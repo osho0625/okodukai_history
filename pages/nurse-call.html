@@ -179,6 +179,11 @@ body {
     <button id="voiceCallBtn" class="voice-big-btn" style="background:#4caf50;">📞 でんわする</button>
     <button id="voiceAcceptBtn" class="voice-big-btn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 でんわにでる</button>
     <button id="voiceEndBtn" class="voice-big-btn" style="display:none; background:#e53935;">きる</button>
+    <button id="voiceVideoBtn" onclick="NurseCallVoice.toggleVideo()" class="voice-big-btn" style="display:none; background:#1976d2; margin-top:8px;">📹</button>
+    <div style="position:relative; margin-top:12px;">
+      <video id="voiceRemoteVideo" autoplay playsinline style="display:none; width:100%; border-radius:12px; background:#000;"></video>
+      <video id="voiceLocalVideo" autoplay playsinline muted style="display:none; position:absolute; bottom:8px; right:8px; width:80px; border-radius:8px; border:2px solid #fff;"></video>
+    </div>
     <audio id="voiceRemoteAudio" autoplay></audio>
   </div>
 </div>

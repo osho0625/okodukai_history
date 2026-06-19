@@ -205,12 +205,31 @@
     }
 
     pc.ontrack = (event) => {
-      const audio = document.getElementById('voiceRemoteAudio');
-      if (audio && event.streams[0]) audio.srcObject = event.streams[0];
+      const track = event.track;
+      if (track.kind === 'video') {
+        // ビデオトラック受信 → video要素に表示
+        const video = document.getElementById('voiceRemoteVideo');
+        if (video) {
+          video.srcObject = event.streams[0];
+          video.style.display = 'block';
+        }
+      } else {
+        const audio = document.getElementById('voiceRemoteAudio');
+        if (audio && event.streams[0]) audio.srcObject = event.streams[0];
+      }
     };
 
     pc.onicecandidate = (event) => {
       if (event.candidate) broadcastSignal('ice', null, event.candidate);
+    };
+
+    // renegotiation: 映像追加時に自動でoffer/answer再交換
+    pc.onnegotiationneeded = async () => {
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        broadcastSignal('offer', offer.sdp);
+      } catch(e) {}
     };
 
     pc.onconnectionstatechange = () => {
@@ -224,6 +243,43 @@
     };
 
     return pc;
+  }
+
+  // ============================================================
+  // ビデオトグル
+  // ============================================================
+
+  let videoSender = null;
+
+  async function toggleVideo() {
+    const pc = voiceState.peerConnection;
+    if (!pc) return;
+
+    if (videoSender) {
+      // ビデオOFF: トラック停止＆除去
+      videoSender.track.stop();
+      pc.removeTrack(videoSender);
+      videoSender = null;
+      const localVideo = document.getElementById('voiceLocalVideo');
+      if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+      const videoBtn = document.getElementById('voiceVideoBtn');
+      if (videoBtn) videoBtn.textContent = '📹';
+      return;
+    }
+
+    // ビデオON: カメラ取得＆追加
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const videoTrack = videoStream.getVideoTracks()[0];
+      videoSender = pc.addTrack(videoTrack, videoStream);
+      // ローカルプレビュー
+      const localVideo = document.getElementById('voiceLocalVideo');
+      if (localVideo) { localVideo.srcObject = videoStream; localVideo.style.display = 'block'; }
+      const videoBtn = document.getElementById('voiceVideoBtn');
+      if (videoBtn) videoBtn.textContent = '📹✕';
+    } catch(e) {
+      showVoiceStatus('カメラが使えないよ', 'error');
+    }
   }
 
   // ============================================================
@@ -333,6 +389,15 @@
       voiceState.localStream.getTracks().forEach(t => t.stop());
       voiceState.localStream = null;
     }
+    // ビデオリセット
+    if (videoSender) {
+      if (videoSender.track) videoSender.track.stop();
+      videoSender = null;
+    }
+    const localVideo = document.getElementById('voiceLocalVideo');
+    const remoteVideo = document.getElementById('voiceRemoteVideo');
+    if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+    if (remoteVideo) { remoteVideo.srcObject = null; remoteVideo.style.display = 'none'; }
     stopCallTimer();
   }
 
@@ -371,12 +436,14 @@
     const endBtn = document.getElementById('voiceEndBtn');
     const timerEl = document.getElementById('voiceTimer');
     const connEl = document.getElementById('voiceConnectionState');
+    const videoBtn = document.getElementById('voiceVideoBtn');
 
     if (callBtn) callBtn.style.display = (state === 'idle') ? 'block' : 'none';
     if (acceptBtn) acceptBtn.style.display = (state === 'ringing') ? 'block' : 'none';
     if (endBtn) endBtn.style.display = (state === 'ringing' || state === 'connected') ? 'block' : 'none';
     if (timerEl) timerEl.style.display = (state === 'connected') ? 'block' : 'none';
-    if (connEl) connEl.textContent = ''; // 二重表示防止: voiceStatusだけで管理
+    if (videoBtn) videoBtn.style.display = (state === 'connected') ? 'block' : 'none';
+    if (connEl) connEl.textContent = '';
   }
 
   function destroy() {
@@ -397,10 +464,10 @@
     startCall,
     acceptCall,
     endCall,
+    toggleVideo,
     getState() { return voiceState.stateMachine.getState(); },
     onStateChange(fn) { voiceState.stateMachine.onStateChange(fn); },
     destroy,
-    // テスト用
     _stateMachine: voiceState.stateMachine,
     _VALID_TRANSITIONS: VALID_TRANSITIONS
   };
