@@ -539,18 +539,22 @@
         const statusEl = document.getElementById('parentVoiceStatus');
         const acceptBtn = document.getElementById('parentAcceptCallBtn');
         const endBtn = document.getElementById('parentEndCallBtn');
+        const videoBtn = document.getElementById('parentVideoBtn');
         if (voiceState === 'ringing') {
           if (acceptBtn) acceptBtn.style.display = 'block';
           if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'none';
           if (statusEl) statusEl.textContent = '📳 電話がきています...';
         } else if (voiceState === 'connected') {
           if (acceptBtn) acceptBtn.style.display = 'none';
           if (endBtn) endBtn.style.display = 'block';
           if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'block';
           if (statusEl) statusEl.textContent = '📞 通話中';
         } else if (voiceState === 'idle') {
           if (acceptBtn) acceptBtn.style.display = 'none';
           if (endBtn) endBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'none';
           if (parentCallBtn) parentCallBtn.style.display = 'block';
           if (statusEl) statusEl.textContent = '';
         }
