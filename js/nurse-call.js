@@ -161,9 +161,8 @@
     if (!state.callId) {
       state.callId = localStorage.getItem(CURRENT_CALL_KEY) || null;
     }
-    if (state.callId && state.childId) {
-      subscribeChannel(state.callId);
-    }
+    // チャネル購読（callIdがなくてもdefaultで接続）
+    subscribeChannel(state.callId || 'default');
 
     // オフラインキュー自動送信
     window.addEventListener('online', flushOfflineQueue);
@@ -486,11 +485,11 @@
       }
     }
 
-    subscribeChannel(state.callId);
+    subscribeChannel(state.callId || 'default');
 
     ikuyoBtn.addEventListener('click', async () => {
       // Realtime broadcast
-      const channelName = buildChannelName(state.childId, state.callId);
+      const channelName = buildChannelName(state.childId || 'default', state.callId || 'default');
       const channel = client.channel(channelName);
       await channel.subscribe();
       await channel.send({
@@ -519,9 +518,10 @@
       btn.addEventListener('click', async () => {
         const msg = btn.dataset.msg;
         // Realtimeで子供にポップ通知
-        if (state.channel) {
-          state.channel.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
-        }
+        const channelName = buildChannelName(state.childId || 'default', state.callId || 'default');
+        const ch = client.channel(channelName);
+        await ch.subscribe();
+        await ch.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
         // チャットにも投稿
         if (window.NurseCallChat) NurseCallChat.sendMessage(msg);
         btn.style.opacity = '0.5';
