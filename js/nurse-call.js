@@ -442,7 +442,7 @@
       client.removeChannel(state.channel);
     }
 
-    const channelName = buildChannelName(state.childId, callId);
+    const channelName = buildChannelName(state.childId || 'default', callId || 'default');
     state.channel = client.channel(channelName);
 
     state.channel
@@ -467,11 +467,20 @@
   // ============================================================
 
   function initParentMode() {
-    // ホームビューを完全に非表示にして親セクションだけ表示
-    document.getElementById('viewHome').innerHTML = '';
+    // 子供用要素を非表示にして親セクションを表示
+    const callBtn = document.getElementById('callBtn');
+    const reasonBtns = document.getElementById('reasonBtns');
+    const navIcons = document.querySelector('.nav-icons');
+    const nameDisplay = document.getElementById('nameDisplay');
+    const hakisoModal = document.getElementById('hakisoModal');
+    if (callBtn) callBtn.style.display = 'none';
+    if (reasonBtns) reasonBtns.style.display = 'none';
+    if (navIcons) navIcons.style.display = 'none';
+    if (nameDisplay) nameDisplay.style.display = 'none';
+    if (hakisoModal) hakisoModal.style.display = 'none';
+
     parentSection.classList.add('visible');
     parentSection.style.display = 'block';
-    document.getElementById('viewHome').appendChild(parentSection);
 
     // active callがない場合
     if (!state.callId) {
