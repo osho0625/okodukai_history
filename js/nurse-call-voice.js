@@ -207,8 +207,8 @@
     pc.ontrack = (event) => {
       const track = event.track;
       if (track.kind === 'video') {
-        // ビデオトラック受信 → video要素に表示
-        const video = document.getElementById('voiceRemoteVideo');
+        // ビデオトラック受信 → video要素に表示（子供用 or 親用）
+        const video = document.getElementById('voiceRemoteVideo') || document.getElementById('parentRemoteVideo');
         if (video) {
           video.srcObject = event.streams[0];
           video.style.display = 'block';
@@ -226,6 +226,7 @@
     // renegotiation: 映像追加時に自動でoffer/answer再交換
     pc.onnegotiationneeded = async () => {
       try {
+        if (pc.signalingState !== 'stable') return;
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         broadcastSignal('offer', offer.sdp);
@@ -260,9 +261,9 @@
       videoSender.track.stop();
       pc.removeTrack(videoSender);
       videoSender = null;
-      const localVideo = document.getElementById('voiceLocalVideo');
+      const localVideo = document.getElementById('voiceLocalVideo') || document.getElementById('parentLocalVideo');
       if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
-      const videoBtn = document.getElementById('voiceVideoBtn');
+      const videoBtn = document.getElementById('voiceVideoBtn') || document.getElementById('parentVideoBtn');
       if (videoBtn) videoBtn.textContent = '📹';
       return;
     }
@@ -273,9 +274,9 @@
       const videoTrack = videoStream.getVideoTracks()[0];
       videoSender = pc.addTrack(videoTrack, videoStream);
       // ローカルプレビュー
-      const localVideo = document.getElementById('voiceLocalVideo');
+      const localVideo = document.getElementById('voiceLocalVideo') || document.getElementById('parentLocalVideo');
       if (localVideo) { localVideo.srcObject = videoStream; localVideo.style.display = 'block'; }
-      const videoBtn = document.getElementById('voiceVideoBtn');
+      const videoBtn = document.getElementById('voiceVideoBtn') || document.getElementById('parentVideoBtn');
       if (videoBtn) videoBtn.textContent = '📹✕';
     } catch(e) {
       showVoiceStatus('カメラが使えないよ', 'error');
