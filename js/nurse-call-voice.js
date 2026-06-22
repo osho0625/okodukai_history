@@ -207,8 +207,8 @@
     pc.ontrack = (event) => {
       const track = event.track;
       if (track.kind === 'video') {
-        // ビデオトラック受信 → video要素に表示（子供用 or 親用）
-        const video = document.getElementById('voiceRemoteVideo') || document.getElementById('parentRemoteVideo');
+        // ビデオトラック受信 → 親画面を優先的に探す
+        const video = document.getElementById('parentRemoteVideo') || document.getElementById('voiceRemoteVideo');
         if (video) {
           video.srcObject = event.streams[0];
           video.style.display = 'block';

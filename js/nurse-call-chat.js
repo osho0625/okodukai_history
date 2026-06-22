@@ -26,10 +26,11 @@
   // 初期化
   // ============================================================
 
-  function init(callId, childId, senderRole) {
+  function init(callId, childId, senderRole, containerId) {
     chatState.callId = callId;
     chatState.childId = childId;
     chatState.senderRole = senderRole;
+    chatState.containerId = containerId || 'chatMessages';
 
     // Realtimeチャネル購読
     const channelName = `nurse-call:${childId}:${callId}`;
@@ -140,7 +141,7 @@
   // ============================================================
 
   function renderMessages() {
-    const container = document.getElementById('chatMessages');
+    const container = document.getElementById(chatState.containerId || 'chatMessages');
     if (!container) return;
 
     container.innerHTML = chatState.messages.map(msg => {
@@ -170,7 +171,7 @@
   }
 
   function scrollToBottom() {
-    const container = document.getElementById('chatMessages');
+    const container = document.getElementById(chatState.containerId || 'chatMessages');
     if (container) container.scrollTop = container.scrollHeight;
   }
 
