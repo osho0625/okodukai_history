@@ -34,10 +34,16 @@ interface PushSubscriptionRow {
 
 export function formatNotificationMessage(childName: string, reason?: string | null): { title: string; body: string } {
   const title = "🔔 ナースコール";
-  // 体温測定の場合: child_nameに「体温を測りました」が含まれる
+  // 体温測定の場合
   if (childName.includes('体温を測りました')) {
     const body = reason ? `🌡️ ${childName}（${reason}）` : `🌡️ ${childName}`;
     return { title, body };
+  }
+  // チャットの場合: child_nameが💬で終わる
+  if (childName.endsWith('💬')) {
+    const name = childName.replace('💬', '');
+    const body = reason ? `${name}（${reason}）` : `${name}がメッセージを送りました`;
+    return { title: '💬 チャット', body };
   }
   const body = reason
     ? `${childName}がよんでいます（${reason}）`

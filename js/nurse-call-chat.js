@@ -102,8 +102,8 @@
             },
             body: JSON.stringify({
               child_id: chatState.childId || '',
-              child_name: localStorage.getItem('nurse_call_child_name') || '',
-              reason: '💬 ' + trimmed.slice(0, 50),
+              child_name: (localStorage.getItem('nurse_call_child_name') || '') + '💬',
+              reason: trimmed.slice(0, 50),
               device_id: localStorage.getItem('push_device_id') || ''
             })
           });
