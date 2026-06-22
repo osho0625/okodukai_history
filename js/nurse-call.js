@@ -529,39 +529,33 @@
       });
     });
 
-    // 親側: チャットボタン
-    const parentChatBtn = document.getElementById('parentChatBtn');
-    if (parentChatBtn) {
-      parentChatBtn.addEventListener('click', () => {
-        // チャットセクションを表示/非表示トグル
-        let chatSection = document.getElementById('parentChatSection');
-        if (!chatSection) {
-          // チャットUIを親セクションに追加
-          const html = `<div id="parentChatSection" style="margin-top:16px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            <div id="chatMessages" style="height:200px; overflow-y:auto; margin-bottom:10px;"></div>
-            <div style="display:flex; gap:8px;">
-              <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
-              <button id="chatSendBtn" style="padding:10px 16px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
-            </div>
-          </div>`;
-          parentSection.insertAdjacentHTML('beforeend', html);
-          chatSection = document.getElementById('parentChatSection');
-          // チャット初期化
-          if (window.NurseCallChat) {
-            NurseCallChat.init(state.callId || 'default', state.childId || '', 'parent');
-          }
-          document.getElementById('chatSendBtn').addEventListener('click', () => {
-            const input = document.getElementById('chatInput');
-            if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
-          });
-          document.getElementById('chatInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('chatSendBtn').click(); }
-          });
-        } else {
-          chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
+    // 親側: チャット（グローバル関数から呼ばれる）
+    window.openParentChat = function() {
+      let chatSection = document.getElementById('parentChatSection');
+      if (!chatSection) {
+        const html = `<div id="parentChatSection" style="margin-top:16px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <div id="chatMessages" style="height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+            <button id="chatSendBtn" style="padding:10px 16px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
+          </div>
+        </div>`;
+        parentSection.insertAdjacentHTML('beforeend', html);
+        chatSection = document.getElementById('parentChatSection');
+        if (window.NurseCallChat) {
+          NurseCallChat.init(state.callId || 'default', state.childId || 'default', 'parent');
         }
-      });
-    }
+        document.getElementById('chatSendBtn').addEventListener('click', () => {
+          const input = document.getElementById('chatInput');
+          if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
+        });
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('chatSendBtn').click(); }
+        });
+      } else {
+        chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
+      }
+    };
 
     // 親側: でんわするボタン
     const parentCallBtn = document.getElementById('parentCallBtn');
