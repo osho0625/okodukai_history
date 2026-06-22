@@ -367,7 +367,7 @@
         subscribeChannel(data.call_id);
 
         if (data.notification_status === 'sent' || data.notification_status === 'partial') {
-          showStatus('おくったよ！', 'success');
+          showStatus('おくったよ！このがめんでまっててね！', 'success');
         } else {
           showStatus('おくったけど、とどかなかったかも', 'info');
         }
