@@ -91,6 +91,8 @@ body {
 .btn-ikuyo:active:not(:disabled) { transform: scale(0.93); }
 .btn-ikuyo:disabled { background: linear-gradient(145deg, #bdbdbd, #9e9e9e); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .btn-resolve { background:#78909c; }
+.parent-reply-btn { padding:10px 14px; border:2px solid #ff8a65; border-radius:10px; background:#fff; font-size:0.9em; font-weight:600; cursor:pointer; }
+.parent-reply-btn:active { background:#ff8a65; color:#fff; }
 </style>
 </head>
 <body>
@@ -143,6 +145,13 @@ body {
   <!-- 親側 -->
   <div class="parent-section" id="parentSection">
     <button class="btn-ikuyo" id="ikuyoBtn">いくよ！</button>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0;">
+      <button class="parent-reply-btn" data-msg="1分待って">⏱️ 1分待って</button>
+      <button class="parent-reply-btn" data-msg="3分待って">⏱️ 3分待って</button>
+      <button class="parent-reply-btn" data-msg="5分待って">⏱️ 5分待って</button>
+      <button class="parent-reply-btn" data-msg="電話かけて">📞 電話かけて</button>
+    </div>
+    <button class="parent-btn" id="parentChatBtn" style="background:#1976d2; margin-bottom:12px;">💬 チャット</button>
     <button class="parent-btn" id="parentCallBtn" style="background:#1976d2;">📞 電話する</button>
     <button class="parent-btn" id="parentAcceptCallBtn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 電話に出る</button>
     <button class="parent-btn" id="parentEndCallBtn" style="display:none; background:#e53935;">切る</button>

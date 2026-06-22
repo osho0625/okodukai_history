@@ -450,7 +450,7 @@
       .on('broadcast', { event: 'response' }, (payload) => {
         const msg = payload.payload;
         if (msg.action === 'iku_yo' && !state.isParent) {
-          showResponseOverlay();
+          showResponseOverlay(msg.text || '今行くよ💨');
         }
       })
       .on('broadcast', { event: 'session' }, (payload) => {
@@ -498,7 +498,7 @@
       await channel.send({
         type: 'broadcast',
         event: 'response',
-        payload: { action: 'iku_yo' }
+        payload: { action: 'iku_yo', text: 'すぐ行くよ💨' }
       });
 
       // DB更新
@@ -515,6 +515,55 @@
         ikuyoBtn.textContent = 'いくよ！';
       }, 3000);
     });
+
+    // 親側: 返信ボタン（1分待って、3分待って、5分待って、電話かけて）
+    document.querySelectorAll('.parent-reply-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const msg = btn.dataset.msg;
+        // Realtimeで子供にポップ通知
+        if (state.channel) {
+          state.channel.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
+        }
+        // チャットにも投稿
+        if (window.NurseCallChat) NurseCallChat.sendMessage(msg);
+        btn.style.opacity = '0.5';
+        setTimeout(() => { btn.style.opacity = '1'; }, 2000);
+      });
+    });
+
+    // 親側: チャットボタン
+    const parentChatBtn = document.getElementById('parentChatBtn');
+    if (parentChatBtn) {
+      parentChatBtn.addEventListener('click', () => {
+        // チャットセクションを表示/非表示トグル
+        let chatSection = document.getElementById('parentChatSection');
+        if (!chatSection) {
+          // チャットUIを親セクションに追加
+          const html = `<div id="parentChatSection" style="margin-top:16px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <div id="chatMessages" style="height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="chatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+              <button id="chatSendBtn" style="padding:10px 16px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
+            </div>
+          </div>`;
+          parentSection.insertAdjacentHTML('beforeend', html);
+          chatSection = document.getElementById('parentChatSection');
+          // チャット初期化
+          if (window.NurseCallChat) {
+            NurseCallChat.init(state.callId || 'default', state.childId || '', 'parent');
+          }
+          document.getElementById('chatSendBtn').addEventListener('click', () => {
+            const input = document.getElementById('chatInput');
+            if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
+          });
+          document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('chatSendBtn').click(); }
+          });
+        } else {
+          chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+    }
 
     // 親側: でんわするボタン
     const parentCallBtn = document.getElementById('parentCallBtn');
@@ -620,13 +669,13 @@
     statusMsg.className = `status-msg ${type}`;
   }
 
-  function showResponseOverlay() {
+  function showResponseOverlay(text) {
     const container = document.getElementById('ikuyoPopupContainer');
     if (!container) return;
 
     const popup = document.createElement('div');
     popup.style.cssText = 'background:#fff; border-radius:16px; padding:14px 20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); font-size:1.2em; font-weight:600; color:#333; cursor:pointer; animation:popIn 0.3s ease-out; transition:all 0.3s ease;';
-    popup.textContent = '今行くよ💨';
+    popup.textContent = text || '今行くよ💨';
     popup.addEventListener('click', () => {
       popup.style.animation = 'slideOut 0.3s ease-in forwards';
       setTimeout(() => popup.remove(), 300);
