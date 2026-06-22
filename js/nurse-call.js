@@ -478,14 +478,12 @@
     if (!state.callId) {
       showStatus('呼び出しはまだありません', 'info');
       ikuyoBtn.disabled = true;
-      // Realtimeで新しい呼び出しを待機（全active callのチャネル）
       pollForNewCalls();
-      return;
-    }
-
-    // 呼び出し元の名前を表示
-    if (state.childName) {
-      showStatus(`📳 ${state.childName}から呼ばれています`, 'info');
+    } else {
+      // 呼び出し元の名前を表示
+      if (state.childName) {
+        showStatus(`📳 ${state.childName}から呼ばれています`, 'info');
+      }
     }
 
     subscribeChannel(state.callId);
