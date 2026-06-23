@@ -17,7 +17,8 @@ Scratchは、ブロックを組み合わせてゲームやアニメーション�
 
 ---
 
-## 🔧 準備：アカウントをつくろう
+<details>
+<summary>🔧 準備：アカウントをつくろう</summary>
 
 1. https://scratch.mit.edu/join をひらく
 2. ユーザー名を決める（本名はつかわない！ニックネームにしよう）
@@ -27,9 +28,12 @@ Scratchは、ブロックを組み合わせてゲームやアニメーション�
 
 これで作った作品を保存できるようになるよ！
 
+</details>
+
 ---
 
-## 📝 Scratchの画面の見かた
+<details>
+<summary>📝 Scratchの画面の見かた</summary>
 
 Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと：
 
@@ -44,9 +48,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 **ステージ** = ゲームの背景（はいけい）
 **コスチューム** = スプライトの見た目
 
+</details>
+
 ---
 
-## 🐱 ステップ0：まずはネコを動かしてみよう（10分）
+<details>
+<summary>🐱 ステップ0：まずはネコを動かしてみよう（10分）</summary>
 
 はじめてScratchをさわるなら、まずこれをやろう！
 
@@ -68,9 +75,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 2. 画面のはしに行ったら **跳ね返る** にはどうする？（「動き」カテゴリの下のほう）
 3. **矢印キーで動かす** にはどうする？（「調べる」カテゴリに、キーの情報がある）
 
+</details>
+
 ---
 
-## 🏰 ステップ1：迷路ゲームをつくろう
+<details>
+<summary>🏰 ステップ1：迷路ゲームをつくろう</summary>
 
 ### ゴール
 
@@ -122,9 +132,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 - ステージを2つ作って、次の迷路に進めたら？
 - 動く障害物を足したら？
 
+</details>
+
 ---
 
-## 🚪 ステップ2：脱出ゲームをつくろう
+<details>
+<summary>🚪 ステップ2：脱出ゲームをつくろう</summary>
 
 ### ゴール
 
@@ -175,9 +188,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 - 制限時間をつけたら？
 - 隠しアイテムを探すゲームにしたら？
 
+</details>
+
 ---
 
-## 🚀 ステップ3：シューティングゲームをつくろう
+<details>
+<summary>🚀 ステップ3：シューティングゲームをつくろう</summary>
 
 ### ゴール
 
@@ -238,9 +254,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 - ボス戦（たくさん弾を当てないと倒せない敵）
 - BGMと効果音をつけたら？（「音」タブで追加できる）
 
+</details>
+
 ---
 
-## 🦘 ステップ4：アクションゲームをつくろう
+<details>
+<summary>🦘 ステップ4：アクションゲームをつくろう</summary>
 
 ### ゴール
 
@@ -303,9 +322,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 - ステージ2、3と作ったら？
 - 壁ジャンプ（壁に触れてるときにジャンプできるようにしたら？）
 
+</details>
+
 ---
 
-## 🧰 こまったときのヒント
+<details>
+<summary>🧰 こまったときのヒント</summary>
 
 ### ブロックが見つからない！
 
@@ -333,9 +355,12 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 - **エラーは敵じゃない** — 「ここがおかしいよ」って教えてくれてるだけ
 - **他の人のコードを見るのはずるくない** — プログラマーはみんなやってる。見て学んで、自分のゲームに使おう
 
+</details>
+
 ---
 
-## 📚 べんりなリンク
+<details>
+<summary>📚 べんりなリンク</summary>
 
 | リンク | 説明 |
 |--------|------|
@@ -343,6 +368,8 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 | https://scratch.mit.edu/explore/projects/games | みんなが作ったゲーム（中を見れる） |
 | https://ja.scratch-wiki.info/ | Scratch日本語wiki（わからないこと調べる） |
 | https://scratch.mit.edu/discuss/ | 質問フォーラム |
+
+</details>
 
 ---
 
