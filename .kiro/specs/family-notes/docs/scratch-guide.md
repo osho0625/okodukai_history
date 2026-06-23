@@ -10,12 +10,15 @@
 
 ---
 
-## 🌟 はじめに：Scratchってなに？
+<details>
+<summary>🌟 はじめに：Scratchってなに？</summary>
 
 Scratchは、ブロックを組み合わせてゲームやアニメーションを作れるツールだよ。
 文字を打つプログラミングとちがって、ブロックをドラッグ＆ドロップするだけ！
 
 **Scratchのサイト：** https://scratch.mit.edu/
+
+</details>
 
 ---
 
