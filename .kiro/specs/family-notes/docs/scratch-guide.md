@@ -11,7 +11,7 @@
 ---
 
 <details>
-<summary>🌟 はじめに：Scratchってなに？</summary>
+<summary>🌟 はじめに：Scratchってなに？（⏱️ 5分）</summary>
 
 Scratchは、ブロックを組み合わせてゲームやアニメーションを作れるツールだよ。
 文字を打つプログラミングとちがって、ブロックをドラッグ＆ドロップするだけ！
@@ -23,7 +23,7 @@ Scratchは、ブロックを組み合わせてゲームやアニメーション�
 ---
 
 <details>
-<summary>🔧 準備：アカウントをつくろう</summary>
+<summary>🔧 準備：アカウントをつくろう（⏱️ 10分）</summary>
 
 1. https://scratch.mit.edu/join をひらく
 2. ユーザー名を決める（本名はつかわない！ニックネームにしよう）
@@ -38,7 +38,7 @@ Scratchは、ブロックを組み合わせてゲームやアニメーション�
 ---
 
 <details>
-<summary>📝 Scratchの画面の見かた</summary>
+<summary>📝 Scratchの画面の見かた（⏱️ 10分）</summary>
 
 Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと：
 
@@ -58,7 +58,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🐱 ステップ0：まずはネコを動かしてみよう（10分）</summary>
+<summary>🐱 ステップ0：まずはネコを動かしてみよう（⏱️ 30分）</summary>
 
 はじめてScratchをさわるなら、まずこれをやろう！
 
@@ -85,7 +85,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🏰 ステップ1：迷路ゲームをつくろう</summary>
+<summary>🏰 ステップ1：迷路ゲームをつくろう（⏱️ 3時間）</summary>
 
 ### ゴール
 
@@ -142,7 +142,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🚪 ステップ2：脱出ゲームをつくろう</summary>
+<summary>🚪 ステップ2：脱出ゲームをつくろう（⏱️ 5時間）</summary>
 
 ### ゴール
 
@@ -198,7 +198,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🚀 ステップ3：シューティングゲームをつくろう</summary>
+<summary>🚀 ステップ3：シューティングゲームをつくろう（⏱️ 5時間）</summary>
 
 ### ゴール
 
@@ -264,7 +264,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🦘 ステップ4：アクションゲームをつくろう</summary>
+<summary>🦘 ステップ4：アクションゲームをつくろう（⏱️ 8時間）</summary>
 
 ### ゴール
 
@@ -379,7 +379,7 @@ Scratchエディタ（https://scratch.mit.edu/projects/editor/）をひらくと
 ---
 
 <details>
-<summary>🏆 ステップ5：オリジナルゲームを作ろう</summary>
+<summary>🏆 ステップ5：オリジナルゲームを作ろう（⏱️ 2週間）</summary>
 
 ### ゴール
 
