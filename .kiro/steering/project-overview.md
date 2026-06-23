@@ -21,6 +21,7 @@ inclusion: auto
 | テトリス、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
 | ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
+| メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -260,3 +261,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `trpg.md` — クトゥルフTRPG
 - `games-misc.md` — テトリス・ブロックブラスト・オリマーの冒険・ゲームセンター
 - `today-science.md` — 今日のサイエンス
+- `family-notes.md` — 家族メモ帳
