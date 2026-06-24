@@ -197,6 +197,11 @@
     return div.innerHTML;
   }
 
+  function clearMessages() {
+    chatState.messages = [];
+    renderMessages();
+  }
+
   // ============================================================
   // 破棄
   // ============================================================
@@ -217,6 +222,7 @@
     sendMessage,
     sendQuickReply,
     loadHistory,
+    clearMessages,
     destroy,
     QUICK_REPLIES,
     onMessageReceived(cb) { chatState.onMessage = cb; }

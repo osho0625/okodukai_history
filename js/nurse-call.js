@@ -542,6 +542,7 @@
     window.clearChatHistory = async function() {
       if (!confirm('チャット履歴を全部消しますか？')) return;
       await client.from('nurse_call_messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (window.NurseCallChat) NurseCallChat.clearMessages();
       const container = document.getElementById('parentChatMessages');
       if (container) container.innerHTML = '<div style="text-align:center;color:#999;padding:12px;">履歴を削除しました</div>';
     };

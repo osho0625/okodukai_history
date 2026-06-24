@@ -172,7 +172,14 @@
       }
     }
 
-    if (!voiceState.stateMachine.transition('connected')) return false;
+    if (!voiceState.stateMachine.transition('connected')) {
+      // 遷移失敗（既にendedなど） → マイク解放
+      if (voiceState.localStream) {
+        voiceState.localStream.getTracks().forEach(t => t.stop());
+        voiceState.localStream = null;
+      }
+      return false;
+    }
     broadcastVoiceState('connected');
     showVoiceStatus('つなげているよ...', 'info');
     updateVoiceUI();
@@ -420,8 +427,9 @@
   function startCallTimer() {
     voiceState.callStartTime = Date.now();
     const timerEl = document.getElementById('voiceTimer');
+    if (!timerEl) return; // 親画面など要素が無い場合はタイマー不要
+    timerEl.style.display = 'block';
     voiceState.callTimer = setInterval(() => {
-      if (!timerEl) return;
       const elapsed = Math.floor((Date.now() - voiceState.callStartTime) / 1000);
       const min = Math.floor(elapsed / 60);
       const sec = elapsed % 60;
