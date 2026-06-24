@@ -144,24 +144,52 @@ body {
   <div class="status-msg" id="statusMsg"></div>
   <!-- 親側 -->
   <div class="parent-section" id="parentSection">
-    <button class="btn-ikuyo" id="ikuyoBtn">いくよ！</button>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0;">
-      <button class="parent-reply-btn" data-msg="1分待って">⏱️ 1分待って</button>
-      <button class="parent-reply-btn" data-msg="3分待って">⏱️ 3分待って</button>
-      <button class="parent-reply-btn" data-msg="どうぞ">👍 どうぞ</button>
-      <button class="parent-reply-btn" data-msg="電話かけて">📞 電話かけて</button>
+    <!-- 親ナビアイコン -->
+    <div style="display:flex; gap:12px; justify-content:center; margin-bottom:16px;">
+      <button class="nav-icon-btn" id="parentNavHome" onclick="switchParentView('home')" style="border-color:#4caf50;">🔔</button>
+      <button class="nav-icon-btn" id="parentNavChat" onclick="switchParentView('chat')">💬</button>
+      <button class="nav-icon-btn" id="parentNavPhone" onclick="switchParentView('phone')">📞</button>
     </div>
-    <button class="parent-btn" id="parentChatBtn" style="background:#1976d2; margin-bottom:12px;" onclick="openParentChat()">💬 チャット</button>
-    <button class="parent-btn" id="parentCallBtn" style="background:#1976d2;">📞 電話する</button>
-    <button class="parent-btn" id="parentAcceptCallBtn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 電話に出る</button>
-    <button class="parent-btn" id="parentEndCallBtn" style="display:none; background:#e53935;">切る</button>
-    <button class="parent-btn" id="parentVideoBtn" style="display:none; background:#1976d2;" onclick="NurseCallVoice.toggleVideo()">📹 カメラ</button>
-    <div id="parentVoiceStatus" style="text-align:center; font-size:0.9em; color:#999; margin:12px 0;"></div>
-    <div style="position:relative; margin-top:12px;">
-      <video id="parentRemoteVideo" autoplay playsinline style="display:none; width:100%; border-radius:12px; background:#000;"></video>
-      <video id="parentLocalVideo" autoplay playsinline muted style="display:none; position:absolute; bottom:8px; right:8px; width:80px; border-radius:8px; border:2px solid #fff;"></video>
+
+    <!-- 親ホームビュー -->
+    <div id="parentViewHome">
+      <button class="btn-ikuyo" id="ikuyoBtn">いくよ！</button>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0;">
+        <button class="parent-reply-btn" data-msg="1分待って">⏱️ 1分待って</button>
+        <button class="parent-reply-btn" data-msg="3分待って">⏱️ 3分待って</button>
+        <button class="parent-reply-btn" data-msg="どうぞ">👍 どうぞ</button>
+        <button class="parent-reply-btn" data-msg="電話かけて">📞 電話かけて</button>
+      </div>
     </div>
-    <audio id="voiceRemoteAudio" autoplay></audio>
+
+    <!-- 親チャットビュー -->
+    <div id="parentViewChat" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:600;">💬 チャット</span>
+        <button onclick="clearChatHistory()" style="border:none; background:none; color:#e53935; font-size:0.8em; cursor:pointer; font-weight:600;">🗑️ 履歴削除</button>
+      </div>
+      <div id="parentChatMessages" style="height:250px; overflow-y:auto; background:#fff; border-radius:12px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:10px;"></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="parentChatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+        <button id="parentChatSendBtn" style="padding:10px 16px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
+      </div>
+    </div>
+
+    <!-- 親電話ビュー -->
+    <div id="parentViewPhone" style="display:none;">
+      <div style="background:#fff; border-radius:16px; padding:24px; text-align:center;">
+        <div id="parentVoiceStatus" style="font-weight:600; min-height:1.5em; margin-bottom:12px;"></div>
+        <button class="parent-btn" id="parentCallBtn" style="background:#4caf50;">📞 電話する</button>
+        <button class="parent-btn" id="parentAcceptCallBtn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 電話に出る</button>
+        <button class="parent-btn" id="parentEndCallBtn" style="display:none; background:#e53935;">切る</button>
+        <button class="parent-btn" id="parentVideoBtn" style="display:none; background:#1976d2;" onclick="NurseCallVoice.toggleVideo()">📹 カメラ</button>
+        <div style="position:relative; margin-top:12px;">
+          <video id="parentRemoteVideo" autoplay playsinline style="display:none; width:100%; border-radius:12px; background:#000;"></video>
+          <video id="parentLocalVideo" autoplay playsinline muted style="display:none; position:absolute; bottom:8px; right:8px; width:80px; border-radius:8px; border:2px solid #fff;"></video>
+        </div>
+        <audio id="voiceRemoteAudio" autoplay></audio>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -245,6 +273,26 @@ function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
   currentView = viewId;
+}
+
+// 親ビュー切り替え
+function switchParentView(view) {
+  document.getElementById('parentViewHome').style.display = view === 'home' ? 'block' : 'none';
+  document.getElementById('parentViewChat').style.display = view === 'chat' ? 'block' : 'none';
+  document.getElementById('parentViewPhone').style.display = view === 'phone' ? 'block' : 'none';
+  // チャット初期化（初回のみ）
+  if (view === 'chat' && window.NurseCallChat && !window._parentChatInited) {
+    window._parentChatInited = true;
+    const s = window.NurseCall?.state || {};
+    NurseCallChat.init(s.callId || 'default', s.childId || 'default', 'parent', 'parentChatMessages');
+    document.getElementById('parentChatSendBtn')?.addEventListener('click', () => {
+      const input = document.getElementById('parentChatInput');
+      if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
+    });
+    document.getElementById('parentChatInput')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('parentChatSendBtn').click(); }
+    });
+  }
 }
 
 // 戻るボタン

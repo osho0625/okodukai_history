@@ -538,40 +538,6 @@
       });
     });
 
-    // 親側: チャット（グローバル関数から呼ばれる）
-    window.openParentChat = function() {
-      let chatSection = document.getElementById('parentChatSection');
-      if (!chatSection) {
-        const ps = document.getElementById('parentSection');
-        const html = `<div id="parentChatSection" style="margin-top:16px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-weight:600;">💬 チャット</span>
-            <button onclick="clearChatHistory()" style="border:none; background:none; color:#e53935; font-size:0.8em; cursor:pointer; font-weight:600;">🗑️ 履歴削除</button>
-          </div>
-          <div id="parentChatMessages" style="height:200px; overflow-y:auto; margin-bottom:10px;"></div>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="parentChatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
-            <button id="parentChatSendBtn" style="padding:10px 16px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-weight:600; cursor:pointer;">送信</button>
-          </div>
-        </div>`;
-        if (ps) ps.insertAdjacentHTML('beforeend', html);
-        chatSection = document.getElementById('parentChatSection');
-        // チャット初期化（親用のcontainer idを指定）
-        if (window.NurseCallChat) {
-          NurseCallChat.init(state.callId || 'default', state.childId || 'default', 'parent', 'parentChatMessages');
-        }
-        document.getElementById('parentChatSendBtn').addEventListener('click', () => {
-          const input = document.getElementById('parentChatInput');
-          if (input.value.trim()) { NurseCallChat.sendMessage(input.value); input.value = ''; }
-        });
-        document.getElementById('parentChatInput').addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('parentChatSendBtn').click(); }
-        });
-      } else {
-        chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
-      }
-    };
-
     // チャット履歴削除（親のみ）
     window.clearChatHistory = async function() {
       if (!confirm('チャット履歴を全部消しますか？')) return;
