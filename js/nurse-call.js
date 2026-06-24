@@ -497,20 +497,21 @@
     subscribeChannel(state.callId || 'default');
 
     ikuyoBtn.addEventListener('click', async () => {
-      // Realtime broadcast
-      const channelName = buildChannelName(state.childId || 'default', state.callId || 'default');
-      const channel = client.channel(channelName);
-      await channel.subscribe();
-      await channel.send({
-        type: 'broadcast',
-        event: 'response',
-        payload: { action: 'iku_yo', text: 'すぐ行くよ💨' }
-      });
+      // 既にsubscribe済みのチャネルでbroadcast
+      if (state.channel) {
+        await state.channel.send({
+          type: 'broadcast',
+          event: 'response',
+          payload: { action: 'iku_yo', text: 'すぐ行くよ💨' }
+        });
+      }
 
       // DB更新
-      await client.from('nurse_calls')
-        .update({ responded_at: new Date().toISOString() })
-        .eq('id', state.callId);
+      if (state.callId && state.callId !== 'default') {
+        await client.from('nurse_calls')
+          .update({ responded_at: new Date().toISOString() })
+          .eq('id', state.callId);
+      }
 
       ikuyoBtn.disabled = true;
       ikuyoBtn.textContent = 'おくったよ！';
@@ -522,15 +523,14 @@
       }, 3000);
     });
 
-    // 親側: 返信ボタン（1分待って、3分待って、5分待って、電話かけて）
+    // 親側: 返信ボタン（1分待って、3分待って、どうぞ、電話かけて）
     document.querySelectorAll('.parent-reply-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const msg = btn.dataset.msg;
-        // Realtimeで子供にポップ通知
-        const channelName = buildChannelName(state.childId || 'default', state.callId || 'default');
-        const ch = client.channel(channelName);
-        await ch.subscribe();
-        await ch.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
+        // 既にsubscribe済みのチャネルでbroadcast
+        if (state.channel) {
+          await state.channel.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
+        }
         // チャットにも投稿
         if (window.NurseCallChat) NurseCallChat.sendMessage(msg);
         btn.style.opacity = '0.5';

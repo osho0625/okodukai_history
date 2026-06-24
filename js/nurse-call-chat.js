@@ -32,6 +32,12 @@
     chatState.senderRole = senderRole;
     chatState.containerId = containerId || 'chatMessages';
 
+    // 既存チャネルがあれば解除してから再購読
+    if (chatState.channel) {
+      client.removeChannel(chatState.channel);
+      chatState.channel = null;
+    }
+
     // Realtimeチャネル購読（全員共有の固定チャネル）
     const channelName = `nurse-chat-shared`;
     chatState.channel = client.channel(channelName);
@@ -77,14 +83,21 @@
       });
     }
 
-    // DB保存
-    await client.from('nurse_call_messages').insert({
-      call_id: chatState.callId,
-      child_id: chatState.childId,
-      sender_role: chatState.senderRole,
-      sender_name: msg.sender_name || null,
-      message_text: trimmed
-    });
+    // DB保存（call_idが有効なUUIDの場合のみFK制約付きinsert、それ以外はcall_id無しで保存）
+    const isValidUUID = chatState.callId && chatState.callId !== 'default' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatState.callId);
+    const isValidChildId = chatState.childId && chatState.childId !== 'default' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatState.childId);
+    if (isValidChildId) {
+      const insertData = {
+        child_id: chatState.childId,
+        sender_role: chatState.senderRole,
+        sender_name: msg.sender_name || null,
+        message_text: trimmed
+      };
+      if (isValidUUID) {
+        insertData.call_id = chatState.callId;
+      }
+      await client.from('nurse_call_messages').insert(insertData);
+    }
 
     // 子供からのメッセージ時、1分以上経過ならPush即時通知
     if (chatState.senderRole === 'child') {
@@ -166,7 +179,7 @@
 
   function addMessageToUI(msg) {
     // 重複防止（broadcast + ローカル追加）
-    if (chatState.messages.find(m => m.created_at === msg.created_at && m.message_text === msg.message_text && m.sender_role === msg.sender_role)) {
+    if (chatState.messages.find(m => m.created_at === msg.created_at && m.message_text === msg.message_text && m.sender_role === msg.sender_role && m.sender_name === msg.sender_name)) {
       return;
     }
     chatState.messages.push(msg);

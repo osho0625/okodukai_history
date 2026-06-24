@@ -320,10 +320,11 @@ async function initiateCallFromChild() {
   const state = window.NurseCall?.state;
   if (!state?.childId) return;
 
-  document.getElementById('voiceStatus').textContent = 'よびだし中...';
-  document.getElementById('voiceStatus').className = 'voice-status info';
-  document.getElementById('voiceCallBtn').style.display = 'none';
-  document.getElementById('voiceEndBtn').style.display = 'block';
+  // WebRTC: 子供側は発信者として接続開始（UI更新はVoiceモジュール内で行われる）
+  if (window.NurseCallVoice) {
+    const started = await NurseCallVoice.startCall();
+    if (!started) return; // マイク取得失敗等
+  }
 
   // Push通知で親に電話を知らせる
   try {
@@ -339,11 +340,6 @@ async function initiateCallFromChild() {
       })
     });
   } catch(e) {}
-
-  // WebRTC: 子供側は発信者として接続開始
-  if (window.NurseCallVoice) {
-    NurseCallVoice.startCall();
-  }
 }
 
 // チャット＋通話初期化
@@ -366,8 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('chatSendBtn').click(); }
       });
 
-      // 音声通話初期化
-      NurseCallVoice.init(callId, state.childId, senderRole);
+      // 音声通話初期化（親側はinitParentMode内で初期化済みなのでスキップ）
+      if (!state.isParent) {
+        NurseCallVoice.init(callId, state.childId, senderRole);
+      }
 
       // 子供側: 通話接続時に自動で通話ビューに遷移
       if (!state.isParent) {

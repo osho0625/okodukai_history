@@ -65,6 +65,12 @@
   // ============================================================
 
   async function init(callId, childId, role) {
+    // 既に初期化済みの場合はチャネルを解除してから再初期化
+    if (voiceState.channel) {
+      client.removeChannel(voiceState.channel);
+      voiceState.channel = null;
+    }
+
     voiceState.callId = callId;
     voiceState.childId = childId;
     voiceState.role = role;
@@ -206,9 +212,9 @@
 
     pc.ontrack = (event) => {
       const track = event.track;
+      const isParentMode = localStorage.getItem('deviceRole') === 'admin';
       if (track.kind === 'video') {
         // ビデオトラック受信 → role判定で適切なvideo要素に表示
-        const isParentMode = localStorage.getItem('deviceRole') === 'admin';
         const video = isParentMode
           ? document.getElementById('parentRemoteVideo')
           : document.getElementById('voiceRemoteVideo');
@@ -217,7 +223,8 @@
           video.style.display = 'block';
         }
       } else {
-        const audio = document.getElementById('voiceRemoteAudio');
+        const audioId = isParentMode ? 'parentRemoteAudio' : 'voiceRemoteAudio';
+        const audio = document.getElementById(audioId);
         if (audio && event.streams[0]) audio.srcObject = event.streams[0];
       }
     };
@@ -397,10 +404,16 @@
       if (videoSender.track) videoSender.track.stop();
       videoSender = null;
     }
+    // 子供側ビデオリセット
     const localVideo = document.getElementById('voiceLocalVideo');
     const remoteVideo = document.getElementById('voiceRemoteVideo');
     if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
     if (remoteVideo) { remoteVideo.srcObject = null; remoteVideo.style.display = 'none'; }
+    // 親側ビデオリセット
+    const parentLocalVideo = document.getElementById('parentLocalVideo');
+    const parentRemoteVideo = document.getElementById('parentRemoteVideo');
+    if (parentLocalVideo) { parentLocalVideo.srcObject = null; parentLocalVideo.style.display = 'none'; }
+    if (parentRemoteVideo) { parentRemoteVideo.srcObject = null; parentRemoteVideo.style.display = 'none'; }
     stopCallTimer();
   }
 
