@@ -304,10 +304,13 @@ h2 { margin-bottom: 12px; color: #333; }
       <input type="text" id="reminderMsg" maxlength="200" placeholder="リマインダーの内容（200文字以内）" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9em;color:#555;">
-          <input type="checkbox" id="reminderNoDate" onchange="toggleReminderDate()"> 日付を指定しない
+          <input type="checkbox" id="reminderNoDate" onchange="toggleReminderDate()"> 日付を指定しない（毎日通知）
         </label>
       </div>
-      <input type="date" id="reminderDate" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      <div id="reminderDateWrapper" style="position:relative;margin-bottom:10px;">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:1.2em;pointer-events:none;">📅</span>
+        <input type="date" id="reminderDate" style="width:100%;padding:10px 10px 10px 36px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      </div>
       <button onclick="submitReminder()" style="width:100%;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">登録する</button>
       <div id="reminderResultMsg" style="text-align:center;margin-top:8px;font-weight:600;display:none;"></div>
     </div>
@@ -1352,13 +1355,14 @@ function getReminderDeviceId() {
 
 function toggleReminderDate() {
   const noDate = document.getElementById('reminderNoDate').checked;
+  const dateWrapper = document.getElementById('reminderDateWrapper');
   const dateInput = document.getElementById('reminderDate');
   if (noDate) {
-    dateInput.style.display = 'none';
+    dateWrapper.style.display = 'none';
     dateInput.disabled = true;
     dateInput.value = '';
   } else {
-    dateInput.style.display = 'block';
+    dateWrapper.style.display = 'block';
     dateInput.disabled = false;
   }
 }
@@ -1386,10 +1390,10 @@ async function submitReminder() {
   let eventDate = null;
   if (!noDate) {
     if (!dateInput.value) {
-      resultMsg.textContent = '⚠️ 日付を入力してください';
+      resultMsg.textContent = '⚠️ 📅 日付を入力してください（日付欄をタップしてカレンダーから選んでね）';
       resultMsg.style.color = '#e53935';
       resultMsg.style.display = 'block';
-      setTimeout(() => resultMsg.style.display = 'none', 3000);
+      setTimeout(() => resultMsg.style.display = 'none', 4000);
       return;
     }
     // 過去日付チェック（JST基準）
