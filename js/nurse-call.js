@@ -404,10 +404,14 @@
   // オフラインキュー送信
   // ============================================================
 
+  let _flushingQueue = false;
+
   async function flushOfflineQueue() {
+    if (_flushingQueue) return;
     const queued = offlineQueue.peek();
     if (!queued || !navigator.onLine) return;
 
+    _flushingQueue = true;
     try {
       const token = getAccessToken();
       const res = await fetch(EDGE_FUNCTION_URL, {
@@ -430,6 +434,8 @@
       }
     } catch (e) {
       // リトライは次のonlineイベントで
+    } finally {
+      _flushingQueue = false;
     }
   }
 
@@ -495,7 +501,7 @@
       }
     }
 
-    subscribeChannel(state.callId || 'default');
+    // チャネル購読はcontinueInit()で行われるためここでは不要
 
     ikuyoBtn.addEventListener('click', async () => {
       // 既にsubscribe済みのチャネルでbroadcast

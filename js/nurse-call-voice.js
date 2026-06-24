@@ -127,7 +127,14 @@
       return false;
     }
 
-    if (!voiceState.stateMachine.transition('ringing')) return false;
+    if (!voiceState.stateMachine.transition('ringing')) {
+      // 遷移失敗 → マイク解放
+      if (voiceState.localStream) {
+        voiceState.localStream.getTracks().forEach(t => t.stop());
+        voiceState.localStream = null;
+      }
+      return false;
+    }
 
     broadcastVoiceState('ringing');
     // 相手が接続するまで3秒間隔でringingをリトライ（最大1分）
@@ -303,6 +310,9 @@
   // シグナリングイベント処理
   // ============================================================
 
+  // ICE candidateキュー（PeerConnection作成前に届いた場合のバッファ）
+  let pendingIceCandidates = [];
+
   async function handleSignalEvent(data) {
     try {
       const pc = voiceState.peerConnection;
@@ -316,18 +326,34 @@
         const answer = await newPc.createAnswer();
         await newPc.setLocalDescription(answer);
         broadcastSignal('answer', answer.sdp);
+        // バッファされたICE candidatesを適用
+        for (const candidate of pendingIceCandidates) {
+          await newPc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        pendingIceCandidates = [];
       }
 
       if (data.signal_type === 'answer') {
         // 自分がoffer送信済みの場合のみ処理
         if (pc && pc.signalingState === 'have-local-offer') {
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+          // バッファされたICE candidatesを適用
+          for (const candidate of pendingIceCandidates) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          }
+          pendingIceCandidates = [];
         }
       }
 
       if (data.signal_type === 'ice') {
-        if (pc && data.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        if (data.candidate) {
+          const currentPc = voiceState.peerConnection;
+          if (currentPc && currentPc.remoteDescription) {
+            await currentPc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } else {
+            // PeerConnection未作成 or remoteDescription未設定 → バッファ
+            pendingIceCandidates.push(data.candidate);
+          }
         }
       }
     } catch (e) {
@@ -413,6 +439,8 @@
       if (videoSender.track) videoSender.track.stop();
       videoSender = null;
     }
+    // ICEキュークリア
+    pendingIceCandidates = [];
     // 子供側ビデオリセット
     const localVideo = document.getElementById('voiceLocalVideo');
     const remoteVideo = document.getElementById('voiceRemoteVideo');
