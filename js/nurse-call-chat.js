@@ -32,17 +32,15 @@
     chatState.senderRole = senderRole;
     chatState.containerId = containerId || 'chatMessages';
 
-    // Realtimeチャネル購読
-    const channelName = `nurse-call:${childId}:${callId}`;
+    // Realtimeチャネル購読（全員共有の固定チャネル）
+    const channelName = `nurse-chat-shared`;
     chatState.channel = client.channel(channelName);
 
     chatState.channel
       .on('broadcast', { event: 'chat' }, (payload) => {
         const msg = payload.payload;
-        if (msg.call_id === callId) {
-          addMessageToUI(msg);
-          if (chatState.onMessage) chatState.onMessage(msg);
-        }
+        addMessageToUI(msg);
+        if (chatState.onMessage) chatState.onMessage(msg);
       })
       .subscribe();
 
@@ -84,6 +82,7 @@
       call_id: chatState.callId,
       child_id: chatState.childId,
       sender_role: chatState.senderRole,
+      sender_name: msg.sender_name || null,
       message_text: trimmed
     });
 
@@ -127,9 +126,9 @@
   // ============================================================
 
   async function loadHistory(callId, limit = 50) {
+    // 全メッセージ共有（家庭内グループチャット）
     const { data } = await client.from('nurse_call_messages')
       .select('*')
-      .eq('call_id', callId)
       .order('created_at', { ascending: true })
       .limit(limit);
 
@@ -146,15 +145,16 @@
     if (!container) return;
 
     container.innerHTML = chatState.messages.map(msg => {
-      const isMe = msg.sender_role === chatState.senderRole && (msg.sender_name || '') === (chatState.senderRole === 'parent' ? 'お父さん' : (localStorage.getItem('nurse_call_child_name') || ''));
+      const myName = chatState.senderRole === 'parent' ? 'お父さん' : (localStorage.getItem('nurse_call_child_name') || '');
+      const senderName = msg.sender_name || (msg.sender_role === 'parent' ? 'お父さん' : '');
+      const isMe = senderName === myName;
       const align = isMe ? 'right' : 'left';
-      const bgColor = isMe ? '#e3f2fd' : '#fff';
+      const bgColor = isMe ? '#dcf8c6' : '#fff';
       const time = new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-      const name = msg.sender_name || (msg.sender_role === 'parent' ? 'お父さん' : '');
 
       return `<div style="display:flex; justify-content:${align === 'right' ? 'flex-end' : 'flex-start'}; margin-bottom:8px;">
         <div style="max-width:75%; background:${bgColor}; border-radius:12px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-          ${name ? `<div style="font-size:0.7em; color:#1976d2; font-weight:600; margin-bottom:2px;">${escapeHtml(name)}</div>` : ''}
+          ${!isMe && senderName ? `<div style="font-size:0.7em; color:#1976d2; font-weight:600; margin-bottom:2px;">${escapeHtml(senderName)}</div>` : ''}
           <div style="font-size:0.95em; word-wrap:break-word;">${escapeHtml(msg.message_text)}</div>
           <div style="font-size:0.7em; color:#999; margin-top:4px; text-align:right;">${time}</div>
         </div>
