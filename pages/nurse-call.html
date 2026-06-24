@@ -187,7 +187,7 @@ body {
           <video id="parentRemoteVideo" autoplay playsinline style="display:none; width:100%; border-radius:12px; background:#000;"></video>
           <video id="parentLocalVideo" autoplay playsinline muted style="display:none; position:absolute; bottom:8px; right:8px; width:80px; border-radius:8px; border:2px solid #fff;"></video>
         </div>
-        <audio id="voiceRemoteAudio" autoplay></audio>
+        <audio id="parentRemoteAudio" autoplay></audio>
       </div>
     </div>
   </div>
@@ -490,7 +490,7 @@ async function loadTemperatureHistory() {
     .order('measured_at', { ascending: false })
     .limit(200);
 
-  const section = document.getElementById('parentSection');
+  const section = document.getElementById('parentViewHome');
   if (!section) return;
 
   // 既存の体温セクションがあれば削除して再描画
