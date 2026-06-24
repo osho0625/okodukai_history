@@ -207,8 +207,11 @@
     pc.ontrack = (event) => {
       const track = event.track;
       if (track.kind === 'video') {
-        // ビデオトラック受信 → 親画面を優先的に探す
-        const video = document.getElementById('parentRemoteVideo') || document.getElementById('voiceRemoteVideo');
+        // ビデオトラック受信 → role判定で適切なvideo要素に表示
+        const isParentMode = localStorage.getItem('deviceRole') === 'admin';
+        const video = isParentMode
+          ? document.getElementById('parentRemoteVideo')
+          : document.getElementById('voiceRemoteVideo');
         if (video) {
           video.srcObject = event.streams[0];
           video.style.display = 'block';
@@ -257,26 +260,25 @@
     if (!pc) return;
 
     if (videoSender) {
-      // ビデオOFF: トラック停止＆除去
       videoSender.track.stop();
       pc.removeTrack(videoSender);
       videoSender = null;
-      const localVideo = document.getElementById('voiceLocalVideo') || document.getElementById('parentLocalVideo');
+      const isParent = localStorage.getItem('deviceRole') === 'admin';
+      const localVideo = isParent ? document.getElementById('parentLocalVideo') : document.getElementById('voiceLocalVideo');
       if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
-      const videoBtn = document.getElementById('voiceVideoBtn') || document.getElementById('parentVideoBtn');
-      if (videoBtn) videoBtn.textContent = '📹';
+      const videoBtn = isParent ? document.getElementById('parentVideoBtn') : document.getElementById('voiceVideoBtn');
+      if (videoBtn) videoBtn.textContent = '📹 カメラ';
       return;
     }
 
-    // ビデオON: カメラ取得＆追加
     try {
       const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
       const videoTrack = videoStream.getVideoTracks()[0];
       videoSender = pc.addTrack(videoTrack, videoStream);
-      // ローカルプレビュー
-      const localVideo = document.getElementById('voiceLocalVideo') || document.getElementById('parentLocalVideo');
+      const isParent = localStorage.getItem('deviceRole') === 'admin';
+      const localVideo = isParent ? document.getElementById('parentLocalVideo') : document.getElementById('voiceLocalVideo');
       if (localVideo) { localVideo.srcObject = videoStream; localVideo.style.display = 'block'; }
-      const videoBtn = document.getElementById('voiceVideoBtn') || document.getElementById('parentVideoBtn');
+      const videoBtn = isParent ? document.getElementById('parentVideoBtn') : document.getElementById('voiceVideoBtn');
       if (videoBtn) videoBtn.textContent = '📹✕';
     } catch(e) {
       showVoiceStatus('カメラが使えないよ', 'error');
