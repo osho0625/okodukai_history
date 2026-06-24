@@ -507,7 +507,8 @@ async function loadTemperatureHistory() {
   html += '<div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">';
   html += '<button class="temp-filter-btn temp-filter-active" data-name="">ぜんぶ</button>';
   childNames.forEach(name => {
-    html += `<button class="temp-filter-btn" data-name="${name}">${name}</button>`;
+    const safeName = name.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    html += `<button class="temp-filter-btn" data-name="${safeName}">${safeName}</button>`;
   });
   html += '</div>';
 
@@ -535,6 +536,12 @@ function renderTempHistory(data, filterName) {
   const listEl = document.getElementById('tempHistoryList');
   if (!listEl) return;
 
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
   // 日付ごとにグループ化
   const grouped = {};
   filtered.forEach(row => {
@@ -552,7 +559,7 @@ function renderTempHistory(data, filterName) {
       const time = d.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
       const color = row.temperature >= 37.5 ? '#e53935' : row.temperature >= 37.0 ? '#f57c00' : '#333';
       html += `<div style="display:flex; align-items:center; padding:5px 0; border-bottom:1px solid #f5f5f5; font-size:0.9em; gap:8px;">
-        <span style="flex:1; color:#666;">${time} ${row.child_name}</span>
+        <span style="flex:1; color:#666;">${time} ${esc(row.child_name)}</span>
         <span style="font-weight:700; color:${color};">${row.temperature}℃</span>
         <button onclick="editTemp('${row.id}', ${row.temperature})" style="border:none; background:none; cursor:pointer; font-size:1em; padding:2px;">✏️</button>
         <button onclick="deleteTemp('${row.id}')" style="border:none; background:none; cursor:pointer; font-size:1em; padding:2px;">🗑️</button>

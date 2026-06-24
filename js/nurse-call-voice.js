@@ -340,8 +340,10 @@
       voiceState.stateMachine.transition('ringing');
       showVoiceStatus('でんわがきているよ！', 'info');
       updateVoiceUI();
-      // 受信側は自動応答
-      acceptCall();
+      // 子供側のみ自動応答（親側は「電話に出る」ボタンで手動応答）
+      if (voiceState.role === 'child') {
+        acceptCall();
+      }
     }
 
     if (data.state === 'connected' && voiceState.stateMachine.getState() === 'ringing') {

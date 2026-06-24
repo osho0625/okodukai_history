@@ -282,8 +282,9 @@
       parentSection.style.display = 'none';
     }
 
-    // 理由ボタン: タップで即座に送信（はきそうはサブ選択表示）
+    // 理由ボタン: タップで即座に送信（はきそうはサブ選択表示、tempBtnは除外）
     reasonBtns.forEach(btn => {
+      if (btn.id === 'tempBtn') return; // 体温ボタンはここでは処理しない
       btn.addEventListener('click', () => {
         if (btn.dataset.hasSub) {
           // モーダル表示
@@ -339,7 +340,7 @@
 
     // Edge Function呼び出し
     callBtn.disabled = true;
-    reasonBtns.forEach(btn => btn.disabled = true);
+    reasonBtns.forEach(btn => { if (btn.id !== 'tempBtn') btn.disabled = true; });
     showStatus('おくっているよ...', 'info');
 
     try {
@@ -396,7 +397,7 @@
 
     // ボタン即再有効化（クールダウンなし）
     callBtn.disabled = false;
-    reasonBtns.forEach(btn => btn.disabled = false);
+    reasonBtns.forEach(btn => { if (btn.id !== 'tempBtn') btn.disabled = false; });
   }
 
   // ============================================================
