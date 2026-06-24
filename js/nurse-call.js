@@ -544,6 +544,10 @@
       if (!chatSection) {
         const ps = document.getElementById('parentSection');
         const html = `<div id="parentChatSection" style="margin-top:16px; background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-weight:600;">💬 チャット</span>
+            <button onclick="clearChatHistory()" style="border:none; background:none; color:#e53935; font-size:0.8em; cursor:pointer; font-weight:600;">🗑️ 履歴削除</button>
+          </div>
           <div id="parentChatMessages" style="height:200px; overflow-y:auto; margin-bottom:10px;"></div>
           <div style="display:flex; gap:8px;">
             <input type="text" id="parentChatInput" placeholder="メッセージ..." maxlength="500" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
@@ -566,6 +570,14 @@
       } else {
         chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
       }
+    };
+
+    // チャット履歴削除（親のみ）
+    window.clearChatHistory = async function() {
+      if (!confirm('チャット履歴を全部消しますか？')) return;
+      await client.from('nurse_call_messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const container = document.getElementById('parentChatMessages');
+      if (container) container.innerHTML = '<div style="text-align:center;color:#999;padding:12px;">履歴を削除しました</div>';
     };
 
     // 親側: でんわするボタン

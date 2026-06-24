@@ -65,6 +65,7 @@
       call_id: chatState.callId,
       child_id: chatState.childId,
       sender_role: chatState.senderRole,
+      sender_name: chatState.senderRole === 'parent' ? 'お父さん' : (localStorage.getItem('nurse_call_child_name') || ''),
       message_text: trimmed,
       created_at: new Date().toISOString()
     };
@@ -145,13 +146,15 @@
     if (!container) return;
 
     container.innerHTML = chatState.messages.map(msg => {
-      const isMe = msg.sender_role === chatState.senderRole;
+      const isMe = msg.sender_role === chatState.senderRole && (msg.sender_name || '') === (chatState.senderRole === 'parent' ? 'お父さん' : (localStorage.getItem('nurse_call_child_name') || ''));
       const align = isMe ? 'right' : 'left';
       const bgColor = isMe ? '#e3f2fd' : '#fff';
       const time = new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      const name = msg.sender_name || (msg.sender_role === 'parent' ? 'お父さん' : '');
 
       return `<div style="display:flex; justify-content:${align === 'right' ? 'flex-end' : 'flex-start'}; margin-bottom:8px;">
         <div style="max-width:75%; background:${bgColor}; border-radius:12px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+          ${name ? `<div style="font-size:0.7em; color:#1976d2; font-weight:600; margin-bottom:2px;">${escapeHtml(name)}</div>` : ''}
           <div style="font-size:0.95em; word-wrap:break-word;">${escapeHtml(msg.message_text)}</div>
           <div style="font-size:0.7em; color:#999; margin-top:4px; text-align:right;">${time}</div>
         </div>
