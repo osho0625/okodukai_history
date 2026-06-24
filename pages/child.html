@@ -1484,9 +1484,29 @@ async function loadReminders() {
     return;
   }
 
+  // 期限切れの行事リマインダーを自動削除（event_dateが昨日以前）
+  const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  today.setHours(0, 0, 0, 0);
+  const expiredIds = data
+    .filter(r => r.type === 'event' && r.event_date && new Date(r.event_date + 'T00:00:00+09:00') < today)
+    .map(r => r.id);
+  if (expiredIds.length > 0) {
+    await client.from('reminders')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', expiredIds);
+  }
+
+  // 期限切れを除外して表示
+  const activeData = data.filter(r => !expiredIds.includes(r.id));
+
+  if (activeData.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:#999;font-size:0.9em;padding:8px 0;">リマインダーはありません</div>';
+    return;
+  }
+
   const deviceId = getReminderDeviceId();
   listEl.innerHTML = '';
-  data.forEach(r => {
+  activeData.forEach(r => {
     const div = document.createElement('div');
     div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;';
 

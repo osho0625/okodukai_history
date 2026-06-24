@@ -1261,6 +1261,17 @@ async function loadReminders() {
     const sevenDaysLater = new Date(today);
     sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
 
+    // 期限切れの行事リマインダーを自動削除（event_dateが昨日以前）
+    const expiredEvents = (events || []).filter(e => {
+      const eventDate = new Date(e.event_date + 'T00:00:00+09:00');
+      return eventDate < today;
+    });
+    if (expiredEvents.length > 0) {
+      await client.from('reminders')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', expiredEvents.map(e => e.id));
+    }
+
     // Filter events: event_date between today and today+7 days (inclusive)
     const filteredEvents = (events || []).filter(e => {
       const eventDate = new Date(e.event_date + 'T00:00:00+09:00');
