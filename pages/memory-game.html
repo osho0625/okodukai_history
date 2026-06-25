@@ -243,6 +243,7 @@ let startTime = 0;
 let endTime = 0;
 let locked = false;
 let mismatchTimer = null;
+let peekTimer = null;
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -296,7 +297,9 @@ window.startGame = function(diff) {
   const allCards = grid.querySelectorAll('.card');
   allCards.forEach(c => c.classList.add('flipped'));
   const peekTime = diff === 'easy' ? 2000 : diff === 'normal' ? 1500 : 1200;
-  setTimeout(() => {
+  document.getElementById('timer').textContent = '覚えて！';
+  peekTimer = setTimeout(() => {
+    peekTimer = null;
     allCards.forEach(c => c.classList.remove('flipped'));
     locked = false;
     // タイマーは記憶タイム後に開始
@@ -304,6 +307,7 @@ window.startGame = function(diff) {
     endTime = 0;
     clearInterval(timerInterval);
     timerInterval = setInterval(updateTimer, 1000);
+    document.getElementById('timer').textContent = '0:00';
   }, peekTime);
 };
 
@@ -399,6 +403,8 @@ window.replay = function() {
 };
 
 window.backToTitle = function() {
+  if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
+  if (mismatchTimer) { clearTimeout(mismatchTimer); mismatchTimer = null; }
   cleanup();
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
