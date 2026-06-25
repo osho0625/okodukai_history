@@ -143,6 +143,14 @@ h1 { font-size: 1.3em; font-weight: 700; }
 }
 .result-good { color: #4ecdc4; font-weight: 600; }
 .result-bad { color: #e94560; font-weight: 600; }
+
+/* スマホ最適化: 手札が多い時に収まるよう */
+@media (max-width: 480px) {
+  .hand-card { font-size: 1.3em; width: 38px; height: 44px; }
+  .declare-btn { padding: 6px 10px; min-width: 48px; font-size: 0.95em; }
+  .declare-name { font-size: 0.55em; }
+  .message-text { font-size: 0.95em; }
+}
 </style>
 </head>
 <body>

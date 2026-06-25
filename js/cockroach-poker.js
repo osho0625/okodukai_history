@@ -2,7 +2,6 @@
 (function() {
 'use strict';
 
-// 8種の虫カード
 const CREATURES = [
   { id: 'cockroach', emoji: '🪳', name: 'ゴキブリ' },
   { id: 'bat',       emoji: '🦇', name: 'コウモリ' },
@@ -14,7 +13,7 @@ const CREATURES = [
   { id: 'rat',       emoji: '🐀', name: 'ネズミ' }
 ];
 
-const LOSE_COUNT = 4; // 同じカード4枚で負け
+const LOSE_COUNT = 4;
 
 let myHand = [];
 let cpuHand = [];
@@ -23,9 +22,22 @@ let cpuFaceUp = [];
 let selectedCard = null;
 let gameActive = false;
 let isPlayerTurn = false;
+let pendingTimers = []; // setTimeout管理用
+
+// --- タイマー管理（画面遷移時にクリア） ---
+function setGameTimeout(fn, ms) {
+  const id = setTimeout(fn, ms);
+  pendingTimers.push(id);
+  return id;
+}
+function clearAllTimers() {
+  pendingTimers.forEach(id => clearTimeout(id));
+  pendingTimers = [];
+}
 
 // --- 初期化 ---
 function startGame() {
+  clearAllTimers();
   document.getElementById('titleScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'block';
@@ -54,6 +66,8 @@ function startGame() {
 window.startGame = startGame;
 
 function goTitle() {
+  clearAllTimers();
+  gameActive = false;
   document.getElementById('titleScreen').style.display = 'block';
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'none';
@@ -72,7 +86,6 @@ function renderAll() {
 
 function renderFaceUp(elId, cards) {
   const el = document.getElementById(elId);
-  // 種類ごとにカウントしてグループ表示
   const counts = {};
   cards.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
   let html = '';
@@ -103,7 +116,6 @@ function renderHand() {
   myHand = sorted;
 }
 
-// 手札のインタラクティブ状態を視覚的に更新
 function updateHandInteractivity() {
   const handEl = document.getElementById('myHand');
   if (isPlayerTurn && gameActive) {
@@ -113,14 +125,23 @@ function updateHandInteractivity() {
   }
 }
 
+// メッセージエリアにスクロール
+function scrollToMessage() {
+  const el = document.getElementById('messageArea');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function selectCard(idx) {
   if (!gameActive || !isPlayerTurn) return;
   selectedCard = (selectedCard === idx) ? null : idx;
   renderHand();
   updateHandInteractivity();
   if (selectedCard !== null) {
+    const c = CREATURES.find(cr => cr.id === myHand[selectedCard]);
+    setMessage(`<span class="turn-indicator">あなたの番</span><br>${c.emoji} を選択中 — 下から宣言する虫を選ぼう`, '');
     showDeclareOptions();
   } else {
+    setMessage('<span class="turn-indicator">あなたの番</span><br>手札からカードを選んでタップ → 宣言する虫を選ぼう', '');
     document.getElementById('declareArea').style.display = 'none';
   }
 }
@@ -153,6 +174,7 @@ function playerDeclare(declaredId) {
   isPlayerTurn = false;
   const actualId = myHand[selectedCard];
   const declared = CREATURES.find(c => c.id === declaredId);
+  const actual = CREATURES.find(c => c.id === actualId);
 
   myHand.splice(selectedCard, 1);
   selectedCard = null;
@@ -162,33 +184,33 @@ function playerDeclare(declaredId) {
   const cpuGuess = cpuDecideGuess(declaredId);
 
   renderAll();
+  setMessage(`あなた「${declared.emoji} ${declared.name}です」<br><span style="color:#aaa">CPUが考え中...</span>`, '');
+  scrollToMessage();
 
-  const declaredEmoji = declared.emoji;
-  setMessage(`あなた「${declaredEmoji} ${declared.name}です」<br><span style="color:#aaa">CPUが考え中...</span>`, '');
-
-  setTimeout(() => {
+  setGameTimeout(() => {
     if (!gameActive) return;
     const correct = (cpuGuess === 'true' && isHonest) || (cpuGuess === 'false' && !isHonest);
     const guessText = cpuGuess === 'true' ? 'ホント' : 'ウソ';
+    const revealText = isHonest ? '' : `<br><span style="font-size:0.85em;color:#aaa">（実は ${actual.emoji}${actual.name} だった）</span>`;
 
     if (correct) {
       myFaceUp.push(actualId);
       setMessage(
-        `あなた「${declaredEmoji} ${declared.name}です」<br>CPU「<b>${guessText}</b>！」<br>→ <span class="result-bad">正解！ あなたの前に置かれた</span> 😱`,
+        `あなた「${declared.emoji} ${declared.name}です」<br>CPU「<b>${guessText}</b>！」${revealText}<br>→ <span class="result-bad">CPUに見抜かれた！ あなたの前に置かれた</span> 😱`,
         ''
       );
       renderAll();
       if (checkGameEnd()) return;
-      setTimeout(() => { if (gameActive) playerTurnStart(); }, 2000);
+      setGameTimeout(() => { if (gameActive) playerTurnStart(); }, 2200);
     } else {
       cpuFaceUp.push(actualId);
       setMessage(
-        `あなた「${declaredEmoji} ${declared.name}です」<br>CPU「<b>${guessText}</b>！」<br>→ <span class="result-good">はずれ！ CPUの前に置かれた</span> 😄`,
+        `あなた「${declared.emoji} ${declared.name}です」<br>CPU「<b>${guessText}</b>！」${revealText}<br>→ <span class="result-good">CPUがだまされた！ CPUの前に置かれた</span> 😄`,
         ''
       );
       renderAll();
       if (checkGameEnd()) return;
-      setTimeout(() => { if (gameActive) cpuTurn(); }, 2000);
+      setGameTimeout(() => { if (gameActive) cpuTurn(); }, 2200);
     }
   }, 1000);
 }
@@ -205,12 +227,11 @@ function cpuTurn() {
   const actualId = cpuHand[cardIdx];
   cpuHand.splice(cardIdx, 1);
 
-  // CPUの宣言ロジック: プレイヤーの前のカードを考慮
+  // CPUの宣言ロジック
   let declaredId;
   if (Math.random() < 0.45) {
-    declaredId = actualId; // ホント
+    declaredId = actualId;
   } else {
-    // プレイヤーの前に多いカードを宣言（いやがらせ）する確率を上げる
     const myCountMap = countCards(myFaceUp);
     const dangerCards = CREATURES.filter(c => (myCountMap[c.id] || 0) >= 2 && c.id !== actualId);
     if (dangerCards.length > 0 && Math.random() < 0.4) {
@@ -225,15 +246,17 @@ function cpuTurn() {
   const isHonest = (declaredId === actualId);
 
   renderAll();
-  setMessage(`<span class="turn-indicator">CPUの番</span><br>CPUがカードを出した...<br>「これは ${declared.emoji}<b>${declared.name}</b> です」`, '');
+  setMessage(`<span class="turn-indicator">CPUの番</span><br>CPUがカードを出した...`, '');
+  scrollToMessage();
 
-  setTimeout(() => {
+  setGameTimeout(() => {
     if (!gameActive) return;
     setMessage(
-      `<span class="turn-indicator">CPUの番</span><br>CPUが言った：「これは ${declared.emoji}<b>${declared.name}</b> です」<br><span style="color:#aaa;font-size:0.85em">ホント？ ウソ？</span>`,
+      `<span class="turn-indicator">CPUの番</span><br>「これは ${declared.emoji}<b>${declared.name}</b> です」<br><span style="color:#aaa;font-size:0.85em">ホント？ ウソ？</span>`,
       'judge'
     );
     showJudgeButtons(isHonest, actualId);
+    scrollToMessage();
   }, 1200);
 }
 
@@ -259,7 +282,7 @@ function playerJudge(guessTrue, isHonest, actualId) {
     );
     renderAll();
     if (checkGameEnd()) return;
-    setTimeout(() => { if (gameActive) cpuTurn(); }, 2000);
+    setGameTimeout(() => { if (gameActive) cpuTurn(); }, 2200);
   } else {
     myFaceUp.push(actualId);
     setMessage(
@@ -268,7 +291,7 @@ function playerJudge(guessTrue, isHonest, actualId) {
     );
     renderAll();
     if (checkGameEnd()) return;
-    setTimeout(() => { if (gameActive) playerTurnStart(); }, 2000);
+    setGameTimeout(() => { if (gameActive) playerTurnStart(); }, 2200);
   }
 }
 window.playerJudge = playerJudge;
@@ -276,14 +299,8 @@ window.playerJudge = playerJudge;
 // --- CPUの判定AI ---
 function cpuDecideGuess(declaredId) {
   const declaredCount = cpuFaceUp.filter(id => id === declaredId).length;
-  // 自分の前に3枚ある虫を宣言された→ウソだと思いたい
-  if (declaredCount >= 3) {
-    return Math.random() < 0.75 ? 'false' : 'true';
-  }
-  // 2枚ある場合もやや警戒
-  if (declaredCount >= 2) {
-    return Math.random() < 0.6 ? 'false' : 'true';
-  }
+  if (declaredCount >= 3) return Math.random() < 0.75 ? 'false' : 'true';
+  if (declaredCount >= 2) return Math.random() < 0.6 ? 'false' : 'true';
   return Math.random() < 0.47 ? 'true' : 'false';
 }
 
@@ -315,6 +332,7 @@ function countCards(cards) {
 }
 
 function endGame(playerWin, reason) {
+  clearAllTimers();
   gameActive = false;
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'block';
