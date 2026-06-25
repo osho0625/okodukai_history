@@ -318,7 +318,6 @@ function renderPool() {
   for (let i = 0; i < 16; i++) {
     const wrapper = document.createElement('div');
     wrapper.className = 'pool-piece' + (usedPieces.has(i) ? ' used' : '');
-    if (chosenPiece === i) wrapper.classList.add('selected');
     wrapper.appendChild(createPieceEl(ALL_PIECES[i]));
     wrapper.addEventListener('click', () => onPoolClick(i));
     pool.appendChild(wrapper);
