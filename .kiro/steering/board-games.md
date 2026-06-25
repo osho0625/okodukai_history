@@ -1,9 +1,9 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*"
+fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
 ---
 
-# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱）
+# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス）
 
 ## ファイル構成
 
@@ -12,6 +12,7 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*"
 - `pages/quarto.html` — クアルト（2人用ボードゲーム）
 - `pages/quoridor.html` — コリドール（2人用壁配置ゲーム）
 - `pages/memory-game.html` — 神経衰弱（記憶力カードゲーム）
+- `pages/blokus.html` — ブロックス（陣取りボードゲーム）
 
 ## ごきぶりポーカー（cockroach-poker.html + js/cockroach-poker.js）
 
@@ -100,6 +101,79 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*"
     ゲームロジック全体
     window.startGame / window.flipCard / window.replay 等をwindowに公開
 ```
+
+## ブロックス（blokus.html）
+
+- 2〜4人ローカル対戦陣取りボードゲーム（同一端末パス＆プレイ）
+- 20×20ボード、全21種ポリオミノ（1〜5マス）× 4色
+
+### ゲームモード
+- 4人モード: 各プレイヤーに1色（青・赤・緑・黄）
+- 3人モード: 青・赤・緑のみ使用、黄の開始角(19,19)は非アクティブ
+- 2人モード: Team A（青+赤）、Team B（緑+黄）。ターンは青→赤→緑→黄順で各色独立ピースセット
+
+### ルール
+- 最初のピース: ピースのいずれか1マスが自分の開始角セルを覆う必要あり
+- 2手目以降（Corner_Rule）:
+  - 自分の既配置ピースと少なくとも1つの角で接触（対角隣接）
+  - 自分の既配置ピースと辺で接触（上下左右隣接）してはならない
+  - 他プレイヤーのピースとの辺接触は許可
+- パス: 確認ダイアログ「本当にパスする？」後に永久パス（以降自動スキップ）
+- ゲーム終了: 全色がパス状態になったら終了
+- スコア: `0 - 残りマス数 + ボーナス`（全配置+15、最後が1マスなら追加+5）
+- 勝者: 最高スコア（同点は引き分け）。2人モードはチームスコア合計で比較
+
+### 開始角（Starting Corners）
+- blue: (0,0), red: (0,19), green: (19,0), yellow: (19,19)
+
+### UI構成
+- 画面遷移: タイトル → セットアップ（人数+名前入力）→ ゲーム → 結果
+- ボード: CSS Grid 20×20、水平スクロールなし、最小14px/セル
+- ピースセレクター: ボード下部、5マス→4→3→2→1のグループ表示、flex-wrap
+- 操作バー: 回転(↻)、反転(↔)、確定(✓)、パスボタン
+- 合法配置ハイライト: 選択ピースの合法配置基準セルに薄い緑ドット(4px)表示
+- プレビュー: ボードタップで半透明表示、確定ボタンで配置実行
+- 不正配置: 赤フラッシュアニメーション
+- 名前入力: ゲーム開始時に入力、localStorage候補サジェスト
+
+### ランキング
+- テーブル: `blokus_rankings` (name TEXT UNIQUE, wins INT)
+- 方式: upsert（勝利ごとにwins+1、引き分け時は保存しない）
+- 表示: タイトル画面からTOP10（wins降順）
+
+### ピース定義（全21種、座標配列）
+
+| サイズ | 種類数 | IDs |
+|--------|--------|-----|
+| 1マス | 1 | I1 |
+| 2マス | 1 | I2 |
+| 3マス | 2 | I3, L3 |
+| 4マス | 5 | I4, L4, T4, S4, O4 |
+| 5マス | 12 | F5, I5, L5, N5, P5, T5, U5, V5, W5, X5, Y5, Z5 |
+
+### ゲームロジック（純粋関数）
+- `normalizeCells(cells)` — 座標正規化
+- `rotatePiece(cells, times)` — 時計回り90°×N回
+- `flipPiece(cells)` — 左右反転
+- `transformPiece(cells, rotation, flipped)` — flip先→rotate
+- `canPlace(board, cells, x, y, playerColor, isFirstPiece)` — 全ルール検証
+- `placePiece(board, cells, x, y, playerColor)` — 配置実行（新ボード返却）
+- `calculateScore(player)` / `calculateTeamScore(p1, p2)` — スコア計算
+- `isGameOver(gameState)` — 全員パス判定
+- `advanceTurn(gameState)` — ターン進行（呼び出し前にisGameOverチェック必須）
+- `determineWinner(gameState)` → `{ isDraw, winnerIndices }`
+- `getLegalPositions(board, pieceIdx, rotation, flipped, playerColor)` — 合法位置計算（キャッシュ付き）
+
+### localStorage キー
+
+| キー | 用途 |
+|------|------|
+| blokus_player_names | 過去に使用した名前リスト（JSON配列） |
+
+### DBテーブル
+
+#### blokus_rankings
+- id: UUID (PK), name: TEXT UNIQUE NOT NULL, wins: INT NOT NULL DEFAULT 1, created_at: TIMESTAMPTZ
 
 ## 共通仕様
 

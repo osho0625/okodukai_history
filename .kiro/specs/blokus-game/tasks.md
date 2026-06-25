@@ -170,7 +170,7 @@
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 15. バージョン更新 + リリースノート + git push
-  - [-] 15.1 リリース関連ファイルを更新する
+  - [x] 15.1 リリース関連ファイルを更新する
     - `pages/release-notes.html` — リリースノート先頭に追記（feat: ブロックス追加）
     - `sw.js` — CACHE_NAME のバージョン番号を +1
     - `index.html` — 末尾のバージョン表示テキストを新バージョンに更新
