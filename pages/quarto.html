@@ -45,7 +45,10 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .status-bar {
   text-align: center; margin-bottom: 12px; padding: 10px;
   background: rgba(255,255,255,0.05); border-radius: 12px;
+  border: 1px solid transparent; transition: background 0.2s, border-color 0.2s;
 }
+.status-bar.player1 { background: rgba(234,102,102,0.12); border: 1px solid rgba(234,102,102,0.2); }
+.status-bar.player2 { background: rgba(102,180,234,0.12); border: 1px solid rgba(102,180,234,0.2); }
 .status-bar .turn { font-size: 1.1em; font-weight: 600; }
 .status-bar .instruction { font-size: 0.85em; color: #aaa; margin-top: 4px; }
 
@@ -365,10 +368,14 @@ function renderPool() {
 }
 
 function updateStatus() {
+  const statusBar = document.querySelector('.status-bar');
   const turnLabel = document.getElementById('turnLabel');
   const instrLabel = document.getElementById('instructionLabel');
   const chosenArea = document.getElementById('chosenPieceArea');
   const chosenDisplay = document.getElementById('chosenPieceDisplay');
+
+  // プレイヤー色分け
+  statusBar.className = 'status-bar player' + currentPlayer;
 
   if (phase === 'select') {
     turnLabel.textContent = `プレイヤー${currentPlayer}のターン`;
@@ -400,6 +407,10 @@ function onCellClick(idx) {
   board[idx] = chosenPiece;
   chosenPiece = null;
   phase = 'select';
+
+  // chosenPieceAreaを即座に非表示
+  document.getElementById('chosenPieceArea').style.display = 'none';
+
   renderBoard();
   renderPool();
 
@@ -408,13 +419,18 @@ function onCellClick(idx) {
   if (winLine) {
     gameOver = true;
     highlightWin(winLine);
-    setTimeout(() => showResult(currentPlayer), 600);
+    // ステータスバーに勝利メッセージ
+    document.getElementById('turnLabel').textContent = `🎉 プレイヤー${currentPlayer}の勝ち！`;
+    document.getElementById('instructionLabel').textContent = 'クアルト！';
+    setTimeout(() => showResult(currentPlayer), 1000);
     return;
   }
   // 引き分け判定
   if (usedPieces.size === 16) {
     gameOver = true;
-    setTimeout(() => showResult(0), 400);
+    document.getElementById('turnLabel').textContent = '🤝 引き分け！';
+    document.getElementById('instructionLabel').textContent = '全ピース使い切り';
+    setTimeout(() => showResult(0), 800);
     return;
   }
   updateStatus();
