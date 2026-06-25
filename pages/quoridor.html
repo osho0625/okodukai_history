@@ -60,13 +60,17 @@ h1 { font-size: 1.3em; font-weight: 700; }
   background: rgba(255,255,255,0.06); border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   cursor: default; transition: background 0.12s;
+  position: relative;
 }
 .cell.goal-p1 { background: rgba(255,107,107,0.1); border-bottom: 2px solid rgba(255,107,107,0.45); }
 .cell.goal-p2 { background: rgba(78,205,196,0.1); border-top: 2px solid rgba(78,205,196,0.45); }
 .cell.movable {
   background: rgba(255,255,255,0.25); cursor: pointer;
   box-shadow: inset 0 0 8px rgba(255,255,255,0.25);
-  animation: pulse 1s ease-in-out infinite alternate;
+}
+.move-dot {
+  width: 30%; height: 30%; border-radius: 50%;
+  background: rgba(255,255,255,0.5);
 }
 @keyframes pulse { from { opacity: 0.75; } to { opacity: 1; } }
 .cell.current-pawn { box-shadow: 0 0 12px rgba(255,255,255,0.5); }
@@ -92,9 +96,13 @@ h1 { font-size: 1.3em; font-weight: 700; }
 /* Clickable areas in wall mode */
 .wall-target {
   position: relative; cursor: pointer;
+  background: rgba(255,215,0,0.12) !important;
 }
 .wall-target::after {
   content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px; z-index: 1;
+}
+.wall-target:active {
+  background: rgba(255,215,0,0.4) !important;
 }
 
 /* Action toggle */
@@ -234,7 +242,6 @@ h1 { font-size: 1.3em; font-weight: 700; }
 const N = 9;
 let pawns, fences, walls, currentPlayer, action, wallOrient, gameOver;
 let toastTimer = null;
-let touchHandled = false; // prevent double-fire on touch devices
 
 function startGame() {
   pawns = [{r:0,c:4},{r:8,c:4}];
@@ -272,6 +279,13 @@ function setOrient(o) {
   document.getElementById('btnOrientH').classList.toggle('active', o === 'h');
   document.getElementById('btnOrientV').classList.toggle('active', o === 'v');
   render();
+}
+
+function setOrientSilent(o) {
+  // Switch orient without re-render (used during groove tap auto-switch)
+  wallOrient = o;
+  document.getElementById('btnOrientH').classList.toggle('active', o === 'h');
+  document.getElementById('btnOrientV').classList.toggle('active', o === 'v');
 }
 
 // ---- Wall logic ----
@@ -440,13 +454,21 @@ function toast(msg) {
   toastTimer = setTimeout(() => { el.classList.remove('show'); toastTimer = null; }, 1500);
 }
 
-// ---- Unified tap handler (prevents touch+click double-fire) ----
+// ---- Unified tap handler (prevents accidental taps from swipes) ----
 function onTap(el, handler) {
-  el.addEventListener('pointerup', (e) => {
-    e.preventDefault();
-    handler();
+  let startX, startY;
+  el.addEventListener('pointerdown', (e) => {
+    startX = e.clientX; startY = e.clientY;
   });
-  // Prevent ghost click
+  el.addEventListener('pointerup', (e) => {
+    if (startX === undefined) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (dx * dx + dy * dy < 400) { // 20px threshold
+      e.preventDefault();
+      handler();
+    }
+    startX = startY = undefined;
+  });
   el.addEventListener('click', (e) => e.preventDefault());
 }
 
@@ -506,6 +528,12 @@ function render() {
 
         if (validMoves.some(m => m.r === r && m.c === c)) {
           el.classList.add('movable');
+          // Add dot indicator for empty movable cells
+          if (!el.firstChild) {
+            const dot = document.createElement('div');
+            dot.className = 'move-dot';
+            el.appendChild(dot);
+          }
           onTap(el, () => movePawn(r, c));
         }
         grid.appendChild(el);
@@ -519,12 +547,11 @@ function render() {
           el.classList.add('placed');
         } else if (isWallMode) {
           el.classList.add('wall-mode');
-          if (wallOrient === 'h') {
-            el.classList.add('wall-target');
-            onTap(el, () => handleHSegClick(wr, wc));
-            el.addEventListener('pointerenter', () => previewH(wr, wc));
-            el.addEventListener('pointerleave', clearPreview);
-          }
+          // Always make H grooves tappable in wall mode (auto-switch orient if needed)
+          el.classList.add('wall-target');
+          onTap(el, () => { if (wallOrient !== 'h') setOrientSilent('h'); handleHSegClick(wr, wc); });
+          el.addEventListener('pointerenter', () => previewH(wr, wc));
+          el.addEventListener('pointerleave', clearPreview);
         }
         grid.appendChild(el);
 
@@ -537,12 +564,11 @@ function render() {
           el.classList.add('placed');
         } else if (isWallMode) {
           el.classList.add('wall-mode');
-          if (wallOrient === 'v') {
-            el.classList.add('wall-target');
-            onTap(el, () => handleVSegClick(wr, wc));
-            el.addEventListener('pointerenter', () => previewV(wr, wc));
-            el.addEventListener('pointerleave', clearPreview);
-          }
+          // Always make V grooves tappable in wall mode (auto-switch orient if needed)
+          el.classList.add('wall-target');
+          onTap(el, () => { if (wallOrient !== 'v') setOrientSilent('v'); handleVSegClick(wr, wc); });
+          el.addEventListener('pointerenter', () => previewV(wr, wc));
+          el.addEventListener('pointerleave', clearPreview);
         }
         grid.appendChild(el);
 
