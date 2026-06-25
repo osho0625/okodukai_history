@@ -13,6 +13,7 @@ fileMatchPattern: "*tetris*,*blast*,*olimar*,*arcade*"
 - `pages/blast-ranking.html` — ブロックブラストランキング
 - `pages/olimar.html` — オリマーの冒険（探索RPG）
 - `pages/arcade.html` — ゲームセンター（ゲーム一覧）
+- `pages/quoridor.html` — コリドール（2人用壁置き戦略ゲーム）
 - `pages/memory-game.html` — 神経衰弱（カードめくり記憶力ゲーム）
 - `js/olimar-scenario.js` — オリマーの冒険シナリオデータ（62ノード）
 - `images/olimar.png` — オリマー画像（透過PNG、完了枚数表示用）
@@ -72,9 +73,19 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## ゲームセンター（arcade.html）
 
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、神経衰弱をカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、コリドール、神経衰弱をカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
 - クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
+
+## コリドール（quoridor.html）
+
+- 2人用対面プレイの壁置き戦略ボードゲーム
+- 9×9ボード、各プレイヤー10枚の壁
+- P1（赤）は上→下、P2（青）は下→上にゴールを目指す
+- ターンで「1マス移動」か「壁を配置」を選択
+- 壁は2マス分の長さで相手の進路を妨害
+- 相手のゴールへの経路を完全に塞ぐ壁配置は禁止（BFSで検証）
+- 相手コマの飛び越えルール対応（直線ジャンプ＋サイドジャンプ）
 
 ## 神経衰弱（memory-game.html）
 
