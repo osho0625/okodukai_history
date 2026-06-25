@@ -11,7 +11,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header { display: flex; align-items: center; padding: 12px 16px; gap: 12px; max-width: 480px; margin: 0 auto; }
 .header .back { color: #eee; font-size: 1.6em; cursor: pointer; text-decoration: none; }
 .header .home { color: #eee; font-size: 1.4em; cursor: pointer; text-decoration: none; margin-left: auto; }
-.header .turn-info { flex: 1; text-align: center; font-size: 1em; font-weight: 600; }
+.header .turn-info { flex: 1; text-align: center; font-size: 1em; font-weight: 600; transition: background 0.3s; padding: 4px 8px; border-radius: 8px; }
 .screen { display: none; max-width: 480px; margin: 0 auto; padding: 0 16px 24px; }
 .screen.active { display: block; }
 /* Night overlay */
@@ -71,7 +71,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .control-bar .ctrl-btn.confirm { background: rgba(56,142,60,0.3); border-color: #66bb6a; }
 .control-bar .ctrl-btn.pass { background: rgba(211,47,47,0.2); border-color: #ef5350; }
 /* Piece selector */
-.piece-selector { max-height: 200px; overflow-y: auto; padding: 8px 0; }
+.piece-selector { max-height: 280px; overflow-y: auto; padding: 8px 0; }
 .piece-group { margin-bottom: 8px; }
 .piece-group-label { font-size: 0.75em; color: #aaa; margin-bottom: 4px; }
 .piece-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -148,6 +148,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="ctrl-btn" id="btnRotate" onclick="doRotate()" disabled>↻ 回転</button>
     <button class="ctrl-btn" id="btnFlip" onclick="doFlip()" disabled>↔ 反転</button>
     <button class="ctrl-btn confirm" id="btnConfirm" onclick="doConfirm()" disabled>✓ 確定</button>
+    <button class="ctrl-btn" id="btnCancel" onclick="doCancel()" style="display:none">✕ 取消</button>
     <button class="ctrl-btn pass" id="btnPass" onclick="doPass()">パス</button>
   </div>
   <div class="piece-selector" id="pieceSelector"></div>
@@ -245,6 +246,7 @@ let gameState = {
 };
 
 let legalCache = { key: '', positions: [] };
+let boardVersion = 0;
 
 // =============================================================
 // Core Transform Functions
@@ -386,7 +388,7 @@ function isFirstPieceForColor(board, color) {
 }
 
 function getLegalPositions(board, pieceIdx, rotation, flipped, playerColor) {
-  const key = `${pieceIdx}_${rotation}_${flipped}_${playerColor}_${JSON.stringify(board)}`;
+  const key = `${pieceIdx}_${rotation}_${flipped}_${playerColor}_${boardVersion}`;
   if (legalCache.key === key) return legalCache.positions;
   const cells = transformPiece(PIECES[pieceIdx].cells, rotation, flipped);
   const first = isFirstPieceForColor(board, playerColor);
@@ -417,7 +419,9 @@ function showScreen(name) {
 function updateTurnInfo() {
   const p = gameState.players[gameState.currentTurn];
   const info = PLAYER_COLORS[p.color];
-  document.getElementById('turnInfo').textContent = `${info.label} ${p.name} のターン`;
+  const el = document.getElementById('turnInfo');
+  el.textContent = `${info.label} ${p.name} のターン`;
+  el.style.background = info.fill + '33'; // subtle color hint
 }
 
 // =============================================================
@@ -456,7 +460,10 @@ function buildSetupUI() {
 }
 
 function nameField(label, idx, saved) {
-  const sugHtml = saved.map(n => `<span class="sug" onclick="document.getElementById('pname${idx}').value='${n.replace(/'/g,"&#39;")}';">${n}</span>`).join('');
+  const sugHtml = saved.map(n => {
+    const escaped = n.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return `<span class="sug" onclick="document.getElementById('pname${idx}').value=this.dataset.name;" data-name="${escaped}">${escaped}</span>`;
+  }).join('');
   return `<div class="name-input-group"><label>${label}</label><input id="pname${idx}" type="text" placeholder="名前を入力" autocomplete="off"><div class="name-suggestions">${sugHtml}</div></div>`;
 }
 
@@ -468,6 +475,7 @@ function startGame() {
   gameState.rotation = 0;
   gameState.flipped = false;
   gameState.selectedPosition = null;
+  boardVersion++;
 
   // Build players
   gameState.players = COLOR_ORDER.map(color => ({
@@ -541,42 +549,43 @@ function renderBoard() {
     if (gameState.board[pos.y][pos.x] === null) activeCorners[`${pos.x},${pos.y}`] = color;
   }
 
-  requestAnimationFrame(() => {
-    const frag = document.createDocumentFragment();
-    for (let y = 0; y < 20; y++) {
-      for (let x = 0; x < 20; x++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.x = x;
-        cell.dataset.y = y;
+  // Show/hide cancel button
+  document.getElementById('btnCancel').style.display = gameState.selectedPosition ? '' : 'none';
 
-        const val = gameState.board[y][x];
-        if (val) {
-          cell.classList.add('color-' + val);
-        } else {
-          // Show preview
-          const key = `${x},${y}`;
-          if (previewSet.has(key)) {
-            cell.classList.add('preview', 'preview-' + currentColor);
-          }
-          // Show corner marker
-          if (activeCorners[key]) {
-            cell.classList.add('corner-' + activeCorners[key]);
-          }
-          // Show legal dot
-          if (legalSet.has(key) && !previewSet.has(key)) {
-            const dot = document.createElement('div');
-            dot.className = 'legal-dot';
-            cell.appendChild(dot);
-          }
+  const frag = document.createDocumentFragment();
+  for (let y = 0; y < 20; y++) {
+    for (let x = 0; x < 20; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+
+      const val = gameState.board[y][x];
+      if (val) {
+        cell.classList.add('color-' + val);
+      } else {
+        // Show preview
+        const key = `${x},${y}`;
+        if (previewSet.has(key)) {
+          cell.classList.add('preview', 'preview-' + currentColor);
         }
-
-        cell.addEventListener('click', () => onBoardCellClick(x, y));
-        frag.appendChild(cell);
+        // Show corner marker
+        if (activeCorners[key]) {
+          cell.classList.add('corner-' + activeCorners[key]);
+        }
+        // Show legal dot
+        if (legalSet.has(key) && !previewSet.has(key)) {
+          const dot = document.createElement('div');
+          dot.className = 'legal-dot';
+          cell.appendChild(dot);
+        }
       }
+
+      cell.addEventListener('click', () => onBoardCellClick(x, y));
+      frag.appendChild(cell);
     }
-    boardEl.appendChild(frag);
-  });
+  }
+  boardEl.appendChild(frag);
 }
 
 function onBoardCellClick(x, y) {
@@ -685,6 +694,12 @@ function doFlip() {
   renderPieces();
 }
 
+function doCancel() {
+  gameState.selectedPosition = null;
+  document.getElementById('btnConfirm').disabled = true;
+  renderBoard();
+}
+
 function doConfirm() {
   if (gameState.selectedPieceIdx < 0 || !gameState.selectedPosition) return;
   const player = gameState.players[gameState.currentTurn];
@@ -697,6 +712,7 @@ function doConfirm() {
     gameState.board = placePiece(gameState.board, cells, x, y, player.color);
     player.pieces[gameState.selectedPieceIdx] = false;
     player.lastPieceSize = cells.length;
+    boardVersion++;
 
     // Reset selection
     gameState.selectedPieceIdx = -1;
