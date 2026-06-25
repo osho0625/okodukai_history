@@ -56,19 +56,26 @@ h1 { font-size: 1.3em; font-weight: 700; }
   display: grid; gap: 8px; justify-content: center;
   margin: 0 auto;
 }
-.card-grid.grid-4x3 { grid-template-columns: repeat(4, 1fr); }
-.card-grid.grid-4x4 { grid-template-columns: repeat(4, 1fr); }
-.card-grid.grid-6x4 { grid-template-columns: repeat(6, 1fr); }
+.card-grid.grid-4x3 { grid-template-columns: repeat(4, 1fr); max-width: 340px; }
+.card-grid.grid-4x4 { grid-template-columns: repeat(4, 1fr); max-width: 340px; }
+.card-grid.grid-6x4 { grid-template-columns: repeat(6, 1fr); max-width: 420px; gap: 6px; }
 
 .card {
   aspect-ratio: 1; border-radius: 12px; cursor: pointer;
   position: relative; perspective: 600px;
   transition: transform 0.1s;
 }
-.card:active { transform: scale(0.95); }
+.card:active:not(.flipped):not(.matched) { transform: scale(0.95); }
 .card.matched { pointer-events: none; }
 .card.flipped .card-inner { transform: rotateY(180deg); }
 .card.matched .card-inner { transform: rotateY(180deg); }
+.card.matched .card-front { animation: matchPop 0.3s ease; }
+
+@keyframes matchPop {
+  0% { transform: rotateY(180deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.1); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
 
 .card-inner {
   width: 100%; height: 100%; position: relative;
@@ -83,17 +90,30 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .card-back {
   background: linear-gradient(135deg, #4a5568, #2d3748);
   border: 2px solid rgba(255,255,255,0.15);
-  font-size: 1.8em;
+  font-size: 1.6em;
+}
+.card-back::after {
+  content: ''; position: absolute; inset: 6px;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 8px;
 }
 .card-front {
   background: rgba(255,255,255,0.1);
   border: 2px solid rgba(139,233,253,0.3);
   transform: rotateY(180deg);
-  font-size: 2em;
+  font-size: 1.8em;
 }
 .card.matched .card-front {
   background: rgba(80,250,123,0.15);
   border-color: rgba(80,250,123,0.4);
+}
+
+/* むずいモードでカードの絵文字を少し小さく */
+.grid-6x4 .card-front { font-size: 1.4em; }
+.grid-6x4 .card-back { font-size: 1.2em; }
+
+/* ゲーム中ボタン */
+.game-actions {
+  display: flex; justify-content: center; margin-top: 16px;
 }
 
 /* 結果画面 */
@@ -105,13 +125,28 @@ h1 { font-size: 1.3em; font-weight: 700; }
 #resultScreen h2 { font-size: 1.5em; }
 .result-stats { color: #aaa; font-size: 0.95em; line-height: 1.8; }
 .result-stats span { color: #8be9fd; font-weight: 600; }
+.result-rank { font-size: 1.3em; margin-top: 4px; }
+
+/* 夜間制限 */
+.night-block {
+  text-align: center; padding: 60px 20px; margin-top: 40px;
+}
+.night-block .icon { font-size: 4em; margin-bottom: 16px; }
+.night-block h2 { margin-bottom: 8px; }
+.night-block p { color: #aaa; }
 </style>
 </head>
 <body>
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" id="backBtn">←</a>
   <h1>🃏 神経衰弱</h1>
-  <a class="home" href="../index.html">🏠</a>
+  <a class="home" id="homeBtn" href="../index.html">🏠</a>
+</div>
+
+<div id="nightBlock" class="night-block" style="display:none;">
+  <div class="icon">🌙</div>
+  <h2>今日はおしまい！</h2>
+  <p>また明日ね</p>
 </div>
 
 <div id="titleScreen">
@@ -132,11 +167,15 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <div class="moves">手数: <span id="moves">0</span></div>
   </div>
   <div class="card-grid" id="cardGrid"></div>
+  <div class="game-actions">
+    <button class="btn btn-secondary" onclick="confirmQuit()" style="padding:10px 20px;font-size:0.9em;">タイトルに戻る</button>
+  </div>
 </div>
 
 <div id="resultScreen">
-  <div class="result-icon">🎉</div>
+  <div class="result-icon" id="resultIcon">🎉</div>
   <h2>クリア！</h2>
+  <div class="result-rank" id="resultRank"></div>
   <div class="result-stats">
     タイム: <span id="resultTime">0:00</span><br>
     手数: <span id="resultMoves">0</span>回<br>
@@ -148,7 +187,18 @@ h1 { font-size: 1.3em; font-weight: 700; }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <script>
+// 夜間制限チェック
+if (isNightTime()) {
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('nightBlock').style.display = 'block';
+} else {
+  init();
+}
+
+function init() {
 const EMOJIS = ['🐶','🐱','🐼','🦊','🐸','🐵','🦁','🐮','🐷','🐔','🐙','🦋'];
 
 const DIFFICULTY = {
@@ -165,7 +215,9 @@ let totalPairs = 0;
 let moveCount = 0;
 let timerInterval = null;
 let startTime = 0;
+let endTime = 0;
 let locked = false;
+let isPlaying = false;
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -175,7 +227,7 @@ function shuffle(arr) {
   return arr;
 }
 
-function startGame(diff) {
+window.startGame = function(diff) {
   currentDifficulty = diff;
   const cfg = DIFFICULTY[diff];
   totalPairs = cfg.pairs;
@@ -183,6 +235,7 @@ function startGame(diff) {
   moveCount = 0;
   flippedCards = [];
   locked = false;
+  isPlaying = true;
 
   // カード生成
   const emojis = EMOJIS.slice(0, cfg.pairs);
@@ -205,7 +258,7 @@ function startGame(diff) {
   grid.innerHTML = cards.map((emoji, i) => `
     <div class="card" data-index="${i}" data-emoji="${emoji}" onclick="flipCard(this)">
       <div class="card-inner">
-        <div class="card-face card-back">❓</div>
+        <div class="card-face card-back">🃏</div>
         <div class="card-face card-front">${emoji}</div>
       </div>
     </div>
@@ -213,9 +266,10 @@ function startGame(diff) {
 
   // タイマー開始
   startTime = Date.now();
+  endTime = 0;
   clearInterval(timerInterval);
   timerInterval = setInterval(updateTimer, 1000);
-}
+};
 
 function updateTimer() {
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -224,7 +278,7 @@ function updateTimer() {
   document.getElementById('timer').textContent = m + ':' + String(s).padStart(2, '0');
 }
 
-function flipCard(el) {
+window.flipCard = function(el) {
   if (locked) return;
   if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
   if (flippedCards.length >= 2) return;
@@ -237,20 +291,24 @@ function flipCard(el) {
     document.getElementById('moves').textContent = moveCount;
     checkMatch();
   }
-}
+};
 
 function checkMatch() {
   const [a, b] = flippedCards;
   if (a.dataset.emoji === b.dataset.emoji) {
     // ペア成立
-    a.classList.add('matched');
-    b.classList.add('matched');
+    setTimeout(() => {
+      a.classList.add('matched');
+      b.classList.add('matched');
+    }, 200);
     matchedPairs++;
     document.getElementById('pairsFound').textContent = matchedPairs;
     flippedCards = [];
     if (matchedPairs === totalPairs) {
+      endTime = Date.now();
       clearInterval(timerInterval);
-      setTimeout(showResult, 500);
+      isPlaying = false;
+      setTimeout(showResult, 600);
     }
   } else {
     // 不一致 → 裏に戻す
@@ -260,7 +318,7 @@ function checkMatch() {
       b.classList.remove('flipped');
       flippedCards = [];
       locked = false;
-    }, 800);
+    }, 900);
   }
 }
 
@@ -268,7 +326,7 @@ function showResult() {
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'flex';
 
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const elapsed = Math.floor((endTime - startTime) / 1000);
   const m = Math.floor(elapsed / 60);
   const s = elapsed % 60;
   document.getElementById('resultTime').textContent = m + ':' + String(s).padStart(2, '0');
@@ -276,18 +334,60 @@ function showResult() {
 
   const labels = { easy: 'かんたん', normal: 'ふつう', hard: 'むずい' };
   document.getElementById('resultDifficulty').textContent = labels[currentDifficulty];
+
+  // スコア評価（手数 / ペア数 の比率で判定）
+  const ratio = moveCount / totalPairs;
+  let rank, icon;
+  if (ratio <= 1.2) { rank = '神！完璧！'; icon = '👑'; }
+  else if (ratio <= 1.5) { rank = 'すごい！'; icon = '⭐'; }
+  else if (ratio <= 2.0) { rank = 'いい感じ！'; icon = '😊'; }
+  else if (ratio <= 3.0) { rank = 'まあまあ！'; icon = '🙂'; }
+  else { rank = 'がんばろう！'; icon = '💪'; }
+  document.getElementById('resultRank').textContent = rank;
+  document.getElementById('resultIcon').textContent = icon;
 }
 
-function replay() {
+window.replay = function() {
   startGame(currentDifficulty);
-}
+};
 
-function backToTitle() {
-  clearInterval(timerInterval);
+window.backToTitle = function() {
+  cleanup();
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('titleScreen').style.display = 'flex';
+};
+
+window.confirmQuit = function() {
+  if (confirm('ゲームを中断してタイトルに戻りますか？')) {
+    backToTitle();
+  }
+};
+
+function cleanup() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  isPlaying = false;
 }
+
+// ←ボタン・🏠ボタンのゲーム中断確認
+document.getElementById('backBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  confirmLeaveGame(() => isPlaying, null, '前のページ', () => { cleanup(); history.back(); });
+});
+document.getElementById('homeBtn').addEventListener('click', function(e) {
+  if (isPlaying) {
+    e.preventDefault();
+    confirmLeaveGame(() => isPlaying, null, 'ホーム', () => { cleanup(); location.href = '../index.html'; });
+  } else {
+    cleanup();
+  }
+});
+
+} // end init
 </script>
+
+<!-- ねこです認識汚染（SCP-040-JP既読時） -->
+<script src="../js/neko-infection.js"></script>
 </body>
 </html>
