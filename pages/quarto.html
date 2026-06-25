@@ -63,12 +63,11 @@ h1 { font-size: 1.3em; font-weight: 700; }
   width: 68px; height: 68px; border-radius: 10px;
   background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.08);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  cursor: default; transition: background 0.15s, border-color 0.15s;
 }
-.cell.placeable { border-color: rgba(102,126,234,0.4); background: rgba(102,126,234,0.08); }
+.cell.placeable { border-color: rgba(102,126,234,0.4); background: rgba(102,126,234,0.08); cursor: pointer; }
 .cell.placeable:hover { background: rgba(102,126,234,0.2); border-color: rgba(102,126,234,0.6); }
 .cell.occupied { cursor: default; }
-.cell.occupied:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
 .cell.win-cell { border-color: #ffd700; background: rgba(255,215,0,0.15); animation: winPulse 0.6s ease infinite alternate; }
 @keyframes winPulse { to { box-shadow: 0 0 20px rgba(255,215,0,0.5); } }
 
@@ -277,9 +276,11 @@ for (let c = 0; c < 2; c++)
         ALL_PIECES.push([c, s, h, f]);
 
 let board, usedPieces, currentPlayer, phase, chosenPiece, gameOver;
+let resultTimer = null;
 // phase: 'select' = ピースを選ぶ, 'place' = ピースを置く
 
 function startGame() {
+  if (resultTimer) { clearTimeout(resultTimer); resultTimer = null; }
   board = Array(16).fill(null);
   usedPieces = new Set();
   currentPlayer = 1;
@@ -296,6 +297,7 @@ function startGame() {
 }
 
 function showTitle() {
+  if (resultTimer) { clearTimeout(resultTimer); resultTimer = null; }
   document.getElementById('titleScreen').style.display = 'flex';
   document.getElementById('rulesScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'none';
@@ -422,7 +424,7 @@ function onCellClick(idx) {
     // ステータスバーに勝利メッセージ
     document.getElementById('turnLabel').textContent = `🎉 プレイヤー${currentPlayer}の勝ち！`;
     document.getElementById('instructionLabel').textContent = 'クアルト！';
-    setTimeout(() => showResult(currentPlayer), 1000);
+    resultTimer = setTimeout(() => { resultTimer = null; showResult(currentPlayer); }, 1000);
     return;
   }
   // 引き分け判定
@@ -430,7 +432,7 @@ function onCellClick(idx) {
     gameOver = true;
     document.getElementById('turnLabel').textContent = '🤝 引き分け！';
     document.getElementById('instructionLabel').textContent = '全ピース使い切り';
-    setTimeout(() => showResult(0), 800);
+    resultTimer = setTimeout(() => { resultTimer = null; showResult(0); }, 800);
     return;
   }
   updateStatus();
