@@ -12,6 +12,7 @@ body {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   min-height: 100vh; display: flex; flex-direction: column; align-items: center;
   color: #eee; padding: 12px; user-select: none;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .header {
   display: flex; align-items: center; gap: 12px;
@@ -56,7 +57,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
   border: 2px solid rgba(255,255,255,0.1);
 }
 .cell {
-  width: 72px; height: 72px; border-radius: 10px;
+  width: 68px; height: 68px; border-radius: 10px;
   background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.08);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.15s, border-color 0.15s;
@@ -70,40 +71,46 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 /* ピース */
 .piece {
-  width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   position: relative; transition: transform 0.1s;
 }
-.piece.tall { width: 52px; height: 56px; }
-.piece.short { width: 36px; height: 36px; }
+.piece.tall { width: 44px; height: 50px; }
+.piece.short { width: 34px; height: 34px; }
 .piece.round { border-radius: 50%; }
-.piece.square { border-radius: 8px; }
+.piece.square { border-radius: 6px; }
 .piece.light { background: #f0c040; border: 3px solid #d4a020; }
 .piece.dark { background: #5a3e8a; border: 3px solid #3d2a5e; }
 .piece.hollow::after {
   content: ''; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: 45%; height: 45%; border-radius: inherit;
   background: #1a1a2e; border: 2px solid rgba(255,255,255,0.15);
 }
+/* tall のインジケータ（上部の突起） */
+.piece.tall::before {
+  content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+  width: 10px; height: 4px; border-radius: 3px 3px 0 0;
+}
+.piece.tall.light::before { background: #d4a020; }
+.piece.tall.dark::before { background: #3d2a5e; }
 
 /* ピース選択エリア */
 .pieces-section { margin-top: 8px; }
 .pieces-section .section-label { font-size: 0.85em; color: #aaa; margin-bottom: 8px; text-align: center; }
 .pieces-pool {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;
 }
 .pieces-pool.disabled { opacity: 0.4; pointer-events: none; }
 .pool-piece {
-  width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  border-radius: 12px; cursor: pointer; border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; cursor: pointer; border: 2px solid transparent;
   transition: border-color 0.15s, transform 0.1s, background 0.15s;
-  padding: 6px; background: rgba(255,255,255,0.03);
+  padding: 8px 4px; background: rgba(255,255,255,0.03);
+  min-height: 56px;
 }
 .pool-piece:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }
 .pool-piece.used { opacity: 0.12; pointer-events: none; }
-.pool-piece .piece { width: 80%; height: 80%; max-width: 48px; max-height: 48px; }
-.pool-piece .piece.tall { max-width: 48px; max-height: 52px; }
-.pool-piece .piece.short { max-width: 36px; max-height: 36px; }
 
 /* 選ばれたピース表示 */
 .chosen-piece-area {
@@ -156,8 +163,11 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .reset-btn:hover { color: #eee; border-color: rgba(255,255,255,0.3); }
 
 @media (max-width: 380px) {
-  .cell { width: 64px; height: 64px; }
-  .pieces-pool { gap: 6px; }
+  .cell { width: 60px; height: 60px; }
+  .pieces-pool { gap: 4px; }
+  .pool-piece { min-height: 48px; padding: 6px 2px; }
+  .piece.tall { width: 38px; height: 44px; }
+  .piece.short { width: 28px; height: 28px; }
 }
 </style>
 </head>
