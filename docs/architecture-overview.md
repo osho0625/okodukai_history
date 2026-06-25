@@ -9,18 +9,23 @@ graph TB
         CHILD[child.html<br/>個人ページ]
         ADMIN[admin.html<br/>管理者ページ]
         ALLOWANCE[allowance.html<br/>入出金]
+        ARCADE[arcade.html<br/>ゲームセンター]
         
         subgraph "ゲーム・学習"
             GAME[game.html<br/>ぷよぷよ]
             PUYO_BATTLE[puyo-battle.html<br/>ぴくぴく対戦]
-            TETRIS[tetris.html<br/>テトリス]
-            BLAST[blast.html<br/>ブロックブラスト]
+            TETRIS[tetris.html<br/>テトミン]
+            BLAST[blast.html<br/>ピクミンブラスト]
             MATH_OLY[math-olympiad.html<br/>算数オリンピック]
             MATH_BATTLE[math-battle.html<br/>算数バトル]
             KANJI[kanji-test.html<br/>漢字テスト]
             SUIKA[suika.html<br/>すいかRPG]
             OLIMAR[olimar.html<br/>オリマー]
             TRPG[trpg-cthulhu.html<br/>クトゥルフTRPG]
+            COCKROACH[cockroach-poker.html<br/>ごきぶりポーカー]
+            QUARTO[quarto.html<br/>クアルト]
+            QUORIDOR[quoridor.html<br/>コリドール]
+            MEMORY[memory-game.html<br/>神経衰弱]
         end
         
         subgraph "情報・コンテンツ"
@@ -57,8 +62,20 @@ graph TB
     
     INDEX --> CHILD
     INDEX --> ADMIN
-    INDEX --> GAME
+    INDEX --> ARCADE
     INDEX --> NURSE
+    ARCADE --> GAME
+    ARCADE --> TETRIS
+    ARCADE --> BLAST
+    ARCADE --> OLIMAR
+    ARCADE --> SUIKA
+    ARCADE --> MATH_OLY
+    ARCADE --> KANJI
+    ARCADE --> TRPG
+    ARCADE --> COCKROACH
+    ARCADE --> QUARTO
+    ARCADE --> QUORIDOR
+    ARCADE --> MEMORY
     CHILD --> NURSE
     
     COMMON --> |リダイレクト制御| NURSE
@@ -255,7 +272,7 @@ graph LR
         REST[REST API<br/>CRUD操作]
         WS[WebSocket<br/>Realtime同期]
         PUSH_P[Web Push<br/>バックグラウンド通知]
-        RTC[WebRTC 🆕<br/>P2P音声通話]
+        RTC[WebRTC<br/>P2P音声通話]
     end
     
     HTML --> GHP
@@ -266,3 +283,21 @@ graph LR
     GHA --> DC
     GHA --> PUSH_P
 ```
+
+## 6. ゲームセンター 一覧
+
+| ゲーム | ファイル | タイプ | DB使用 |
+|--------|----------|--------|--------|
+| ぴくぴく（ぷよぷよ） | game.html / puyo-battle.html | パズル（対戦あり） | game_rankings, puyo_battles |
+| テトミン | tetris.html | 落ちものパズル | tetris_rankings |
+| ピクミンブラスト | blast.html | 配置パズル | blast_rankings |
+| オリマーの冒険 | olimar.html | 探索RPG | localStorage |
+| すいかが食べたい | suika.html | 3D RPG | なし |
+| すいか原作Java版 | suika-original.html | Java Applet | なし |
+| 算数オリンピック | math-olympiad.html | 学習 | math_olympiad_answers |
+| 漢字50問テスト | kanji-test.html | 学習 | game_settings |
+| クトゥルフTRPG | trpg-cthulhu.html | TRPG（admin限定） | なし |
+| ごきぶりポーカー | cockroach-poker.html | カードゲーム（CPU対戦） | なし |
+| クアルト | quarto.html | ボードゲーム（2人） | なし |
+| コリドール | quoridor.html | ボードゲーム（2人） | なし |
+| 神経衰弱 | memory-game.html | 記憶力カードゲーム | なし |
