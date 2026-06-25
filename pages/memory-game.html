@@ -73,7 +73,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 @keyframes matchPop {
   0% { transform: rotateY(180deg) scale(1); }
-  50% { transform: rotateY(180deg) scale(1.1); }
+  50% { transform: rotateY(180deg) scale(1.15); }
   100% { transform: rotateY(180deg) scale(1); }
 }
 
@@ -190,15 +190,41 @@ h1 { font-size: 1.3em; font-weight: 700; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <script>
+// ←/🏠のナビゲーション（夜間制限時でも動作するようinit外に配置）
+let isPlaying = false;
+let timerInterval = null;
+
+document.getElementById('backBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  if (isPlaying) {
+    confirmLeaveGame(() => isPlaying, null, '前のページ', () => { cleanup(); history.back(); });
+  } else {
+    history.back();
+  }
+});
+document.getElementById('homeBtn').addEventListener('click', function(e) {
+  if (isPlaying) {
+    e.preventDefault();
+    confirmLeaveGame(() => isPlaying, null, 'ホーム', () => { cleanup(); location.href = '../index.html'; });
+  }
+  // 非プレイ中はデフォルトのhrefで遷移
+});
+
+function cleanup() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  isPlaying = false;
+}
+
 // 夜間制限チェック
 if (isNightTime()) {
   document.getElementById('titleScreen').style.display = 'none';
   document.getElementById('nightBlock').style.display = 'block';
 } else {
-  init();
+  initGame();
 }
 
-function init() {
+function initGame() {
 const EMOJIS = ['🐶','🐱','🐼','🦊','🐸','🐵','🦁','🐮','🐷','🐔','🐙','🦋'];
 
 const DIFFICULTY = {
@@ -213,11 +239,10 @@ let flippedCards = [];
 let matchedPairs = 0;
 let totalPairs = 0;
 let moveCount = 0;
-let timerInterval = null;
 let startTime = 0;
 let endTime = 0;
 let locked = false;
-let isPlaying = false;
+let mismatchTimer = null;
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -236,6 +261,7 @@ window.startGame = function(diff) {
   flippedCards = [];
   locked = false;
   isPlaying = true;
+  mismatchTimer = null;
 
   // カード生成
   const emojis = EMOJIS.slice(0, cfg.pairs);
@@ -279,6 +305,11 @@ function updateTimer() {
 }
 
 window.flipCard = function(el) {
+  // 不一致待ち中にタップ → 即裏返して次へ進む
+  if (locked && mismatchTimer) {
+    clearTimeout(mismatchTimer);
+    finishMismatch();
+  }
   if (locked) return;
   if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
   if (flippedCards.length >= 2) return;
@@ -295,31 +326,37 @@ window.flipCard = function(el) {
 
 function checkMatch() {
   const [a, b] = flippedCards;
+  locked = true; // ペア判定中は常にロック
+
   if (a.dataset.emoji === b.dataset.emoji) {
-    // ペア成立
+    // ペア成立 → 少し待ってからmatched付与（演出のため）
     setTimeout(() => {
       a.classList.add('matched');
       b.classList.add('matched');
-    }, 200);
-    matchedPairs++;
-    document.getElementById('pairsFound').textContent = matchedPairs;
-    flippedCards = [];
-    if (matchedPairs === totalPairs) {
-      endTime = Date.now();
-      clearInterval(timerInterval);
-      isPlaying = false;
-      setTimeout(showResult, 600);
-    }
-  } else {
-    // 不一致 → 裏に戻す
-    locked = true;
-    setTimeout(() => {
-      a.classList.remove('flipped');
-      b.classList.remove('flipped');
       flippedCards = [];
       locked = false;
-    }, 900);
+      matchedPairs++;
+      document.getElementById('pairsFound').textContent = matchedPairs;
+      if (matchedPairs === totalPairs) {
+        endTime = Date.now();
+        clearInterval(timerInterval);
+        isPlaying = false;
+        setTimeout(showResult, 400);
+      }
+    }, 300);
+  } else {
+    // 不一致 → 900ms待つ or タップで早送り
+    mismatchTimer = setTimeout(finishMismatch, 900);
   }
+}
+
+function finishMismatch() {
+  mismatchTimer = null;
+  const [a, b] = flippedCards;
+  if (a) a.classList.remove('flipped');
+  if (b) b.classList.remove('flipped');
+  flippedCards = [];
+  locked = false;
 }
 
 function showResult() {
@@ -364,30 +401,7 @@ window.confirmQuit = function() {
   }
 };
 
-function cleanup() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  isPlaying = false;
-}
-
-// ←ボタン・🏠ボタンのゲーム中断確認
-document.getElementById('backBtn').addEventListener('click', function(e) {
-  e.preventDefault();
-  confirmLeaveGame(() => isPlaying, null, '前のページ', () => { cleanup(); history.back(); });
-});
-document.getElementById('homeBtn').addEventListener('click', function(e) {
-  if (isPlaying) {
-    e.preventDefault();
-    confirmLeaveGame(() => isPlaying, null, 'ホーム', () => { cleanup(); location.href = '../index.html'; });
-  } else {
-    cleanup();
-  }
-});
-
-} // end init
+} // end initGame
 </script>
-
-<!-- ねこです認識汚染（SCP-040-JP既読時） -->
-<script src="../js/neko-infection.js"></script>
 </body>
 </html>
