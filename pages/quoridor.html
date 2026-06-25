@@ -72,6 +72,9 @@ h1 { font-size: 1.3em; font-weight: 700; }
   width: 30%; height: 30%; border-radius: 50%;
   background: rgba(255,255,255,0.5);
 }
+.cell.movable-hint {
+  background: rgba(255,255,255,0.1);
+}
 @keyframes pulse { from { opacity: 0.75; } to { opacity: 1; } }
 .cell.current-pawn { box-shadow: 0 0 12px rgba(255,255,255,0.5); }
 .pawn {
@@ -498,6 +501,8 @@ function render() {
   grid.innerHTML = '';
 
   const validMoves = action === 'move' ? getValidMoves(currentPlayer) : [];
+  // Also show valid moves dimly in wall mode for reference
+  const validMovesRef = action !== 'move' ? getValidMoves(currentPlayer) : [];
   const isWallMode = action === 'wall' && fences[currentPlayer] > 0;
 
   for (let gr = 0; gr < 17; gr++) {
@@ -535,6 +540,13 @@ function render() {
             el.appendChild(dot);
           }
           onTap(el, () => movePawn(r, c));
+        } else if (isWallMode && pawns[currentPlayer].r === r && pawns[currentPlayer].c === c) {
+          // Tapping own pawn in wall mode switches to move mode
+          onTap(el, () => setAction('move'));
+        }
+        // Show faint move hints in wall mode
+        if (isWallMode && validMovesRef.some(m => m.r === r && m.c === c)) {
+          el.classList.add('movable-hint');
         }
         grid.appendChild(el);
 
