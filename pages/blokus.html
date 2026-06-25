@@ -61,6 +61,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .board .cell.preview-red { background: #ef5350; }
 .board .cell.preview-green { background: #66bb6a; }
 .board .cell.preview-yellow { background: #ffee58; }
+.board .cell.preview-invalid { background: #ff1744; }
 @keyframes flashRed { 0%,100% { background: inherit; } 50% { background: #ff1744; } }
 .board .cell.invalid-flash { animation: flashRed 0.3s ease 2; }
 /* Control bar */
@@ -113,7 +114,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <!-- Header -->
 <div class="header">
-  <a class="back" onclick="history.back()">←</a>
+  <a class="back" onclick="handleBack()">←</a>
   <div class="turn-info" id="turnInfo"></div>
   <a class="home" href="../index.html">🏠</a>
 </div>
@@ -163,7 +164,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 
 <!-- Ranking Modal -->
-<div class="modal-overlay" id="rankingModal">
+<div class="modal-overlay" id="rankingModal" onclick="if(event.target===this)closeRanking()">
   <div class="modal">
     <h2>🏆 ランキング TOP10</h2>
     <ul class="ranking-list" id="rankingList"></ul>
@@ -354,7 +355,6 @@ function isGameOver(gs) {
 }
 
 function advanceTurn(gs) {
-  const playerCount = gs.mode === 3 ? 3 : 4;
   let next = gs.currentTurn;
   do { next = (next + 1) % 4; } while (gs.players[next].passed || (gs.mode === 3 && next === 3));
   gs.currentTurn = next;
@@ -412,8 +412,18 @@ function showScreen(name) {
   const el = document.getElementById(name + 'Screen');
   if (el) el.classList.add('active');
   gameState.phase = name;
+  // Show/hide turn info
+  const turnEl = document.getElementById('turnInfo');
+  turnEl.style.display = name === 'game' ? '' : 'none';
   if (name === 'setup') buildSetupUI();
   if (name === 'game') { renderBoard(); renderPieces(); updateTurnInfo(); }
+}
+
+function handleBack() {
+  if (gameState.phase === 'game') {
+    if (!confirm('ゲーム中だよ！やめる？')) return;
+  }
+  history.back();
 }
 
 function updateTurnInfo() {
@@ -533,8 +543,10 @@ function renderBoard() {
 
   // Get preview cells
   let previewSet = new Set();
+  let previewIsLegal = true;
   if (gameState.selectedPosition && gameState.selectedPieceIdx >= 0) {
     const cells = transformPiece(PIECES[gameState.selectedPieceIdx].cells, gameState.rotation, gameState.flipped);
+    previewIsLegal = canPlace(gameState.board, cells, gameState.selectedPosition.x, gameState.selectedPosition.y, currentColor, isFirstPieceForColor(gameState.board, currentColor));
     cells.forEach(c => {
       const bx = c[0] + gameState.selectedPosition.x;
       const by = c[1] + gameState.selectedPosition.y;
@@ -567,7 +579,7 @@ function renderBoard() {
         // Show preview
         const key = `${x},${y}`;
         if (previewSet.has(key)) {
-          cell.classList.add('preview', 'preview-' + currentColor);
+          cell.classList.add('preview', previewIsLegal ? ('preview-' + currentColor) : 'preview-invalid');
         }
         // Show corner marker
         if (activeCorners[key]) {
@@ -590,8 +602,14 @@ function renderBoard() {
 
 function onBoardCellClick(x, y) {
   if (gameState.selectedPieceIdx < 0) return;
+  // Check if this position is legal before showing preview
+  const currentColor = gameState.players[gameState.currentTurn].color;
+  const cells = transformPiece(PIECES[gameState.selectedPieceIdx].cells, gameState.rotation, gameState.flipped);
+  const first = isFirstPieceForColor(gameState.board, currentColor);
+  const isLegal = canPlace(gameState.board, cells, x, y, currentColor, first);
+
   gameState.selectedPosition = { x, y };
-  document.getElementById('btnConfirm').disabled = false;
+  document.getElementById('btnConfirm').disabled = !isLegal;
   renderBoard();
 }
 
