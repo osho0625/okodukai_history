@@ -43,9 +43,9 @@ h1 { font-size: 1.3em; font-weight: 700; }
 #gameScreen { display: none; width: 100%; max-width: 420px; }
 .status-bar {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 12px; padding: 10px 14px;
+  margin-bottom: 8px; padding: 8px 14px;
   background: rgba(255,255,255,0.05); border-radius: 12px;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 .status-bar .moves { color: #aaa; }
 .status-bar .pairs { color: #8be9fd; font-weight: 600; }
@@ -152,7 +152,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
 <div id="titleScreen">
   <div class="title-icon">🃏</div>
   <h2>神経衰弱</h2>
-  <p>カードをめくって同じ絵柄のペアを見つけよう！<br>全部そろえたらクリア！</p>
+  <p>カードをめくって同じ絵柄のペアを見つけよう！<br>最初に少しだけ見えるから覚えてね！</p>
   <div class="difficulty-btns">
     <button class="btn btn-primary" onclick="startGame('easy')">かんたん<br><small>6ペア</small></button>
     <button class="btn btn-primary" onclick="startGame('normal')">ふつう<br><small>8ペア</small></button>
@@ -261,7 +261,7 @@ window.startGame = function(diff) {
   flippedCards = [];
   locked = false;
   isPlaying = true;
-  mismatchTimer = null;
+  if (mismatchTimer) { clearTimeout(mismatchTimer); mismatchTimer = null; }
 
   // カード生成
   const emojis = EMOJIS.slice(0, cfg.pairs);
@@ -271,6 +271,7 @@ window.startGame = function(diff) {
   document.getElementById('titleScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'block';
+  window.scrollTo(0, 0);
 
   // ステータス更新
   document.getElementById('pairsFound').textContent = '0';
@@ -290,11 +291,20 @@ window.startGame = function(diff) {
     </div>
   `).join('');
 
-  // タイマー開始
-  startTime = Date.now();
-  endTime = 0;
-  clearInterval(timerInterval);
-  timerInterval = setInterval(updateTimer, 1000);
+  // 開始時に全カードを一瞬表示して記憶タイム
+  locked = true;
+  const allCards = grid.querySelectorAll('.card');
+  allCards.forEach(c => c.classList.add('flipped'));
+  const peekTime = diff === 'easy' ? 2000 : diff === 'normal' ? 1500 : 1200;
+  setTimeout(() => {
+    allCards.forEach(c => c.classList.remove('flipped'));
+    locked = false;
+    // タイマーは記憶タイム後に開始
+    startTime = Date.now();
+    endTime = 0;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+  }, peekTime);
 };
 
 function updateTimer() {
