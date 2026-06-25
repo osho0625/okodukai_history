@@ -23,6 +23,7 @@ let selectedCard = null;
 let gameActive = false;
 let isPlayerTurn = false;
 let pendingTimers = []; // setTimeout管理用
+let stats = { wins: 0, losses: 0 }; // 戦績
 
 // --- タイマー管理（画面遷移時にクリア） ---
 function setGameTimeout(fn, ms) {
@@ -34,6 +35,24 @@ function clearAllTimers() {
   pendingTimers.forEach(id => clearTimeout(id));
   pendingTimers = [];
 }
+
+// ブラウザバック/ページ離脱時にクリーンアップ
+window.addEventListener('pagehide', () => {
+  clearAllTimers();
+  gameActive = false;
+});
+
+// 戦績をlocalStorageから読み込み
+function loadStats() {
+  try {
+    const s = JSON.parse(localStorage.getItem('cockroach_poker_stats'));
+    if (s && typeof s.wins === 'number') stats = s;
+  } catch(e) {}
+}
+function saveStats() {
+  localStorage.setItem('cockroach_poker_stats', JSON.stringify(stats));
+}
+loadStats();
 
 // --- 初期化 ---
 function startGame() {
@@ -334,10 +353,13 @@ function countCards(cards) {
 function endGame(playerWin, reason) {
   clearAllTimers();
   gameActive = false;
+  if (playerWin) stats.wins++; else stats.losses++;
+  saveStats();
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'block';
   document.getElementById('resultTitle').textContent = playerWin ? '🎉 勝ち！' : '💀 負け…';
   document.getElementById('resultMsg').textContent = reason;
+  document.getElementById('resultStats').textContent = `${stats.wins}勝 ${stats.losses}敗`;
 }
 
 // --- UI ヘルパー ---

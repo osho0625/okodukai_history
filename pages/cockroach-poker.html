@@ -132,7 +132,8 @@ h1 { font-size: 1.3em; font-weight: 700; }
 /* 結果画面 */
 #resultScreen { display: none; text-align: center; padding: 40px 0; }
 #resultScreen h2 { font-size: 2em; margin-bottom: 12px; }
-#resultScreen .result-msg { color: #aaa; margin-bottom: 32px; }
+#resultScreen .result-msg { color: #aaa; margin-bottom: 12px; }
+.result-stats { color: #4ecdc4; font-size: 0.9em; margin-bottom: 24px; }
 
 /* カード数バッジ */
 .card-count { font-size: 0.7em; color: #888; margin-left: 2px; }
@@ -220,8 +221,11 @@ h1 { font-size: 1.3em; font-weight: 700; }
 <div id="resultScreen">
   <h2 id="resultTitle"></h2>
   <p class="result-msg" id="resultMsg"></p>
-  <button class="btn" onclick="startGame()">もう1回</button>
-  <button class="btn btn-secondary" style="margin-left:10px" onclick="goTitle()">タイトルへ</button>
+  <p class="result-stats" id="resultStats"></p>
+  <div style="margin-top:24px;">
+    <button class="btn" onclick="startGame()">もう1回</button>
+    <button class="btn btn-secondary" style="margin-left:10px" onclick="goTitle()">タイトルへ</button>
+  </div>
 </div>
 
 </div>
