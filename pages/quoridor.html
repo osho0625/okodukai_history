@@ -70,8 +70,11 @@ h1 { font-size: 1.3em; font-weight: 700; }
 }
 .pawn-p1 { background: #ff6b6b; box-shadow: 0 2px 8px rgba(255,107,107,0.5); }
 .pawn-p2 { background: #4ecdc4; box-shadow: 0 2px 8px rgba(78,205,196,0.5); }
-.groove-h, .groove-v { border-radius: 2px; transition: background 0.1s; }
+.groove-h, .groove-v { border-radius: 2px; transition: background 0.1s; position: relative; }
 .groove-h.clickable, .groove-v.clickable { cursor: pointer; }
+.groove-h.clickable::after, .groove-v.clickable::after {
+  content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+}
 .groove-h.clickable:hover, .groove-v.clickable:hover { background: rgba(255,215,0,0.35); }
 .groove-h.placed, .groove-v.placed, .groove-cross.placed { background: #d4940a; }
 .groove-h.preview, .groove-v.preview, .groove-cross.preview { background: rgba(255,215,0,0.4); }
@@ -356,8 +359,11 @@ function render() {
   document.getElementById('btnWall').classList.toggle('disabled',fences[currentPlayer]<=0);
 
   const grid=document.getElementById('boardGrid');
-  const cellPx=Math.min(Math.floor((Math.min(window.innerWidth,420)-28)/13),32);
-  const gapPx=Math.max(Math.floor(cellPx/5),4);
+  const availW = Math.min(window.innerWidth, 420) - 28;
+  // 9 cells + 8 gaps. gap = cell/3 for better touch targets
+  // total = 9*cell + 8*(cell/3) = cell*(9+8/3) = cell*(35/3)
+  const cellPx = Math.min(Math.floor(availW * 3 / 35), 32);
+  const gapPx = Math.max(Math.round(cellPx / 3), 6);
   const tracks=[];
   for(let i=0;i<N;i++){tracks.push(cellPx+'px');if(i<N-1)tracks.push(gapPx+'px');}
   grid.style.gridTemplateColumns=tracks.join(' ');
