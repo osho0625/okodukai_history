@@ -19,6 +19,7 @@ inclusion: auto
 | チケット、ticket | `.kiro/steering/tickets.md` |
 | TRPG、クトゥルフ | `.kiro/steering/trpg.md` |
 | テトリス、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
+| ごきぶりポーカー、クアルト、コリドール、神経衰弱 | `.kiro/steering/board-games.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
 | ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
 | メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
@@ -260,5 +261,6 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `tickets.md` — あそびチケット
 - `trpg.md` — クトゥルフTRPG
 - `games-misc.md` — テトリス・ブロックブラスト・オリマーの冒険・ゲームセンター
+- `board-games.md` — ごきぶりポーカー・クアルト・コリドール・神経衰弱
 - `today-science.md` — 今日のサイエンス
 - `family-notes.md` — 家族メモ帳
