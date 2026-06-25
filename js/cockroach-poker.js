@@ -22,6 +22,7 @@ let myFaceUp = []; // プレイヤーの前に表向きで置かれたカード
 let cpuFaceUp = []; // CPUの前に表向きで置かれたカード
 let selectedCard = null;
 let gameActive = false;
+let isPlayerTurn = false; // プレイヤーの番かどうか
 
 // --- 初期化 ---
 function startGame() {
@@ -43,6 +44,7 @@ function startGame() {
   cpuFaceUp = [];
   selectedCard = null;
   gameActive = true;
+  isPlayerTurn = false;
 
   renderAll();
   // ランダムに先攻を決める
@@ -104,10 +106,7 @@ function renderHand() {
 }
 
 function selectCard(idx) {
-  if (!gameActive) return;
-  const phase = document.getElementById('declareArea').style.display;
-  // プレイヤーの番でのみ選択可能
-  if (document.getElementById('declareArea').parentElement.querySelector('.zone-title')?.textContent === '') return;
+  if (!gameActive || !isPlayerTurn) return;
   selectedCard = (selectedCard === idx) ? null : idx;
   renderHand();
   if (selectedCard !== null) {
@@ -133,6 +132,7 @@ function showDeclareOptions() {
 function playerTurnStart() {
   if (checkGameEnd()) return;
   if (myHand.length === 0) { endGame(false, '手札がなくなった…'); return; }
+  isPlayerTurn = true;
   selectedCard = null;
   document.getElementById('declareArea').style.display = 'none';
   setMessage('あなたの番！ 手札からカードを選んで、宣言しよう', '');
@@ -140,7 +140,8 @@ function playerTurnStart() {
 }
 
 function playerDeclare(declaredId) {
-  if (selectedCard === null) return;
+  if (selectedCard === null || !isPlayerTurn) return;
+  isPlayerTurn = false;
   const actualId = myHand[selectedCard];
   const declared = CREATURES.find(c => c.id === declaredId);
   const actual = CREATURES.find(c => c.id === actualId);
@@ -195,6 +196,7 @@ window.playerDeclare = playerDeclare;
 function cpuTurn() {
   if (checkGameEnd()) return;
   if (cpuHand.length === 0) { endGame(true, 'CPUの手札がなくなった！'); return; }
+  isPlayerTurn = false;
 
   // CPUがカードを選んで宣言
   const cardIdx = Math.floor(Math.random() * cpuHand.length);
@@ -236,6 +238,9 @@ function showJudgeButtons(isHonest, actualId, declaredId) {
 }
 
 function playerJudge(guessTrue, isHonest, actualId, declaredId) {
+  if (!gameActive) return;
+  // 多重クリック防止: ボタンを即無効化
+  document.getElementById('choiceBtns').innerHTML = '';
   const actual = CREATURES.find(c => c.id === actualId);
   const declared = CREATURES.find(c => c.id === declaredId);
   const correct = (guessTrue === isHonest);
