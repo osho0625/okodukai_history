@@ -27,7 +27,12 @@ let stats = { wins: 0, losses: 0 }; // 戦績
 
 // --- タイマー管理（画面遷移時にクリア） ---
 function setGameTimeout(fn, ms) {
-  const id = setTimeout(fn, ms);
+  const id = setTimeout(() => {
+    // 完了したタイマーを配列から除去
+    const idx = pendingTimers.indexOf(id);
+    if (idx !== -1) pendingTimers.splice(idx, 1);
+    fn();
+  }, ms);
   pendingTimers.push(id);
   return id;
 }
@@ -46,7 +51,7 @@ window.addEventListener('pagehide', () => {
 function loadStats() {
   try {
     const s = JSON.parse(localStorage.getItem('cockroach_poker_stats'));
-    if (s && typeof s.wins === 'number') stats = s;
+    if (s && typeof s.wins === 'number' && typeof s.losses === 'number') stats = s;
   } catch(e) {}
 }
 function saveStats() {
