@@ -61,56 +61,57 @@ h1 { font-size: 1.3em; font-weight: 700; }
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.15s, border-color 0.15s;
 }
-.cell:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+.cell.placeable { border-color: rgba(102,126,234,0.4); background: rgba(102,126,234,0.08); }
+.cell.placeable:hover { background: rgba(102,126,234,0.2); border-color: rgba(102,126,234,0.6); }
 .cell.occupied { cursor: default; }
-.cell.highlight { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+.cell.occupied:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
 .cell.win-cell { border-color: #ffd700; background: rgba(255,215,0,0.15); animation: winPulse 0.6s ease infinite alternate; }
 @keyframes winPulse { to { box-shadow: 0 0 20px rgba(255,215,0,0.5); } }
 
 /* ピース */
 .piece {
   width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; position: relative; transition: transform 0.1s;
+  position: relative; transition: transform 0.1s;
 }
 .piece.tall { width: 52px; height: 56px; }
-.piece.short { width: 40px; height: 40px; }
+.piece.short { width: 36px; height: 36px; }
 .piece.round { border-radius: 50%; }
 .piece.square { border-radius: 8px; }
 .piece.light { background: #f0c040; border: 3px solid #d4a020; }
 .piece.dark { background: #5a3e8a; border: 3px solid #3d2a5e; }
 .piece.hollow::after {
   content: ''; position: absolute;
-  width: 50%; height: 50%; border-radius: inherit;
-  background: rgba(0,0,0,0.4);
+  width: 45%; height: 45%; border-radius: inherit;
+  background: #1a1a2e; border: 2px solid rgba(255,255,255,0.15);
 }
 
 /* ピース選択エリア */
 .pieces-section { margin-top: 8px; }
-.pieces-section h3 { font-size: 0.9em; color: #aaa; margin-bottom: 8px; text-align: center; }
+.pieces-section .section-label { font-size: 0.85em; color: #aaa; margin-bottom: 8px; text-align: center; }
 .pieces-pool {
-  display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
-  padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px;
 }
+.pieces-pool.disabled { opacity: 0.4; pointer-events: none; }
 .pool-piece {
   width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  border-radius: 10px; cursor: pointer; border: 2px solid transparent;
-  transition: border-color 0.15s, transform 0.1s;
-  padding: 4px;
+  border-radius: 12px; cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.15s, transform 0.1s, background 0.15s;
+  padding: 6px; background: rgba(255,255,255,0.03);
 }
-.pool-piece:hover { border-color: rgba(255,255,255,0.3); }
-.pool-piece.selected { border-color: #ff6b6b; transform: scale(1.1); box-shadow: 0 0 12px rgba(255,107,107,0.4); }
-.pool-piece.used { opacity: 0.15; pointer-events: none; }
-.pool-piece .piece { width: 100%; height: 100%; max-width: 36px; max-height: 36px; }
-.pool-piece .piece.tall { max-width: 38px; max-height: 42px; }
-.pool-piece .piece.short { max-width: 30px; max-height: 30px; }
+.pool-piece:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }
+.pool-piece.used { opacity: 0.12; pointer-events: none; }
+.pool-piece .piece { width: 80%; height: 80%; max-width: 48px; max-height: 48px; }
+.pool-piece .piece.tall { max-width: 48px; max-height: 52px; }
+.pool-piece .piece.short { max-width: 36px; max-height: 36px; }
 
 /* 選ばれたピース表示 */
 .chosen-piece-area {
   display: none; text-align: center; margin: 12px 0;
-  padding: 12px; background: rgba(255,107,107,0.08); border-radius: 12px;
-  border: 1px solid rgba(255,107,107,0.2);
+  padding: 14px; background: rgba(102,126,234,0.1); border-radius: 12px;
+  border: 1px solid rgba(102,126,234,0.3);
 }
-.chosen-piece-area .label { font-size: 0.85em; color: #ff6b6b; margin-bottom: 8px; }
+.chosen-piece-area .label { font-size: 0.85em; color: #88a0ff; margin-bottom: 8px; }
 .chosen-piece-area .piece-display { display: flex; justify-content: center; }
 
 /* 結果画面 */
@@ -128,7 +129,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
 }
 #resultOverlay h2 { font-size: 1.8em; margin-bottom: 8px; }
 #resultOverlay .result-msg { color: #aaa; margin-bottom: 20px; }
-#resultOverlay .buttons { display: flex; gap: 12px; justify-content: center; }
+#resultOverlay .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
 /* ルール画面 */
 #rulesScreen { display: none; max-width: 420px; width: 100%; }
@@ -146,9 +147,17 @@ h1 { font-size: 1.3em; font-weight: 700; }
 }
 .piece-legend .piece { margin: 0 auto; }
 
+/* リセットボタン */
+.reset-btn {
+  display: block; margin: 16px auto 0; padding: 8px 16px;
+  background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+  color: #888; font-size: 0.8em; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.reset-btn:hover { color: #eee; border-color: rgba(255,255,255,0.3); }
+
 @media (max-width: 380px) {
   .cell { width: 64px; height: 64px; }
-  .pieces-pool { grid-template-columns: repeat(8, 1fr); gap: 4px; }
+  .pieces-pool { gap: 6px; }
 }
 </style>
 </head>
@@ -216,7 +225,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
   </div>
 
   <div class="chosen-piece-area" id="chosenPieceArea">
-    <div class="label">▼ このピースを置いてください</div>
+    <div class="label">▼ このピースをボードに置いてください</div>
     <div class="piece-display" id="chosenPieceDisplay"></div>
   </div>
 
@@ -225,9 +234,11 @@ h1 { font-size: 1.3em; font-weight: 700; }
   </div>
 
   <div class="pieces-section">
-    <h3>ピース一覧</h3>
+    <div class="section-label" id="poolLabel">相手に渡すピースを選ぼう</div>
     <div class="pieces-pool" id="piecesPool"></div>
   </div>
+
+  <button class="reset-btn" onclick="confirmReset()">やめる</button>
 </div>
 
 <!-- 結果オーバーレイ -->
@@ -283,6 +294,10 @@ function showRules() {
   document.getElementById('rulesScreen').style.display = 'block';
 }
 
+function confirmReset() {
+  if (confirm('ゲームをやめてタイトルに戻りますか？')) showTitle();
+}
+
 function pieceClasses(p) {
   const cls = [];
   cls.push(p[0] === 0 ? 'light' : 'dark');
@@ -303,9 +318,13 @@ function renderBoard() {
   boardEl.innerHTML = '';
   for (let i = 0; i < 16; i++) {
     const cell = document.createElement('div');
-    cell.className = 'cell' + (board[i] !== null ? ' occupied' : '');
-    if (board[i] !== null) {
+    const isOccupied = board[i] !== null;
+    cell.className = 'cell';
+    if (isOccupied) {
+      cell.classList.add('occupied');
       cell.appendChild(createPieceEl(ALL_PIECES[board[i]]));
+    } else if (phase === 'place' && !gameOver) {
+      cell.classList.add('placeable');
     }
     cell.addEventListener('click', () => onCellClick(i));
     boardEl.appendChild(cell);
@@ -314,7 +333,18 @@ function renderBoard() {
 
 function renderPool() {
   const pool = document.getElementById('piecesPool');
+  const poolLabel = document.getElementById('poolLabel');
   pool.innerHTML = '';
+
+  // placeフェーズ中はプールを無効化
+  if (phase === 'place') {
+    pool.classList.add('disabled');
+    poolLabel.textContent = '（ボードにピースを置いてください）';
+  } else {
+    pool.classList.remove('disabled');
+    poolLabel.textContent = '相手に渡すピースを選ぼう';
+  }
+
   for (let i = 0; i < 16; i++) {
     const wrapper = document.createElement('div');
     wrapper.className = 'pool-piece' + (usedPieces.has(i) ? ' used' : '');
@@ -336,7 +366,7 @@ function updateStatus() {
     chosenArea.style.display = 'none';
   } else {
     turnLabel.textContent = `プレイヤー${currentPlayer}のターン`;
-    instrLabel.textContent = 'ピースをボードに置いてください';
+    instrLabel.textContent = 'ボードの好きなマスに置いてください';
     chosenArea.style.display = 'block';
     chosenDisplay.innerHTML = '';
     chosenDisplay.appendChild(createPieceEl(ALL_PIECES[chosenPiece]));
@@ -350,6 +380,7 @@ function onPoolClick(idx) {
   phase = 'place';
   // 置く人は相手
   currentPlayer = currentPlayer === 1 ? 2 : 1;
+  renderBoard();
   renderPool();
   updateStatus();
 }
@@ -397,7 +428,7 @@ function checkWin() {
 }
 
 function highlightWin(line) {
-  const cells = document.querySelectorAll('.cell');
+  const cells = document.getElementById('board').querySelectorAll('.cell');
   line.forEach(i => cells[i].classList.add('win-cell'));
 }
 
