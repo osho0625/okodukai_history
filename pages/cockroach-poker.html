@@ -59,13 +59,23 @@ h1 { font-size: 1.3em; font-weight: 700; }
 }
 .zone-title { font-size: 0.8em; color: #aaa; margin-bottom: 10px; }
 .face-up-cards {
-  display: flex; flex-wrap: wrap; gap: 4px; min-height: 32px;
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px;
 }
-.face-up-card {
-  font-size: 1.4em; width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
+.face-up-group {
+  display: flex; align-items: center; gap: 2px;
   background: rgba(255,255,255,0.08); border-radius: 8px;
+  padding: 4px 8px; font-size: 1.2em;
 }
+.face-up-group.danger {
+  background: rgba(233,69,96,0.25); border: 1px solid rgba(233,69,96,0.5);
+  animation: pulse-danger 1.5s infinite;
+}
+@keyframes pulse-danger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.face-up-emoji { font-size: 1.1em; }
+.face-up-count { font-size: 0.75em; color: #ccc; margin-left: 2px; }
 .message-area {
   text-align: center; padding: 20px 16px;
   background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3);
@@ -98,8 +108,9 @@ h1 { font-size: 1.3em; font-weight: 700; }
   border-radius: 10px; cursor: pointer;
   transition: transform 0.15s, border-color 0.15s, background 0.15s;
 }
-.hand-card:hover { border-color: #e94560; transform: translateY(-4px); }
+.hand-cards:not(.disabled) .hand-card:hover { border-color: #e94560; transform: translateY(-4px); }
 .hand-card.selected { border-color: #4ecdc4; background: rgba(78,205,196,0.15); transform: translateY(-6px); }
+.hand-cards.disabled .hand-card { opacity: 0.5; cursor: default; }
 .declare-area {
   display: none; text-align: center; margin-top: 12px;
 }
@@ -108,12 +119,15 @@ h1 { font-size: 1.3em; font-weight: 700; }
   display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
 }
 .declare-btn {
-  padding: 8px 14px; border-radius: 8px;
+  padding: 8px 12px; border-radius: 8px;
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-  color: #eee; font-size: 1.1em; cursor: pointer;
+  color: #eee; font-size: 1em; cursor: pointer;
   transition: background 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 56px;
 }
 .declare-btn:hover { background: rgba(255,255,255,0.2); }
+.declare-name { font-size: 0.6em; color: #aaa; }
 
 /* 結果画面 */
 #resultScreen { display: none; text-align: center; padding: 40px 0; }
@@ -122,6 +136,13 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 /* カード数バッジ */
 .card-count { font-size: 0.7em; color: #888; margin-left: 2px; }
+.turn-indicator {
+  display: inline-block; padding: 2px 10px; border-radius: 6px;
+  font-size: 0.8em; font-weight: 700; margin-bottom: 4px;
+  background: rgba(78,205,196,0.2); color: #4ecdc4;
+}
+.result-good { color: #4ecdc4; font-weight: 600; }
+.result-bad { color: #e94560; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -155,7 +176,6 @@ h1 { font-size: 1.3em; font-weight: 700; }
 <div id="gameScreen">
   <div class="status-bar">
     <div><div class="label">あなたの手札</div><div class="val" id="myHandCount">0</div></div>
-    <div><div class="label">山札</div><div class="val" id="deckCount">0</div></div>
     <div><div class="label">CPUの手札</div><div class="val" id="cpuHandCount">0</div></div>
   </div>
 
