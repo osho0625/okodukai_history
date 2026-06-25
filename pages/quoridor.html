@@ -60,25 +60,37 @@ h1 { font-size: 1.3em; font-weight: 700; }
   display: flex; align-items: center; justify-content: center;
   cursor: default; transition: background 0.12s;
 }
-.cell.goal-p1 { border-bottom: 2px solid rgba(255,107,107,0.25); }
-.cell.goal-p2 { border-top: 2px solid rgba(78,205,196,0.25); }
-.cell.movable { background: rgba(255,255,255,0.2); cursor: pointer; box-shadow: inset 0 0 6px rgba(255,255,255,0.15); }
-.pawn {
-  width: 70%; height: 70%; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; font-size: 0.75em;
+.cell.goal-p1 { background: rgba(255,107,107,0.08); border-bottom: 2px solid rgba(255,107,107,0.4); }
+.cell.goal-p2 { background: rgba(78,205,196,0.08); border-top: 2px solid rgba(78,205,196,0.4); }
+.cell.movable {
+  background: rgba(255,255,255,0.22); cursor: pointer;
+  box-shadow: inset 0 0 8px rgba(255,255,255,0.2);
+  animation: pulse 1s ease-in-out infinite alternate;
 }
-.pawn-p1 { background: #ff6b6b; box-shadow: 0 2px 8px rgba(255,107,107,0.5); }
-.pawn-p2 { background: #4ecdc4; box-shadow: 0 2px 8px rgba(78,205,196,0.5); }
+@keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+.cell.current-pawn { box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.pawn {
+  width: 72%; height: 72%; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 0.8em;
+  transition: transform 0.2s;
+}
+.pawn-p1 { background: #ff6b6b; box-shadow: 0 2px 8px rgba(255,107,107,0.6); }
+.pawn-p2 { background: #4ecdc4; box-shadow: 0 2px 8px rgba(78,205,196,0.6); }
+.pawn.active-pawn { transform: scale(1.15); }
 .groove-h, .groove-v { border-radius: 2px; transition: background 0.1s; position: relative; }
-.groove-h.clickable, .groove-v.clickable { cursor: pointer; }
+.groove-h.clickable, .groove-v.clickable { cursor: pointer; background: rgba(255,255,255,0.04); }
 .groove-h.clickable::after, .groove-v.clickable::after {
-  content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+  content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
 }
 .groove-h.clickable:hover, .groove-v.clickable:hover { background: rgba(255,215,0,0.35); }
-.groove-h.placed, .groove-v.placed, .groove-cross.placed { background: #d4940a; }
-.groove-h.preview, .groove-v.preview, .groove-cross.preview { background: rgba(255,215,0,0.4); }
+.groove-h.placed, .groove-v.placed, .groove-cross.placed { background: #d4940a; box-shadow: 0 0 4px rgba(212,148,10,0.4); }
+.groove-h.preview, .groove-v.preview, .groove-cross.preview { background: rgba(255,215,0,0.5); }
 .groove-cross { border-radius: 2px; }
+.groove-cross.clickable { cursor: pointer; position: relative; }
+.groove-cross.clickable::after {
+  content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+}
 .action-toggle {
   display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;
 }
@@ -90,7 +102,19 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .action-toggle button.active {
   border-color: #667eea; background: rgba(102,126,234,0.15); color: #fff;
 }
-.action-toggle button.disabled { opacity: 0.4; pointer-events: none; }
+.action-toggle button.disabled { opacity: 0.35; pointer-events: none; }
+.wall-orient {
+  display: none; gap: 8px; justify-content: center; margin-bottom: 8px;
+}
+.wall-orient.show { display: flex; }
+.wall-orient button {
+  padding: 6px 14px; border: 2px solid rgba(255,255,255,0.15); border-radius: 8px;
+  background: rgba(255,255,255,0.05); color: #eee; font-size: 0.85em;
+  cursor: pointer; transition: all 0.15s;
+}
+.wall-orient button.active {
+  border-color: #ffc107; background: rgba(255,193,7,0.15); color: #ffd54f;
+}
 #resultOverlay {
   display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.7); z-index: 100;
@@ -176,6 +200,10 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <button id="btnMove" class="active" onclick="setAction('move')">🚶 移動</button>
     <button id="btnWall" onclick="setAction('wall')">🧱 壁を置く</button>
   </div>
+  <div class="wall-orient" id="wallOrient">
+    <button id="btnOrientH" class="active" onclick="setOrient('h')">━ 横</button>
+    <button id="btnOrientV" onclick="setOrient('v')">┃ 縦</button>
+  </div>
   <div class="board-wrap">
     <div class="board-grid" id="boardGrid"></div>
   </div>
@@ -195,8 +223,8 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 <script>
 const N = 9;
-
-let pawns, fences, walls, currentPlayer, action, gameOver;
+let pawns, fences, walls, currentPlayer, action, wallOrient, gameOver;
+let toastTimer = null;
 
 function startGame() {
   pawns = [{r:0,c:4},{r:8,c:4}];
@@ -204,6 +232,7 @@ function startGame() {
   walls = new Set();
   currentPlayer = 0;
   action = 'move';
+  wallOrient = 'h';
   gameOver = false;
   show('gameScreen');
   render();
@@ -224,6 +253,14 @@ function setAction(a) {
   action = a;
   document.getElementById('btnMove').classList.toggle('active', a==='move');
   document.getElementById('btnWall').classList.toggle('active', a==='wall');
+  document.getElementById('wallOrient').classList.toggle('show', a==='wall');
+  render();
+}
+
+function setOrient(o) {
+  wallOrient = o;
+  document.getElementById('btnOrientH').classList.toggle('active', o==='h');
+  document.getElementById('btnOrientV').classList.toggle('active', o==='v');
   render();
 }
 
@@ -231,225 +268,314 @@ function setAction(a) {
 // Wall key: "h_r_c" = horizontal wall between row r and r+1, covering columns c and c+1
 // "v_r_c" = vertical wall between col c and c+1, covering rows r and r+1
 
-function blocked(r1,c1,r2,c2,ws) {
+function blocked(r1, c1, r2, c2, ws) {
   const w = ws || walls;
-  if (r2===r1-1&&c2===c1) return w.has(`h_${r1-1}_${c1}`)||w.has(`h_${r1-1}_${c1-1}`);
-  if (r2===r1+1&&c2===c1) return w.has(`h_${r1}_${c1}`)||w.has(`h_${r1}_${c1-1}`);
-  if (c2===c1-1&&r2===r1) return w.has(`v_${r1}_${c1-1}`)||w.has(`v_${r1-1}_${c1-1}`);
-  if (c2===c1+1&&r2===r1) return w.has(`v_${r1}_${c1}`)||w.has(`v_${r1-1}_${c1}`);
+  if (r2 === r1-1 && c2 === c1) { // up
+    return w.has(`h_${r1-1}_${c1}`) || w.has(`h_${r1-1}_${c1-1}`);
+  }
+  if (r2 === r1+1 && c2 === c1) { // down
+    return w.has(`h_${r1}_${c1}`) || w.has(`h_${r1}_${c1-1}`);
+  }
+  if (c2 === c1-1 && r2 === r1) { // left
+    return w.has(`v_${r1}_${c1-1}`) || w.has(`v_${r1-1}_${c1-1}`);
+  }
+  if (c2 === c1+1 && r2 === r1) { // right
+    return w.has(`v_${r1}_${c1}`) || w.has(`v_${r1-1}_${c1}`);
+  }
   return false;
 }
 
 function getValidMoves(pi) {
-  const me=pawns[pi], opp=pawns[1-pi], moves=[];
+  const me = pawns[pi], opp = pawns[1-pi];
+  const moves = [];
+  const seen = new Set();
   for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-    const nr=me.r+dr, nc=me.c+dc;
-    if (nr<0||nr>=N||nc<0||nc>=N) continue;
-    if (blocked(me.r,me.c,nr,nc)) continue;
-    if (nr===opp.r&&nc===opp.c) {
-      const jr=nr+dr, jc=nc+dc;
-      if (jr>=0&&jr<N&&jc>=0&&jc<N&&!blocked(nr,nc,jr,jc)) {
-        moves.push({r:jr,c:jc});
+    const nr = me.r+dr, nc = me.c+dc;
+    if (nr<0 || nr>=N || nc<0 || nc>=N) continue;
+    if (blocked(me.r, me.c, nr, nc)) continue;
+    if (nr === opp.r && nc === opp.c) {
+      // Jump over opponent
+      const jr = nr+dr, jc = nc+dc;
+      if (jr>=0 && jr<N && jc>=0 && jc<N && !blocked(nr,nc,jr,jc)) {
+        const key = `${jr}_${jc}`;
+        if (!seen.has(key)) { seen.add(key); moves.push({r:jr,c:jc}); }
       } else {
+        // Side jumps (perpendicular directions only)
         for (const [sd,sc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-          if (sd===dr&&sc===dc) continue;
-          if (sd===-dr&&sc===-dc) continue;
-          const sr=nr+sd, scc=nc+sc;
-          if (sr>=0&&sr<N&&scc>=0&&scc<N&&!blocked(nr,nc,sr,scc)) {
-            moves.push({r:sr,c:scc});
+          if (sd===dr && sc===dc) continue;   // same direction
+          if (sd===-dr && sc===-dc) continue; // reverse direction
+          const sr = nr+sd, scc = nc+sc;
+          if (sr>=0 && sr<N && scc>=0 && scc<N && !blocked(nr,nc,sr,scc)) {
+            const key = `${sr}_${scc}`;
+            if (!seen.has(key)) { seen.add(key); moves.push({r:sr,c:scc}); }
           }
         }
       }
     } else {
-      moves.push({r:nr,c:nc});
+      const key = `${nr}_${nc}`;
+      if (!seen.has(key)) { seen.add(key); moves.push({r:nr,c:nc}); }
     }
   }
   return moves;
 }
 
 function bfsReach(pi, ws) {
-  const goal = pi===0?8:0;
+  const goalRow = pi===0 ? 8 : 0;
   const start = pawns[pi];
-  const visited = Array.from({length:N},()=>Array(N).fill(false));
-  const q = [[start.r,start.c]];
+  const visited = Array.from({length:N}, ()=>Array(N).fill(false));
+  const q = [[start.r, start.c]];
   visited[start.r][start.c] = true;
-  while (q.length) {
-    const [r,c] = q.shift();
-    if (r===goal) return true;
+  let head = 0;
+  while (head < q.length) {
+    const [r,c] = q[head++];
+    if (r === goalRow) return true;
     for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-      const nr=r+dr, nc=c+dc;
-      if (nr<0||nr>=N||nc<0||nc>=N||visited[nr][nc]) continue;
-      if (blocked(r,c,nr,nc,ws)) continue;
-      visited[nr][nc]=true;
-      q.push([nr,nc]);
+      const nr = r+dr, nc = c+dc;
+      if (nr<0 || nr>=N || nc<0 || nc>=N || visited[nr][nc]) continue;
+      if (blocked(r, c, nr, nc, ws)) continue;
+      visited[nr][nc] = true;
+      q.push([nr, nc]);
     }
   }
   return false;
 }
 
-function canPlace(type,r,c) {
-  if (type==='h') {
-    if (r<0||r>=N-1||c<0||c>=N-2) return false;
+function canPlace(type, r, c) {
+  // Bounds check
+  if (type === 'h') {
+    if (r < 0 || r >= N-1 || c < 0 || c >= N-2) return false;
   } else {
-    if (r<0||r>=N-2||c<0||c>=N-1) return false;
+    if (r < 0 || r >= N-2 || c < 0 || c >= N-1) return false;
   }
-  const key=`${type}_${r}_${c}`;
+  const key = `${type}_${r}_${c}`;
   if (walls.has(key)) return false;
-  // overlap check
-  if (type==='h') {
-    if (walls.has(`h_${r}_${c-1}`)||walls.has(`h_${r}_${c+1}`)) return false;
-    if (walls.has(`v_${r}_${c}`)) return false; // crossing
+  // Overlap check: walls can't extend through each other
+  if (type === 'h') {
+    if (walls.has(`h_${r}_${c-1}`) || walls.has(`h_${r}_${c+1}`)) return false;
+    if (walls.has(`v_${r}_${c}`)) return false; // crossing at center
   } else {
-    if (walls.has(`v_${r-1}_${c}`)||walls.has(`v_${r+1}_${c}`)) return false;
-    if (walls.has(`h_${r}_${c}`)) return false; // crossing
+    if (walls.has(`v_${r-1}_${c}`) || walls.has(`v_${r+1}_${c}`)) return false;
+    if (walls.has(`h_${r}_${c}`)) return false; // crossing at center
   }
-  // path check
+  // Path check: both players must still be able to reach their goal
   const test = new Set(walls);
   test.add(key);
-  return bfsReach(0,test)&&bfsReach(1,test);
+  return bfsReach(0, test) && bfsReach(1, test);
 }
 
-function placeWall(type,r,c) {
-  if (gameOver||fences[currentPlayer]<=0) return;
-  if (!canPlace(type,r,c)) { toast('そこには置けません'); return; }
+function placeWall(type, r, c) {
+  if (gameOver || fences[currentPlayer] <= 0) return false;
+  if (!canPlace(type, r, c)) { toast('そこには置けません'); return false; }
   walls.add(`${type}_${r}_${c}`);
   fences[currentPlayer]--;
   nextTurn();
+  return true;
 }
 
-function movePawn(r,c) {
+function movePawn(r, c) {
   if (gameOver) return;
-  pawns[currentPlayer]={r,c};
-  if (currentPlayer===0&&r===8) { endGame(1); return; }
-  if (currentPlayer===1&&r===0) { endGame(2); return; }
+  const moves = getValidMoves(currentPlayer);
+  if (!moves.some(m => m.r===r && m.c===c)) return;
+  pawns[currentPlayer] = {r, c};
+  if (currentPlayer===0 && r===8) { endGame(1); return; }
+  if (currentPlayer===1 && r===0) { endGame(2); return; }
   nextTurn();
 }
 
 function nextTurn() {
-  currentPlayer=1-currentPlayer;
-  action='move';
+  currentPlayer = 1 - currentPlayer;
+  action = 'move';
   document.getElementById('btnMove').classList.add('active');
   document.getElementById('btnWall').classList.remove('active');
+  document.getElementById('wallOrient').classList.remove('show');
   render();
 }
 
 function endGame(winner) {
-  gameOver=true; render();
-  setTimeout(()=>{
-    document.getElementById('resultTitle').textContent='🎉 ゴール！';
-    document.getElementById('resultMsg').textContent=`プレイヤー${winner}の勝ち！`;
-    document.getElementById('resultOverlay').style.display='flex';
-  },300);
+  gameOver = true;
+  render();
+  setTimeout(() => {
+    document.getElementById('resultTitle').textContent = '🎉 ゴール！';
+    document.getElementById('resultMsg').textContent = `プレイヤー${winner}の勝ち！`;
+    document.getElementById('resultOverlay').style.display = 'flex';
+  }, 300);
 }
 
 function toast(msg) {
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),1500);
+  const el = document.getElementById('toast');
+  if (toastTimer) clearTimeout(toastTimer);
+  el.textContent = msg;
+  el.classList.add('show');
+  toastTimer = setTimeout(() => { el.classList.remove('show'); toastTimer = null; }, 1500);
 }
 
 // ---- Rendering ----
 function render() {
-  document.getElementById('fenceP1').textContent=fences[0];
-  document.getElementById('fenceP2').textContent=fences[1];
-  document.getElementById('turnLabel').textContent=`プレイヤー${currentPlayer+1}のターン`;
-  document.getElementById('turnLabel').style.color=currentPlayer===0?'#ff6b6b':'#4ecdc4';
-  document.getElementById('instructionLabel').textContent=
-    action==='move'?'コマを動かしてください':'壁を置いてください（溝をタップ）';
-  document.getElementById('btnWall').classList.toggle('disabled',fences[currentPlayer]<=0);
+  document.getElementById('fenceP1').textContent = fences[0];
+  document.getElementById('fenceP2').textContent = fences[1];
+  document.getElementById('turnLabel').textContent = `プレイヤー${currentPlayer+1}のターン`;
+  document.getElementById('turnLabel').style.color = currentPlayer===0 ? '#ff6b6b' : '#4ecdc4';
 
-  const grid=document.getElementById('boardGrid');
+  if (action === 'move') {
+    document.getElementById('instructionLabel').textContent = '光っているマスをタップ';
+  } else {
+    document.getElementById('instructionLabel').textContent =
+      wallOrient==='h' ? '横壁を置く場所をタップ（溝の交差点）' : '縦壁を置く場所をタップ（溝の交差点）';
+  }
+  document.getElementById('btnWall').classList.toggle('disabled', fences[currentPlayer]<=0);
+
+  const grid = document.getElementById('boardGrid');
   const availW = Math.min(window.innerWidth, 420) - 28;
-  // 9 cells + 8 gaps. gap = cell/3 for better touch targets
-  // total = 9*cell + 8*(cell/3) = cell*(9+8/3) = cell*(35/3)
   const cellPx = Math.min(Math.floor(availW * 3 / 35), 32);
-  const gapPx = Math.max(Math.round(cellPx / 3), 6);
-  const tracks=[];
-  for(let i=0;i<N;i++){tracks.push(cellPx+'px');if(i<N-1)tracks.push(gapPx+'px');}
-  grid.style.gridTemplateColumns=tracks.join(' ');
-  grid.style.gridTemplateRows=tracks.join(' ');
-  grid.innerHTML='';
+  const gapPx = Math.max(Math.round(cellPx / 3), 7);
+  const tracks = [];
+  for (let i=0; i<N; i++) { tracks.push(cellPx+'px'); if(i<N-1) tracks.push(gapPx+'px'); }
+  grid.style.gridTemplateColumns = tracks.join(' ');
+  grid.style.gridTemplateRows = tracks.join(' ');
+  grid.innerHTML = '';
 
-  const validMoves=action==='move'?getValidMoves(currentPlayer):[];
+  const validMoves = action==='move' ? getValidMoves(currentPlayer) : [];
 
-  for(let gr=0;gr<17;gr++){
-    for(let gc=0;gc<17;gc++){
-      const rowEven=gr%2===0, colEven=gc%2===0;
-      if(rowEven&&colEven){
-        // board cell
-        const r=gr/2, c=gc/2;
-        const el=document.createElement('div');
-        el.className='cell';
-        if(r===8)el.classList.add('goal-p1');
-        if(r===0)el.classList.add('goal-p2');
-        if(pawns[0].r===r&&pawns[0].c===c){
-          const p=document.createElement('div');p.className='pawn pawn-p1';p.textContent='1';el.appendChild(p);
-        } else if(pawns[1].r===r&&pawns[1].c===c){
-          const p=document.createElement('div');p.className='pawn pawn-p2';p.textContent='2';el.appendChild(p);
+  for (let gr=0; gr<17; gr++) {
+    for (let gc=0; gc<17; gc++) {
+      const rowEven = gr%2===0, colEven = gc%2===0;
+
+      if (rowEven && colEven) {
+        // Board cell
+        const r = gr/2, c = gc/2;
+        const el = document.createElement('div');
+        el.className = 'cell';
+        if (r === 8) el.classList.add('goal-p1');
+        if (r === 0) el.classList.add('goal-p2');
+
+        if (pawns[0].r===r && pawns[0].c===c) {
+          const p = document.createElement('div');
+          p.className = 'pawn pawn-p1' + (currentPlayer===0?' active-pawn':'');
+          p.textContent = '▼';
+          el.appendChild(p);
+          if (currentPlayer===0) el.classList.add('current-pawn');
+        } else if (pawns[1].r===r && pawns[1].c===c) {
+          const p = document.createElement('div');
+          p.className = 'pawn pawn-p2' + (currentPlayer===1?' active-pawn':'');
+          p.textContent = '▲';
+          el.appendChild(p);
+          if (currentPlayer===1) el.classList.add('current-pawn');
         }
-        if(validMoves.some(m=>m.r===r&&m.c===c)){
+
+        if (validMoves.some(m => m.r===r && m.c===c)) {
           el.classList.add('movable');
-          el.onclick=()=>movePawn(r,c);
+          el.onclick = () => movePawn(r, c);
         }
         grid.appendChild(el);
-      } else if(!rowEven&&colEven){
-        // horizontal groove segment
-        const wr=Math.floor(gr/2), wc=gc/2;
-        const el=document.createElement('div');
-        el.className='groove-h';
-        // is this segment part of a placed wall?
-        if(isHSegPlaced(wr,wc)) el.classList.add('placed');
-        else if(action==='wall'&&fences[currentPlayer]>0){
-          el.classList.add('clickable');
-          el.onclick=()=>handleHClick(wr,wc);
-        }
+
+      } else if (!rowEven && colEven) {
+        // Horizontal groove segment (between rows)
+        const wr = Math.floor(gr/2), wc = gc/2;
+        const el = document.createElement('div');
+        el.className = 'groove-h';
+        if (isHSegPlaced(wr, wc)) el.classList.add('placed');
         grid.appendChild(el);
-      } else if(rowEven&&!colEven){
-        // vertical groove segment
-        const wr=gr/2, wc=Math.floor(gc/2);
-        const el=document.createElement('div');
-        el.className='groove-v';
-        if(isVSegPlaced(wr,wc)) el.classList.add('placed');
-        else if(action==='wall'&&fences[currentPlayer]>0){
-          el.classList.add('clickable');
-          el.onclick=()=>handleVClick(wr,wc);
-        }
+
+      } else if (rowEven && !colEven) {
+        // Vertical groove segment (between cols)
+        const wr = gr/2, wc = Math.floor(gc/2);
+        const el = document.createElement('div');
+        el.className = 'groove-v';
+        if (isVSegPlaced(wr, wc)) el.classList.add('placed');
         grid.appendChild(el);
+
       } else {
-        // cross
-        const cr=Math.floor(gr/2), cc=Math.floor(gc/2);
-        const el=document.createElement('div');
-        el.className='groove-cross';
-        if(isCrossPlaced(cr,cc)) el.classList.add('placed');
+        // Cross point - this is the primary click target for wall placement
+        const cr = Math.floor(gr/2), cc = Math.floor(gc/2);
+        const el = document.createElement('div');
+        el.className = 'groove-cross';
+        if (isCrossPlaced(cr, cc)) {
+          el.classList.add('placed');
+        } else if (action==='wall' && fences[currentPlayer]>0) {
+          // Cross points are clickable for wall placement
+          el.classList.add('clickable');
+          el.onclick = () => handleCrossClick(cr, cc);
+          el.onmouseenter = () => previewFromCross(cr, cc);
+          el.onmouseleave = clearPreview;
+          el.ontouchstart = (e) => { e.preventDefault(); previewFromCross(cr, cc); };
+          el.ontouchend = (e) => { e.preventDefault(); clearPreview(); handleCrossClick(cr, cc); };
+        }
         grid.appendChild(el);
       }
     }
   }
 }
 
-function isHSegPlaced(wr,wc){
-  // segment between row wr and wr+1 at column wc
-  // wall h_r_c covers columns c and c+1, so this segment is covered if wall starts at wc or wc-1
-  return walls.has(`h_${wr}_${wc}`)||walls.has(`h_${wr}_${wc-1}`);
+// ---- Wall segment display ----
+function isHSegPlaced(wr, wc) {
+  return walls.has(`h_${wr}_${wc}`) || walls.has(`h_${wr}_${wc-1}`);
 }
-function isVSegPlaced(wr,wc){
-  return walls.has(`v_${wr}_${wc}`)||walls.has(`v_${wr-1}_${wc}`);
+function isVSegPlaced(wr, wc) {
+  return walls.has(`v_${wr}_${wc}`) || walls.has(`v_${wr-1}_${wc}`);
 }
-function isCrossPlaced(cr,cc){
-  return walls.has(`h_${cr}_${cc}`)||walls.has(`h_${cr}_${cc-1}`)||
-         walls.has(`v_${cr}_${cc}`)||walls.has(`v_${cr-1}_${cc}`);
+function isCrossPlaced(cr, cc) {
+  return walls.has(`h_${cr}_${cc}`) || walls.has(`h_${cr}_${cc-1}`) ||
+         walls.has(`v_${cr}_${cc}`) || walls.has(`v_${cr-1}_${cc}`);
 }
 
-function handleHClick(wr,wc){
-  // Try to place horizontal wall starting at wc, or wc-1
-  if(canPlace('h',wr,wc)){ placeWall('h',wr,wc); return; }
-  if(wc>0&&canPlace('h',wr,wc-1)){ placeWall('h',wr,wc-1); return; }
-  toast('そこには置けません');
+// ---- Wall placement via cross points ----
+function handleCrossClick(cr, cc) {
+  // Place wall with center at cross point (cr, cc)
+  // Horizontal wall: h_cr_cc (covers cols cc and cc+1, between rows cr and cr+1)
+  // Vertical wall: v_cr_cc (covers rows cr and cr+1, between cols cc and cc+1)
+  if (wallOrient === 'h') {
+    if (canPlace('h', cr, cc)) { placeWall('h', cr, cc); return; }
+    // Try shifted left (cross is right end of wall)
+    if (cc > 0 && canPlace('h', cr, cc-1)) { placeWall('h', cr, cc-1); return; }
+    toast('そこには横壁を置けません');
+  } else {
+    if (canPlace('v', cr, cc)) { placeWall('v', cr, cc); return; }
+    // Try shifted up (cross is bottom end of wall)
+    if (cr > 0 && canPlace('v', cr-1, cc)) { placeWall('v', cr-1, cc); return; }
+    toast('そこには縦壁を置けません');
+  }
 }
-function handleVClick(wr,wc){
-  if(canPlace('v',wr,wc)){ placeWall('v',wr,wc); return; }
-  if(wr>0&&canPlace('v',wr-1,wc)){ placeWall('v',wr-1,wc); return; }
-  toast('そこには置けません');
+
+// ---- Preview ----
+let previewEls = [];
+function previewFromCross(cr, cc) {
+  clearPreview();
+  const grid = document.getElementById('boardGrid');
+  const children = grid.children;
+
+  let wallKey;
+  if (wallOrient === 'h') {
+    wallKey = canPlace('h',cr,cc) ? `h_${cr}_${cc}` :
+              (cc>0 && canPlace('h',cr,cc-1) ? `h_${cr}_${cc-1}` : null);
+  } else {
+    wallKey = canPlace('v',cr,cc) ? `v_${cr}_${cc}` :
+              (cr>0 && canPlace('v',cr-1,cc) ? `v_${cr-1}_${cc}` : null);
+  }
+  if (!wallKey) return;
+
+  const [type, wr, wc] = wallKey.split('_');
+  const r = parseInt(wr), c = parseInt(wc);
+
+  if (type === 'h') {
+    // Highlight: groove-h at (r*2+1, c*2), cross at (r*2+1, c*2+1), groove-h at (r*2+1, (c+1)*2)
+    const grRow = r*2+1;
+    [c*2, c*2+1, (c+1)*2].forEach(gc => {
+      const idx = grRow * 17 + gc;
+      if (children[idx]) { children[idx].classList.add('preview'); previewEls.push(children[idx]); }
+    });
+  } else {
+    // Highlight: groove-v at (r*2, c*2+1), cross at (r*2+1, c*2+1), groove-v at ((r+1)*2, c*2+1)
+    const gcCol = c*2+1;
+    [r*2, r*2+1, (r+1)*2].forEach(gr => {
+      const idx = gr * 17 + gcCol;
+      if (children[idx]) { children[idx].classList.add('preview'); previewEls.push(children[idx]); }
+    });
+  }
+}
+
+function clearPreview() {
+  previewEls.forEach(el => el.classList.remove('preview'));
+  previewEls = [];
 }
 </script>
 </body>
