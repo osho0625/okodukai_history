@@ -13,6 +13,7 @@ fileMatchPattern: "*tetris*,*blast*,*olimar*,*arcade*"
 - `pages/blast-ranking.html` — ブロックブラストランキング
 - `pages/olimar.html` — オリマーの冒険（探索RPG）
 - `pages/arcade.html` — ゲームセンター（ゲーム一覧）
+- `pages/memory-game.html` — 神経衰弱（カードめくり記憶力ゲーム）
 - `js/olimar-scenario.js` — オリマーの冒険シナリオデータ（62ノード）
 - `images/olimar.png` — オリマー画像（透過PNG、完了枚数表示用）
 
@@ -71,9 +72,17 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## ゲームセンター（arcade.html）
 
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、クトゥルフTRPGの8ゲームをカード形式で表示
+- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、神経衰弱をカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
 - クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
+
+## 神経衰弱（memory-game.html）
+
+- 3難易度（かんたん6ペア/ふつう8ペア/むずい12ペア）
+- カードをめくって同じ絵柄のペアを見つける記憶力ゲーム
+- 3Dフリップアニメーション、手数・タイマー表示
+- ペア成立時に緑ハイライト演出
+- 結果画面でタイム・手数・難易度を表示
 
 ## DBテーブル
 
