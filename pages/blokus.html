@@ -69,6 +69,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .board .cell.preview-invalid { background: #ff1744; }
 @keyframes flashRed { 0%,100% { background: inherit; } 50% { background: #ff1744; } }
 .board .cell.invalid-flash { animation: flashRed 0.3s ease 2; }
+/* Unlock animation */
+@keyframes lockShake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-10deg)} 40%{transform:rotate(10deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)} }
+@keyframes lockBreak { 0%{transform:scale(1);opacity:1} 100%{transform:scale(0.5) translateY(-40px) rotate(-30deg);opacity:0} }
+@keyframes unlockReveal { 0%{transform:scale(0.8);opacity:0} 50%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
 /* Control bar */
 .control-bar { display: flex; gap: 8px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
 .control-bar .ctrl-btn { padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
@@ -433,7 +437,15 @@ function showScreen(name) {
   // Show/hide turn info
   const turnEl = document.getElementById('turnInfo');
   turnEl.style.display = name === 'game' ? '' : 'none';
-  if (name === 'setup') buildSetupUI();
+  if (name === 'setup') {
+    buildSetupUI();
+    updateRuleUI();
+    // Check for meijin unlock pending
+    if (localStorage.getItem('blokus_meijin_unlock_pending') === 'true') {
+      localStorage.removeItem('blokus_meijin_unlock_pending');
+      setTimeout(playMeijinUnlock, 400);
+    }
+  }
   if (name === 'game') { renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton(); }
 }
 
@@ -499,6 +511,7 @@ function updateRuleUI() {
   if (showCpu) {
     const cpuCount = 4 - selectedMode;
     const colorLabels = ['🟦','🟥','🟩','🟨'];
+    const meijinUnlocked = localStorage.getItem('blokus_meijin_unlocked') === 'true';
     let html = '<label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>';
     for (let i = 0; i < cpuCount; i++) {
       const colorIdx = selectedMode + i;
@@ -508,6 +521,9 @@ function updateRuleUI() {
           <option value="weak">よわい</option>
           <option value="normal" selected>ふつう</option>
           <option value="strong">つよい</option>
+          ${meijinUnlocked ? '<option value="meijin">🏆 めいじん</option>' : ''}
+        </select>
+      </div>`;
         </select>
       </div>`;
     }
@@ -1124,12 +1140,11 @@ function evaluateMove(cells, x, y, color, pieceIdx, level) {
       if (!edgeBlocked) newCorners++;
     }
 
-    // For 'strong': check if we block opponent corners
-    if (level === 'strong') {
+    // For 'strong' and 'meijin': check if we block opponent corners
+    if (level === 'strong' || level === 'meijin') {
       for (const o of orthogonals) {
         const nx = bx + o[0], ny = by + o[1];
         if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
-        // If this edge touches an opponent's potential corner area
         for (const d of diagonals) {
           const cx = nx + d[0], cy = ny + d[1];
           if (cx < 0 || cx > 19 || cy < 0 || cy > 19) continue;
@@ -1145,8 +1160,45 @@ function evaluateMove(cells, x, y, color, pieceIdx, level) {
   if (level === 'normal') {
     return newCorners * 3 + pieceSize;
   }
-  // strong
-  return newCorners * 3 + blockedOpponent * 2 + pieceSize;
+  if (level === 'strong') {
+    return newCorners * 3 + blockedOpponent * 2 + pieceSize;
+  }
+  // meijin: enhanced heuristics
+  // 1. Center bias: prefer moves toward the center of the board
+  let centerScore = 0;
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    const distFromCenter = Math.abs(bx - 9.5) + Math.abs(by - 9.5);
+    centerScore += (14 - distFromCenter); // max 14 per cell at center
+  }
+  // 2. Small piece preservation: penalize using small pieces early
+  const totalPlaced = gameState.players.reduce((sum, p) => sum + p.pieces.filter(v => !v).length, 0);
+  const gameProgress = totalPlaced / 84; // 0..1 (21 pieces x 4 players)
+  let preserveBonus = 0;
+  if (pieceSize <= 2 && gameProgress < 0.5) {
+    preserveBonus = -8; // penalty for using small pieces too early
+  }
+  // 3. Avoid isolated corners (corners with only 1 access direction)
+  let accessibleCorners = 0;
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    for (const d of diagonals) {
+      const nx = bx + d[0], ny = by + d[1];
+      if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+      if (gameState.board[ny][nx] !== null) continue;
+      if (placedSet.has(`${nx},${ny}`)) continue;
+      // Count how many directions this corner can be reached from
+      let access = 0;
+      for (const d2 of diagonals) {
+        const ax = nx + d2[0], ay = ny + d2[1];
+        if (ax < 0 || ax > 19 || ay < 0 || ay > 19) continue;
+        if (gameState.board[ay][ax] === null && !placedSet.has(`${ax},${ay}`)) access++;
+      }
+      if (access >= 2) accessibleCorners++;
+    }
+  }
+
+  return newCorners * 4 + blockedOpponent * 3 + pieceSize * 2 + centerScore * 0.5 + preserveBonus + accessibleCorners;
 }
 
 // =============================================================
@@ -1204,10 +1256,45 @@ function endGame() {
   document.getElementById('resultTitle').textContent = titleText;
   document.getElementById('scoresList').innerHTML = scoresHtml;
   showScreen('result');
+
+  // Check meijin unlock: human won 1v3 with all CPU at "strong"
+  if (!result.isDraw && selectedMode === 1 && selectedRule === 'cpu') {
+    const winner = gameState.players[result.winnerIndices[0]];
+    if (!winner.isCpu) {
+      const allStrong = gameState.players.filter(p => p.isCpu).every(p => p.cpuLevel === 'strong');
+      if (allStrong && localStorage.getItem('blokus_meijin_unlocked') !== 'true') {
+        localStorage.setItem('blokus_meijin_unlocked', 'true');
+        localStorage.setItem('blokus_meijin_unlock_pending', 'true');
+      }
+    }
+  }
 }
 
 function resetGame() {
   showScreen('setup');
+}
+
+function playMeijinUnlock() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  const lockIcon = document.createElement('div');
+  lockIcon.textContent = '🔒';
+  lockIcon.style.cssText = 'font-size:4em;animation:lockShake 1.2s ease-in-out;';
+  overlay.appendChild(lockIcon);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => { lockIcon.style.animation = 'lockBreak 0.5s ease-out forwards'; }, 1200);
+
+  setTimeout(() => {
+    lockIcon.style.display = 'none';
+    const reveal = document.createElement('div');
+    reveal.style.cssText = 'text-align:center;animation:unlockReveal 0.5s ease-out;';
+    reveal.innerHTML = '<div style="font-size:3em;margin-bottom:12px;">🏆✨</div>'
+      + '<div style="font-size:1.3em;font-weight:700;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px rgba(255,215,0,0.5);">めいじん 解放！</div>'
+      + '<div style="font-size:0.9em;color:#ccc;margin-bottom:16px;">最強のCPUに挑戦できるようになりました！</div>'
+      + '<button style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#333;font-weight:700;font-size:1em;cursor:pointer;" onclick="this.closest(\'div\').parentElement.remove();updateRuleUI();">OK!</button>';
+    overlay.appendChild(reveal);
+  }, 1700);
 }
 
 // =============================================================
