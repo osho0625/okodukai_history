@@ -136,9 +136,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="screen" id="setupScreen">
   <h2 style="text-align:center;margin-bottom:20px;">プレイヤー設定</h2>
   <div class="mode-btns">
+    <button class="mode-btn" data-mode="1" onclick="selectMode(1)">1人</button>
     <button class="mode-btn" data-mode="2" onclick="selectMode(2)">2人</button>
-    <button class="mode-btn selected" data-mode="4" onclick="selectMode(4)">4人</button>
     <button class="mode-btn" data-mode="3" onclick="selectMode(3)">3人</button>
+    <button class="mode-btn selected" data-mode="4" onclick="selectMode(4)">4人</button>
+  </div>
+  <div id="cpuSettings" style="margin-bottom:16px;display:none;">
+    <label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>
+    <div style="display:flex;gap:8px;">
+      <button class="mode-btn cpu-btn" data-cpu="weak" onclick="selectCpu('weak')">よわい</button>
+      <button class="mode-btn cpu-btn selected" data-cpu="normal" onclick="selectCpu('normal')">ふつう</button>
+      <button class="mode-btn cpu-btn" data-cpu="strong" onclick="selectCpu('strong')">つよい</button>
+    </div>
   </div>
   <div class="name-inputs" id="nameInputs"></div>
   <div style="margin-bottom:16px;">
@@ -359,31 +368,20 @@ function calculateScore(player) {
 function calculateTeamScore(p1, p2) { return calculateScore(p1) + calculateScore(p2); }
 
 function isGameOver(gs) {
-  const count = gs.mode === 3 ? 3 : 4;
-  for (let i = 0; i < count; i++) { if (!gs.players[i].passed) return false; }
+  for (let i = 0; i < 4; i++) { if (!gs.players[i].passed) return false; }
   return true;
 }
 
 function advanceTurn(gs) {
   let next = gs.currentTurn;
-  do { next = (next + 1) % 4; } while (gs.players[next].passed || (gs.mode === 3 && next === 3));
+  do { next = (next + 1) % 4; } while (gs.players[next].passed);
   gs.currentTurn = next;
   return next;
 }
 
 function determineWinner(gs) {
-  if (gs.mode === 2) {
-    const teamScores = [
-      calculateTeamScore(gs.players[0], gs.players[1]),
-      calculateTeamScore(gs.players[2], gs.players[3])
-    ];
-    const max = Math.max(...teamScores);
-    const winners = teamScores.reduce((a, s, i) => s === max ? [...a, i] : a, []);
-    return { isDraw: winners.length > 1, winnerIndices: winners };
-  }
-  const count = gs.mode === 3 ? 3 : 4;
   const scores = [];
-  for (let i = 0; i < count; i++) scores.push(calculateScore(gs.players[i]));
+  for (let i = 0; i < 4; i++) scores.push(calculateScore(gs.players[i]));
   const max = Math.max(...scores);
   const winners = scores.reduce((a, s, i) => s === max ? [...a, i] : a, []);
   return { isDraw: winners.length > 1, winnerIndices: winners };
@@ -448,19 +446,31 @@ function updateTurnInfo() {
   const p = gameState.players[gameState.currentTurn];
   const info = PLAYER_COLORS[p.color];
   const el = document.getElementById('turnInfo');
-  el.textContent = `${info.label} ${p.name} のターン`;
-  el.style.background = info.fill + '33'; // subtle color hint
+  el.textContent = p.isCpu ? `${info.label} ${p.name} 考え中...` : `${info.label} ${p.name} のターン`;
+  el.style.background = info.fill + '33';
+  // Hide controls during CPU turn
+  const isCpuTurn = p.isCpu;
+  document.getElementById('pieceSelector').style.opacity = isCpuTurn ? '0.3' : '1';
+  document.getElementById('pieceSelector').style.pointerEvents = isCpuTurn ? 'none' : '';
+  document.getElementById('btnPass').disabled = isCpuTurn;
 }
 
 // =============================================================
 // UI: Setup Screen
 // =============================================================
 let selectedMode = 4;
+let selectedCpu = 'normal'; // 'weak' | 'normal' | 'strong'
 
 function selectMode(m) {
   selectedMode = m;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.mode) === m));
+  document.querySelectorAll('.mode-btn:not(.cpu-btn)').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.mode) === m));
+  document.getElementById('cpuSettings').style.display = m < 4 ? '' : 'none';
   buildSetupUI();
+}
+
+function selectCpu(level) {
+  selectedCpu = level;
+  document.querySelectorAll('.cpu-btn').forEach(b => b.classList.toggle('selected', b.dataset.cpu === level));
 }
 
 function getSavedNames() {
@@ -470,19 +480,10 @@ function getSavedNames() {
 function buildSetupUI() {
   const container = document.getElementById('nameInputs');
   const saved = getSavedNames();
+  const labels = ['🟦 プレイヤー1', '🟥 プレイヤー2', '🟩 プレイヤー3', '🟨 プレイヤー4'];
   let html = '';
-  if (selectedMode === 2) {
-    html += nameField('チームA の名前', 0, saved);
-    html += nameField('チームB の名前', 1, saved);
-  } else if (selectedMode === 3) {
-    html += nameField('🟦 プレイヤー1', 0, saved);
-    html += nameField('🟥 プレイヤー2', 1, saved);
-    html += nameField('🟩 プレイヤー3', 2, saved);
-  } else {
-    html += nameField('🟦 プレイヤー1', 0, saved);
-    html += nameField('🟥 プレイヤー2', 1, saved);
-    html += nameField('🟩 プレイヤー3', 2, saved);
-    html += nameField('🟨 プレイヤー4', 3, saved);
+  for (let i = 0; i < selectedMode; i++) {
+    html += nameField(labels[i], i, saved);
   }
   container.innerHTML = html;
 }
@@ -496,7 +497,7 @@ function nameField(label, idx, saved) {
 }
 
 function startGame() {
-  gameState.mode = selectedMode;
+  gameState.mode = 4; // always 4 colors active
   gameState.board = Array.from({length:20}, () => Array(20).fill(null));
   gameState.currentTurn = 0;
   gameState.selectedPieceIdx = -1;
@@ -508,32 +509,26 @@ function startGame() {
   lastPlaceTime = 0;
   undoTimeLimit = document.getElementById('undoTimeLimitCheck').checked;
 
-  // Build players
-  gameState.players = COLOR_ORDER.map(color => ({
-    color, name: '', pieces: Array(21).fill(true), passed: false, lastPieceSize: 0
+  // Build players: first N are human, rest are CPU
+  const humanCount = selectedMode;
+  const cpuNames = ['CPU1', 'CPU2', 'CPU3'];
+  gameState.players = COLOR_ORDER.map((color, i) => ({
+    color, name: '', pieces: Array(21).fill(true), passed: false, lastPieceSize: 0,
+    isCpu: i >= humanCount,
+    cpuLevel: i >= humanCount ? selectedCpu : null
   }));
 
-  // Assign names
+  // Assign human names
   const names = [];
-  if (selectedMode === 2) {
-    const a = document.getElementById('pname0').value.trim() || 'チームA';
-    const b = document.getElementById('pname1').value.trim() || 'チームB';
-    gameState.players[0].name = a; gameState.players[1].name = a;
-    gameState.players[2].name = b; gameState.players[3].name = b;
-    names.push(a, b);
-  } else if (selectedMode === 3) {
-    for (let i = 0; i < 3; i++) {
-      const n = document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1));
-      gameState.players[i].name = n;
-      names.push(n);
-    }
-    gameState.players[3].name = ''; gameState.players[3].passed = true;
-  } else {
-    for (let i = 0; i < 4; i++) {
-      const n = document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1));
-      gameState.players[i].name = n;
-      names.push(n);
-    }
+  for (let i = 0; i < humanCount; i++) {
+    const n = document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1));
+    gameState.players[i].name = n;
+    names.push(n);
+  }
+  // Assign CPU names
+  let cpuIdx = 0;
+  for (let i = humanCount; i < 4; i++) {
+    gameState.players[i].name = cpuNames[cpuIdx++];
   }
 
   // Save names to localStorage
@@ -544,6 +539,8 @@ function startGame() {
   } catch(e) {}
 
   showScreen('game');
+  // If first player is CPU, trigger CPU turn
+  if (gameState.players[0].isCpu) scheduleCpuTurn();
 }
 
 // =============================================================
@@ -554,9 +551,10 @@ function renderBoard() {
   boardEl.innerHTML = '';
   const currentColor = gameState.players[gameState.currentTurn].color;
 
-  // Get legal positions and build ghost cell set
+  // Get legal positions and build ghost cell set (only for human players)
   let ghostCells = new Map(); // key "x,y" → position {x,y} that placed it
-  if (gameState.selectedPieceIdx >= 0) {
+  const currentPlayer = gameState.players[gameState.currentTurn];
+  if (gameState.selectedPieceIdx >= 0 && !currentPlayer.isCpu) {
     const legalPos = getLegalPositions(gameState.board, gameState.selectedPieceIdx, gameState.rotation, gameState.flipped, currentColor);
     const cells = transformPiece(PIECES[gameState.selectedPieceIdx].cells, gameState.rotation, gameState.flipped);
     for (const pos of legalPos) {
@@ -646,6 +644,7 @@ function placeAtPosition(x, y) {
     renderPieces();
     updateTurnInfo();
     updateUndoButton();
+    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
   }
 }
 
@@ -773,6 +772,7 @@ function doPass() {
     renderPieces();
     updateTurnInfo();
     updateUndoButton();
+    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
   }
 }
 
@@ -842,6 +842,175 @@ function startUndoTimer() {
 }
 
 // =============================================================
+// CPU AI
+// =============================================================
+function scheduleCpuTurn() {
+  // Delay to show "thinking" feel
+  const delay = 600 + Math.random() * 400;
+  setTimeout(() => {
+    if (gameState.phase !== 'game') return;
+    const player = gameState.players[gameState.currentTurn];
+    if (!player.isCpu || player.passed) return;
+    executeCpuTurn(player);
+  }, delay);
+}
+
+function executeCpuTurn(player) {
+  const color = player.color;
+  const level = player.cpuLevel;
+
+  // Find best move: { pieceIdx, rotation, flipped, x, y, score }
+  let bestMove = null;
+
+  // Get piece order based on difficulty
+  const pieceOrder = getPieceOrder(player, level);
+
+  for (const pieceIdx of pieceOrder) {
+    if (!player.pieces[pieceIdx]) continue;
+    for (let rot = 0; rot < 4; rot++) {
+      for (let flip = 0; flip < 2; flip++) {
+        const cells = transformPiece(PIECES[pieceIdx].cells, rot, !!flip);
+        const first = isFirstPieceForColor(gameState.board, color);
+        for (let y = 0; y < 20; y++) {
+          for (let x = 0; x < 20; x++) {
+            if (!canPlace(gameState.board, cells, x, y, color, first)) continue;
+            const score = evaluateMove(cells, x, y, color, pieceIdx, level);
+            if (!bestMove || score > bestMove.score) {
+              bestMove = { pieceIdx, rotation: rot, flipped: !!flip, x, y, score };
+            }
+          }
+        }
+      }
+    }
+    // For 'weak' level, stop at first piece that has any legal move
+    if (level === 'weak' && bestMove) break;
+  }
+
+  if (!bestMove) {
+    // No moves available - pass
+    player.passed = true;
+    if (isGameOver(gameState)) { endGame(); return; }
+    advanceTurn(gameState);
+    renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton();
+    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+    return;
+  }
+
+  // For 'weak', pick a random legal position for the chosen piece instead of best
+  if (level === 'weak') {
+    const cells = transformPiece(PIECES[bestMove.pieceIdx].cells, bestMove.rotation, bestMove.flipped);
+    const first = isFirstPieceForColor(gameState.board, color);
+    const legalMoves = [];
+    for (let y = 0; y < 20; y++) {
+      for (let x = 0; x < 20; x++) {
+        if (canPlace(gameState.board, cells, x, y, color, first)) legalMoves.push({x, y});
+      }
+    }
+    if (legalMoves.length > 0) {
+      const pick = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+      bestMove.x = pick.x;
+      bestMove.y = pick.y;
+    }
+  }
+
+  // Execute the move
+  const cells = transformPiece(PIECES[bestMove.pieceIdx].cells, bestMove.rotation, bestMove.flipped);
+
+  // Save undo snapshot
+  undoHistory.push({
+    board: gameState.board.map(row => [...row]),
+    players: gameState.players.map(p => ({ ...p, pieces: [...p.pieces] })),
+    currentTurn: gameState.currentTurn
+  });
+
+  gameState.board = placePiece(gameState.board, cells, bestMove.x, bestMove.y, color);
+  player.pieces[bestMove.pieceIdx] = false;
+  player.lastPieceSize = cells.length;
+  boardVersion++;
+  lastPlaceTime = Date.now();
+  startUndoTimer();
+  legalCache.key = '';
+
+  if (isGameOver(gameState)) { endGame(); return; }
+  advanceTurn(gameState);
+  renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton();
+  if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+}
+
+function getPieceOrder(player, level) {
+  const indices = [];
+  for (let i = 0; i < 21; i++) { if (player.pieces[i]) indices.push(i); }
+  if (level === 'weak') {
+    // Random order
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+  } else {
+    // Sort by size descending (bigger pieces first)
+    indices.sort((a, b) => PIECES[b].cells.length - PIECES[a].cells.length);
+  }
+  return indices;
+}
+
+function evaluateMove(cells, x, y, color, pieceIdx, level) {
+  if (level === 'weak') return Math.random(); // random score
+
+  // Count new corners created by this placement
+  const diagonals = [[-1,-1],[1,-1],[-1,1],[1,1]];
+  const orthogonals = [[0,-1],[0,1],[-1,0],[1,0]];
+  const placedSet = new Set(cells.map(c => `${c[0]+x},${c[1]+y}`));
+
+  let newCorners = 0;
+  let blockedOpponent = 0;
+
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    // Check diagonal neighbors as potential future corners
+    for (const d of diagonals) {
+      const nx = bx + d[0], ny = by + d[1];
+      if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+      if (gameState.board[ny][nx] !== null) continue;
+      if (placedSet.has(`${nx},${ny}`)) continue;
+      // Check this corner isn't edge-blocked by own color
+      let edgeBlocked = false;
+      for (const o of orthogonals) {
+        const ox = nx + o[0], oy = ny + o[1];
+        if (ox >= 0 && ox < 20 && oy >= 0 && oy < 20) {
+          if (gameState.board[oy][ox] === color || placedSet.has(`${ox},${oy}`)) {
+            edgeBlocked = true; break;
+          }
+        }
+      }
+      if (!edgeBlocked) newCorners++;
+    }
+
+    // For 'strong': check if we block opponent corners
+    if (level === 'strong') {
+      for (const o of orthogonals) {
+        const nx = bx + o[0], ny = by + o[1];
+        if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+        // If this edge touches an opponent's potential corner area
+        for (const d of diagonals) {
+          const cx = nx + d[0], cy = ny + d[1];
+          if (cx < 0 || cx > 19 || cy < 0 || cy > 19) continue;
+          const val = gameState.board[cy][cx];
+          if (val && val !== color) blockedOpponent++;
+        }
+      }
+    }
+  }
+
+  const pieceSize = PIECES[pieceIdx].cells.length;
+
+  if (level === 'normal') {
+    return newCorners * 3 + pieceSize;
+  }
+  // strong
+  return newCorners * 3 + blockedOpponent * 2 + pieceSize;
+}
+
+// =============================================================
 // UI: Game Over
 // =============================================================
 function endGame() {
@@ -849,49 +1018,29 @@ function endGame() {
   let titleText = '';
   let scoresHtml = '';
 
-  if (gameState.mode === 2) {
-    const teamNames = [gameState.players[0].name, gameState.players[2].name];
-    const teamScores = [
-      calculateTeamScore(gameState.players[0], gameState.players[1]),
-      calculateTeamScore(gameState.players[2], gameState.players[3])
-    ];
-    if (result.isDraw) {
-      titleText = '引き分け！';
-    } else {
-      titleText = `${teamNames[result.winnerIndices[0]]} 勝利！`;
-    }
-    for (let i = 0; i < 2; i++) {
-      const colors = i === 0 ? '🟦🟥' : '🟩🟨';
-      scoresHtml += `<div class="score-row"><span class="player-label">${colors} ${teamNames[i]}</span><span class="score-val">${teamScores[i]}点</span></div>`;
-    }
+  const scores = [];
+  for (let i = 0; i < 4; i++) scores.push(calculateScore(gameState.players[i]));
+  if (result.isDraw) {
+    titleText = '引き分け！';
   } else {
-    const count = gameState.mode === 3 ? 3 : 4;
-    const scores = [];
-    for (let i = 0; i < count; i++) scores.push(calculateScore(gameState.players[i]));
-    if (result.isDraw) {
-      titleText = '引き分け！';
-    } else {
-      titleText = `${gameState.players[result.winnerIndices[0]].name} 勝利！`;
-    }
-    for (let i = 0; i < count; i++) {
-      const p = gameState.players[i];
-      scoresHtml += `<div class="score-row"><span class="player-label">${PLAYER_COLORS[p.color].label} ${p.name}</span><span class="score-val">${scores[i]}点</span></div>`;
-    }
+    titleText = `${gameState.players[result.winnerIndices[0]].name} 勝利！`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const p = gameState.players[i];
+    const suffix = p.isCpu ? ' (CPU)' : '';
+    scoresHtml += `<div class="score-row"><span class="player-label">${PLAYER_COLORS[p.color].label} ${p.name}${suffix}</span><span class="score-val">${scores[i]}点</span></div>`;
   }
 
   document.getElementById('resultTitle').textContent = titleText;
   document.getElementById('scoresList').innerHTML = scoresHtml;
   showScreen('result');
 
-  // Save ranking (skip if draw)
+  // Save ranking (skip if draw or if winner is CPU)
   if (!result.isDraw) {
-    let winnerName = '';
-    if (gameState.mode === 2) {
-      winnerName = gameState.players[result.winnerIndices[0] === 0 ? 0 : 2].name;
-    } else {
-      winnerName = gameState.players[result.winnerIndices[0]].name;
+    const winner = gameState.players[result.winnerIndices[0]];
+    if (!winner.isCpu) {
+      saveRanking(winner.name);
     }
-    saveRanking(winnerName);
   }
 }
 
