@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>お手伝いリスト - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; min-height: 100vh; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
+
+.task-list { max-width: 520px; margin: 0 auto; }
+
+.task-card {
+  background: #fff; border-radius: 12px; padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+  transition: transform 0.1s, opacity 0.3s;
+}
+.task-card.done { opacity: 0.5; background: #f9f9f9; }
+.task-card.done .task-title { text-decoration: line-through; color: #999; }
+
+.task-priority { font-size: 1.4em; flex-shrink: 0; }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 2px; }
+.task-desc { font-size: 0.82em; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-pts { font-size: 0.85em; color: #ff9800; font-weight: 700; margin-top: 2px; }
+.task-done-info { font-size: 0.75em; color: #4caf50; margin-top: 2px; }
+
+.task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.task-btn {
+  width: 36px; height: 36px; border: none; border-radius: 8px;
+  font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.task-btn.complete { background: #e8f5e9; color: #4caf50; }
+.task-btn.complete:hover { background: #c8e6c9; }
+.task-btn.delete { background: #ffebee; color: #e53935; }
+.task-btn.delete:hover { background: #ffcdd2; }
+.task-btn.undo { background: #fff3e0; color: #ff9800; }
+.task-btn.undo:hover { background: #ffe0b2; }
+
+.empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.1em; }
+
+/* Admin: 追加フォーム */
+.add-section {
+  max-width: 520px; margin: 24px auto 0; background: #fff;
+  border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.add-section h2 { font-size: 1em; color: #555; margin-bottom: 12px; }
+.add-row { display: flex; flex-direction: column; gap: 8px; }
+.add-row input, .add-row textarea {
+  padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; width: 100%;
+}
+.add-row textarea { resize: vertical; min-height: 50px; }
+.add-row-inline { display: flex; gap: 8px; align-items: center; }
+.add-row-inline input { flex: 1; }
+.btn-add {
+  padding: 10px 20px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-weight: 600; cursor: pointer; font-size: 1em; width: 100%;
+}
+.btn-add:hover { opacity: 0.9; }
+.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.add-msg { color: #4caf50; font-size: 0.85em; text-align: center; margin-top: 8px; display: none; }
+
+.tab-bar { display: flex; gap: 4px; max-width: 520px; margin: 0 auto 16px; }
+.tab-btn {
+  flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px;
+  background: #fff; font-size: 0.9em; font-weight: 600; cursor: pointer; text-align: center;
+  transition: all 0.15s;
+}
+.tab-btn.active { background: #4caf50; color: #fff; border-color: #4caf50; }
+.tab-btn:hover:not(.active) { border-color: #4caf50; color: #4caf50; }
+
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  .task-card { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>📋 お手伝いリスト</h1>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('active')">やること</button>
+  <button class="tab-btn" onclick="switchTab('done')">おわった</button>
+</div>
+
+<div class="task-list" id="taskList">
+  <div class="empty-msg">読み込み中...</div>
+</div>
+
+<!-- Admin用：お手伝い追加フォーム -->
+<div class="add-section" id="addSection" style="display:none;">
+  <h2>➕ お手伝いを追加</h2>
+  <div class="add-row">
+    <input type="text" id="addTitle" placeholder="お手伝いの名前" maxlength="50">
+    <input type="text" id="addDesc" placeholder="くわしい説明（なくてもOK）" maxlength="200">
+    <div class="add-row-inline">
+      <input type="number" id="addPoints" placeholder="ポイント" value="1" min="1" max="99" style="width:80px;">
+      <span style="font-size:0.85em; color:#888;">pt</span>
+      <select id="addPriority" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em;">
+        <option value="0">ふつう</option>
+        <option value="1">⭐ 大事</option>
+        <option value="2">🔥 とても大事</option>
+      </select>
+    </div>
+    <button class="btn-add" id="btnAdd" onclick="addTask()">追加する</button>
+    <div class="add-msg" id="addMsg">✓ 追加しました！</div>
+  </div>
+</div>
+
+<script>
+const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+let currentTab = 'active';
+let tasks = [];
+
+// Admin用フォーム表示
+if (isAdmin) {
+  document.getElementById('addSection').style.display = 'block';
+}
+
+async function loadTasks() {
+  const status = currentTab === 'active' ? 'active' : 'done';
+  const order = currentTab === 'active'
+    ? { column: 'priority', ascending: false }
+    : { column: 'done_at', ascending: false };
+
+  let query = client.from('chore_tasks').select('*').eq('status', status);
+  query = query.order(order.column, { ascending: order.ascending });
+  if (currentTab === 'active') {
+    query = query.order('created_at', { ascending: true });
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    document.getElementById('taskList').innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+    return;
+  }
+  tasks = data || [];
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  if (tasks.length === 0) {
+    list.innerHTML = currentTab === 'active'
+      ? '<div class="empty-msg">🎉 やることはありません！</div>'
+      : '<div class="empty-msg">まだありません</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  tasks.forEach(t => {
+    const priorityIcon = t.priority >= 2 ? '🔥' : t.priority === 1 ? '⭐' : '📌';
+    const isDone = t.status === 'done';
+    const card = document.createElement('div');
+    card.className = 'task-card' + (isDone ? ' done' : '');
+    let actionsHtml = '';
+    if (isDone) {
+      const doneInfo = t.done_by ? `${t.done_by} がやった` : '';
+      if (isAdmin) {
+        actionsHtml = `<button class="task-btn undo" onclick="undoTask('${t.id}')" title="もどす">↩</button>
+          <button class="task-btn delete" onclick="deleteTask('${t.id}')" title="けす">✕</button>`;
+      }
+      card.innerHTML = `
+        <div class="task-priority">${priorityIcon}</div>
+        <div class="task-body">
+          <div class="task-title">${escHtml(t.title)}</div>
+          ${t.description ? '<div class="task-desc">' + escHtml(t.description) + '</div>' : ''}
+          <div class="task-pts">${t.points}pt</div>
+          ${doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : ''}
+        </div>
+        <div class="task-actions">${actionsHtml}</div>`;
+    } else {
+      actionsHtml = `<button class="task-btn complete" onclick="completeTask('${t.id}')" title="できた！">✓</button>`;
+      if (isAdmin) {
+        actionsHtml += `<button class="task-btn delete" onclick="deleteTask('${t.id}')" title="けす">✕</button>`;
+      }
+      card.innerHTML = `
+        <div class="task-priority">${priorityIcon}</div>
+        <div class="task-body">
+          <div class="task-title">${escHtml(t.title)}</div>
+          ${t.description ? '<div class="task-desc">' + escHtml(t.description) + '</div>' : ''}
+          <div class="task-pts">${t.points}pt</div>
+        </div>
+        <div class="task-actions">${actionsHtml}</div>`;
+    }
+    list.appendChild(card);
+  });
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'active') || (i === 1 && tab === 'done'));
+  });
+  loadTasks();
+}
+
+async function completeTask(id) {
+  // 子供の名前を取得（child.htmlからのリンクの場合URLパラメータに入っている想定だが、なければ空）
+  const childName = new URLSearchParams(location.search).get('child') || '';
+  await client.from('chore_tasks').update({
+    status: 'done',
+    done_by: childName || null,
+    done_at: new Date().toISOString()
+  }).eq('id', id);
+  loadTasks();
+}
+
+async function undoTask(id) {
+  await client.from('chore_tasks').update({
+    status: 'active',
+    done_by: null,
+    done_at: null
+  }).eq('id', id);
+  loadTasks();
+}
+
+async function deleteTask(id) {
+  if (!confirm('このお手伝いを削除しますか？')) return;
+  await client.from('chore_tasks').delete().eq('id', id);
+  loadTasks();
+}
+
+async function addTask() {
+  const title = document.getElementById('addTitle').value.trim();
+  const desc = document.getElementById('addDesc').value.trim();
+  const points = parseInt(document.getElementById('addPoints').value) || 1;
+  const priority = parseInt(document.getElementById('addPriority').value) || 0;
+
+  if (!title) { alert('お手伝いの名前を入力してください'); return; }
+
+  document.getElementById('btnAdd').disabled = true;
+  await client.from('chore_tasks').insert({
+    title, description: desc || null, points, priority
+  });
+
+  document.getElementById('addTitle').value = '';
+  document.getElementById('addDesc').value = '';
+  document.getElementById('addPoints').value = '1';
+  document.getElementById('addPriority').value = '0';
+  document.getElementById('btnAdd').disabled = false;
+
+  const msg = document.getElementById('addMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+
+  if (currentTab === 'active') loadTasks();
+}
+
+// Enterキーで追加
+document.getElementById('addTitle').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+// 初期読み込み
+loadTasks();
+</script>
+
+</body>
+</html>
