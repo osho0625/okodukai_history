@@ -141,6 +141,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="mode-btn" data-mode="3" onclick="selectMode(3)">3人</button>
     <button class="mode-btn selected" data-mode="4" onclick="selectMode(4)">4人</button>
   </div>
+  <div id="ruleSettings" style="margin-bottom:16px;display:none;">
+    <label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">ルール</label>
+    <div style="display:flex;gap:8px;">
+      <button class="mode-btn rule-btn selected" data-rule="cpu" onclick="selectRule('cpu')">CPU対戦</button>
+      <button class="mode-btn rule-btn" data-rule="official" onclick="selectRule('official')">公式ルール</button>
+    </div>
+  </div>
   <div id="cpuSettings" style="margin-bottom:16px;display:none;">
     <label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>
     <div style="display:flex;gap:8px;">
@@ -149,6 +156,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="mode-btn cpu-btn" data-cpu="strong" onclick="selectCpu('strong')">つよい</button>
     </div>
   </div>
+  <div id="officialRuleHint" style="margin-bottom:12px;font-size:0.8em;color:#aaa;display:none;"></div>
   <div class="name-inputs" id="nameInputs"></div>
   <div style="margin-bottom:16px;">
     <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;cursor:pointer;">
@@ -376,6 +384,15 @@ function advanceTurn(gs) {
   let next = gs.currentTurn;
   do { next = (next + 1) % 4; } while (gs.players[next].passed);
   gs.currentTurn = next;
+  // Handle 3-player official rule: rotate yellow's controller
+  const p = gs.players[next];
+  if (p.sharedColorRotation !== undefined && next === 3) {
+    const names = [gs.players[0].name, gs.players[1].name, gs.players[2].name];
+    const rotIdx = p.sharedColorRotation;
+    p.name = names[rotIdx % 3];
+    p.controlledBy = rotIdx % 3;
+    p.sharedColorRotation = rotIdx + 1;
+  }
   return next;
 }
 
@@ -446,7 +463,11 @@ function updateTurnInfo() {
   const p = gameState.players[gameState.currentTurn];
   const info = PLAYER_COLORS[p.color];
   const el = document.getElementById('turnInfo');
-  el.textContent = p.isCpu ? `${info.label} ${p.name} 考え中...` : `${info.label} ${p.name} のターン`;
+  if (p.isCpu) {
+    el.textContent = `${info.label} ${p.name} 考え中...`;
+  } else {
+    el.textContent = `${info.label} ${p.name} のターン`;
+  }
   el.style.background = info.fill + '33';
   // Hide controls during CPU turn
   const isCpuTurn = p.isCpu;
@@ -460,12 +481,38 @@ function updateTurnInfo() {
 // =============================================================
 let selectedMode = 4;
 let selectedCpu = 'normal'; // 'weak' | 'normal' | 'strong'
+let selectedRule = 'cpu'; // 'cpu' | 'official'
 
 function selectMode(m) {
   selectedMode = m;
-  document.querySelectorAll('.mode-btn:not(.cpu-btn)').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.mode) === m));
-  document.getElementById('cpuSettings').style.display = m < 4 ? '' : 'none';
+  document.querySelectorAll('.mode-btn:not(.cpu-btn):not(.rule-btn)').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.mode) === m));
+  // Show rule toggle for 2-3 players, not for 1 or 4
+  document.getElementById('ruleSettings').style.display = (m === 2 || m === 3) ? '' : 'none';
+  if (m === 1) { selectedRule = 'cpu'; }
+  if (m === 4) { selectedRule = 'official'; } // 4 player is always human
+  updateRuleUI();
   buildSetupUI();
+}
+
+function selectRule(rule) {
+  selectedRule = rule;
+  document.querySelectorAll('.rule-btn').forEach(b => b.classList.toggle('selected', b.dataset.rule === rule));
+  updateRuleUI();
+}
+
+function updateRuleUI() {
+  const showCpu = selectedMode < 4 && selectedRule === 'cpu';
+  document.getElementById('cpuSettings').style.display = showCpu ? '' : 'none';
+  const hint = document.getElementById('officialRuleHint');
+  if (selectedRule === 'official' && selectedMode === 2) {
+    hint.style.display = '';
+    hint.textContent = '2人ルール: 各プレイヤーが2色ずつ交互に操作します（🟦🟩 vs 🟥🟨）';
+  } else if (selectedRule === 'official' && selectedMode === 3) {
+    hint.style.display = '';
+    hint.textContent = '3人ルール: 余った🟨は3人が交互に操作します';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 function selectCpu(level) {
@@ -509,26 +556,61 @@ function startGame() {
   lastPlaceTime = 0;
   undoTimeLimit = document.getElementById('undoTimeLimitCheck').checked;
 
-  // Build players: first N are human, rest are CPU
   const humanCount = selectedMode;
-  const cpuNames = ['CPU1', 'CPU2', 'CPU3'];
-  gameState.players = COLOR_ORDER.map((color, i) => ({
-    color, name: '', pieces: Array(21).fill(true), passed: false, lastPieceSize: 0,
-    isCpu: i >= humanCount,
-    cpuLevel: i >= humanCount ? selectedCpu : null
-  }));
+  const useOfficial = (selectedMode === 2 || selectedMode === 3) && selectedRule === 'official';
+  const useCpu = selectedMode < 4 && selectedRule === 'cpu';
 
-  // Assign human names
+  // Collect human names
   const names = [];
   for (let i = 0; i < humanCount; i++) {
-    const n = document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1));
-    gameState.players[i].name = n;
-    names.push(n);
+    names.push(document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1)));
   }
-  // Assign CPU names
-  let cpuIdx = 0;
-  for (let i = humanCount; i < 4; i++) {
-    gameState.players[i].name = cpuNames[cpuIdx++];
+
+  // Build players with ownership info
+  // controlledBy: index of the human player who controls this color (for UI turn display)
+  // isCpu: true if controlled by AI
+  gameState.players = COLOR_ORDER.map((color, i) => ({
+    color, name: '', pieces: Array(21).fill(true), passed: false, lastPieceSize: 0,
+    isCpu: false, cpuLevel: null, controlledBy: i
+  }));
+
+  if (selectedMode === 4) {
+    // 4 players: each human controls their own color
+    for (let i = 0; i < 4; i++) {
+      gameState.players[i].name = names[i];
+      gameState.players[i].controlledBy = i;
+    }
+  } else if (useOfficial) {
+    if (selectedMode === 2) {
+      // Official 2-player: P1 controls blue(0)+green(2), P2 controls red(1)+yellow(3)
+      // Turn order: blue→red→green→yellow = P1→P2→P1→P2
+      gameState.players[0].name = names[0]; gameState.players[0].controlledBy = 0;
+      gameState.players[1].name = names[1]; gameState.players[1].controlledBy = 1;
+      gameState.players[2].name = names[0]; gameState.players[2].controlledBy = 0;
+      gameState.players[3].name = names[1]; gameState.players[3].controlledBy = 1;
+    } else if (selectedMode === 3) {
+      // Official 3-player: P1=blue, P2=red, P3=green, yellow=rotated among P1→P2→P3→P1...
+      gameState.players[0].name = names[0]; gameState.players[0].controlledBy = 0;
+      gameState.players[1].name = names[1]; gameState.players[1].controlledBy = 1;
+      gameState.players[2].name = names[2]; gameState.players[2].controlledBy = 2;
+      // Yellow starts controlled by P1, rotates each turn it plays
+      gameState.players[3].name = names[0]; gameState.players[3].controlledBy = 0;
+      gameState.players[3].sharedColorRotation = 0; // tracks which human plays yellow next
+    }
+  } else if (useCpu) {
+    // CPU mode: first N humans, rest CPU
+    for (let i = 0; i < humanCount; i++) {
+      gameState.players[i].name = names[i];
+      gameState.players[i].controlledBy = i;
+    }
+    const cpuNames = ['CPU1', 'CPU2', 'CPU3'];
+    let cpuIdx = 0;
+    for (let i = humanCount; i < 4; i++) {
+      gameState.players[i].name = cpuNames[cpuIdx++];
+      gameState.players[i].isCpu = true;
+      gameState.players[i].cpuLevel = selectedCpu;
+      gameState.players[i].controlledBy = -1;
+    }
   }
 
   // Save names to localStorage
@@ -1018,30 +1100,53 @@ function endGame() {
   let titleText = '';
   let scoresHtml = '';
 
-  const scores = [];
-  for (let i = 0; i < 4; i++) scores.push(calculateScore(gameState.players[i]));
-  if (result.isDraw) {
-    titleText = '引き分け！';
+  // Check if official 2-player (P1 controls 0+2, P2 controls 1+3)
+  const isOfficial2p = selectedMode === 2 && selectedRule === 'official';
+
+  if (isOfficial2p) {
+    const p1Score = calculateScore(gameState.players[0]) + calculateScore(gameState.players[2]);
+    const p2Score = calculateScore(gameState.players[1]) + calculateScore(gameState.players[3]);
+    const p1Name = gameState.players[0].name;
+    const p2Name = gameState.players[1].name;
+    if (p1Score === p2Score) {
+      titleText = '引き分け！';
+    } else if (p1Score > p2Score) {
+      titleText = `${p1Name} 勝利！`;
+    } else {
+      titleText = `${p2Name} 勝利！`;
+    }
+    scoresHtml += `<div class="score-row"><span class="player-label">🟦🟩 ${p1Name}</span><span class="score-val">${p1Score}点</span></div>`;
+    scoresHtml += `<div class="score-row"><span class="player-label">🟥🟨 ${p2Name}</span><span class="score-val">${p2Score}点</span></div>`;
+
+    // Save ranking
+    if (p1Score !== p2Score) {
+      const winnerName = p1Score > p2Score ? p1Name : p2Name;
+      const winner = gameState.players[p1Score > p2Score ? 0 : 1];
+      if (!winner.isCpu) saveRanking(winnerName);
+    }
   } else {
-    titleText = `${gameState.players[result.winnerIndices[0]].name} 勝利！`;
-  }
-  for (let i = 0; i < 4; i++) {
-    const p = gameState.players[i];
-    const suffix = p.isCpu ? ' (CPU)' : '';
-    scoresHtml += `<div class="score-row"><span class="player-label">${PLAYER_COLORS[p.color].label} ${p.name}${suffix}</span><span class="score-val">${scores[i]}点</span></div>`;
+    const scores = [];
+    for (let i = 0; i < 4; i++) scores.push(calculateScore(gameState.players[i]));
+    if (result.isDraw) {
+      titleText = '引き分け！';
+    } else {
+      titleText = `${gameState.players[result.winnerIndices[0]].name} 勝利！`;
+    }
+    for (let i = 0; i < 4; i++) {
+      const p = gameState.players[i];
+      const suffix = p.isCpu ? ' (CPU)' : '';
+      scoresHtml += `<div class="score-row"><span class="player-label">${PLAYER_COLORS[p.color].label} ${p.name}${suffix}</span><span class="score-val">${scores[i]}点</span></div>`;
+    }
+    // Save ranking (skip if draw or CPU winner)
+    if (!result.isDraw) {
+      const winner = gameState.players[result.winnerIndices[0]];
+      if (!winner.isCpu) saveRanking(winner.name);
+    }
   }
 
   document.getElementById('resultTitle').textContent = titleText;
   document.getElementById('scoresList').innerHTML = scoresHtml;
   showScreen('result');
-
-  // Save ranking (skip if draw or if winner is CPU)
-  if (!result.isDraw) {
-    const winner = gameState.players[result.winnerIndices[0]];
-    if (!winner.isCpu) {
-      saveRanking(winner.name);
-    }
-  }
 }
 
 function resetGame() {
