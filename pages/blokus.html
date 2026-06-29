@@ -169,6 +169,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="board-container">
     <div class="board" id="board"></div>
   </div>
+  <div id="scoreboard" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;justify-content:center;font-size:0.8em;"></div>
   <div class="control-bar">
     <button class="ctrl-btn" id="btnRotate" onclick="doRotate()" disabled>↻ 回転</button>
     <button class="ctrl-btn" id="btnFlip" onclick="doFlip()" disabled>↔ 反転</button>
@@ -657,12 +658,39 @@ function startGame() {
 }
 
 // =============================================================
+// UI: Scoreboard (live score display)
+// =============================================================
+function renderScoreboard() {
+  const el = document.getElementById('scoreboard');
+  if (!el) return;
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const p = gameState.players[i];
+    if (p.passed && p.name === '') continue; // skip unused
+    const info = PLAYER_COLORS[p.color];
+    let remainingCells = 0;
+    for (let j = 0; j < 21; j++) {
+      if (p.pieces[j]) remainingCells += PIECES[j].cells.length;
+    }
+    const isActive = i === gameState.currentTurn;
+    const border = isActive ? `border:1px solid ${info.fill}` : 'border:1px solid rgba(255,255,255,0.1)';
+    const opacity = p.passed ? 'opacity:0.4;' : '';
+    html += `<div style="padding:4px 8px;border-radius:6px;${border};${opacity}background:rgba(255,255,255,0.05);display:flex;align-items:center;gap:4px;">`;
+    html += `<span>${info.label}</span>`;
+    html += `<span style="color:#ff6b6b;font-weight:700;">-${remainingCells}</span>`;
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// =============================================================
 // UI: Board Rendering
 // =============================================================
 function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   const currentColor = gameState.players[gameState.currentTurn].color;
+  renderScoreboard();
 
   // Get legal positions and build ghost cell set (only for human players)
   let ghostCells = new Map(); // key "x,y" → position {x,y} that placed it
