@@ -148,14 +148,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="mode-btn rule-btn" data-rule="official" onclick="selectRule('official')">公式ルール</button>
     </div>
   </div>
-  <div id="cpuSettings" style="margin-bottom:16px;display:none;">
-    <label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>
-    <div style="display:flex;gap:8px;">
-      <button class="mode-btn cpu-btn" data-cpu="weak" onclick="selectCpu('weak')">よわい</button>
-      <button class="mode-btn cpu-btn selected" data-cpu="normal" onclick="selectCpu('normal')">ふつう</button>
-      <button class="mode-btn cpu-btn" data-cpu="strong" onclick="selectCpu('strong')">つよい</button>
-    </div>
-  </div>
+  <div id="cpuSettings" style="margin-bottom:16px;display:none;"></div>
   <div id="officialRuleHint" style="margin-bottom:12px;font-size:0.8em;color:#aaa;display:none;"></div>
   <div class="name-inputs" id="nameInputs"></div>
   <div style="margin-bottom:16px;">
@@ -502,7 +495,27 @@ function selectRule(rule) {
 
 function updateRuleUI() {
   const showCpu = selectedMode < 4 && selectedRule === 'cpu';
-  document.getElementById('cpuSettings').style.display = showCpu ? '' : 'none';
+  const cpuEl = document.getElementById('cpuSettings');
+  if (showCpu) {
+    const cpuCount = 4 - selectedMode;
+    const colorLabels = ['🟦','🟥','🟩','🟨'];
+    let html = '<label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>';
+    for (let i = 0; i < cpuCount; i++) {
+      const colorIdx = selectedMode + i;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:1.1em;">${colorLabels[colorIdx]}</span>
+        <select id="cpuLevel${i}" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:#2a2a4a;color:#eee;font-size:0.9em;">
+          <option value="weak">よわい</option>
+          <option value="normal" selected>ふつう</option>
+          <option value="strong">つよい</option>
+        </select>
+      </div>`;
+    }
+    cpuEl.innerHTML = html;
+    cpuEl.style.display = '';
+  } else {
+    cpuEl.style.display = 'none';
+  }
   const hint = document.getElementById('officialRuleHint');
   if (selectedRule === 'official' && selectedMode === 2) {
     hint.style.display = '';
@@ -516,8 +529,7 @@ function updateRuleUI() {
 }
 
 function selectCpu(level) {
-  selectedCpu = level;
-  document.querySelectorAll('.cpu-btn').forEach(b => b.classList.toggle('selected', b.dataset.cpu === level));
+  // legacy - no longer used with per-CPU selects
 }
 
 function getSavedNames() {
@@ -606,10 +618,13 @@ function startGame() {
     const cpuNames = ['CPU1', 'CPU2', 'CPU3'];
     let cpuIdx = 0;
     for (let i = humanCount; i < 4; i++) {
-      gameState.players[i].name = cpuNames[cpuIdx++];
+      const levelEl = document.getElementById('cpuLevel' + cpuIdx);
+      const level = levelEl ? levelEl.value : 'normal';
+      gameState.players[i].name = cpuNames[cpuIdx];
       gameState.players[i].isCpu = true;
-      gameState.players[i].cpuLevel = selectedCpu;
+      gameState.players[i].cpuLevel = level;
       gameState.players[i].controlledBy = -1;
+      cpuIdx++;
     }
   }
 

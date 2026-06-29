@@ -158,6 +158,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <button class="btn btn-primary" onclick="startGame('normal')">ふつう<br><small>8ペア</small></button>
     <button class="btn btn-primary" onclick="startGame('hard')">むずい<br><small>12ペア</small></button>
   </div>
+  <button class="btn btn-secondary" onclick="showRanking()" style="margin-top:16px;">🏆 ランキング</button>
 </div>
 
 <div id="gameScreen">
@@ -181,9 +182,29 @@ h1 { font-size: 1.3em; font-weight: 700; }
     手数: <span id="resultMoves">0</span>回<br>
     難易度: <span id="resultDifficulty">ふつう</span>
   </div>
+  <div id="rankingInput" style="margin-top:12px;">
+    <input id="rankName" type="text" placeholder="名前を入力してランキング登録" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#eee;width:100%;font-size:0.95em;margin-bottom:8px;">
+    <div id="rankNameSuggestions" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;"></div>
+    <button class="btn btn-primary" onclick="saveScore()" style="padding:10px 20px;font-size:0.9em;width:100%;">ランキング登録</button>
+    <div id="rankSaved" style="display:none;color:#66bb6a;font-size:0.85em;margin-top:4px;">✓ 登録しました</div>
+  </div>
   <div style="display:flex;gap:12px;margin-top:8px;">
     <button class="btn btn-primary" onclick="replay()">もう一回</button>
     <button class="btn btn-secondary" onclick="backToTitle()">タイトル</button>
+  </div>
+</div>
+
+<!-- Ranking Modal -->
+<div id="rankingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeRanking()">
+  <div style="background:#1e1e3a;border-radius:16px;padding:24px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;">
+    <h2 style="text-align:center;margin-bottom:12px;">🏆 ランキング</h2>
+    <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center;">
+      <button class="btn btn-secondary rank-tab" data-d="easy" onclick="loadRanking('easy')" style="padding:6px 14px;font-size:0.85em;">かんたん</button>
+      <button class="btn btn-secondary rank-tab" data-d="normal" onclick="loadRanking('normal')" style="padding:6px 14px;font-size:0.85em;">ふつう</button>
+      <button class="btn btn-secondary rank-tab" data-d="hard" onclick="loadRanking('hard')" style="padding:6px 14px;font-size:0.85em;">むずい</button>
+    </div>
+    <ul id="rankingList" style="list-style:none;"></ul>
+    <button class="btn btn-secondary" onclick="closeRanking()" style="width:100%;margin-top:12px;padding:10px;">閉じる</button>
   </div>
 </div>
 
@@ -214,6 +235,67 @@ function cleanup() {
   clearInterval(timerInterval);
   timerInterval = null;
   isPlaying = false;
+}
+
+// =============================================================
+// Ranking (Supabase)
+// =============================================================
+const sbClient = client;
+let lastMoveCount = 0;
+let lastDifficulty = 'normal';
+
+function getSavedNames() {
+  try { return JSON.parse(localStorage.getItem('memory_player_names') || '[]'); } catch(e) { return []; }
+}
+
+function showNameSuggestions() {
+  const saved = getSavedNames();
+  const el = document.getElementById('rankNameSuggestions');
+  el.innerHTML = saved.map(n => {
+    const escaped = n.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return `<span style="padding:3px 8px;border-radius:4px;background:rgba(255,255,255,0.1);font-size:0.8em;cursor:pointer;" onclick="document.getElementById('rankName').value=this.dataset.name;" data-name="${escaped}">${escaped}</span>`;
+  }).join('');
+}
+
+async function saveScore() {
+  const name = document.getElementById('rankName').value.trim();
+  if (!name) { document.getElementById('rankName').focus(); return; }
+  try {
+    await sbClient.from('memory_rankings').insert({
+      name, score: lastMoveCount, difficulty: lastDifficulty
+    });
+    document.getElementById('rankSaved').style.display = '';
+    document.getElementById('rankingInput').querySelector('button').disabled = true;
+    // Save name
+    const existing = getSavedNames();
+    const all = [...new Set([...existing, name])].slice(0, 20);
+    localStorage.setItem('memory_player_names', JSON.stringify(all));
+  } catch(e) { console.error('Ranking save failed:', e); }
+}
+
+async function showRanking() {
+  document.getElementById('rankingModal').style.display = 'flex';
+  loadRanking('normal');
+}
+
+function closeRanking() {
+  document.getElementById('rankingModal').style.display = 'none';
+}
+
+async function loadRanking(difficulty) {
+  document.querySelectorAll('.rank-tab').forEach(b => b.style.opacity = b.dataset.d === difficulty ? '1' : '0.5');
+  const list = document.getElementById('rankingList');
+  list.innerHTML = '<li style="padding:10px;color:#aaa;">読み込み中...</li>';
+  try {
+    const { data } = await sbClient.from('memory_rankings').select('name, score').eq('difficulty', difficulty).order('score', { ascending: true }).limit(10);
+    if (data && data.length > 0) {
+      list.innerHTML = data.map((r, i) => `<li style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:rgba(255,255,255,0.05);"><span style="width:24px;font-weight:700;">${i+1}.</span><span style="flex:1;">${r.name}</span><span style="font-weight:700;color:#f9a825;">${r.score}手</span></li>`).join('');
+    } else {
+      list.innerHTML = '<li style="padding:10px;color:#aaa;">まだランキングがありません</li>';
+    }
+  } catch(e) {
+    list.innerHTML = '<li style="padding:10px;color:#aaa;">読み込みエラー</li>';
+  }
 }
 
 // 夜間制限チェック
@@ -396,6 +478,13 @@ function showResult() {
   else { rank = 'がんばろう！'; icon = '💪'; }
   document.getElementById('resultRank').textContent = rank;
   document.getElementById('resultIcon').textContent = icon;
+
+  // Setup ranking input
+  lastMoveCount = moveCount;
+  lastDifficulty = currentDifficulty;
+  document.getElementById('rankSaved').style.display = 'none';
+  document.getElementById('rankingInput').querySelector('button').disabled = false;
+  showNameSuggestions();
 }
 
 window.replay = function() {
