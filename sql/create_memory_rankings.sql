@@ -9,3 +9,7 @@ CREATE TABLE IF NOT EXISTS memory_rankings (
 
 -- スコア（手数）昇順で取得するためのインデックス
 CREATE INDEX IF NOT EXISTS idx_memory_rankings_score ON memory_rankings (difficulty, score ASC);
+
+-- RLS有効 + Allow all policy（他のランキングテーブルと同じ）
+ALTER TABLE memory_rankings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON memory_rankings FOR ALL USING (true) WITH CHECK (true);
