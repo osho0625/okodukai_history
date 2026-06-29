@@ -152,6 +152,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="control-bar">
     <button class="ctrl-btn" id="btnRotate" onclick="doRotate()" disabled>↻ 回転</button>
     <button class="ctrl-btn" id="btnFlip" onclick="doFlip()" disabled>↔ 反転</button>
+    <button class="ctrl-btn" id="btnUndo" onclick="doUndo()" disabled>↩ 待った</button>
     <button class="ctrl-btn pass" id="btnPass" onclick="doPass()">パス</button>
   </div>
   <div class="piece-selector" id="pieceSelector"></div>
@@ -250,6 +251,8 @@ let gameState = {
 
 let legalCache = { key: '', positions: [] };
 let boardVersion = 0;
+let undoHistory = []; // stack of { board, players, currentTurn } snapshots
+let undoCounts = [0, 0, 0, 0]; // undo uses per player color index (max 3 each)
 
 // =============================================================
 // Core Transform Functions
@@ -418,7 +421,7 @@ function showScreen(name) {
   const turnEl = document.getElementById('turnInfo');
   turnEl.style.display = name === 'game' ? '' : 'none';
   if (name === 'setup') buildSetupUI();
-  if (name === 'game') { renderBoard(); renderPieces(); updateTurnInfo(); }
+  if (name === 'game') { renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton(); }
 }
 
 function handleBack() {
@@ -496,6 +499,8 @@ function startGame() {
   gameState.flipped = false;
   gameState.selectedPosition = null;
   boardVersion++;
+  undoHistory = [];
+  undoCounts = [0, 0, 0, 0];
 
   // Build players
   gameState.players = COLOR_ORDER.map(color => ({
@@ -602,6 +607,13 @@ function placeAtPosition(x, y) {
 
   if (!canPlace(gameState.board, cells, x, y, player.color, first)) return;
 
+  // Save undo snapshot before placing
+  undoHistory.push({
+    board: gameState.board.map(row => [...row]),
+    players: gameState.players.map(p => ({ ...p, pieces: [...p.pieces] })),
+    currentTurn: gameState.currentTurn
+  });
+
   // Place the piece
   gameState.board = placePiece(gameState.board, cells, x, y, player.color);
   player.pieces[gameState.selectedPieceIdx] = false;
@@ -625,6 +637,7 @@ function placeAtPosition(x, y) {
     renderBoard();
     renderPieces();
     updateTurnInfo();
+    updateUndoButton();
   }
 }
 
@@ -751,7 +764,56 @@ function doPass() {
     renderBoard();
     renderPieces();
     updateTurnInfo();
+    updateUndoButton();
   }
+}
+
+// =============================================================
+// Undo (待った) - 一手戻し、各プレイヤー3回まで
+// =============================================================
+function doUndo() {
+  if (undoHistory.length === 0) return;
+  // The current player wants to undo the PREVIOUS player's move
+  // (since turn already advanced, undo brings back the previous state)
+  const snapshot = undoHistory[undoHistory.length - 1];
+  // The player who placed the last piece is the one in the snapshot's "next" turn context
+  // Actually: after placement, turn advanced. So current player is asking to undo.
+  // The undo benefits the CURRENT player (they get to see the board before last move)
+  // Count undo against the current player
+  const currentPlayerIdx = gameState.currentTurn;
+  if (undoCounts[currentPlayerIdx] >= 3) {
+    alert('待ったは3回までだよ！');
+    return;
+  }
+  if (!confirm('待った！一手前に戻す？')) return;
+
+  undoCounts[currentPlayerIdx]++;
+  const prev = undoHistory.pop();
+  gameState.board = prev.board;
+  gameState.players = prev.players;
+  gameState.currentTurn = prev.currentTurn;
+  gameState.selectedPieceIdx = -1;
+  gameState.rotation = 0;
+  gameState.flipped = false;
+  gameState.selectedPosition = null;
+  boardVersion++;
+  legalCache.key = '';
+
+  document.getElementById('btnRotate').disabled = true;
+  document.getElementById('btnFlip').disabled = true;
+  renderBoard();
+  renderPieces();
+  updateTurnInfo();
+  updateUndoButton();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('btnUndo');
+  const currentPlayerIdx = gameState.currentTurn;
+  const remaining = 3 - undoCounts[currentPlayerIdx];
+  const canUndo = undoHistory.length > 0 && remaining > 0;
+  btn.disabled = !canUndo;
+  btn.textContent = `↩ 待った(${remaining})`;
 }
 
 // =============================================================
