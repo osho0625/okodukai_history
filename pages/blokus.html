@@ -141,6 +141,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="mode-btn" data-mode="3" onclick="selectMode(3)">3人</button>
   </div>
   <div class="name-inputs" id="nameInputs"></div>
+  <div style="margin-bottom:16px;">
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;cursor:pointer;">
+      <input type="checkbox" id="undoTimeLimitCheck" checked style="width:18px;height:18px;">
+      待った5秒制限あり
+    </label>
+  </div>
   <button class="btn btn-success btn-block" onclick="startGame()">スタート！</button>
 </div>
 
@@ -252,7 +258,6 @@ let gameState = {
 let legalCache = { key: '', positions: [] };
 let boardVersion = 0;
 let undoHistory = []; // stack of { board, players, currentTurn } snapshots
-let undoCounts = [0, 0, 0, 0]; // undo uses per player color index (max 3 each)
 
 // =============================================================
 // Core Transform Functions
@@ -500,7 +505,8 @@ function startGame() {
   gameState.selectedPosition = null;
   boardVersion++;
   undoHistory = [];
-  undoCounts = [0, 0, 0, 0];
+  lastPlaceTime = 0;
+  undoTimeLimit = document.getElementById('undoTimeLimitCheck').checked;
 
   // Build players
   gameState.players = COLOR_ORDER.map(color => ({
@@ -619,6 +625,8 @@ function placeAtPosition(x, y) {
   player.pieces[gameState.selectedPieceIdx] = false;
   player.lastPieceSize = cells.length;
   boardVersion++;
+  lastPlaceTime = Date.now();
+  startUndoTimer();
 
   // Reset selection
   gameState.selectedPieceIdx = -1;
@@ -769,25 +777,15 @@ function doPass() {
 }
 
 // =============================================================
-// Undo (待った) - 一手戻し、各プレイヤー3回まで
+// Undo (待った) - 配置後5秒以内なら戻せる（設定で制限解除可）
 // =============================================================
+let undoTimeLimit = true; // true=5秒制限あり, false=無制限
+let lastPlaceTime = 0;   // 最後に配置した時刻(ms)
+
 function doUndo() {
   if (undoHistory.length === 0) return;
-  // The current player wants to undo the PREVIOUS player's move
-  // (since turn already advanced, undo brings back the previous state)
-  const snapshot = undoHistory[undoHistory.length - 1];
-  // The player who placed the last piece is the one in the snapshot's "next" turn context
-  // Actually: after placement, turn advanced. So current player is asking to undo.
-  // The undo benefits the CURRENT player (they get to see the board before last move)
-  // Count undo against the current player
-  const currentPlayerIdx = gameState.currentTurn;
-  if (undoCounts[currentPlayerIdx] >= 3) {
-    alert('待ったは3回までだよ！');
-    return;
-  }
-  if (!confirm('待った！一手前に戻す？')) return;
+  if (undoTimeLimit && (Date.now() - lastPlaceTime > 5000)) return;
 
-  undoCounts[currentPlayerIdx]++;
   const prev = undoHistory.pop();
   gameState.board = prev.board;
   gameState.players = prev.players;
@@ -798,6 +796,7 @@ function doUndo() {
   gameState.selectedPosition = null;
   boardVersion++;
   legalCache.key = '';
+  lastPlaceTime = 0; // prevent double undo
 
   document.getElementById('btnRotate').disabled = true;
   document.getElementById('btnFlip').disabled = true;
@@ -809,11 +808,37 @@ function doUndo() {
 
 function updateUndoButton() {
   const btn = document.getElementById('btnUndo');
-  const currentPlayerIdx = gameState.currentTurn;
-  const remaining = 3 - undoCounts[currentPlayerIdx];
-  const canUndo = undoHistory.length > 0 && remaining > 0;
-  btn.disabled = !canUndo;
-  btn.textContent = `↩ 待った(${remaining})`;
+  if (undoHistory.length === 0) {
+    btn.disabled = true;
+    btn.textContent = '↩ 待った';
+    return;
+  }
+  if (undoTimeLimit) {
+    const elapsed = Date.now() - lastPlaceTime;
+    if (elapsed > 5000) {
+      btn.disabled = true;
+      btn.textContent = '↩ 待った';
+    } else {
+      btn.disabled = false;
+      const sec = Math.ceil((5000 - elapsed) / 1000);
+      btn.textContent = `↩ 待った(${sec}秒)`;
+    }
+  } else {
+    btn.disabled = false;
+    btn.textContent = '↩ 待った';
+  }
+}
+
+// Timer to update undo button countdown
+let undoTimer = null;
+function startUndoTimer() {
+  clearInterval(undoTimer);
+  if (!undoTimeLimit) return;
+  undoTimer = setInterval(() => {
+    if (gameState.phase !== 'game') { clearInterval(undoTimer); return; }
+    updateUndoButton();
+    if (Date.now() - lastPlaceTime > 5000) clearInterval(undoTimer);
+  }, 200);
 }
 
 // =============================================================
