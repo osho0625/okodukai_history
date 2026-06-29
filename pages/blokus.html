@@ -883,7 +883,13 @@ function doUndo() {
   if (undoHistory.length === 0) return;
   if (undoTimeLimit && (Date.now() - lastPlaceTime > 5000)) return;
 
-  const prev = undoHistory.pop();
+  // Keep popping until we reach a state where it's a human player's turn
+  // (undo past all CPU moves back to the last human move)
+  let prev = undoHistory.pop();
+  while (undoHistory.length > 0 && prev.players[prev.currentTurn].isCpu) {
+    prev = undoHistory.pop();
+  }
+
   gameState.board = prev.board;
   gameState.players = prev.players;
   gameState.currentTurn = prev.currentTurn;
