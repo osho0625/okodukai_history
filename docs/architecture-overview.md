@@ -26,6 +26,7 @@ graph TB
             QUARTO[quarto.html<br/>クアルト]
             QUORIDOR[quoridor.html<br/>コリドール]
             MEMORY[memory-game.html<br/>神経衰弱]
+            BLOKUS[blokus.html<br/>ブロックス]
         end
         
         subgraph "情報・コンテンツ"
@@ -76,6 +77,7 @@ graph TB
     ARCADE --> QUARTO
     ARCADE --> QUORIDOR
     ARCADE --> MEMORY
+    ARCADE --> BLOKUS
     CHILD --> NURSE
     
     COMMON --> |リダイレクト制御| NURSE
@@ -300,4 +302,5 @@ graph LR
 | ごきぶりポーカー | cockroach-poker.html | カードゲーム（CPU対戦） | なし |
 | クアルト | quarto.html | ボードゲーム（2人） | なし |
 | コリドール | quoridor.html | ボードゲーム（2人） | なし |
-| 神経衰弱 | memory-game.html | 記憶力カードゲーム | なし |
+| 神経衰弱 | memory-game.html | 記憶力カードゲーム | memory_rankings |
+| ブロックス | blokus.html | ボードゲーム（1-4人、CPU対戦） | blokus_rankings |

@@ -85,7 +85,7 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
   - >3.0: 💪 がんばろう！
 - 3Dフリップアニメーション（CSS perspective + rotateY）
 - ペア成立時 matchPop アニメーション
-- DB不使用、ランキングなし
+- ランキング: memory_rankingsテーブル（name, score=手数, difficulty別TOP10）
 - 夜間制限対応
 - ねこ汚染スクリプト非適用
 
@@ -174,6 +174,10 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
 
 #### blokus_rankings
 - id: UUID (PK), name: TEXT UNIQUE NOT NULL, wins: INT NOT NULL DEFAULT 1, created_at: TIMESTAMPTZ
+
+#### memory_rankings
+- id: UUID (PK), name: TEXT NOT NULL, score: INT NOT NULL (手数), difficulty: TEXT NOT NULL ('easy'|'normal'|'hard'), created_at: TIMESTAMPTZ
+- INDEX: idx_memory_rankings_score (difficulty, score ASC)
 
 ## 共通仕様
 
