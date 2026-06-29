@@ -563,6 +563,15 @@
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
         if (statusEl) statusEl.textContent = '📳 呼び出し中...';
+        // 子供端末にPush通知を送信（バックグラウンド時のフォールバック）
+        try {
+          await client.from('push_messages').insert({
+            target_role: 'user',
+            title: '📞 でんわだよ',
+            body: 'ナースコールをひらいてね',
+            sent: false
+          });
+        } catch(e) {}
         // 発信（init済みなのでstartCallのみ）
         if (window.NurseCallVoice) {
           await NurseCallVoice.startCall();
