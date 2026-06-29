@@ -737,6 +737,8 @@ function placeAtPosition(x, y) {
     endGame();
   } else {
     advanceTurn(gameState);
+    autoPassLoop();
+    if (isGameOver(gameState)) { endGame(); return; }
     renderBoard();
     renderPieces();
     updateTurnInfo();
@@ -860,17 +862,58 @@ function doPass() {
   document.getElementById('btnRotate').disabled = true;
   document.getElementById('btnFlip').disabled = true;
   legalCache.key = '';
+  proceedAfterMove();
+}
 
-  if (isGameOver(gameState)) {
-    endGame();
-  } else {
-    advanceTurn(gameState);
-    renderBoard();
-    renderPieces();
-    updateTurnInfo();
-    updateUndoButton();
-    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+// =============================================================
+// Post-move logic: advance turn, auto-pass if no moves, trigger CPU
+// =============================================================
+function proceedAfterMove() {
+  if (isGameOver(gameState)) { endGame(); return; }
+  advanceTurn(gameState);
+  // Auto-pass players who have no legal moves
+  autoPassLoop();
+  if (isGameOver(gameState)) { endGame(); return; }
+  renderBoard();
+  renderPieces();
+  updateTurnInfo();
+  updateUndoButton();
+  if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+}
+
+function autoPassLoop() {
+  // Keep auto-passing players with no available moves (max 4 iterations to prevent infinite loop)
+  for (let safety = 0; safety < 4; safety++) {
+    const p = gameState.players[gameState.currentTurn];
+    if (p.passed) { advanceTurn(gameState); continue; }
+    if (!hasAnyLegalMove(gameState.currentTurn)) {
+      p.passed = true;
+      if (isGameOver(gameState)) return;
+      advanceTurn(gameState);
+    } else {
+      break;
+    }
   }
+}
+
+function hasAnyLegalMove(playerIdx) {
+  const player = gameState.players[playerIdx];
+  const color = player.color;
+  const first = isFirstPieceForColor(gameState.board, color);
+  for (let i = 0; i < 21; i++) {
+    if (!player.pieces[i]) continue;
+    for (let rot = 0; rot < 4; rot++) {
+      for (let flip = 0; flip < 2; flip++) {
+        const cells = transformPiece(PIECES[i].cells, rot, !!flip);
+        for (let y = 0; y < 20; y++) {
+          for (let x = 0; x < 20; x++) {
+            if (canPlace(gameState.board, cells, x, y, color, first)) return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 // =============================================================
@@ -992,10 +1035,7 @@ function executeCpuTurn(player) {
   if (!bestMove) {
     // No moves available - pass
     player.passed = true;
-    if (isGameOver(gameState)) { endGame(); return; }
-    advanceTurn(gameState);
-    renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton();
-    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+    proceedAfterMove();
     return;
   }
 
@@ -1033,11 +1073,7 @@ function executeCpuTurn(player) {
   lastPlaceTime = Date.now();
   startUndoTimer();
   legalCache.key = '';
-
-  if (isGameOver(gameState)) { endGame(); return; }
-  advanceTurn(gameState);
-  renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton();
-  if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+  proceedAfterMove();
 }
 
 function getPieceOrder(player, level) {
