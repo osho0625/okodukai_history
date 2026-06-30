@@ -159,8 +159,15 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
 <!-- Admin用：お手伝い追加フォーム -->
 <div class="add-section" id="addSection" style="display:none;">
-  <h2>➕ お手伝いを追加</h2>
-  <div class="add-row">
+  <!-- 定型業務から追加 -->
+  <h2>📂 定型業務から追加</h2>
+  <div id="templateList" style="margin-bottom:16px;">
+    <div style="color:#999; font-size:0.85em;">読み込み中...</div>
+  </div>
+  <div style="border-top:1px solid #eee; padding-top:14px; margin-top:8px;">
+    <h2>➕ 自由に追加</h2>
+  </div>
+  <div class="add-row" style="margin-top:8px;">
     <input type="text" id="addTitle" placeholder="お手伝いの名前" maxlength="50">
     <div style="font-size:0.85em; color:#555; font-weight:600; margin-top:4px;">チェックリスト</div>
     <div class="checklist-editor" id="checklistEditor"></div>
@@ -176,9 +183,31 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
     </div>
     <select id="addAssign">
       <option value="">みんな（全員）</option>
+      <option value="いろは">いろは だけ</option>
+      <option value="かいせい">かいせい だけ</option>
+      <option value="はるちか">はるちか だけ</option>
     </select>
     <button class="btn-add" id="btnAdd" onclick="addTask()">追加する</button>
     <div class="add-msg" id="addMsg">✓ 追加しました！</div>
+  </div>
+</div>
+
+<!-- Admin用：定型業務管理 -->
+<div class="add-section" id="templateSection" style="display:none; margin-top:12px;">
+  <h2>⚙️ 定型業務を管理</h2>
+  <div id="templateMgmtList" style="margin-top:10px;"></div>
+  <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
+    <div style="font-size:0.85em; font-weight:600; color:#555; margin-bottom:8px;">新しい定型業務を登録</div>
+    <input type="text" id="tplTitle" placeholder="定型業務の名前" maxlength="50" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:6px;">
+    <div style="font-size:0.8em; color:#888; margin-bottom:4px;">チェックリスト項目</div>
+    <div class="checklist-editor" id="tplChecklistEditor"></div>
+    <button type="button" class="btn-add-check" onclick="addTplChecklistItem()" style="margin-bottom:8px;">＋ チェック項目を追加</button>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <input type="number" id="tplPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+      <span style="font-size:0.85em; color:#888;">pt</span>
+    </div>
+    <button class="btn-add" onclick="addTemplate()">定型業務を登録</button>
+    <div class="add-msg" id="tplMsg">✓ 登録しました！</div>
   </div>
 </div>
 
@@ -190,7 +219,6 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 let currentTab = 'active';
 let tasks = [];
 let hiraganaMode = localStorage.getItem('chore_hiragana') === 'true';
-let childrenNames = [];
 let kuroshiroInstance = null;
 let kuroshiroReady = false;
 let kuroshiroLoading = false;
@@ -204,18 +232,124 @@ const UI_LABELS = {
 };
 
 if (hiraganaMode) document.getElementById('hiraganaToggle').classList.add('active');
-if (isAdmin) document.getElementById('addSection').style.display = 'block';
+if (isAdmin) {
+  document.getElementById('addSection').style.display = 'block';
+  document.getElementById('templateSection').style.display = 'block';
+}
 
-async function loadChildren() {
-  const { data } = await client.from('children').select('name').order('sort_order', { ascending: true });
-  childrenNames = (data || []).map(c => c.name);
-  const sel = document.getElementById('addAssign');
-  childrenNames.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name + ' だけ';
-    sel.appendChild(opt);
+// --- 定型業務テンプレート ---
+let templates = [];
+let tplChecklistItems = [];
+
+async function loadTemplates() {
+  try {
+    const { data } = await client.from('game_settings').select('chore_templates').eq('id', 1).maybeSingle();
+    templates = (data && data.chore_templates) || [];
+  } catch(e) { templates = []; }
+  renderTemplateList();
+  renderTemplateMgmt();
+}
+
+function renderTemplateList() {
+  const el = document.getElementById('templateList');
+  if (templates.length === 0) {
+    el.innerHTML = '<div style="color:#999; font-size:0.85em;">定型業務が登録されていません</div>';
+    return;
+  }
+  el.innerHTML = '';
+  templates.forEach((tpl, idx) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; background:#fafafa; cursor:pointer; margin-bottom:6px; text-align:left; font-size:0.9em;';
+    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
+    btn.innerHTML = '<span style="flex:1;font-weight:600;">' + escHtml(tpl.title) + clInfo + '</span><span style="color:#ff9800;font-weight:700;">' + tpl.points + 'pt</span><span style="color:#4caf50;font-size:1.2em;">＋</span>';
+    btn.onclick = () => addFromTemplate(idx);
+    el.appendChild(btn);
   });
+}
+
+async function addFromTemplate(idx) {
+  const tpl = templates[idx];
+  if (!tpl) return;
+  const assignTo = document.getElementById('addAssign').value || null;
+  const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
+  await client.from('chore_tasks').insert({
+    title: tpl.title,
+    checklist: cl,
+    points: tpl.points || 1,
+    priority: 0,
+    assign_to: assignTo
+  });
+  const msg = document.getElementById('addMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  if (currentTab === 'active') loadTasks();
+}
+
+function renderTemplateMgmt() {
+  const el = document.getElementById('templateMgmtList');
+  if (templates.length === 0) {
+    el.innerHTML = '<div style="color:#999; font-size:0.85em;">まだ定型業務がありません</div>';
+    return;
+  }
+  el.innerHTML = '';
+  templates.forEach((tpl, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #f0f0f0;';
+    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' [' + tpl.checklist.join(', ') + ']' : '';
+    row.innerHTML = '<span style="flex:1; font-size:0.88em;">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
+      + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>';
+    el.appendChild(row);
+  });
+}
+
+function addTplChecklistItem() {
+  tplChecklistItems.push('');
+  renderTplChecklistEditor();
+}
+
+function removeTplChecklistItem(idx) {
+  tplChecklistItems.splice(idx, 1);
+  renderTplChecklistEditor();
+}
+
+function renderTplChecklistEditor() {
+  const editor = document.getElementById('tplChecklistEditor');
+  editor.innerHTML = '';
+  tplChecklistItems.forEach((text, idx) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-editor-item';
+    row.innerHTML = '<input type="text" value="' + escAttr(text) + '" placeholder="項目' + (idx + 1) + '" maxlength="100" onchange="tplChecklistItems[' + idx + ']=this.value">'
+      + '<button type="button" onclick="removeTplChecklistItem(' + idx + ')">✕</button>';
+    editor.appendChild(row);
+  });
+}
+
+async function addTemplate() {
+  const title = document.getElementById('tplTitle').value.trim();
+  const points = parseInt(document.getElementById('tplPoints').value) || 1;
+  if (!title) { alert('定型業務の名前を入力してください'); return; }
+  const cl = tplChecklistItems.filter(t => t.trim()).map(t => t.trim());
+  templates.push({ title, checklist: cl.length > 0 ? cl : null, points });
+  await saveTemplates();
+  document.getElementById('tplTitle').value = '';
+  document.getElementById('tplPoints').value = '1';
+  tplChecklistItems = [];
+  renderTplChecklistEditor();
+  const msg = document.getElementById('tplMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function deleteTemplate(idx) {
+  if (!confirm('「' + templates[idx].title + '」を削除しますか？')) return;
+  templates.splice(idx, 1);
+  await saveTemplates();
+}
+
+async function saveTemplates() {
+  await client.from('game_settings').update({ chore_templates: templates }).eq('id', 1);
+  renderTemplateList();
+  renderTemplateMgmt();
 }
 
 // --- kuroshiro ---
@@ -493,7 +627,7 @@ document.getElementById('addTitle').addEventListener('keydown', e => {
 
 // 初期化
 (async function init() {
-  loadChildren();
+  if (isAdmin) loadTemplates();
   if (hiraganaMode) {
     await initKuroshiro();
     await updateUILabels();
