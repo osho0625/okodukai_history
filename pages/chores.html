@@ -463,6 +463,7 @@ async function deleteTemplate(idx) {
 }
 
 async function duplicateTemplate(idx) {
+  if (!confirm('「' + templates[idx].title + '」をコピーしますか？')) return;
   const src = templates[idx];
   const copy = {
     title: src.title + '（コピー）',
