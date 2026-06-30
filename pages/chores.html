@@ -383,12 +383,13 @@ async function initKuroshiro() {
 
 async function convertToHiragana(str) {
   if (!str) return '';
+  let result = str;
   if (kuroshiroReady) {
-    try { return await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
+    try { result = await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
     catch(e) { /* fall through */ }
   }
-  // フォールバック: カタカナ→ひらがなのみ
-  return str.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  // カタカナ→ひらがな変換（kuroshiroがカタカナを残す場合の補完）
+  return result.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
 }
 
 async function displayText(str) {
