@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/30 v2.14.8
+最終更新: 2026/06/30 v2.14.9
 
 ## 🔴 Steering Files 運用ルール
 
@@ -76,6 +76,7 @@ inclusion: auto
 ### chore_tasks（お手伝いリスト）
 - id: UUID (PK), title: TEXT, description: TEXT (nullable), points: INT (default 1)
 - priority: INT (default 0: ふつう/1: 大事/2: とても大事)
+- assign_to: TEXT (nullable、特定の子供名。nullなら全員向け)
 - status: TEXT ('active'/'done'/'archived'), done_by: TEXT (nullable), done_at: TIMESTAMPTZ (nullable)
 - created_at: TIMESTAMPTZ
 - INDEX: idx_chore_tasks_status (status='active')
@@ -219,7 +220,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.14.8
+- 現在: v2.14.9
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

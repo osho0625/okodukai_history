@@ -5,6 +5,7 @@ CREATE TABLE chore_tasks (
   description TEXT,
   points INT NOT NULL DEFAULT 1,
   priority INT NOT NULL DEFAULT 0,
+  assign_to TEXT,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'done', 'archived')),
   done_by TEXT,
   done_at TIMESTAMPTZ,

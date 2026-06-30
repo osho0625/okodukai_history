@@ -16,6 +16,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; 
 .back:hover { opacity: 0.6; }
 h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
+.toolbar { max-width: 520px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.hiragana-toggle {
+  display: flex; align-items: center; gap: 4px; font-size: 0.8em; color: #888; cursor: pointer; user-select: none;
+  background: #fff; border: 1px solid #ddd; border-radius: 16px; padding: 4px 10px;
+}
+.hiragana-toggle.active { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+
 .task-list { max-width: 520px; margin: 0 auto; }
 
 .task-card {
@@ -33,6 +40,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-desc { font-size: 0.82em; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .task-pts { font-size: 0.85em; color: #ff9800; font-weight: 700; margin-top: 2px; }
 .task-done-info { font-size: 0.75em; color: #4caf50; margin-top: 2px; }
+.task-assign { font-size: 0.72em; color: #1976d2; margin-top: 2px; }
 
 .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .task-btn {
@@ -47,6 +55,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-btn.undo:hover { background: #ffe0b2; }
 
 .empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.1em; }
+</style>
 
 /* Admin: 追加フォーム */
 .add-section {
@@ -55,12 +64,12 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 }
 .add-section h2 { font-size: 1em; color: #555; margin-bottom: 12px; }
 .add-row { display: flex; flex-direction: column; gap: 8px; }
-.add-row input, .add-row textarea {
+.add-row input, .add-row textarea, .add-row select {
   padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; width: 100%;
 }
 .add-row textarea { resize: vertical; min-height: 50px; }
-.add-row-inline { display: flex; gap: 8px; align-items: center; }
-.add-row-inline input { flex: 1; }
+.add-row-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.add-row-inline input { flex: 1; min-width: 60px; }
 .btn-add {
   padding: 10px 20px; border: none; border-radius: 8px;
   background: #4caf50; color: #fff; font-weight: 600; cursor: pointer; font-size: 1em; width: 100%;
@@ -88,11 +97,17 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
 <a class="back" onclick="history.back()">←</a>
 <a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
-<h1>📋 お手伝いリスト</h1>
+<h1>📋 <span id="pageTitle">お手伝いリスト</span></h1>
+
+<div class="toolbar">
+  <div class="hiragana-toggle" id="hiraganaToggle" onclick="toggleHiragana()">
+    <span>あ</span> ひらがなモード
+  </div>
+</div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('active')">やること</button>
-  <button class="tab-btn" onclick="switchTab('done')">おわった</button>
+  <button class="tab-btn active" onclick="switchTab('active')" id="tabActive">やること</button>
+  <button class="tab-btn" onclick="switchTab('done')" id="tabDone">おわった</button>
 </div>
 
 <div class="task-list" id="taskList">
@@ -106,7 +121,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
     <input type="text" id="addTitle" placeholder="お手伝いの名前" maxlength="50">
     <input type="text" id="addDesc" placeholder="くわしい説明（なくてもOK）" maxlength="200">
     <div class="add-row-inline">
-      <input type="number" id="addPoints" placeholder="ポイント" value="1" min="1" max="99" style="width:80px;">
+      <input type="number" id="addPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px;">
       <span style="font-size:0.85em; color:#888;">pt</span>
       <select id="addPriority" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em;">
         <option value="0">ふつう</option>
@@ -114,6 +129,9 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
         <option value="2">🔥 とても大事</option>
       </select>
     </div>
+    <select id="addAssign">
+      <option value="">みんな（全員）</option>
+    </select>
     <button class="btn-add" id="btnAdd" onclick="addTask()">追加する</button>
     <div class="add-msg" id="addMsg">✓ 追加しました！</div>
   </div>
@@ -122,12 +140,53 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 <script>
 let currentTab = 'active';
 let tasks = [];
+let hiraganaMode = localStorage.getItem('chore_hiragana') === 'true';
+let childrenNames = [];
+
+// ひらがなモード初期化
+if (hiraganaMode) {
+  document.getElementById('hiraganaToggle').classList.add('active');
+}
 
 // Admin用フォーム表示
 if (isAdmin) {
   document.getElementById('addSection').style.display = 'block';
 }
 
+// 子供一覧を取得（assign_to用）
+async function loadChildren() {
+  const { data } = await client.from('children').select('name').order('sort_order', { ascending: true });
+  childrenNames = (data || []).map(c => c.name);
+  // admin追加フォームのセレクトを更新
+  const sel = document.getElementById('addAssign');
+  childrenNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + ' だけ';
+    sel.appendChild(opt);
+  });
+}
+
+// --- ひらがな変換 ---
+// カタカナ→ひらがな + 漢字はそのまま（完全変換は難しいのでカタカナのみ変換）
+function toHiragana(str) {
+  if (!str) return str;
+  return str.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
+function displayText(str) {
+  if (!str) return '';
+  return hiraganaMode ? toHiragana(str) : str;
+}
+
+function toggleHiragana() {
+  hiraganaMode = !hiraganaMode;
+  localStorage.setItem('chore_hiragana', hiraganaMode);
+  document.getElementById('hiraganaToggle').classList.toggle('active', hiraganaMode);
+  renderTasks();
+}
+
+// --- データ読み込み ---
 async function loadTasks() {
   const status = currentTab === 'active' ? 'active' : 'done';
   const order = currentTab === 'active'
@@ -151,48 +210,62 @@ async function loadTasks() {
 
 function renderTasks() {
   const list = document.getElementById('taskList');
-  if (tasks.length === 0) {
+  // URLパラメータでchild絞り込み
+  const childFilter = new URLSearchParams(location.search).get('child') || '';
+
+  // 表示対象フィルタ: assign_toがnull（全員向け）か、自分宛のもの
+  let filtered = tasks;
+  if (childFilter && !isAdmin) {
+    filtered = tasks.filter(t => !t.assign_to || t.assign_to === childFilter);
+  }
+
+  if (filtered.length === 0) {
     list.innerHTML = currentTab === 'active'
-      ? '<div class="empty-msg">🎉 やることはありません！</div>'
-      : '<div class="empty-msg">まだありません</div>';
+      ? '<div class="empty-msg">🎉 ' + displayText('やることはありません！') + '</div>'
+      : '<div class="empty-msg">' + displayText('まだありません') + '</div>';
     return;
   }
 
   list.innerHTML = '';
-  tasks.forEach(t => {
+  filtered.forEach(t => {
     const priorityIcon = t.priority >= 2 ? '🔥' : t.priority === 1 ? '⭐' : '📌';
     const isDone = t.status === 'done';
     const card = document.createElement('div');
     card.className = 'task-card' + (isDone ? ' done' : '');
+
+    const titleText = displayText(t.title);
+    const descText = displayText(t.description);
+    const assignLabel = t.assign_to ? displayText(t.assign_to) + (hiraganaMode ? ' だけ' : ' だけ') : '';
+
     let actionsHtml = '';
     if (isDone) {
-      const doneInfo = t.done_by ? `${t.done_by} がやった` : '';
+      const doneInfo = t.done_by ? displayText(t.done_by) + ' がやった' : '';
       if (isAdmin) {
-        actionsHtml = `<button class="task-btn undo" onclick="undoTask('${t.id}')" title="もどす">↩</button>
-          <button class="task-btn delete" onclick="deleteTask('${t.id}')" title="けす">✕</button>`;
+        actionsHtml = '<button class="task-btn undo" onclick="undoTask(\'' + t.id + '\')" title="もどす">↩</button>'
+          + '<button class="task-btn delete" onclick="deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
-      card.innerHTML = `
-        <div class="task-priority">${priorityIcon}</div>
-        <div class="task-body">
-          <div class="task-title">${escHtml(t.title)}</div>
-          ${t.description ? '<div class="task-desc">' + escHtml(t.description) + '</div>' : ''}
-          <div class="task-pts">${t.points}pt</div>
-          ${doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : ''}
-        </div>
-        <div class="task-actions">${actionsHtml}</div>`;
+      card.innerHTML = '<div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body">'
+        + '<div class="task-title">' + escHtml(titleText) + '</div>'
+        + (descText ? '<div class="task-desc">' + escHtml(descText) + '</div>' : '')
+        + '<div class="task-pts">' + t.points + 'pt</div>'
+        + (doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : '')
+        + (assignLabel ? '<div class="task-assign">👤 ' + escHtml(assignLabel) + '</div>' : '')
+        + '</div>'
+        + '<div class="task-actions">' + actionsHtml + '</div>';
     } else {
-      actionsHtml = `<button class="task-btn complete" onclick="completeTask('${t.id}')" title="できた！">✓</button>`;
+      actionsHtml = '<button class="task-btn complete" onclick="completeTask(\'' + t.id + '\')" title="できた！">✓</button>';
       if (isAdmin) {
-        actionsHtml += `<button class="task-btn delete" onclick="deleteTask('${t.id}')" title="けす">✕</button>`;
+        actionsHtml += '<button class="task-btn delete" onclick="deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
-      card.innerHTML = `
-        <div class="task-priority">${priorityIcon}</div>
-        <div class="task-body">
-          <div class="task-title">${escHtml(t.title)}</div>
-          ${t.description ? '<div class="task-desc">' + escHtml(t.description) + '</div>' : ''}
-          <div class="task-pts">${t.points}pt</div>
-        </div>
-        <div class="task-actions">${actionsHtml}</div>`;
+      card.innerHTML = '<div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body">'
+        + '<div class="task-title">' + escHtml(titleText) + '</div>'
+        + (descText ? '<div class="task-desc">' + escHtml(descText) + '</div>' : '')
+        + '<div class="task-pts">' + t.points + 'pt</div>'
+        + (assignLabel ? '<div class="task-assign">👤 ' + escHtml(assignLabel) + '</div>' : '')
+        + '</div>'
+        + '<div class="task-actions">' + actionsHtml + '</div>';
     }
     list.appendChild(card);
   });
@@ -206,14 +279,12 @@ function escHtml(str) {
 
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', (i === 0 && tab === 'active') || (i === 1 && tab === 'done'));
-  });
+  document.getElementById('tabActive').classList.toggle('active', tab === 'active');
+  document.getElementById('tabDone').classList.toggle('active', tab === 'done');
   loadTasks();
 }
 
 async function completeTask(id) {
-  // 子供の名前を取得（child.htmlからのリンクの場合URLパラメータに入っている想定だが、なければ空）
   const childName = new URLSearchParams(location.search).get('child') || '';
   await client.from('chore_tasks').update({
     status: 'done',
@@ -243,18 +314,20 @@ async function addTask() {
   const desc = document.getElementById('addDesc').value.trim();
   const points = parseInt(document.getElementById('addPoints').value) || 1;
   const priority = parseInt(document.getElementById('addPriority').value) || 0;
+  const assignTo = document.getElementById('addAssign').value || null;
 
   if (!title) { alert('お手伝いの名前を入力してください'); return; }
 
   document.getElementById('btnAdd').disabled = true;
   await client.from('chore_tasks').insert({
-    title, description: desc || null, points, priority
+    title, description: desc || null, points, priority, assign_to: assignTo
   });
 
   document.getElementById('addTitle').value = '';
   document.getElementById('addDesc').value = '';
   document.getElementById('addPoints').value = '1';
   document.getElementById('addPriority').value = '0';
+  document.getElementById('addAssign').value = '';
   document.getElementById('btnAdd').disabled = false;
 
   const msg = document.getElementById('addMsg');
@@ -270,6 +343,7 @@ document.getElementById('addTitle').addEventListener('keydown', e => {
 });
 
 // 初期読み込み
+loadChildren();
 loadTasks();
 </script>
 
