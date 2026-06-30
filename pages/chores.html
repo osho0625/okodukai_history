@@ -134,6 +134,33 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
   body { padding: 12px; }
   .task-card { padding: 14px; }
 }
+
+/* 完了確認モーダル */
+.overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center;
+}
+.overlay.active { display: flex; }
+.complete-modal {
+  background: #fff; border-radius: 20px; padding: 32px 24px;
+  width: 90%; max-width: 360px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.complete-modal h2 { margin-bottom: 24px; font-size: 1.3em; color: #333; }
+.complete-btns { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.complete-child-btn {
+  padding: 18px; border: none; border-radius: 12px;
+  background: #4caf50; color: #fff; font-size: 1.3em; font-weight: 700;
+  cursor: pointer; transition: transform 0.1s;
+}
+.complete-child-btn:hover { transform: scale(1.03); }
+.complete-child-btn:active { transform: scale(0.97); }
+.complete-cancel-btn {
+  padding: 12px 24px; border: 2px solid #ddd; border-radius: 10px;
+  background: #fff; color: #888; font-size: 1em; font-weight: 600;
+  cursor: pointer; width: 100%;
+}
+.complete-cancel-btn:hover { border-color: #999; color: #555; }
 </style>
 </head>
 <body>
@@ -218,6 +245,19 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
     </label>
     <button class="btn-add" onclick="addTemplate()">定型業務を登録</button>
     <div class="add-msg" id="tplMsg">✓ 登録しました！</div>
+  </div>
+</div>
+
+<!-- 完了確認モーダル -->
+<div class="overlay" id="completeOverlay">
+  <div class="complete-modal">
+    <h2>🎉 ぜんぶおわった？</h2>
+    <div class="complete-btns">
+      <button class="complete-child-btn" onclick="confirmComplete('いろは')">いろは</button>
+      <button class="complete-child-btn" onclick="confirmComplete('かいせい')">かいせい</button>
+      <button class="complete-child-btn" onclick="confirmComplete('はるちか')">はるちか</button>
+    </div>
+    <button class="complete-cancel-btn" onclick="cancelComplete()">まだおわってない</button>
   </div>
 </div>
 
@@ -715,7 +755,49 @@ async function toggleCheck(taskId, idx, checked) {
       progress.textContent = allChecked ? '✅ ぜんぶおわった！' : '☑ ' + checkedCount + '/' + cl.length;
     }
     card.classList.toggle('all-checked', allChecked);
+
+    // 全チェック完了 → 完了確認モーダル
+    if (allChecked && checked) {
+      showCompleteModal(taskId, idx);
+    }
   }
+}
+
+// --- 完了確認モーダル ---
+function showCompleteModal(taskId, lastIdx) {
+  const overlay = document.getElementById('completeOverlay');
+  overlay.setAttribute('data-task-id', taskId);
+  overlay.setAttribute('data-last-idx', lastIdx);
+  overlay.classList.add('active');
+}
+
+function cancelComplete() {
+  const overlay = document.getElementById('completeOverlay');
+  const taskId = overlay.getAttribute('data-task-id');
+  const lastIdx = parseInt(overlay.getAttribute('data-last-idx'));
+  overlay.classList.remove('active');
+  // 最後のチェックを取りやめ
+  toggleCheck(taskId, lastIdx, false);
+}
+
+async function confirmComplete(childName) {
+  const overlay = document.getElementById('completeOverlay');
+  const taskId = overlay.getAttribute('data-task-id');
+  overlay.classList.remove('active');
+
+  // タスクをdoneに
+  await client.from('chore_tasks').update({
+    status: 'done',
+    done_by: childName,
+    done_at: new Date().toISOString()
+  }).eq('id', taskId);
+
+  // Discord通知
+  const task = tasks.find(t => t.id === taskId);
+  const title = task ? task.title : '';
+  notifyDiscord('✅ お手伝い完了！「' + title + '」を ' + childName + ' がやりました！');
+
+  loadTasks();
 }
 
 function escHtml(str) {
