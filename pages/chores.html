@@ -144,7 +144,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
 <div class="toolbar">
   <div class="hiragana-toggle" id="hiraganaToggle" onclick="toggleHiragana()">
-    <span>あ</span> <span id="hiraganaLabel">ひらがなモード</span>
+    <span id="hiraganaLabel">ひらがなモード</span>
   </div>
 </div>
 
@@ -622,6 +622,7 @@ async function renderTasks() {
 
     const card = document.createElement('div');
     card.className = 'task-card' + (isDone ? ' done' : '') + (allChecked && !isDone ? ' all-checked' : '');
+    card.setAttribute('data-task-id', t.id);
 
     const titleText = await displayText(t.title);
     const assignName = t.assign_to ? await displayText(t.assign_to) : '';
@@ -643,7 +644,7 @@ async function renderTasks() {
         const checked = cl[i].checked;
         itemsHtml += '<div class="checklist-item">'
           + '<input type="checkbox" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',' + !checked + ')">'
-          + '<label class="' + (checked ? 'checked' : '') + '">' + escHtml(itemText) + '</label>'
+          + '<label class="' + (checked ? 'checked' : '') + '" onclick="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',' + !checked + ')">' + escHtml(itemText) + '</label>'
           + '</div>';
       }
       detailHtml = '<div class="task-detail">' + itemsHtml + '</div>';
@@ -693,7 +694,27 @@ async function toggleCheck(taskId, idx, checked) {
   if (!task || !task.checklist) return;
   task.checklist[idx].checked = checked;
   await client.from('chore_tasks').update({ checklist: task.checklist }).eq('id', taskId);
-  await renderTasks();
+
+  // DOM直接更新（カードを閉じないように）
+  const card = document.querySelector('[data-task-id="' + taskId + '"]');
+  if (card) {
+    const items = card.querySelectorAll('.checklist-item');
+    if (items[idx]) {
+      const cb = items[idx].querySelector('input[type="checkbox"]');
+      const lbl = items[idx].querySelector('label');
+      if (cb) cb.checked = checked;
+      if (lbl) lbl.classList.toggle('checked', checked);
+    }
+    // 進捗更新
+    const cl = task.checklist;
+    const checkedCount = cl.filter(item => item.checked).length;
+    const allChecked = cl.every(item => item.checked);
+    const progress = card.querySelector('.task-progress');
+    if (progress) {
+      progress.textContent = allChecked ? '✅ ぜんぶおわった！' : '☑ ' + checkedCount + '/' + cl.length;
+    }
+    card.classList.toggle('all-checked', allChecked);
+  }
 }
 
 function escHtml(str) {
