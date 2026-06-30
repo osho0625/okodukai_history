@@ -28,19 +28,31 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-card {
   background: #fff; border-radius: 12px; padding: 16px 18px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 10px;
-  display: flex; align-items: center; gap: 12px;
-  transition: transform 0.1s, opacity 0.3s;
+  cursor: pointer; transition: transform 0.1s, opacity 0.3s;
+  position: relative; overflow: hidden;
 }
 .task-card.done { opacity: 0.5; background: #f9f9f9; }
 .task-card.done .task-title { text-decoration: line-through; color: #999; }
 
+.task-main { display: flex; align-items: center; gap: 12px; }
 .task-priority { font-size: 1.4em; flex-shrink: 0; }
 .task-body { flex: 1; min-width: 0; }
 .task-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 2px; }
-.task-desc { font-size: 0.82em; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .task-pts { font-size: 0.85em; color: #ff9800; font-weight: 700; margin-top: 2px; }
 .task-done-info { font-size: 0.75em; color: #4caf50; margin-top: 2px; }
-.task-assign { font-size: 0.72em; color: #1976d2; margin-top: 2px; }
+
+.task-assign-badge {
+  position: absolute; top: 0; left: 0;
+  background: #1976d2; color: #fff; font-weight: 700; font-size: 0.85em;
+  padding: 3px 12px 3px 8px; border-radius: 0 0 12px 0;
+  letter-spacing: 0.5px;
+}
+
+.task-detail {
+  display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+  font-size: 0.88em; color: #666; line-height: 1.5;
+}
+.task-card.expanded .task-detail { display: block; }
 
 .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .task-btn {
@@ -55,9 +67,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-btn.undo:hover { background: #ffe0b2; }
 
 .empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.1em; }
-</style>
 
-/* Admin: 追加フォーム */
 .add-section {
   max-width: 520px; margin: 24px auto 0; background: #fff;
   border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
@@ -67,7 +77,6 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .add-row input, .add-row textarea, .add-row select {
   padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; width: 100%;
 }
-.add-row textarea { resize: vertical; min-height: 50px; }
 .add-row-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .add-row-inline input { flex: 1; min-width: 60px; }
 .btn-add {
@@ -97,7 +106,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
 <a class="back" onclick="history.back()">←</a>
 <a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
-<h1>📋 <span id="pageTitle">お手伝いリスト</span></h1>
+<h1>📋 お手伝いリスト</h1>
 
 <div class="toolbar">
   <div class="hiragana-toggle" id="hiraganaToggle" onclick="toggleHiragana()">
@@ -143,21 +152,12 @@ let tasks = [];
 let hiraganaMode = localStorage.getItem('chore_hiragana') === 'true';
 let childrenNames = [];
 
-// ひらがなモード初期化
-if (hiraganaMode) {
-  document.getElementById('hiraganaToggle').classList.add('active');
-}
+if (hiraganaMode) document.getElementById('hiraganaToggle').classList.add('active');
+if (isAdmin) document.getElementById('addSection').style.display = 'block';
 
-// Admin用フォーム表示
-if (isAdmin) {
-  document.getElementById('addSection').style.display = 'block';
-}
-
-// 子供一覧を取得（assign_to用）
 async function loadChildren() {
   const { data } = await client.from('children').select('name').order('sort_order', { ascending: true });
   childrenNames = (data || []).map(c => c.name);
-  // admin追加フォームのセレクトを更新
   const sel = document.getElementById('addAssign');
   childrenNames.forEach(name => {
     const opt = document.createElement('option');
@@ -167,8 +167,7 @@ async function loadChildren() {
   });
 }
 
-// --- ひらがな変換 ---
-// カタカナ→ひらがな + 漢字はそのまま（完全変換は難しいのでカタカナのみ変換）
+// --- ひらがな変換（カタカナ→ひらがな） ---
 function toHiragana(str) {
   if (!str) return str;
   return str.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
@@ -195,9 +194,7 @@ async function loadTasks() {
 
   let query = client.from('chore_tasks').select('*').eq('status', status);
   query = query.order(order.column, { ascending: order.ascending });
-  if (currentTab === 'active') {
-    query = query.order('created_at', { ascending: true });
-  }
+  if (currentTab === 'active') query = query.order('created_at', { ascending: true });
 
   const { data, error } = await query;
   if (error) {
@@ -210,10 +207,8 @@ async function loadTasks() {
 
 function renderTasks() {
   const list = document.getElementById('taskList');
-  // URLパラメータでchild絞り込み
   const childFilter = new URLSearchParams(location.search).get('child') || '';
 
-  // 表示対象フィルタ: assign_toがnull（全員向け）か、自分宛のもの
   let filtered = tasks;
   if (childFilter && !isAdmin) {
     filtered = tasks.filter(t => !t.assign_to || t.assign_to === childFilter);
@@ -221,8 +216,8 @@ function renderTasks() {
 
   if (filtered.length === 0) {
     list.innerHTML = currentTab === 'active'
-      ? '<div class="empty-msg">🎉 ' + displayText('やることはありません！') + '</div>'
-      : '<div class="empty-msg">' + displayText('まだありません') + '</div>';
+      ? '<div class="empty-msg">🎉 やることはありません！</div>'
+      : '<div class="empty-msg">まだありません</div>';
     return;
   }
 
@@ -235,38 +230,60 @@ function renderTasks() {
 
     const titleText = displayText(t.title);
     const descText = displayText(t.description);
-    const assignLabel = t.assign_to ? displayText(t.assign_to) + (hiraganaMode ? ' だけ' : ' だけ') : '';
+    const assignName = t.assign_to ? displayText(t.assign_to) : '';
+
+    // 割り当てバッジ
+    let badgeHtml = '';
+    if (assignName) {
+      badgeHtml = '<div class="task-assign-badge">' + escHtml(assignName) + '</div>';
+    }
+
+    // 説明エリア（タップで展開）
+    let detailHtml = '';
+    if (descText) {
+      detailHtml = '<div class="task-detail">' + escHtml(descText) + '</div>';
+    }
 
     let actionsHtml = '';
     if (isDone) {
       const doneInfo = t.done_by ? displayText(t.done_by) + ' がやった' : '';
       if (isAdmin) {
-        actionsHtml = '<button class="task-btn undo" onclick="undoTask(\'' + t.id + '\')" title="もどす">↩</button>'
-          + '<button class="task-btn delete" onclick="deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
+        actionsHtml = '<button class="task-btn undo" onclick="event.stopPropagation();undoTask(\'' + t.id + '\')" title="もどす">↩</button>'
+          + '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
-      card.innerHTML = '<div class="task-priority">' + priorityIcon + '</div>'
+      card.innerHTML = badgeHtml
+        + '<div class="task-main">'
+        + '<div class="task-priority">' + priorityIcon + '</div>'
         + '<div class="task-body">'
         + '<div class="task-title">' + escHtml(titleText) + '</div>'
-        + (descText ? '<div class="task-desc">' + escHtml(descText) + '</div>' : '')
         + '<div class="task-pts">' + t.points + 'pt</div>'
         + (doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : '')
-        + (assignLabel ? '<div class="task-assign">👤 ' + escHtml(assignLabel) + '</div>' : '')
         + '</div>'
-        + '<div class="task-actions">' + actionsHtml + '</div>';
+        + '<div class="task-actions">' + actionsHtml + '</div>'
+        + '</div>'
+        + detailHtml;
     } else {
-      actionsHtml = '<button class="task-btn complete" onclick="completeTask(\'' + t.id + '\')" title="できた！">✓</button>';
+      actionsHtml = '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>';
       if (isAdmin) {
-        actionsHtml += '<button class="task-btn delete" onclick="deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
+        actionsHtml += '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
-      card.innerHTML = '<div class="task-priority">' + priorityIcon + '</div>'
+      card.innerHTML = badgeHtml
+        + '<div class="task-main">'
+        + '<div class="task-priority">' + priorityIcon + '</div>'
         + '<div class="task-body">'
         + '<div class="task-title">' + escHtml(titleText) + '</div>'
-        + (descText ? '<div class="task-desc">' + escHtml(descText) + '</div>' : '')
         + '<div class="task-pts">' + t.points + 'pt</div>'
-        + (assignLabel ? '<div class="task-assign">👤 ' + escHtml(assignLabel) + '</div>' : '')
         + '</div>'
-        + '<div class="task-actions">' + actionsHtml + '</div>';
+        + '<div class="task-actions">' + actionsHtml + '</div>'
+        + '</div>'
+        + detailHtml;
     }
+
+    // タップで説明展開
+    if (descText) {
+      card.addEventListener('click', () => card.classList.toggle('expanded'));
+    }
+
     list.appendChild(card);
   });
 }
@@ -295,11 +312,7 @@ async function completeTask(id) {
 }
 
 async function undoTask(id) {
-  await client.from('chore_tasks').update({
-    status: 'active',
-    done_by: null,
-    done_at: null
-  }).eq('id', id);
+  await client.from('chore_tasks').update({ status: 'active', done_by: null, done_at: null }).eq('id', id);
   loadTasks();
 }
 
@@ -333,16 +346,13 @@ async function addTask() {
   const msg = document.getElementById('addMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
-
   if (currentTab === 'active') loadTasks();
 }
 
-// Enterキーで追加
 document.getElementById('addTitle').addEventListener('keydown', e => {
   if (e.key === 'Enter') addTask();
 });
 
-// 初期読み込み
 loadChildren();
 loadTasks();
 </script>
