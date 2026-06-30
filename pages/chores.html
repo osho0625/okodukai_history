@@ -243,8 +243,9 @@ let tplChecklistItems = [];
 
 async function loadTemplates() {
   try {
-    const { data } = await client.from('game_settings').select('chore_templates').eq('id', 1).maybeSingle();
-    templates = (data && data.chore_templates) || [];
+    const { data, error } = await client.from('game_settings').select('chore_templates').eq('id', 1).maybeSingle();
+    if (error) { console.warn('chore_templates not found, run ALTER SQL:', error.message); templates = []; }
+    else { templates = (data && data.chore_templates) || []; }
   } catch(e) { templates = []; }
   renderTemplateList();
   renderTemplateMgmt();
@@ -362,27 +363,32 @@ async function initKuroshiro() {
   try {
     kuroshiroInstance = new Kuroshiro();
     await kuroshiroInstance.init(new KuromojiAnalyzer({
-      dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
+      dictPath: 'https://unpkg.com/kuromoji@0.1.2/dict'
     }));
     kuroshiroReady = true;
   } catch(e) {
     console.error('kuroshiro init failed:', e);
+    kuroshiroReady = false;
   }
   kuroshiroLoading = false;
   toggle.classList.remove('loading');
-  document.getElementById('hiraganaLabel').textContent = 'ひらがなモード';
+  document.getElementById('hiraganaLabel').textContent = kuroshiroReady ? 'ひらがなモード' : 'ひらがな(かんたん)';
 }
 
 async function convertToHiragana(str) {
   if (!str) return '';
-  if (!kuroshiroReady) return str;
-  try { return await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
-  catch(e) { return str; }
+  if (kuroshiroReady) {
+    try { return await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
+    catch(e) { /* fall through */ }
+  }
+  // フォールバック: カタカナ→ひらがなのみ
+  return str.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
 }
 
 async function displayText(str) {
   if (!str) return '';
-  return hiraganaMode ? await convertToHiragana(str) : str;
+  if (!hiraganaMode) return str;
+  return await convertToHiragana(str);
 }
 
 async function toggleHiragana() {
@@ -395,7 +401,7 @@ async function toggleHiragana() {
 }
 
 async function updateUILabels() {
-  if (hiraganaMode && kuroshiroReady) {
+  if (hiraganaMode) {
     document.getElementById('pageTitle').textContent = await convertToHiragana(UI_LABELS.pageTitle);
     document.getElementById('tabActive').textContent = await convertToHiragana(UI_LABELS.tabActive);
     document.getElementById('tabDone').textContent = await convertToHiragana(UI_LABELS.tabDone);
@@ -464,7 +470,7 @@ async function renderTasks() {
   }
 
   if (filtered.length === 0) {
-    const emptyText = hiraganaMode && kuroshiroReady
+    const emptyText = hiraganaMode
       ? await convertToHiragana(currentTab === 'active' ? UI_LABELS.emptyActive : UI_LABELS.emptyDone)
       : (currentTab === 'active' ? UI_LABELS.emptyActive : UI_LABELS.emptyDone);
     list.innerHTML = '<div class="empty-msg">' + (currentTab === 'active' ? '🎉 ' : '') + escHtml(emptyText) + '</div>';
