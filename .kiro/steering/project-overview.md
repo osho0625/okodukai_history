@@ -18,7 +18,7 @@ inclusion: auto
 | すいか、suika、RPG | `.kiro/steering/suika-rpg.md` |
 | チケット、ticket | `.kiro/steering/tickets.md` |
 | TRPG、クトゥルフ | `.kiro/steering/trpg.md` |
-| テトリス、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
+| テトミン、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
 | ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス | `.kiro/steering/board-games.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
 | SCP、scp | `.kiro/steering/today-scp.md` |
@@ -280,7 +280,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `suika-rpg.md` — すいかが食べたい
 - `tickets.md` — あそびチケット
 - `trpg.md` — クトゥルフTRPG
-- `games-misc.md` — テトリス・ブロックブラスト・オリマーの冒険・ゲームセンター
+- `games-misc.md` — テトミン・ピクミンブラスト・オリマーの冒険・ゲームセンター
 - `board-games.md` — ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス
 - `today-science.md` — 今日のサイエンス
 - `today-scp.md` — 今日のSCP
