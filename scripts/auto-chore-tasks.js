@@ -43,9 +43,9 @@ async function main() {
   }
   console.log(`Found ${autoTemplates.length} auto_add templates.`);
 
-  // 2. 現在のactiveタスクのタイトル一覧を取得
+  // 2. 現在のactiveタスクのタイトル+assign_to一覧を取得
   const activeRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/chore_tasks?status=eq.active&select=title`,
+    `${SUPABASE_URL}/rest/v1/chore_tasks?status=eq.active&select=title,assign_to`,
     { headers }
   );
   if (!activeRes.ok) {
@@ -53,13 +53,13 @@ async function main() {
     process.exit(1);
   }
   const activeTasks = await activeRes.json();
-  const activeTitles = new Set(activeTasks.map(t => t.title));
 
   // 3. 重複しないものだけ追加
   let added = 0;
   for (const tpl of autoTemplates) {
-    if (activeTitles.has(tpl.title)) {
-      console.log(`Skip (already active): ${tpl.title}`);
+    const duplicate = activeTasks.some(t => t.title === tpl.title && (t.assign_to || null) === (tpl.assign_to || null));
+    if (duplicate) {
+      console.log(`Skip (already active): ${tpl.title}${tpl.assign_to ? ' [' + tpl.assign_to + ']' : ''}`);
       continue;
     }
 

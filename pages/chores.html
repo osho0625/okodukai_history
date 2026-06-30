@@ -683,8 +683,8 @@ async function renderTasks() {
         const itemText = await displayText(cl[i].text);
         const checked = cl[i].checked;
         itemsHtml += '<div class="checklist-item">'
-          + '<input type="checkbox" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',' + !checked + ')">'
-          + '<label class="' + (checked ? 'checked' : '') + '" onclick="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',' + !checked + ')">' + escHtml(itemText) + '</label>'
+          + '<input type="checkbox" id="chk_' + t.id + '_' + i + '" ' + (checked ? 'checked' : '') + ' onchange="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',this.checked)">'
+          + '<label for="chk_' + t.id + '_' + i + '" class="' + (checked ? 'checked' : '') + '" onclick="event.stopPropagation();">' + escHtml(itemText) + '</label>'
           + '</div>';
       }
       detailHtml = '<div class="task-detail">' + itemsHtml + '</div>';
@@ -729,11 +729,13 @@ async function renderTasks() {
 }
 
 // --- チェック切り替え ---
+let checkLock = false;
 async function toggleCheck(taskId, idx, checked) {
+  if (checkLock) return;
   const task = tasks.find(t => t.id === taskId);
   if (!task || !task.checklist) return;
-  // done状態のタスクはチェック操作不可
   if (task.status === 'done') return;
+  checkLock = true;
   task.checklist[idx].checked = checked;
   await client.from('chore_tasks').update({ checklist: task.checklist }).eq('id', taskId);
 
@@ -759,9 +761,12 @@ async function toggleCheck(taskId, idx, checked) {
 
     // 全チェック完了 → 完了確認モーダル
     if (allChecked && checked) {
+      checkLock = false;
       showCompleteModal(taskId, idx);
+      return;
     }
   }
+  checkLock = false;
 }
 
 // --- 完了確認モーダル ---
@@ -794,15 +799,17 @@ async function confirmComplete(childName) {
 
   // 子供のIDを取得
   const { data: childData } = await client.from('children').select('id').eq('name', childName).maybeSingle();
-  if (childData) {
-    // chore_pointsにpendingで挿入（admin承認待ち）
-    await client.from('chore_points').insert({
-      child_id: childData.id,
-      chore_name: title,
-      points: points,
-      status: 'pending'
-    });
+  if (!childData) {
+    alert('「' + childName + '」のアカウントが見つかりません');
+    return;
   }
+  // chore_pointsにpendingで挿入（admin承認待ち）
+  await client.from('chore_points').insert({
+    child_id: childData.id,
+    chore_name: title,
+    points: points,
+    status: 'pending'
+  });
 
   // タスクをdoneに移動（承認後に自動削除される）
   await client.from('chore_tasks').update({
@@ -836,15 +843,20 @@ async function completeTask(id) {
 }
 
 async function undoTask(id) {
-  // 対応するpending chore_pointsを削除（二重付与防止）
+  // 対応するpending chore_pointsを1件削除（二重付与防止）
   const task = tasks.find(t => t.id === id);
   if (task && task.done_by) {
     const { data: childData } = await client.from('children').select('id').eq('name', task.done_by).maybeSingle();
     if (childData) {
-      await client.from('chore_points').delete()
+      const { data: pendingPts } = await client.from('chore_points').select('id')
         .eq('child_id', childData.id)
         .eq('chore_name', task.title)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (pendingPts && pendingPts.length > 0) {
+        await client.from('chore_points').delete().eq('id', pendingPts[0].id);
+      }
     }
   }
   const resetChecklist = (task && task.checklist) ? task.checklist.map(i => ({...i, checked: false})) : null;
