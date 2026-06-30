@@ -206,6 +206,12 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
       <input type="number" id="tplPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
       <span style="font-size:0.85em; color:#888;">pt</span>
     </div>
+    <select id="tplAssign" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:8px;">
+      <option value="">みんな（全員）</option>
+      <option value="いろは">いろは だけ</option>
+      <option value="かいせい">かいせい だけ</option>
+      <option value="はるちか">はるちか だけ</option>
+    </select>
     <button class="btn-add" onclick="addTemplate()">定型業務を登録</button>
     <div class="add-msg" id="tplMsg">✓ 登録しました！</div>
   </div>
@@ -262,7 +268,8 @@ function renderTemplateList() {
     const btn = document.createElement('button');
     btn.style.cssText = 'display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; background:#fafafa; cursor:pointer; margin-bottom:6px; text-align:left; font-size:0.9em;';
     const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
-    btn.innerHTML = '<span style="flex:1;font-weight:600;">' + escHtml(tpl.title) + clInfo + '</span><span style="color:#ff9800;font-weight:700;">' + tpl.points + 'pt</span><span style="color:#4caf50;font-size:1.2em;">＋</span>';
+    const assignInfo = tpl.assign_to ? ' 👤' + tpl.assign_to : '';
+    btn.innerHTML = '<span style="flex:1;font-weight:600;">' + escHtml(tpl.title) + clInfo + '<span style="color:#1976d2;font-size:0.8em;">' + escHtml(assignInfo) + '</span></span><span style="color:#ff9800;font-weight:700;">' + tpl.points + 'pt</span><span style="color:#4caf50;font-size:1.2em;">＋</span>';
     btn.onclick = () => addFromTemplate(idx);
     el.appendChild(btn);
   });
@@ -271,7 +278,8 @@ function renderTemplateList() {
 async function addFromTemplate(idx) {
   const tpl = templates[idx];
   if (!tpl) return;
-  const assignTo = document.getElementById('addAssign').value || null;
+  // テンプレートにassign_toがあればそれを使う、なければフォームのセレクトを使う
+  const assignTo = tpl.assign_to || document.getElementById('addAssign').value || null;
   const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
   const { error: insertErr } = await client.from('chore_tasks').insert({
     title: tpl.title,
@@ -298,8 +306,9 @@ function renderTemplateMgmt() {
     const row = document.createElement('div');
     row.style.cssText = 'border-bottom:1px solid #f0f0f0; padding:8px 0;';
     const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
+    const assignInfo = tpl.assign_to ? ' [' + tpl.assign_to + ']' : '';
     row.innerHTML = '<div style="display:flex; align-items:center; gap:8px;">'
-      + '<span style="flex:1; font-size:0.88em; cursor:pointer;" onclick="editTemplate(' + idx + ')">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
+      + '<span style="flex:1; font-size:0.88em; cursor:pointer;" onclick="editTemplate(' + idx + ')">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#1976d2; font-size:0.8em;">' + escHtml(assignInfo) + '</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
       + '<button onclick="duplicateTemplate(' + idx + ')" style="border:none; background:#e8f5e9; color:#4caf50; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;" title="コピー">📋</button>'
       + '<button onclick="editTemplate(' + idx + ')" style="border:none; background:#e3f2fd; color:#1976d2; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;">✏</button>'
       + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>'
@@ -338,6 +347,7 @@ function renderEditTplForm(idx) {
     clHtml += '<div class="checklist-editor-item"><input type="text" value="' + escAttr(text) + '" onchange="editTplChecklist[' + i + ']=this.value" placeholder="項目' + (i + 1) + '">'
       + '<button type="button" onclick="removeEditTplItem(' + idx + ',' + i + ')">✕</button></div>';
   });
+  const assignVal = tpl.assign_to || '';
   el.innerHTML = '<input type="text" id="editTplTitle_' + idx + '" value="' + escAttr(tpl.title) + '" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:6px;">'
     + '<div style="font-size:0.8em; color:#888; margin-bottom:4px;">チェックリスト</div>'
     + '<div id="editTplCl_' + idx + '">' + clHtml + '</div>'
@@ -346,6 +356,12 @@ function renderEditTplForm(idx) {
     + '<input type="number" id="editTplPts_' + idx + '" value="' + (tpl.points || 1) + '" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">'
     + '<span style="font-size:0.85em; color:#888;">pt</span>'
     + '</div>'
+    + '<select id="editTplAssign_' + idx + '" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:8px;">'
+    + '<option value=""' + (assignVal === '' ? ' selected' : '') + '>みんな（全員）</option>'
+    + '<option value="いろは"' + (assignVal === 'いろは' ? ' selected' : '') + '>いろは だけ</option>'
+    + '<option value="かいせい"' + (assignVal === 'かいせい' ? ' selected' : '') + '>かいせい だけ</option>'
+    + '<option value="はるちか"' + (assignVal === 'はるちか' ? ' selected' : '') + '>はるちか だけ</option>'
+    + '</select>'
     + '<div style="display:flex; gap:8px;">'
     + '<button onclick="saveEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#4caf50; color:#fff; font-weight:600; cursor:pointer;">保存</button>'
     + '<button onclick="cancelEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#eee; color:#333; cursor:pointer;">キャンセル</button>'
@@ -368,7 +384,8 @@ async function saveEditTemplate(idx) {
   const points = parseInt(document.getElementById('editTplPts_' + idx).value) || 1;
   if (!title) { alert('名前を入力してください'); return; }
   const cl = editTplChecklist.filter(t => t.trim()).map(t => t.trim());
-  templates[idx] = { title, checklist: cl.length > 0 ? cl : null, points };
+  const assignTo = document.getElementById('editTplAssign_' + idx).value || null;
+  templates[idx] = { title, checklist: cl.length > 0 ? cl : null, points, assign_to: assignTo };
   await saveTemplates();
   editingTplIdx = -1;
 }
@@ -403,12 +420,14 @@ function renderTplChecklistEditor() {
 async function addTemplate() {
   const title = document.getElementById('tplTitle').value.trim();
   const points = parseInt(document.getElementById('tplPoints').value) || 1;
+  const assignTo = document.getElementById('tplAssign').value || null;
   if (!title) { alert('定型業務の名前を入力してください'); return; }
   const cl = tplChecklistItems.filter(t => t.trim()).map(t => t.trim());
-  templates.push({ title, checklist: cl.length > 0 ? cl : null, points });
+  templates.push({ title, checklist: cl.length > 0 ? cl : null, points, assign_to: assignTo });
   await saveTemplates();
   document.getElementById('tplTitle').value = '';
   document.getElementById('tplPoints').value = '1';
+  document.getElementById('tplAssign').value = '';
   tplChecklistItems = [];
   renderTplChecklistEditor();
   const msg = document.getElementById('tplMsg');
@@ -427,11 +446,11 @@ async function duplicateTemplate(idx) {
   const copy = {
     title: src.title + '（コピー）',
     checklist: src.checklist ? src.checklist.slice() : null,
-    points: src.points
+    points: src.points,
+    assign_to: src.assign_to || null
   };
   templates.splice(idx + 1, 0, copy);
   await saveTemplates();
-  // コピーした方を編集状態で開く
   editTemplate(idx + 1);
 }
 
