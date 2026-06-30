@@ -32,7 +32,7 @@ fileMatchPattern: "*chore*"
 | points | INT (default 1) | 獲得ポイント |
 | priority | INT (default 0) | 優先度（0=ふつう、1=大事、2=とても大事） |
 | assign_to | TEXT (nullable) | 対象の子供名（nullなら全員向け） |
-| status | TEXT (default 'active') | 状態: active / done |
+| status | TEXT (default 'active') | 状態: active / done / archived |
 | done_by | TEXT | 完了した子供の名前 |
 | done_at | TIMESTAMPTZ | 完了日時 |
 | created_at | TIMESTAMPTZ | 作成日時 |

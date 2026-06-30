@@ -21,6 +21,7 @@ inclusion: auto
 | テトリス、ブラスト、オリマー、ゲームセンター | `.kiro/steering/games-misc.md` |
 | ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス | `.kiro/steering/board-games.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
+| SCP、scp | `.kiro/steering/today-scp.md` |
 | ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
 | お手伝いリスト、chore_tasks | `.kiro/steering/chores.md` |
 | メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
@@ -48,12 +49,17 @@ inclusion: auto
 ├── images/             # アプリアイコン・ゲーム画像
 ├── css/                # スタイルシート
 ├── data/               # ゲームデータ（算数オリンピック問題等）
+├── dict/               # kuromoji辞書ファイル（ひらがな変換用）
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 ├── scripts/            # Cron/ユーティリティスクリプト
+│   ├── auto-chore-points.js  # 自動お手伝いポイント付与
+│   ├── auto-chore-tasks.js   # 定型業務の毎朝自動追加
+│   ├── reminder-notify.js    # リマインダーDiscord通知
+│   └── generate-vapid-keys.js
 ├── sql/                # DBマイグレーション
-├── backups/            # 自動バックアップJSON（13テーブル: children, transactions, chore_types, chore_points, game_settings, game_rankings, reminders, tickets, push_subscriptions, family_notes, math_olympiad_answers, temperature_logs, nurse_calls, nurse_call_messages）
+├── backups/            # 自動バックアップJSON
 ├── .kiro/specs/today-science/ # 今日のサイエンス機能データ
-└── .github/workflows/  # GitHub Actions
+└── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, push-notify)
 ```
 
 ## Supabaseテーブル構成
@@ -93,6 +99,7 @@ inclusion: auto
 - night_password: TEXT, night_limit_enabled: BOOLEAN
 - allowance_password: TEXT, admin_password: TEXT
 - game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,"game_math_olympiad":true,...})
+- chore_templates: JSONB (定型業務テンプレート配列、default '[]')
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
@@ -211,6 +218,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | scp_viewed | 今日のSCP閲覧済みIDリスト（JSON配列） | 永続 |
 | scp_today | 今日のSCP当日固定ID（{date,id}） | 日替わり |
 | neko_infected_date | SCP-040-JP既読日（汚染進行計算用） | 永続 |
+| chore_hiragana | お手伝いリストひらがなモード状態 | 永続 |
 
 ## sessionStorage 共通キー
 
@@ -248,6 +256,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | 作業中 | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
 | TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
+| TSJ260618 | 作業中 | お手伝いリスト機能（チェックリスト、定型業務テンプレート、自動追加cron、ひらがなモード、完了→ポイント承認フロー） |
 
 ## 既知の注意点
 
@@ -274,5 +283,6 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `games-misc.md` — テトリス・ブロックブラスト・オリマーの冒険・ゲームセンター
 - `board-games.md` — ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス
 - `today-science.md` — 今日のサイエンス
+- `today-scp.md` — 今日のSCP
 - `family-notes.md` — 家族メモ帳
 - `chores.md` — お手伝いリスト
