@@ -362,9 +362,12 @@ async function initKuroshiro() {
   toggle.classList.add('loading');
   document.getElementById('hiraganaLabel').textContent = 'よみこみ中...';
   try {
-    const KuroshiroClass = Kuroshiro.default || Kuroshiro;
+    // Kuroshiro CDN UMD: window.Kuroshiro = {default: class}
+    const KuroshiroClass = (typeof Kuroshiro === 'function') ? Kuroshiro : (Kuroshiro && Kuroshiro.default ? Kuroshiro.default : null);
+    const AnalyzerClass = (typeof KuromojiAnalyzer === 'function') ? KuromojiAnalyzer : (KuromojiAnalyzer && KuromojiAnalyzer.default ? KuromojiAnalyzer.default : null);
+    if (!KuroshiroClass) throw new Error('Kuroshiro class not found. typeof=' + typeof Kuroshiro);
+    if (!AnalyzerClass) throw new Error('KuromojiAnalyzer class not found. typeof=' + typeof KuromojiAnalyzer);
     kuroshiroInstance = new KuroshiroClass();
-    const AnalyzerClass = KuromojiAnalyzer.default || KuromojiAnalyzer;
     await kuroshiroInstance.init(new AnalyzerClass({
       dictPath: '../dict'
     }));
