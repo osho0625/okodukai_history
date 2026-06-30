@@ -709,7 +709,7 @@ async function renderTasks() {
         + (doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : '')
         + '</div><div class="task-actions">' + actionsHtml + '</div></div>' + detailHtml;
     } else {
-      actionsHtml = '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>';
+      actionsHtml = cl.length === 0 ? '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>' : '';
       if (isAdmin) {
         actionsHtml += '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
