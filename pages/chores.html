@@ -362,8 +362,10 @@ async function initKuroshiro() {
   toggle.classList.add('loading');
   document.getElementById('hiraganaLabel').textContent = 'よみこみ中...';
   try {
-    kuroshiroInstance = new Kuroshiro();
-    await kuroshiroInstance.init(new KuromojiAnalyzer({
+    const KuroshiroClass = Kuroshiro.default || Kuroshiro;
+    kuroshiroInstance = new KuroshiroClass();
+    const AnalyzerClass = KuromojiAnalyzer.default || KuromojiAnalyzer;
+    await kuroshiroInstance.init(new AnalyzerClass({
       dictPath: '../dict'
     }));
     kuroshiroReady = true;
