@@ -300,6 +300,7 @@ function renderTemplateMgmt() {
     const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
     row.innerHTML = '<div style="display:flex; align-items:center; gap:8px;">'
       + '<span style="flex:1; font-size:0.88em; cursor:pointer;" onclick="editTemplate(' + idx + ')">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
+      + '<button onclick="duplicateTemplate(' + idx + ')" style="border:none; background:#e8f5e9; color:#4caf50; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;" title="コピー">📋</button>'
       + '<button onclick="editTemplate(' + idx + ')" style="border:none; background:#e3f2fd; color:#1976d2; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;">✏</button>'
       + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>'
       + '</div>'
@@ -419,6 +420,19 @@ async function deleteTemplate(idx) {
   if (!confirm('「' + templates[idx].title + '」を削除しますか？')) return;
   templates.splice(idx, 1);
   await saveTemplates();
+}
+
+async function duplicateTemplate(idx) {
+  const src = templates[idx];
+  const copy = {
+    title: src.title + '（コピー）',
+    checklist: src.checklist ? src.checklist.slice() : null,
+    points: src.points
+  };
+  templates.splice(idx + 1, 0, copy);
+  await saveTemplates();
+  // コピーした方を編集状態で開く
+  editTemplate(idx + 1);
 }
 
 async function saveTemplates() {
