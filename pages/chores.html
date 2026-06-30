@@ -776,8 +776,10 @@ function cancelComplete() {
   const taskId = overlay.getAttribute('data-task-id');
   const lastIdx = parseInt(overlay.getAttribute('data-last-idx'));
   overlay.classList.remove('active');
-  // 最後のチェックを取りやめ
-  toggleCheck(taskId, lastIdx, false);
+  // チェックボックスから来た場合のみ最後のチェックを取りやめ
+  if (lastIdx >= 0) {
+    toggleCheck(taskId, lastIdx, false);
+  }
 }
 
 async function confirmComplete(childName) {
@@ -785,17 +787,27 @@ async function confirmComplete(childName) {
   const taskId = overlay.getAttribute('data-task-id');
   overlay.classList.remove('active');
 
-  // タスクをdoneに
-  await client.from('chore_tasks').update({
-    status: 'done',
-    done_by: childName,
-    done_at: new Date().toISOString()
-  }).eq('id', taskId);
-
-  // Discord通知
   const task = tasks.find(t => t.id === taskId);
   const title = task ? task.title : '';
-  notifyDiscord('✅ お手伝い完了！「' + title + '」を ' + childName + ' がやりました！');
+  const points = task ? task.points : 1;
+
+  // 子供のIDを取得
+  const { data: childData } = await client.from('children').select('id').eq('name', childName).maybeSingle();
+  if (childData) {
+    // chore_pointsにpendingで挿入（admin承認待ち）
+    await client.from('chore_points').insert({
+      child_id: childData.id,
+      chore_name: title,
+      points: points,
+      status: 'pending'
+    });
+  }
+
+  // タスクをDBから削除
+  await client.from('chore_tasks').delete().eq('id', taskId);
+
+  // Discord通知
+  notifyDiscord('✅ ' + childName + 'が「' + title + '」をやりました！（' + points + 'pt承認待ち）');
 
   loadTasks();
 }
@@ -814,11 +826,8 @@ function switchTab(tab) {
 }
 
 async function completeTask(id) {
-  const childName = new URLSearchParams(location.search).get('child') || '';
-  await client.from('chore_tasks').update({
-    status: 'done', done_by: childName || null, done_at: new Date().toISOString()
-  }).eq('id', id);
-  loadTasks();
+  // ✓ボタンからも完了者選択モーダルを表示
+  showCompleteModal(id, -1);
 }
 
 async function undoTask(id) {
