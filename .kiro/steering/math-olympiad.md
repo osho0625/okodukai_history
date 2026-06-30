@@ -24,10 +24,10 @@ fileMatchPattern: "*math*,*olympiad*"
 ## 算数オリンピック（pages/math-olympiad.html）
 
 - 思考力育成アプリ。算数オリンピック風の問題を1問ずつ提示
-- 単一HTML内6ビュー切り替え（SPA風）: 登録/問題一覧/回答/提出完了/結果/管理者採点
-- 問題データ: data/math-olympiad-problems.json（70問、5ジャンル×難易度4段階）
+- 単一HTML内9ビュー切り替え（SPA風）: 登録/学年選択/難易度選択/問題一覧/回答/提出確認/結果/管理者採点/採点詳細
+- 問題データ: data/math-olympiad-grade1.json 〜 grade6.json（学年別、5ジャンル）
 - ジャンル: number_pattern/geometry/logic/combinatorics/word_problem
-- 難易度: Lv1(10分)/Lv2(20分)/Lv3(30分+)
+- 難易度: Lv1(10分)/Lv2(20分)/Lv3(30分+)/Lv4(60分+)/Lv5(90分+)
 - ユーザー識別: user_id(UUID) + user_name（表示用）、localStorage管理
 - 回答提出: select→insert/update分離（upsert不使用）、pending中は上書き可、reviewed後は不可
 - 段階ヒント: 最大3段階、sessionStorage永続化

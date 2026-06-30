@@ -65,9 +65,8 @@ fileMatchPattern: "*puyo*,*game.html*"
 - パーティクル: 消去時に破片エフェクト（ローカルcanvasのみ）
 - 特殊ぷよモーション: puyo_8(羽)=飛行、puyo_9(光)=浮遊（puyo-escape.js共通処理）
 - ぷよ出現順序同期: seeded PRNG（mulberry32）で両者同一のぷよ色列を生成
-  - シード: crypto.getRandomValues生成、ルーム参加時にbroadcast共有
-  - お邪魔ぷよ穴位置: 別系列PRNG（seed ^ 0xDEADBEEF）
-  - 再接続: PRNG内部state直接復元
+  - シード: Math.random()で整数生成、ルーム参加時にbroadcast共有
+  - 再接続: PRNGシードからstate再構築
 - 通信: Supabase Realtime Broadcast（room_state_sync権威モデル + 個別イベント）
 - アニメーションはローカル表示のみ（通信同期しない）
 - 相手の落下中ぷよ・NEXTぷよもリアルタイム描画
@@ -93,5 +92,7 @@ fileMatchPattern: "*puyo*,*game.html*"
 | puyoCtrlOrder | ぷよ操作ボタン並び順 | 永続 |
 | puyo_hard_unlocked | ぷよHard解除フラグ | 永続 |
 | puyo_special_unlocked | ぷよSpecial解除フラグ | 永続 |
+| puyo_custom_unlocked | ぷよカスタムモード解除フラグ | 永続 |
 | puyo_hard_unlock_pending | Hard解除演出待ち | 消化で削除 |
 | puyo_special_unlock_pending | Special解除演出待ち | 消化で削除 |
+| puyo_client_id | ぴくぴく対戦クライアントUUID | 永続 |

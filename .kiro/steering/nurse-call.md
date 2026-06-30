@@ -29,8 +29,8 @@ Supabase Edge Functionによる即時Push配信 + WebRTC音声通話 + Realtime 
 - created_at TIMESTAMPTZ, responded_at TIMESTAMPTZ
 
 ### nurse_call_messages（チャットメッセージ）
-- id UUID PK, call_id UUID FK→nurse_calls.id, child_id UUID
-- sender_role ('parent'/'child'), message_text TEXT, created_at TIMESTAMPTZ
+- id UUID PK, call_id UUID (nullable FK→nurse_calls.id), child_id UUID
+- sender_role ('parent'/'child'), sender_name TEXT (nullable), message_text TEXT, created_at TIMESTAMPTZ
 
 ### device_settings（デバイス状態管理）
 - device_id TEXT PK, child_id UUID, nurse_call_mode BOOLEAN, updated_at TIMESTAMPTZ

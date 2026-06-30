@@ -207,5 +207,5 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
 - 全ゲームで夜間制限対応（`isNightTime()`チェック）
 - `common.js` + Supabase CDN読み込み
 - ゲームセンター（arcade.html）のカード表示で `data-game` 属性による公開/非公開制御
-- ねこ汚染スクリプト（neko-infection.js）は非適用
+- ねこ汚染スクリプト（neko-infection.js）はごきぶりポーカーのみ適用（他のボードゲームは非適用）
 - 単一HTMLファイルで完結（外部JSはごきぶりポーカーのみ分離）

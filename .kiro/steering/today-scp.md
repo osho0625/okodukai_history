@@ -35,6 +35,17 @@ window.SCP_DATA = [
 ];
 ```
 
+## SCP-040-JP ミーム汚染演出
+
+- SCP-040-JP（ねこです）を閲覧すると「認識汚染」が発動
+- TOPページ: テキスト・画像が低確率で「ねこ」に置換される（js/neko-infection.js）
+- 汚染確率は日数経過で上昇（neko_infected_date からの経過日数）
+- admin.htmlのイタズラ設定で「ねこです認識汚染を解除」可能
+- admin.htmlで「汚染5倍ブースト」ON/OFF可能
+- SCP-040-JPカードクリック時はミーム警告ダイアログ表示（js/neko-meme-warning.js）
+  - 警告を了承して進んだ場合のみ外部ページに遷移＋閲覧済み記録
+- neko-infection.jsはindex.html、child.html、cockroach-poker.htmlに適用
+
 ## Supabase
 
 - `game_settings.scp_override` (JSONB, nullable): 管理者指定データ `{date:"YYYY-MM-DD", id:"..."}`
