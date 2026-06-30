@@ -296,12 +296,85 @@ function renderTemplateMgmt() {
   el.innerHTML = '';
   templates.forEach((tpl, idx) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #f0f0f0;';
-    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' [' + tpl.checklist.join(', ') + ']' : '';
-    row.innerHTML = '<span style="flex:1; font-size:0.88em;">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
-      + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>';
+    row.style.cssText = 'border-bottom:1px solid #f0f0f0; padding:8px 0;';
+    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
+    row.innerHTML = '<div style="display:flex; align-items:center; gap:8px;">'
+      + '<span style="flex:1; font-size:0.88em; cursor:pointer;" onclick="editTemplate(' + idx + ')">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
+      + '<button onclick="editTemplate(' + idx + ')" style="border:none; background:#e3f2fd; color:#1976d2; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;">✏</button>'
+      + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>'
+      + '</div>'
+      + '<div id="tplEdit_' + idx + '" style="display:none; margin-top:8px; padding:10px; background:#f9f9f9; border-radius:8px;"></div>';
     el.appendChild(row);
   });
+}
+
+let editingTplIdx = -1;
+let editTplChecklist = [];
+
+function editTemplate(idx) {
+  // 既に開いてたら閉じる
+  if (editingTplIdx === idx) {
+    document.getElementById('tplEdit_' + idx).style.display = 'none';
+    editingTplIdx = -1;
+    return;
+  }
+  // 前のを閉じる
+  if (editingTplIdx >= 0) {
+    const prev = document.getElementById('tplEdit_' + editingTplIdx);
+    if (prev) prev.style.display = 'none';
+  }
+  editingTplIdx = idx;
+  const tpl = templates[idx];
+  editTplChecklist = tpl.checklist ? tpl.checklist.slice() : [];
+  renderEditTplForm(idx);
+}
+
+function renderEditTplForm(idx) {
+  const tpl = templates[idx];
+  const el = document.getElementById('tplEdit_' + idx);
+  let clHtml = '';
+  editTplChecklist.forEach((text, i) => {
+    clHtml += '<div class="checklist-editor-item"><input type="text" value="' + escAttr(text) + '" onchange="editTplChecklist[' + i + ']=this.value" placeholder="項目' + (i + 1) + '">'
+      + '<button type="button" onclick="removeEditTplItem(' + idx + ',' + i + ')">✕</button></div>';
+  });
+  el.innerHTML = '<input type="text" id="editTplTitle_' + idx + '" value="' + escAttr(tpl.title) + '" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:6px;">'
+    + '<div style="font-size:0.8em; color:#888; margin-bottom:4px;">チェックリスト</div>'
+    + '<div id="editTplCl_' + idx + '">' + clHtml + '</div>'
+    + '<button type="button" class="btn-add-check" onclick="addEditTplItem(' + idx + ')" style="margin-bottom:8px;">＋ 項目追加</button>'
+    + '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">'
+    + '<input type="number" id="editTplPts_' + idx + '" value="' + (tpl.points || 1) + '" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">'
+    + '<span style="font-size:0.85em; color:#888;">pt</span>'
+    + '</div>'
+    + '<div style="display:flex; gap:8px;">'
+    + '<button onclick="saveEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#4caf50; color:#fff; font-weight:600; cursor:pointer;">保存</button>'
+    + '<button onclick="cancelEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#eee; color:#333; cursor:pointer;">キャンセル</button>'
+    + '</div>';
+  el.style.display = 'block';
+}
+
+function addEditTplItem(idx) {
+  editTplChecklist.push('');
+  renderEditTplForm(idx);
+}
+
+function removeEditTplItem(idx, itemIdx) {
+  editTplChecklist.splice(itemIdx, 1);
+  renderEditTplForm(idx);
+}
+
+async function saveEditTemplate(idx) {
+  const title = document.getElementById('editTplTitle_' + idx).value.trim();
+  const points = parseInt(document.getElementById('editTplPts_' + idx).value) || 1;
+  if (!title) { alert('名前を入力してください'); return; }
+  const cl = editTplChecklist.filter(t => t.trim()).map(t => t.trim());
+  templates[idx] = { title, checklist: cl.length > 0 ? cl : null, points };
+  await saveTemplates();
+  editingTplIdx = -1;
+}
+
+function cancelEditTemplate(idx) {
+  document.getElementById('tplEdit_' + idx).style.display = 'none';
+  editingTplIdx = -1;
 }
 
 function addTplChecklistItem() {
