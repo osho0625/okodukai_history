@@ -1300,9 +1300,12 @@ async function approvePoint(id) {
   const { data: pt } = await client.from('chore_points').select('child_id, points, chore_name').eq('id', id).single();
   await client.from('chore_points').update({ status: 'approved' }).eq('id', id);
 
-  // お手伝いリストのdoneタスクを削除（承認済みなので不要）
+  // お手伝いリストのdoneタスクを削除（承認済みなので不要、1件だけ）
   if (pt) {
-    await client.from('chore_tasks').delete().eq('status', 'done').eq('title', pt.chore_name);
+    const { data: doneTasks } = await client.from('chore_tasks').select('id').eq('status', 'done').eq('title', pt.chore_name).order('done_at', { ascending: true }).limit(1);
+    if (doneTasks && doneTasks.length > 0) {
+      await client.from('chore_tasks').delete().eq('id', doneTasks[0].id);
+    }
   }
 
   // ポイント演出データをSupabaseに保存（別端末でも演出可能）

@@ -327,7 +327,6 @@ async function addFromTemplate(idx) {
 
   // 重複チェック（同タイトル+同assign_toのactiveが既にある場合は追加しない）
   const { data: existing } = await client.from('chore_tasks').select('id').eq('status', 'active').eq('title', tpl.title);
-  const dup = (existing || []).find(e => true); // タイトル一致でactiveがあればNG
   if (existing && existing.length > 0) {
     alert('「' + tpl.title + '」は既にリストにあります'); return;
   }
@@ -733,6 +732,8 @@ async function renderTasks() {
 async function toggleCheck(taskId, idx, checked) {
   const task = tasks.find(t => t.id === taskId);
   if (!task || !task.checklist) return;
+  // done状態のタスクはチェック操作不可
+  if (task.status === 'done') return;
   task.checklist[idx].checked = checked;
   await client.from('chore_tasks').update({ checklist: task.checklist }).eq('id', taskId);
 
@@ -835,7 +836,19 @@ async function completeTask(id) {
 }
 
 async function undoTask(id) {
-  await client.from('chore_tasks').update({ status: 'active', done_by: null, done_at: null }).eq('id', id);
+  // 対応するpending chore_pointsを削除（二重付与防止）
+  const task = tasks.find(t => t.id === id);
+  if (task && task.done_by) {
+    const { data: childData } = await client.from('children').select('id').eq('name', task.done_by).maybeSingle();
+    if (childData) {
+      await client.from('chore_points').delete()
+        .eq('child_id', childData.id)
+        .eq('chore_name', task.title)
+        .eq('status', 'pending');
+    }
+  }
+  const resetChecklist = (task && task.checklist) ? task.checklist.map(i => ({...i, checked: false})) : null;
+  await client.from('chore_tasks').update({ status: 'active', done_by: null, done_at: null, checklist: resetChecklist }).eq('id', id);
   loadTasks();
 }
 
