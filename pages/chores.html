@@ -29,11 +29,13 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-card {
   background: #fff; border-radius: 12px; padding: 16px 18px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 10px;
-  cursor: pointer; transition: transform 0.1s, opacity 0.3s;
+  cursor: pointer; transition: background 0.3s, opacity 0.3s;
   position: relative; overflow: hidden;
 }
 .task-card.done { opacity: 0.5; background: #f9f9f9; }
 .task-card.done .task-title { text-decoration: line-through; color: #999; }
+.task-card.all-checked { background: #e8f5e9; border: 2px solid #81c784; }
+.task-card.all-checked .task-title { color: #2e7d32; }
 
 .task-main { display: flex; align-items: center; gap: 12px; }
 .task-priority { font-size: 1.4em; flex-shrink: 0; }
@@ -41,6 +43,7 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .task-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 2px; }
 .task-pts { font-size: 0.85em; color: #ff9800; font-weight: 700; margin-top: 2px; }
 .task-done-info { font-size: 0.75em; color: #4caf50; margin-top: 2px; }
+.task-progress { font-size: 0.72em; color: #999; margin-top: 2px; }
 
 .task-assign-badge {
   position: absolute; top: 0; left: 0;
@@ -51,9 +54,21 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 
 .task-detail {
   display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
-  font-size: 0.88em; color: #666; line-height: 1.5; white-space: pre-wrap;
+  font-size: 0.88em; color: #666; line-height: 1.5;
 }
 .task-card.expanded .task-detail { display: block; }
+
+.checklist-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid #f8f8f8;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item input[type="checkbox"] {
+  width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;
+  accent-color: #4caf50;
+}
+.checklist-item label { cursor: pointer; flex: 1; }
+.checklist-item label.checked { text-decoration: line-through; color: #aaa; }
 
 .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .task-btn {
@@ -87,6 +102,24 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
 .btn-add:hover { opacity: 0.9; }
 .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 .add-msg { color: #4caf50; font-size: 0.85em; text-align: center; margin-top: 8px; display: none; }
+
+.checklist-editor { margin-top: 4px; }
+.checklist-editor-item {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+}
+.checklist-editor-item input {
+  flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em;
+}
+.checklist-editor-item button {
+  width: 28px; height: 28px; border: none; border-radius: 6px;
+  background: #ffebee; color: #e53935; font-size: 0.9em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-add-check {
+  padding: 6px 12px; border: 1px dashed #bbb; border-radius: 6px;
+  background: #fafafa; color: #888; font-size: 0.85em; cursor: pointer; width: 100%;
+}
+.btn-add-check:hover { background: #f0f0f0; border-color: #999; }
 
 .tab-bar { display: flex; gap: 4px; max-width: 520px; margin: 0 auto 16px; }
 .tab-btn {
@@ -129,7 +162,9 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
   <h2>➕ お手伝いを追加</h2>
   <div class="add-row">
     <input type="text" id="addTitle" placeholder="お手伝いの名前" maxlength="50">
-    <input type="text" id="addDesc" placeholder="くわしい説明（なくてもOK）" maxlength="200">
+    <div style="font-size:0.85em; color:#555; font-weight:600; margin-top:4px;">チェックリスト</div>
+    <div class="checklist-editor" id="checklistEditor"></div>
+    <button type="button" class="btn-add-check" onclick="addChecklistItem()">＋ チェック項目を追加</button>
     <div class="add-row-inline">
       <input type="number" id="addPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px;">
       <span style="font-size:0.85em; color:#888;">pt</span>
@@ -160,17 +195,12 @@ let kuroshiroInstance = null;
 let kuroshiroReady = false;
 let kuroshiroLoading = false;
 
-// UI固定ラベルの元テキスト（ひらがな変換対象）
 const UI_LABELS = {
   pageTitle: 'お手伝いリスト',
   tabActive: 'やること',
   tabDone: 'おわった',
   emptyActive: 'やることはありません！',
-  emptyDone: 'まだありません',
-  addTitle: 'お手伝いを追加',
-  addPlaceholder: 'お手伝いの名前',
-  addDescPlaceholder: 'くわしい説明（なくてもOK）',
-  btnAdd: '追加する'
+  emptyDone: 'まだありません'
 };
 
 if (hiraganaMode) document.getElementById('hiraganaToggle').classList.add('active');
@@ -188,14 +218,13 @@ async function loadChildren() {
   });
 }
 
-// --- kuroshiro初期化（辞書ロード） ---
+// --- kuroshiro ---
 async function initKuroshiro() {
   if (kuroshiroReady || kuroshiroLoading) return;
   kuroshiroLoading = true;
   const toggle = document.getElementById('hiraganaToggle');
   toggle.classList.add('loading');
   document.getElementById('hiraganaLabel').textContent = 'よみこみ中...';
-
   try {
     kuroshiroInstance = new Kuroshiro();
     await kuroshiroInstance.init(new KuromojiAnalyzer({
@@ -204,36 +233,29 @@ async function initKuroshiro() {
     kuroshiroReady = true;
   } catch(e) {
     console.error('kuroshiro init failed:', e);
-    kuroshiroReady = false;
   }
   kuroshiroLoading = false;
   toggle.classList.remove('loading');
   document.getElementById('hiraganaLabel').textContent = 'ひらがなモード';
 }
 
-// --- ひらがな変換 ---
 async function convertToHiragana(str) {
   if (!str) return '';
   if (!kuroshiroReady) return str;
-  try {
-    return await kuroshiroInstance.convert(str, { to: 'hiragana' });
-  } catch(e) { return str; }
+  try { return await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
+  catch(e) { return str; }
 }
 
 async function displayText(str) {
   if (!str) return '';
-  if (!hiraganaMode) return str;
-  return await convertToHiragana(str);
+  return hiraganaMode ? await convertToHiragana(str) : str;
 }
 
 async function toggleHiragana() {
   hiraganaMode = !hiraganaMode;
   localStorage.setItem('chore_hiragana', hiraganaMode);
   document.getElementById('hiraganaToggle').classList.toggle('active', hiraganaMode);
-
-  if (hiraganaMode && !kuroshiroReady) {
-    await initKuroshiro();
-  }
+  if (hiraganaMode && !kuroshiroReady) await initKuroshiro();
   await renderTasks();
   await updateUILabels();
 }
@@ -250,16 +272,44 @@ async function updateUILabels() {
   }
 }
 
-// --- データ読み込み ---
+// --- チェックリストエディター（admin追加フォーム） ---
+let checklistItems = [];
+
+function addChecklistItem() {
+  checklistItems.push('');
+  renderChecklistEditor();
+}
+
+function removeChecklistItem(idx) {
+  checklistItems.splice(idx, 1);
+  renderChecklistEditor();
+}
+
+function renderChecklistEditor() {
+  const editor = document.getElementById('checklistEditor');
+  editor.innerHTML = '';
+  checklistItems.forEach((text, idx) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-editor-item';
+    row.innerHTML = '<input type="text" value="' + escAttr(text) + '" placeholder="やること' + (idx + 1) + '" maxlength="100" onchange="checklistItems[' + idx + ']=this.value">'
+      + '<button type="button" onclick="removeChecklistItem(' + idx + ')">✕</button>';
+    editor.appendChild(row);
+  });
+}
+
+function escAttr(str) {
+  return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// --- データ ---
 async function loadTasks() {
   const status = currentTab === 'active' ? 'active' : 'done';
-  const order = currentTab === 'active'
-    ? { column: 'priority', ascending: false }
-    : { column: 'done_at', ascending: false };
-
   let query = client.from('chore_tasks').select('*').eq('status', status);
-  query = query.order(order.column, { ascending: order.ascending });
-  if (currentTab === 'active') query = query.order('created_at', { ascending: true });
+  if (currentTab === 'active') {
+    query = query.order('priority', { ascending: false }).order('created_at', { ascending: true });
+  } else {
+    query = query.order('done_at', { ascending: false });
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -291,20 +341,39 @@ async function renderTasks() {
   for (const t of filtered) {
     const priorityIcon = t.priority >= 2 ? '🔥' : t.priority === 1 ? '⭐' : '📌';
     const isDone = t.status === 'done';
+    const cl = t.checklist || [];
+    const allChecked = cl.length > 0 && cl.every(item => item.checked);
+    const checkedCount = cl.filter(item => item.checked).length;
+
     const card = document.createElement('div');
-    card.className = 'task-card' + (isDone ? ' done' : '');
+    card.className = 'task-card' + (isDone ? ' done' : '') + (allChecked && !isDone ? ' all-checked' : '');
 
     const titleText = await displayText(t.title);
-    const descText = await displayText(t.description);
     const assignName = t.assign_to ? await displayText(t.assign_to) : '';
 
-    let badgeHtml = '';
-    if (assignName) {
-      badgeHtml = '<div class="task-assign-badge">' + escHtml(assignName) + '</div>';
+    let badgeHtml = assignName ? '<div class="task-assign-badge">' + escHtml(assignName) + '</div>' : '';
+
+    // チェックリスト進捗表示
+    let progressHtml = '';
+    if (cl.length > 0 && !isDone) {
+      progressHtml = '<div class="task-progress">' + (allChecked ? '✅ ぜんぶおわった！' : '☑ ' + checkedCount + '/' + cl.length) + '</div>';
     }
 
+    // チェックリスト詳細
     let detailHtml = '';
-    if (descText) {
+    if (cl.length > 0) {
+      let itemsHtml = '';
+      for (let i = 0; i < cl.length; i++) {
+        const itemText = await displayText(cl[i].text);
+        const checked = cl[i].checked;
+        itemsHtml += '<div class="checklist-item">'
+          + '<input type="checkbox" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',' + !checked + ')">'
+          + '<label class="' + (checked ? 'checked' : '') + '">' + escHtml(itemText) + '</label>'
+          + '</div>';
+      }
+      detailHtml = '<div class="task-detail">' + itemsHtml + '</div>';
+    } else if (t.description) {
+      const descText = await displayText(t.description);
       detailHtml = '<div class="task-detail">' + escHtml(descText) + '</div>';
     }
 
@@ -317,39 +386,39 @@ async function renderTasks() {
           + '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
       card.innerHTML = badgeHtml
-        + '<div class="task-main">'
-        + '<div class="task-priority">' + priorityIcon + '</div>'
-        + '<div class="task-body">'
-        + '<div class="task-title">' + escHtml(titleText) + '</div>'
+        + '<div class="task-main"><div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body"><div class="task-title">' + escHtml(titleText) + '</div>'
         + '<div class="task-pts">' + t.points + 'pt</div>'
         + (doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : '')
-        + '</div>'
-        + '<div class="task-actions">' + actionsHtml + '</div>'
-        + '</div>'
-        + detailHtml;
+        + '</div><div class="task-actions">' + actionsHtml + '</div></div>' + detailHtml;
     } else {
       actionsHtml = '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>';
       if (isAdmin) {
         actionsHtml += '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
       card.innerHTML = badgeHtml
-        + '<div class="task-main">'
-        + '<div class="task-priority">' + priorityIcon + '</div>'
-        + '<div class="task-body">'
-        + '<div class="task-title">' + escHtml(titleText) + '</div>'
+        + '<div class="task-main"><div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body"><div class="task-title">' + escHtml(titleText) + '</div>'
         + '<div class="task-pts">' + t.points + 'pt</div>'
-        + '</div>'
-        + '<div class="task-actions">' + actionsHtml + '</div>'
-        + '</div>'
-        + detailHtml;
+        + progressHtml
+        + '</div><div class="task-actions">' + actionsHtml + '</div></div>' + detailHtml;
     }
 
-    if (t.description) {
+    if (cl.length > 0 || t.description) {
       card.addEventListener('click', () => card.classList.toggle('expanded'));
     }
 
     list.appendChild(card);
   }
+}
+
+// --- チェック切り替え ---
+async function toggleCheck(taskId, idx, checked) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !task.checklist) return;
+  task.checklist[idx].checked = checked;
+  await client.from('chore_tasks').update({ checklist: task.checklist }).eq('id', taskId);
+  await renderTasks();
 }
 
 function escHtml(str) {
@@ -368,9 +437,7 @@ function switchTab(tab) {
 async function completeTask(id) {
   const childName = new URLSearchParams(location.search).get('child') || '';
   await client.from('chore_tasks').update({
-    status: 'done',
-    done_by: childName || null,
-    done_at: new Date().toISOString()
+    status: 'done', done_by: childName || null, done_at: new Date().toISOString()
   }).eq('id', id);
   loadTasks();
 }
@@ -388,23 +455,30 @@ async function deleteTask(id) {
 
 async function addTask() {
   const title = document.getElementById('addTitle').value.trim();
-  const desc = document.getElementById('addDesc').value.trim();
   const points = parseInt(document.getElementById('addPoints').value) || 1;
   const priority = parseInt(document.getElementById('addPriority').value) || 0;
   const assignTo = document.getElementById('addAssign').value || null;
 
   if (!title) { alert('お手伝いの名前を入力してください'); return; }
 
+  // チェックリスト構築
+  const cl = checklistItems.filter(t => t.trim()).map(t => ({ text: t.trim(), checked: false }));
+
   document.getElementById('btnAdd').disabled = true;
   await client.from('chore_tasks').insert({
-    title, description: desc || null, points, priority, assign_to: assignTo
+    title,
+    checklist: cl.length > 0 ? cl : null,
+    points,
+    priority,
+    assign_to: assignTo
   });
 
   document.getElementById('addTitle').value = '';
-  document.getElementById('addDesc').value = '';
   document.getElementById('addPoints').value = '1';
   document.getElementById('addPriority').value = '0';
   document.getElementById('addAssign').value = '';
+  checklistItems = [];
+  renderChecklistEditor();
   document.getElementById('btnAdd').disabled = false;
 
   const msg = document.getElementById('addMsg');

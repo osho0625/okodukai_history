@@ -3,6 +3,7 @@ CREATE TABLE chore_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT,
+  checklist JSONB,
   points INT NOT NULL DEFAULT 1,
   priority INT NOT NULL DEFAULT 0,
   assign_to TEXT,

@@ -22,7 +22,8 @@ fileMatchPattern: "*chore*"
 |--------|------|------|
 | id | UUID (PK) | 自動生成 |
 | title | TEXT NOT NULL | お手伝い名 |
-| description | TEXT | 詳細説明（任意） |
+| description | TEXT | 詳細説明（任意、checklistがない場合の表示用） |
+| checklist | JSONB (nullable) | チェックリスト `[{"text":"...", "checked": false}, ...]` |
 | points | INT (default 1) | 獲得ポイント |
 | priority | INT (default 0) | 優先度（0=ふつう、1=大事、2=とても大事） |
 | assign_to | TEXT (nullable) | 対象の子供名（nullなら全員向け） |
@@ -41,6 +42,10 @@ fileMatchPattern: "*chore*"
 - やること: priority降順 → created_at昇順
 - おわった: done_at降順
 - ✓ボタンで完了マーク（URLパラメータ `?child=名前` で完了者記録）
+- カードタップでチェックリスト展開
+- チェックリスト: 各項目のチェックON/OFFでSupabase即時更新
+- 全チェック完了→カード緑色化＋「ぜんぶおわった！」表示
+- 進捗表示: ☑ 2/5 形式
 - ひらがなモード: カタカナ→ひらがな変換トグル（localStorage `chore_hiragana` に保存）
   - kuroshiro + kuromoji辞書（CDN）によるブラウザ内完全変換（漢字・カタカナ→ひらがな）
   - 辞書は約3MB、初回ロード時のみ読み込み（「よみこみ中...」表示）
@@ -48,7 +53,8 @@ fileMatchPattern: "*chore*"
 - 子供フィルタ: `?child=名前` パラメータがある場合、assign_toが自分宛 or null のタスクのみ表示
 
 ### admin端末のみ
-- 追加フォーム表示（タイトル・説明・ポイント・優先度・対象の子供）
+- 追加フォーム表示（タイトル・チェックリスト項目・ポイント・優先度・対象の子供）
+- チェックリストエディター: 「＋ チェック項目を追加」で動的追加、✕で削除
 - assign_to: 「みんな（全員）」or 特定の子供名を選択
 - ✕ボタンで削除
 - ↩ボタンで完了→アクティブに戻す

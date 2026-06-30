@@ -74,7 +74,8 @@ inclusion: auto
 - id: UUID (PK), child_id: UUID (FK), chore_name: TEXT, points: INT, status: TEXT ('approved'/'pending'), created_at: TIMESTAMPTZ
 
 ### chore_tasks（お手伝いリスト）
-- id: UUID (PK), title: TEXT, description: TEXT (nullable), points: INT (default 1)
+- id: UUID (PK), title: TEXT, description: TEXT (nullable), checklist: JSONB (nullable)
+- points: INT (default 1)
 - priority: INT (default 0: ふつう/1: 大事/2: とても大事)
 - assign_to: TEXT (nullable、特定の子供名。nullなら全員向け)
 - status: TEXT ('active'/'done'/'archived'), done_by: TEXT (nullable), done_at: TIMESTAMPTZ (nullable)
