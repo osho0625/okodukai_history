@@ -278,8 +278,15 @@ function renderTemplateList() {
 async function addFromTemplate(idx) {
   const tpl = templates[idx];
   if (!tpl) return;
-  // テンプレートにassign_toがあればそれを使う、なければフォームのセレクトを使う
   const assignTo = tpl.assign_to || document.getElementById('addAssign').value || null;
+
+  // 重複チェック（同タイトル+同assign_toのactiveが既にある場合は追加しない）
+  const { data: existing } = await client.from('chore_tasks').select('id').eq('status', 'active').eq('title', tpl.title);
+  const dup = (existing || []).find(e => true); // タイトル一致でactiveがあればNG
+  if (existing && existing.length > 0) {
+    alert('「' + tpl.title + '」は既にリストにあります'); return;
+  }
+
   const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
   const { error: insertErr } = await client.from('chore_tasks').insert({
     title: tpl.title,
@@ -713,6 +720,12 @@ async function addTask() {
   const assignTo = document.getElementById('addAssign').value || null;
 
   if (!title) { alert('お手伝いの名前を入力してください'); return; }
+
+  // 重複チェック（同タイトルのactiveが既にある場合は追加しない）
+  const { data: existing } = await client.from('chore_tasks').select('id').eq('status', 'active').eq('title', title);
+  if (existing && existing.length > 0) {
+    alert('「' + title + '」は既にリストにあります'); return;
+  }
 
   // チェックリスト構築
   const cl = checklistItems.filter(t => t.trim()).map(t => ({ text: t.trim(), checked: false }));
