@@ -790,6 +790,7 @@ function cancelComplete() {
 
 async function confirmComplete(childName) {
   const overlay = document.getElementById('completeOverlay');
+  if (!overlay.classList.contains('active')) return; // 二重実行防止
   const taskId = overlay.getAttribute('data-task-id');
   overlay.classList.remove('active');
 
