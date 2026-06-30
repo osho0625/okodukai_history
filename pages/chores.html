@@ -273,13 +273,14 @@ async function addFromTemplate(idx) {
   if (!tpl) return;
   const assignTo = document.getElementById('addAssign').value || null;
   const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
-  await client.from('chore_tasks').insert({
+  const { error: insertErr } = await client.from('chore_tasks').insert({
     title: tpl.title,
     checklist: cl,
     points: tpl.points || 1,
     priority: 0,
     assign_to: assignTo
   });
+  if (insertErr) { alert('追加に失敗しました: ' + insertErr.message); return; }
   const msg = document.getElementById('addMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
@@ -363,7 +364,7 @@ async function initKuroshiro() {
   try {
     kuroshiroInstance = new Kuroshiro();
     await kuroshiroInstance.init(new KuromojiAnalyzer({
-      dictPath: 'https://unpkg.com/kuromoji@0.1.2/dict'
+      dictPath: '../dict'
     }));
     kuroshiroReady = true;
   } catch(e) {
@@ -605,13 +606,19 @@ async function addTask() {
   const cl = checklistItems.filter(t => t.trim()).map(t => ({ text: t.trim(), checked: false }));
 
   document.getElementById('btnAdd').disabled = true;
-  await client.from('chore_tasks').insert({
+  const { error: insertErr } = await client.from('chore_tasks').insert({
     title,
     checklist: cl.length > 0 ? cl : null,
     points,
     priority,
     assign_to: assignTo
   });
+
+  if (insertErr) {
+    alert('追加に失敗しました: ' + insertErr.message);
+    document.getElementById('btnAdd').disabled = false;
+    return;
+  }
 
   document.getElementById('addTitle').value = '';
   document.getElementById('addPoints').value = '1';
