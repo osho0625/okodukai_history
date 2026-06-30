@@ -42,6 +42,9 @@ fileMatchPattern: "*chore*"
 - おわった: done_at降順
 - ✓ボタンで完了マーク（URLパラメータ `?child=名前` で完了者記録）
 - ひらがなモード: カタカナ→ひらがな変換トグル（localStorage `chore_hiragana` に保存）
+  - kuroshiro + kuromoji辞書（CDN）によるブラウザ内完全変換（漢字・カタカナ→ひらがな）
+  - 辞書は約3MB、初回ロード時のみ読み込み（「よみこみ中...」表示）
+  - UIラベル（タブ名・空メッセージ等）もひらがな変換対象
 - 子供フィルタ: `?child=名前` パラメータがある場合、assign_toが自分宛 or null のタスクのみ表示
 
 ### admin端末のみ
@@ -66,5 +69,7 @@ fileMatchPattern: "*chore*"
 - 既存の `chore_types`（家事マスタ）や `chore_points`（ポイント履歴）とは別機能
   - `chore_types`: お手伝いポイント申請時の選択肢マスタ
   - `chore_tasks`: 親が今やってほしいタスクを都度登録するTodoリスト
-- ひらがなモード: カタカナ→ひらがな変換のみ（漢字→ひらがなは未対応、登録時にひらがなで書けばOK）
+- ひらがなモード: kuroshiro + kuromoji辞書によるブラウザ内漢字→ひらがな完全変換（UIラベル・タスク名・説明・名前全て変換）
 - assign_toフィルタはuser端末のみ適用（admin端末では全タスク表示）
+- kuroshiro辞書（約3MB）はひらがなモードON時のみ遅延ロード（CDN: jsdelivr）
+- localStorage `chore_hiragana` にモード状態を保存（次回訪問時も維持）
