@@ -1102,6 +1102,9 @@ async function approveFromTop(pointId, childId) {
   if (!pt) return;
   await client.from('chore_points').update({ status: 'approved' }).eq('id', pointId);
 
+  // お手伝いリストのdoneタスクを削除（承認済みなので不要）
+  await client.from('chore_tasks').delete().eq('status', 'done').eq('title', pt.chore_name);
+
   // ポイント演出データをSupabaseに保存（別端末でも演出可能）
   const { data: existing } = await client.from('pending_effects')
     .select('id, data').eq('child_id', pt.child_id).eq('type', 'points');

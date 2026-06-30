@@ -803,8 +803,12 @@ async function confirmComplete(childName) {
     });
   }
 
-  // タスクをDBから削除
-  await client.from('chore_tasks').delete().eq('id', taskId);
+  // タスクをdoneに移動（承認後に自動削除される）
+  await client.from('chore_tasks').update({
+    status: 'done',
+    done_by: childName,
+    done_at: new Date().toISOString()
+  }).eq('id', taskId);
 
   // Discord通知
   notifyDiscord('✅ ' + childName + 'が「' + title + '」をやりました！（' + points + 'pt承認待ち）');
