@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/29 v2.14.6
+最終更新: 2026/06/30 v2.14.8
 
 ## 🔴 Steering Files 運用ルール
 
@@ -22,6 +22,7 @@ inclusion: auto
 | ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス | `.kiro/steering/board-games.md` |
 | サイエンス、science | `.kiro/steering/today-science.md` |
 | ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
+| お手伝いリスト、chore_tasks | `.kiro/steering/chores.md` |
 | メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
@@ -71,6 +72,14 @@ inclusion: auto
 
 ### chore_points（ポイント履歴）
 - id: UUID (PK), child_id: UUID (FK), chore_name: TEXT, points: INT, status: TEXT ('approved'/'pending'), created_at: TIMESTAMPTZ
+
+### chore_tasks（お手伝いリスト）
+- id: UUID (PK), title: TEXT, description: TEXT (nullable), points: INT (default 1)
+- priority: INT (default 0: ふつう/1: 大事/2: とても大事)
+- status: TEXT ('active'/'done'/'archived'), done_by: TEXT (nullable), done_at: TIMESTAMPTZ (nullable)
+- created_at: TIMESTAMPTZ
+- INDEX: idx_chore_tasks_status (status='active')
+- RLS無効
 
 ### game_rankings（ゲームランキング共通）
 - id: UUID, name: TEXT, score: INT, difficulty: TEXT (default 'normal'), created_at: TIMESTAMPTZ
@@ -127,7 +136,7 @@ inclusion: auto
 - 未読入金: 🔔アイコン＋入金前残高表示
 - 承認待ち: ✅アイコン（全ユーザーに表示）
 - admin用: 🧹（入出金ページ）、⚙️（設定モーダル＝表示順変更）
-- 🪴（ぷよ畑）、🕹️（ゲームセンター）、🔧（管理者認証）
+- 🪴（ぷよ畑）、🕹️（ゲームセンター）、📋（お手伝いリスト）、🔧（管理者認証）
 
 ### 個別アカウントページ（child.html）
 - 残高表示＋入金演出（フルスクリーンオーバーレイ＋カウントアップ＋紙吹雪）
@@ -210,7 +219,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.14.6
+- 現在: v2.14.8
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -264,3 +273,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `board-games.md` — ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス
 - `today-science.md` — 今日のサイエンス
 - `family-notes.md` — 家族メモ帳
+- `chores.md` — お手伝いリスト

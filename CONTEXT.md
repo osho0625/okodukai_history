@@ -18,6 +18,7 @@
 | `today-science.md` | `*science*` ファイルを開いた時 | 今日のサイエンス |
 | `today-scp.md` | `*scp*` ファイルを開いた時 | 今日のSCP |
 | `nurse-call.md` | `*nurse*` ファイルを開いた時 | ナースコール |
+| `chores.md` | `*chore*` ファイルを開いた時 | お手伝いリスト |
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
 
 ## 運用
