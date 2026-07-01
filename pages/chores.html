@@ -701,7 +701,7 @@ async function renderTasks() {
       list.appendChild(createGroupHeader(dailyLabel, 'daily', daily.length));
       const dailyContainer = document.createElement('div');
       dailyContainer.id = 'group-daily';
-      dailyContainer.style.display = localStorage.getItem('chore_group_daily') === 'open' ? 'block' : 'none';
+      dailyContainer.style.display = localStorage.getItem('chore_group_daily') === 'closed' ? 'none' : 'block';
       for (const t of daily) { dailyContainer.appendChild(await buildTaskCard(t)); }
       list.appendChild(dailyContainer);
     }
@@ -711,7 +711,7 @@ async function renderTasks() {
       list.appendChild(createGroupHeader(otherLabel, 'other', other.length));
       const otherContainer = document.createElement('div');
       otherContainer.id = 'group-other';
-      otherContainer.style.display = localStorage.getItem('chore_group_other') === 'open' ? 'block' : 'none';
+      otherContainer.style.display = localStorage.getItem('chore_group_other') === 'closed' ? 'none' : 'block';
       for (const t of other) { otherContainer.appendChild(await buildTaskCard(t)); }
       list.appendChild(otherContainer);
     }
@@ -723,7 +723,7 @@ async function renderTasks() {
 function createGroupHeader(label, groupId, count) {
   const header = document.createElement('div');
   header.style.cssText = 'display:flex; align-items:center; gap:8px; padding:10px 4px; cursor:pointer; user-select:none;';
-  const isOpen = localStorage.getItem('chore_group_' + groupId) === 'open';
+  const isOpen = localStorage.getItem('chore_group_' + groupId) !== 'closed';
   header.innerHTML = '<span style="font-size:0.8em; transition:transform 0.2s; display:inline-block;' + (isOpen ? 'transform:rotate(90deg);' : '') + '">▶</span>'
     + '<span style="font-weight:600; font-size:0.92em; color:#555;">' + escHtml(label) + '</span>'
     + '<span style="font-size:0.75em; color:#aaa;">(' + count + ')</span>';
@@ -733,11 +733,11 @@ function createGroupHeader(label, groupId, count) {
     if (container.style.display === 'none') {
       container.style.display = 'block';
       arrow.style.transform = 'rotate(90deg)';
-      localStorage.setItem('chore_group_' + groupId, 'open');
+      localStorage.removeItem('chore_group_' + groupId);
     } else {
       container.style.display = 'none';
       arrow.style.transform = '';
-      localStorage.removeItem('chore_group_' + groupId);
+      localStorage.setItem('chore_group_' + groupId, 'closed');
     }
   };
   return header;
