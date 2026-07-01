@@ -621,7 +621,7 @@ async function loadTasks() {
   const status = currentTab === 'active' ? 'active' : 'done';
   let query = client.from('chore_tasks').select('*').eq('status', status);
   if (currentTab === 'active') {
-    query = query.order('priority', { ascending: false }).order('created_at', { ascending: true });
+    query = query.order('assign_to', { ascending: true, nullsFirst: true }).order('priority', { ascending: false }).order('title', { ascending: true });
   } else {
     query = query.order('done_at', { ascending: false });
   }
