@@ -25,3 +25,21 @@ ALTER TABLE reminders ADD CONSTRAINT chk_repeat_days
 ALTER TABLE reminders DROP CONSTRAINT IF EXISTS chk_event_date;
 ALTER TABLE reminders ADD CONSTRAINT chk_event_date
   CHECK (type IN ('memo', 'repeat') OR event_date IS NOT NULL);
+
+-- ============================================================
+-- ゴミ出しリマインダー初期データ投入
+-- りょうすけに紐づけ
+-- 通知曜日 = ゴミの日の「前日」
+-- ============================================================
+
+-- 燃えるゴミ（金・月）→ 前日 = 木(4)・日(0) に通知
+INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日は燃えるゴミの日！🗑️', '[4, 0]'::jsonb, 'system', 'admin');
+
+-- プラごみ（土）→ 前日 = 金(5) に通知
+INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日はプラごみの日！♻️', '[5]'::jsonb, 'system', 'admin');
+
+-- ペットボトル・びん・かん（日）→ 前日 = 土(6) に通知
+INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日はペットボトル・びん・かんの日！🫙', '[6]'::jsonb, 'system', 'admin');
