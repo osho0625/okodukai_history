@@ -111,8 +111,8 @@ GAS側（response → validation → spreadsheet → github → main）を先に
     - **Property 11: Cache round-trip**
     - **Validates: Requirements 11.1**
 
-- [-] 6. フロントエンド アプリケーションロジック（app.js）
-  - [ ] 6.1 app.js を作成: AppState と画面遷移制御
+- [x] 6. フロントエンド アプリケーションロジック（app.js）
+  - [x] 6.1 app.js を作成: AppState と画面遷移制御
     - AppState オブジェクト定義:
       ```
       { currentUser: null, sessions: [], members: [], offline: false, loading: false, screen: "main" }
@@ -122,11 +122,11 @@ GAS側（response → validation → spreadsheet → github → main）を先に
     - fetchAndRender(): API取得 → AppState更新 → キャッシュ保存 → 描画
     - handleOffline(): オフラインモード切替（キャッシュ → AppState → 読み取り専用描画）
     - _Requirements: 7.1, 7.3, 11.2, 11.3, 11.4_
-  - [ ] 6.2 app.js にメンバー選択画面を実装
+  - [x] 6.2 app.js にメンバー選択画面を実装
     - renderMemberSelection(members): メンバーリストをボタン表示
     - handleMemberSelect(name): AppState更新 → LocalStorage保存 → メイン画面遷移
     - _Requirements: 7.1, 7.2, 7.3_
-  - [ ] 6.3 app.js にSession_List（メイン画面）を実装
+  - [x] 6.3 app.js にSession_List（メイン画面）を実装
     - renderSessionList(): AppStateから描画（sortは事前にcommon.jsで実施）
     - buildSessionCard(session, currentUser): 1つのセッションカードDOM生成
     - buildAttendanceRow(attendance, currentUser): 出欠行DOM生成
@@ -134,45 +134,45 @@ GAS側（response → validation → spreadsheet → github → main）を先に
     - Current_Userの出欠セルをハイライト
     - 出欠タップ → ステータス選択UI表示
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1_
-  - [ ]* 6.4 Property 2: Session rendering completeness のプロパティテストを作成
+  - [x]* 6.4 Property 2: Session rendering completeness のプロパティテストを作成
     - **Property 2: Session rendering completeness**
     - jsdom環境で実行
     - **Validates: Requirements 1.2, 2.1**
-  - [ ] 6.5 app.js に出欠登録機能を実装
+  - [x] 6.5 app.js に出欠登録機能を実装
     - showAttendanceSelector(session, memberName): ○/×/△ 選択UI
     - handleAttendanceChange(rowIndex, memberName, status, note):
       - API成功 → AppState.sessions内の該当出欠を更新 → renderSessionList()で再描画
       - エラー時: AppState変更なし、エラーメッセージ表示
     - △選択時のnote入力モーダル（最大20文字）
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
-  - [ ] 6.6 app.js にSession_Form（追加/編集）を実装
+  - [x] 6.6 app.js にSession_Form（追加/編集）を実装
     - renderSessionForm(mode, session?): 追加/編集フォームを表示
     - handleSessionSubmit(formData, mode, rowIndex?): バリデーション → API呼び出し → fetchAndRender()で全体再取得
     - 編集時: expectedDate/expectedVenue/expectedStartTime を送信
     - バリデーションエラー表示
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5_
-  - [ ] 6.7 app.js に削除機能を実装
+  - [x] 6.7 app.js に削除機能を実装
     - showDeleteConfirm(session): 確認ダイアログ（日付/会場/時刻表示）
     - handleDelete(rowIndex, expectedDate, expectedVenue, expectedStartTime): API呼び出し → fetchAndRender()
     - ROW_MISMATCH時: リフレッシュ提案
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 6.8 app.js に設定画面（ユーザー変更・バックアップ/復元）を実装
+  - [x] 6.8 app.js に設定画面（ユーザー変更・バックアップ/復元）を実装
     - renderSettings(): ユーザー変更ボタン、バックアップボタン、復元ボタン
     - handleUserChange(): メンバー選択画面へ戻る
     - handleBackup(): backup API呼び出し → 完了/エラー表示
     - handleRestore(): listBackups API → 一覧表示 → 選択 → getBackupContent APIでpreviewデータ取得 → 確認ダイアログ → restore API → fetchAndRender()
     - _Requirements: 7.4, 7.5, 9.1, 9.2, 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [ ] 7. Checkpoint - フロントエンドロジック完了
+- [x] 7. Checkpoint - フロントエンドロジック完了
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. HTML/CSS 統合とレスポンシブ対応
-  - [ ] 8.1 index.html を実装: メインHTMLページ構造
+- [x] 8. HTML/CSS 統合とレスポンシブ対応
+  - [x] 8.1 index.html を実装: メインHTMLページ構造
     - 各画面のコンテナ要素（member-select, session-list, session-form, settings, error-banner）
     - ARIAラベル、セマンティックHTML
     - common.js と app.js の読み込み
     - _Requirements: 12.4_
-  - [ ] 8.2 style.css を実装: ダークテーマ + レスポンシブデザイン
+  - [x] 8.2 style.css を実装: ダークテーマ + レスポンシブデザイン
     - CSS Variables を先頭で定義:
       ```
       --bg, --bg-surface, --text, --text-muted, --border,
@@ -188,26 +188,26 @@ GAS側（response → validation → spreadsheet → github → main）を先に
     - 出欠ボタンのタップ領域確保（モバイル、最低44x44px）
     - _Requirements: 1.3, 2.5, 11.3, 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 9. エラーハンドリング・ローディング・オフライン対応の統合
-  - [ ] 9.1 フロントエンドのエラー表示を統合実装
+- [x] 9. エラーハンドリング・ローディング・オフライン対応の統合
+  - [x] 9.1 フロントエンドのエラー表示を統合実装
     - エラーコード別のメッセージマッピング（ROW_MISMATCH, WRITE_CONFLICT, etc.）
     - リトライボタンの動作実装
     - ROW_MISMATCH時の自動リフレッシュ提案
     - WRITE_CONFLICT時のリトライUI
     - _Requirements: 1.5, 3.5, 5.4, 6.5, 13.5, 13.6_
-  - [ ] 9.2 ローディング状態の実装
+  - [x] 9.2 ローディング状態の実装
     - AppState.loading による通信中UI制御
     - スピナー表示（通信中）
     - ボタン無効化（二重送信防止）
     - fetchAPI呼び出し前後でloading状態を切替
-  - [ ] 9.3 オフラインモードの統合実装
+  - [x] 9.3 オフラインモードの統合実装
     - API失敗検出 → キャッシュ表示切替
     - 「オフラインデータ（{lastFetched}時点）」バナー
     - 書き込み操作の無効化
     - 手動リフレッシュボタン
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 10. Final checkpoint - 全テスト実行と最終確認
+- [x] 10. Final checkpoint - 全テスト実行と最終確認
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
