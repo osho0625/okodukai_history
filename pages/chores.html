@@ -367,7 +367,8 @@ async function addFromTemplate(idx) {
     checklist: cl,
     points: tpl.points || 1,
     priority: 0,
-    assign_to: assignTo
+    assign_to: assignTo,
+    is_daily: tpl.auto_add || false
   });
   if (insertErr) { alert('追加に失敗しました: ' + insertErr.message); return; }
   const msg = document.getElementById('addMsg');
@@ -683,7 +684,60 @@ async function renderTasks() {
   }
 
   list.innerHTML = '';
-  for (const t of filtered) {
+
+  // activeタブではグループ分け表示
+  if (currentTab === 'active') {
+    const daily = filtered.filter(t => t.is_daily);
+    const other = filtered.filter(t => !t.is_daily);
+
+    if (daily.length > 0) {
+      const dailyLabel = hiraganaMode ? await convertToHiragana('まいにちのおてつだい') : 'まいにちのおてつだい';
+      list.appendChild(createGroupHeader(dailyLabel, 'daily', daily.length));
+      const dailyContainer = document.createElement('div');
+      dailyContainer.id = 'group-daily';
+      dailyContainer.style.display = localStorage.getItem('chore_group_daily') === 'open' ? 'block' : 'none';
+      for (const t of daily) { dailyContainer.appendChild(await buildTaskCard(t)); }
+      list.appendChild(dailyContainer);
+    }
+
+    if (other.length > 0) {
+      const otherLabel = hiraganaMode ? await convertToHiragana('そのほかのおてつだい') : 'そのほかのおてつだい';
+      list.appendChild(createGroupHeader(otherLabel, 'other', other.length));
+      const otherContainer = document.createElement('div');
+      otherContainer.id = 'group-other';
+      otherContainer.style.display = localStorage.getItem('chore_group_other') === 'open' ? 'block' : 'none';
+      for (const t of other) { otherContainer.appendChild(await buildTaskCard(t)); }
+      list.appendChild(otherContainer);
+    }
+  } else {
+    for (const t of filtered) { list.appendChild(await buildTaskCard(t)); }
+  }
+}
+
+function createGroupHeader(label, groupId, count) {
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex; align-items:center; gap:8px; padding:10px 4px; cursor:pointer; user-select:none;';
+  const isOpen = localStorage.getItem('chore_group_' + groupId) === 'open';
+  header.innerHTML = '<span style="font-size:0.8em; transition:transform 0.2s; display:inline-block;' + (isOpen ? 'transform:rotate(90deg);' : '') + '">▶</span>'
+    + '<span style="font-weight:600; font-size:0.92em; color:#555;">' + escHtml(label) + '</span>'
+    + '<span style="font-size:0.75em; color:#aaa;">(' + count + ')</span>';
+  header.onclick = () => {
+    const container = document.getElementById('group-' + groupId);
+    const arrow = header.querySelector('span');
+    if (container.style.display === 'none') {
+      container.style.display = 'block';
+      arrow.style.transform = 'rotate(90deg)';
+      localStorage.setItem('chore_group_' + groupId, 'open');
+    } else {
+      container.style.display = 'none';
+      arrow.style.transform = '';
+      localStorage.removeItem('chore_group_' + groupId);
+    }
+  };
+  return header;
+}
+
+async function buildTaskCard(t) {
     const priorityIcon = t.priority >= 2 ? '🔥' : t.priority === 1 ? '⭐' : '📌';
     const isDone = t.status === 'done';
     const cl = t.checklist || [];
@@ -759,8 +813,7 @@ async function renderTasks() {
       });
     }
 
-    list.appendChild(card);
-  }
+    return card;
 }
 
 // --- チェック切り替え ---
