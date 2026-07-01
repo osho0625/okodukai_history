@@ -1278,6 +1278,18 @@ async function loadReminders() {
         .in('id', expiredEvents.map(e => e.id));
     }
 
+    // Repeat reminders: today's day of week matches repeat_days
+    const { data: repeats } = await client.from('reminders')
+      .select('*')
+      .eq('type', 'repeat')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    const todayDow = today.getDay(); // 0=日, 1=月, ..., 6=土
+    const filteredRepeats = (repeats || []).filter(r => {
+      return Array.isArray(r.repeat_days) && r.repeat_days.includes(todayDow);
+    });
+
     // Filter events: event_date between today and today+7 days (inclusive)
     const filteredEvents = (events || []).filter(e => {
       const eventDate = new Date(e.event_date + 'T00:00:00+09:00');
@@ -1285,13 +1297,20 @@ async function loadReminders() {
     });
 
     const memoList = memos || [];
-    if (memoList.length === 0 && filteredEvents.length === 0) {
+    if (memoList.length === 0 && filteredEvents.length === 0 && filteredRepeats.length === 0) {
       banner.style.display = 'none';
       return;
     }
 
     banner.style.display = 'block';
     let html = '';
+
+    if (filteredRepeats.length > 0) {
+      html += '<div class="reminder-section-label">🔁 くりかえし</div>';
+      filteredRepeats.forEach(r => {
+        html += renderReminderItem(r, 'repeat', today);
+      });
+    }
 
     if (memoList.length > 0) {
       html += '<div class="reminder-section-label">📝 メモ</div>';
@@ -1322,6 +1341,10 @@ function renderReminderItem(r, type, today) {
     const days = calcDaysRemaining(r.event_date, today);
     const dateStr = formatDateJST(r.event_date + 'T00:00:00+09:00');
     meta = days === 0 ? '今日' : dateStr + ' あと' + days + '日';
+  } else if (type === 'repeat') {
+    const dayNames = ['日','月','火','水','木','金','土'];
+    const days = (r.repeat_days || []).map(d => dayNames[d]).join('・');
+    meta = '毎週 ' + days;
   }
 
   if (r.snooze_until) {
@@ -1477,7 +1500,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.15.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.16.0</a></div>
 
 </body>
 </html>

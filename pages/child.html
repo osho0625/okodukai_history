@@ -206,6 +206,12 @@ h2 { margin-bottom: 12px; color: #333; }
   60% { transform: scale(1.2); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
+.dow-label {
+  display: flex; align-items: center; gap: 4px; padding: 6px 10px;
+  background: #f0f0f0; border-radius: 6px; font-size: 0.9em; cursor: pointer;
+}
+.dow-label input:checked + * { color: #ff9800; }
+.dow-label:has(input:checked) { background: #fff3e0; border: 1px solid #ff9800; }
 </style>
 </head>
 <body>
@@ -302,14 +308,32 @@ h2 { margin-bottom: 12px; color: #333; }
     <!-- 登録フォーム -->
     <div style="margin-bottom:16px;">
       <input type="text" id="reminderMsg" maxlength="200" placeholder="リマインダーの内容（200文字以内）" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9em;color:#555;">
-          <input type="checkbox" id="reminderNoDate" onchange="toggleReminderDate()"> 日付を指定しない（毎日通知）
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#555;">
+          <input type="radio" name="reminderType" value="event" checked onchange="toggleReminderType()"> 📅 日付指定
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#555;">
+          <input type="radio" name="reminderType" value="memo" onchange="toggleReminderType()"> 📝 毎日通知
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#555;">
+          <input type="radio" name="reminderType" value="repeat" onchange="toggleReminderType()"> 🔁 くりかえし
         </label>
       </div>
       <div id="reminderDateWrapper" style="position:relative;margin-bottom:10px;">
         <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:1.2em;pointer-events:none;">📅</span>
         <input type="date" id="reminderDate" style="width:100%;padding:10px 10px 10px 36px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      </div>
+      <div id="reminderRepeatWrapper" style="display:none;margin-bottom:10px;">
+        <div style="font-size:0.85em;color:#555;margin-bottom:6px;">通知する曜日を選択:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label class="dow-label"><input type="checkbox" value="1" class="repeat-dow"> 月</label>
+          <label class="dow-label"><input type="checkbox" value="2" class="repeat-dow"> 火</label>
+          <label class="dow-label"><input type="checkbox" value="3" class="repeat-dow"> 水</label>
+          <label class="dow-label"><input type="checkbox" value="4" class="repeat-dow"> 木</label>
+          <label class="dow-label"><input type="checkbox" value="5" class="repeat-dow"> 金</label>
+          <label class="dow-label"><input type="checkbox" value="6" class="repeat-dow"> 土</label>
+          <label class="dow-label"><input type="checkbox" value="0" class="repeat-dow"> 日</label>
+        </div>
       </div>
       <button onclick="submitReminder()" style="width:100%;padding:12px;border:none;border-radius:8px;background:#ff9800;color:#fff;font-size:1em;font-weight:600;cursor:pointer;">登録する</button>
       <div id="reminderResultMsg" style="text-align:center;margin-top:8px;font-weight:600;display:none;"></div>
@@ -1361,17 +1385,26 @@ function getReminderDeviceId() {
   return id;
 }
 
-function toggleReminderDate() {
-  const noDate = document.getElementById('reminderNoDate').checked;
+function toggleReminderType() {
+  const selected = document.querySelector('input[name="reminderType"]:checked').value;
   const dateWrapper = document.getElementById('reminderDateWrapper');
+  const repeatWrapper = document.getElementById('reminderRepeatWrapper');
   const dateInput = document.getElementById('reminderDate');
-  if (noDate) {
+
+  if (selected === 'event') {
+    dateWrapper.style.display = 'block';
+    repeatWrapper.style.display = 'none';
+    dateInput.disabled = false;
+  } else if (selected === 'memo') {
     dateWrapper.style.display = 'none';
+    repeatWrapper.style.display = 'none';
     dateInput.disabled = true;
     dateInput.value = '';
-  } else {
-    dateWrapper.style.display = 'block';
-    dateInput.disabled = false;
+  } else if (selected === 'repeat') {
+    dateWrapper.style.display = 'none';
+    repeatWrapper.style.display = 'block';
+    dateInput.disabled = true;
+    dateInput.value = '';
   }
 }
 
@@ -1381,7 +1414,7 @@ async function submitReminder() {
 
   const msgInput = document.getElementById('reminderMsg');
   const message = msgInput.value.trim();
-  const noDate = document.getElementById('reminderNoDate').checked;
+  const selectedType = document.querySelector('input[name="reminderType"]:checked').value;
   const dateInput = document.getElementById('reminderDate');
   const resultMsg = document.getElementById('reminderResultMsg');
 
@@ -1394,9 +1427,9 @@ async function submitReminder() {
     return;
   }
 
-  // バリデーション: 日付
+  // バリデーション: 日付（event型のみ）
   let eventDate = null;
-  if (!noDate) {
+  if (selectedType === 'event') {
     if (!dateInput.value) {
       resultMsg.textContent = '⚠️ 📅 日付を入力してください（日付欄をタップしてカレンダーから選んでね）';
       resultMsg.style.color = '#e53935';
@@ -1416,10 +1449,24 @@ async function submitReminder() {
     eventDate = dateInput.value;
   }
 
+  // バリデーション: くりかえし曜日
+  let repeatDays = null;
+  if (selectedType === 'repeat') {
+    const checked = [...document.querySelectorAll('.repeat-dow:checked')].map(el => parseInt(el.value));
+    if (checked.length === 0) {
+      resultMsg.textContent = '⚠️ 通知する曜日を1つ以上選択してください';
+      resultMsg.style.color = '#e53935';
+      resultMsg.style.display = 'block';
+      setTimeout(() => resultMsg.style.display = 'none', 3000);
+      return;
+    }
+    repeatDays = checked;
+  }
+
   lastSubmitAt = now;
 
   const deviceId = getReminderDeviceId();
-  const type = noDate ? 'memo' : 'event';
+  const type = selectedType;
   const creatorRole = isAdmin ? 'admin' : 'user';
 
   const insertData = {
@@ -1431,6 +1478,7 @@ async function submitReminder() {
     creator_role: creatorRole
   };
   if (eventDate) insertData.event_date = eventDate;
+  if (repeatDays) insertData.repeat_days = repeatDays;
 
   const { error } = await client.from('reminders').insert(insertData);
   if (error) {
@@ -1450,11 +1498,19 @@ async function submitReminder() {
   // フォームリセット
   msgInput.value = '';
   dateInput.value = '';
+  document.querySelectorAll('.repeat-dow').forEach(el => el.checked = false);
 
   // Discord通知（3秒タイムアウト、失敗してもUXブロックしない）
-  const discordMsg = type === 'memo'
-    ? '🔔 リマインダー登録\n📝 [' + child.name + '] ' + message
-    : '🔔 リマインダー登録\n📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  const dayNames = ['日','月','火','水','木','金','土'];
+  let discordMsg;
+  if (type === 'memo') {
+    discordMsg = '🔔 リマインダー登録\n📝 [' + child.name + '] ' + message;
+  } else if (type === 'repeat') {
+    const daysStr = repeatDays.map(d => dayNames[d]).join('・');
+    discordMsg = '🔔 リマインダー登録\n🔁 [' + child.name + '] ' + message + '（毎週 ' + daysStr + '）';
+  } else {
+    discordMsg = '🔔 リマインダー登録\n📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  }
   try {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 3000);
@@ -1468,9 +1524,15 @@ async function submitReminder() {
   } catch (e) {}
 
   // Push通知
-  const pushBody = type === 'memo'
-    ? '📝 [' + child.name + '] ' + message
-    : '📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  let pushBody;
+  if (type === 'memo') {
+    pushBody = '📝 [' + child.name + '] ' + message;
+  } else if (type === 'repeat') {
+    const daysStr2 = repeatDays.map(d => dayNames[d]).join('・');
+    pushBody = '🔁 [' + child.name + '] ' + message + '（毎週 ' + daysStr2 + '）';
+  } else {
+    pushBody = '📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
+  }
   queuePushNotification('🔔 リマインダー登録', pushBody, 'admin');
 
   // 一覧を更新
@@ -1523,6 +1585,11 @@ async function loadReminders() {
     if (r.type === 'memo') {
       info = '<div style="flex:1;"><div style="font-size:0.9em;">📝 ' + escHtml(r.message) + '</div>'
         + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">登録: ' + createdDate + '</div></div>';
+    } else if (r.type === 'repeat') {
+      const dayNames = ['日','月','火','水','木','金','土'];
+      const daysStr = (r.repeat_days || []).map(d => dayNames[d]).join('・');
+      info = '<div style="flex:1;"><div style="font-size:0.9em;">🔁 ' + escHtml(r.message) + '</div>'
+        + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">毎週 ' + daysStr + '</div></div>';
     } else {
       const daysLeft = Math.ceil((new Date(r.event_date + 'T00:00:00+09:00') - new Date()) / 86400000);
       const daysText = daysLeft === 0 ? '今日' : daysLeft > 0 ? 'あと' + daysLeft + '日' : daysLeft + '日前';
