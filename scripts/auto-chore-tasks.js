@@ -72,7 +72,8 @@ async function main() {
         checklist: cl,
         points: tpl.points || 1,
         priority: 0,
-        assign_to: tpl.assign_to || null
+        assign_to: tpl.assign_to || null,
+        is_daily: true
       })
     });
 

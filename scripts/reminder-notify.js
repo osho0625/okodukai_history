@@ -124,6 +124,11 @@ function filterDueReminders(reminders, now) {
       sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7);
       const sevenDaysBeforeStr = formatDateStr(sevenDaysBefore);
       if (dateStr < sevenDaysBeforeStr || dateStr > r.event_date) return false;
+    } else if (r.type === 'repeat') {
+      // repeat型: 今日の曜日がrepeat_daysに含まれるかチェック
+      const todayDate = new Date(dateStr + 'T00:00:00+09:00');
+      const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
+      if (!Array.isArray(r.repeat_days) || !r.repeat_days.includes(dayOfWeek)) return false;
     }
     // memo type: always in notification window (no date filter)
 
