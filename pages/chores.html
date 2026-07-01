@@ -261,6 +261,36 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
   </div>
 </div>
 
+<!-- タスク編集モーダル（admin） -->
+<div class="overlay" id="editTaskOverlay">
+  <div class="complete-modal" style="text-align:left; max-height:80vh; overflow-y:auto;">
+    <h2 style="text-align:center;">✏ お手伝いを編集</h2>
+    <input type="text" id="editTaskTitle" placeholder="名前" maxlength="50" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em; margin-bottom:8px;">
+    <div style="font-size:0.82em; color:#888; margin-bottom:4px;">チェックリスト</div>
+    <div id="editTaskChecklistEditor" class="checklist-editor"></div>
+    <button type="button" class="btn-add-check" onclick="addEditTaskChecklistItem()" style="margin-bottom:10px;">＋ 項目追加</button>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <input type="number" id="editTaskPoints" value="1" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+      <span style="font-size:0.85em; color:#888;">pt</span>
+      <select id="editTaskPriority" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+        <option value="0">ふつう</option>
+        <option value="1">⭐ 大事</option>
+        <option value="2">🔥 とても大事</option>
+      </select>
+    </div>
+    <select id="editTaskAssign" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em; margin-bottom:12px;">
+      <option value="">みんな（全員）</option>
+      <option value="いろは">いろは だけ</option>
+      <option value="かいせい">かいせい だけ</option>
+      <option value="はるちか">はるちか だけ</option>
+    </select>
+    <div style="display:flex; gap:8px;">
+      <button onclick="saveEditTask()" style="flex:1; padding:10px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-weight:600; cursor:pointer;">保存</button>
+      <button onclick="cancelEditTask()" style="flex:1; padding:10px; border:none; border-radius:8px; background:#eee; color:#333; cursor:pointer;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <!-- kuroshiro (lazy load on hiragana mode) -->
 <script src="https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js"></script>
@@ -710,6 +740,7 @@ async function renderTasks() {
     } else {
       actionsHtml = cl.length === 0 ? '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>' : '';
       if (isAdmin) {
+        actionsHtml += '<button class="task-btn" onclick="event.stopPropagation();editTask(\'' + t.id + '\')" title="へんしゅう" style="background:#e3f2fd;color:#1976d2;font-size:0.85em;">✏</button>';
         actionsHtml += '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
       }
       card.innerHTML = badgeHtml
@@ -873,6 +904,73 @@ async function deleteTask(id) {
   if (!confirm('このお手伝いを削除しますか？')) return;
   await client.from('chore_tasks').delete().eq('id', id);
   loadTasks();
+}
+
+// --- タスク編集（admin） ---
+let editTaskChecklist = [];
+
+function editTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  editTaskChecklist = (task.checklist || []).map(i => i.text);
+  const overlay = document.getElementById('editTaskOverlay');
+  overlay.setAttribute('data-task-id', id);
+  document.getElementById('editTaskTitle').value = task.title;
+  document.getElementById('editTaskPoints').value = task.points || 1;
+  document.getElementById('editTaskPriority').value = task.priority || 0;
+  document.getElementById('editTaskAssign').value = task.assign_to || '';
+  renderEditTaskChecklist();
+  overlay.classList.add('active');
+}
+
+function renderEditTaskChecklist() {
+  const el = document.getElementById('editTaskChecklistEditor');
+  el.innerHTML = '';
+  editTaskChecklist.forEach((text, i) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-editor-item';
+    row.innerHTML = '<input type="text" value="' + escAttr(text) + '" onchange="editTaskChecklist[' + i + ']=this.value" placeholder="項目' + (i + 1) + '">'
+      + '<button type="button" onclick="editTaskChecklist.splice(' + i + ',1);renderEditTaskChecklist()">✕</button>';
+    el.appendChild(row);
+  });
+}
+
+function addEditTaskChecklistItem() {
+  editTaskChecklist.push('');
+  renderEditTaskChecklist();
+}
+
+async function saveEditTask() {
+  const overlay = document.getElementById('editTaskOverlay');
+  const id = overlay.getAttribute('data-task-id');
+  const title = document.getElementById('editTaskTitle').value.trim();
+  if (!title) { alert('名前を入力してください'); return; }
+  const points = parseInt(document.getElementById('editTaskPoints').value) || 1;
+  const priority = parseInt(document.getElementById('editTaskPriority').value) || 0;
+  const assignTo = document.getElementById('editTaskAssign').value || null;
+  const clTexts = editTaskChecklist.filter(t => t.trim()).map(t => t.trim());
+
+  // 既存のチェック状態を維持しつつテキストを更新
+  const task = tasks.find(t => t.id === id);
+  const oldCl = task ? (task.checklist || []) : [];
+  let newCl = null;
+  if (clTexts.length > 0) {
+    newCl = clTexts.map((text, i) => ({
+      text,
+      checked: oldCl[i] ? oldCl[i].checked : false
+    }));
+  }
+
+  await client.from('chore_tasks').update({
+    title, points, priority, assign_to: assignTo, checklist: newCl
+  }).eq('id', id);
+
+  overlay.classList.remove('active');
+  loadTasks();
+}
+
+function cancelEditTask() {
+  document.getElementById('editTaskOverlay').classList.remove('active');
 }
 
 async function addTask() {
