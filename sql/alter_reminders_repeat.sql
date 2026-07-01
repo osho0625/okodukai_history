@@ -18,6 +18,7 @@ ALTER TABLE reminders ADD CONSTRAINT reminders_type_check
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS repeat_days JSONB;
 
 -- 3. repeat型はrepeat_days必須
+ALTER TABLE reminders DROP CONSTRAINT IF EXISTS chk_repeat_days;
 ALTER TABLE reminders ADD CONSTRAINT chk_repeat_days
   CHECK (type != 'repeat' OR (repeat_days IS NOT NULL AND jsonb_typeof(repeat_days) = 'array'));
 
