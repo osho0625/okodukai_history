@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v168';
+const CACHE_NAME = 'okozukai-v246';
 const ASSETS = [
   './',
   './index.html',
@@ -76,11 +76,22 @@ self.addEventListener('push', e => {
 // 通知クリック時
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = e.notification.data && e.notification.data.url ? e.notification.data.url : './index.html';
+  let url = e.notification.data && e.notification.data.url ? e.notification.data.url : './index.html';
+  // 電話通知の場合はナースコール画面を開く
+  const title = e.notification.title || '';
+  if (title.includes('でんわ') || title.includes('ナースコール')) {
+    url = './pages/nurse-call.html';
+  }
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const client of list) {
+        if (client.url.includes('nurse-call')) {
+          return client.focus();
+        }
+      }
+      for (const client of list) {
         if (client.url.includes('okodukai_history') && 'focus' in client) {
+          client.navigate(url);
           return client.focus();
         }
       }

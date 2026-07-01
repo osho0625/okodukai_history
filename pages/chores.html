@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>お手伝いリスト - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; min-height: 100vh; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.4em; }
+
+.toolbar { max-width: 520px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.hiragana-toggle {
+  display: flex; align-items: center; gap: 4px; font-size: 0.8em; color: #888; cursor: pointer; user-select: none;
+  background: #fff; border: 1px solid #ddd; border-radius: 16px; padding: 4px 10px;
+}
+.hiragana-toggle.active { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+.hiragana-toggle.loading { opacity: 0.5; pointer-events: none; }
+
+.task-list { max-width: 520px; margin: 0 auto; }
+
+.task-card {
+  background: #fff; border-radius: 12px; padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 10px;
+  cursor: pointer; transition: background 0.3s, opacity 0.3s;
+  position: relative; overflow: hidden;
+}
+.task-card.done { opacity: 0.5; background: #f9f9f9; }
+.task-card.done .task-title { text-decoration: line-through; color: #999; }
+.task-card.all-checked { background: #e8f5e9; border: 2px solid #81c784; }
+.task-card.all-checked .task-title { color: #2e7d32; }
+
+.task-main { display: flex; align-items: center; gap: 12px; }
+.task-priority { font-size: 1.4em; flex-shrink: 0; }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-weight: 600; font-size: 1em; color: #333; margin-bottom: 2px; }
+.task-pts { font-size: 0.85em; color: #ff9800; font-weight: 700; margin-top: 2px; }
+.task-done-info { font-size: 0.75em; color: #4caf50; margin-top: 2px; }
+.task-progress { font-size: 0.72em; color: #999; margin-top: 2px; }
+
+.task-assign-badge {
+  display: inline-block;
+  background: #1976d2; color: #fff; font-weight: 700; font-size: 0.8em;
+  padding: 3px 10px; border-radius: 6px; margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.task-detail {
+  display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+  font-size: 0.88em; color: #666; line-height: 1.5;
+}
+.task-card.expanded .task-detail { display: block; }
+
+.checklist-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid #f8f8f8;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item input[type="checkbox"] {
+  width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;
+  accent-color: #4caf50;
+}
+.checklist-item label { cursor: pointer; flex: 1; }
+.checklist-item label.checked { text-decoration: line-through; color: #aaa; }
+
+.task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.task-btn {
+  width: 36px; height: 36px; border: none; border-radius: 8px;
+  font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.task-btn.complete { background: #e8f5e9; color: #4caf50; }
+.task-btn.complete:hover { background: #c8e6c9; }
+.task-btn.delete { background: #ffebee; color: #e53935; }
+.task-btn.delete:hover { background: #ffcdd2; }
+.task-btn.undo { background: #fff3e0; color: #ff9800; }
+.task-btn.undo:hover { background: #ffe0b2; }
+
+.empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.1em; }
+
+.add-section {
+  max-width: 520px; margin: 24px auto 0; background: #fff;
+  border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.add-section h2 { font-size: 1em; color: #555; margin-bottom: 12px; }
+.add-row { display: flex; flex-direction: column; gap: 8px; }
+.add-row input, .add-row textarea, .add-row select {
+  padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; width: 100%;
+}
+.add-row-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.add-row-inline input { flex: 1; min-width: 60px; }
+.btn-add {
+  padding: 10px 20px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-weight: 600; cursor: pointer; font-size: 1em; width: 100%;
+}
+.btn-add:hover { opacity: 0.9; }
+.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.add-msg { color: #4caf50; font-size: 0.85em; text-align: center; margin-top: 8px; display: none; }
+
+.checklist-editor { margin-top: 4px; }
+.checklist-editor-item {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+}
+.checklist-editor-item input {
+  flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em;
+}
+.checklist-editor-item button {
+  width: 28px; height: 28px; border: none; border-radius: 6px;
+  background: #ffebee; color: #e53935; font-size: 0.9em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-add-check {
+  padding: 6px 12px; border: 1px dashed #bbb; border-radius: 6px;
+  background: #fafafa; color: #888; font-size: 0.85em; cursor: pointer; width: 100%;
+}
+.btn-add-check:hover { background: #f0f0f0; border-color: #999; }
+
+.tab-bar { display: flex; gap: 4px; max-width: 520px; margin: 0 auto 16px; }
+.tab-btn {
+  flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px;
+  background: #fff; font-size: 0.9em; font-weight: 600; cursor: pointer; text-align: center;
+  transition: all 0.15s;
+}
+.tab-btn.active { background: #4caf50; color: #fff; border-color: #4caf50; }
+.tab-btn:hover:not(.active) { border-color: #4caf50; color: #4caf50; }
+
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  .task-card { padding: 14px; }
+}
+
+/* 完了確認モーダル */
+.overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center;
+}
+.overlay.active { display: flex; }
+.complete-modal {
+  background: #fff; border-radius: 20px; padding: 32px 24px;
+  width: 90%; max-width: 360px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.complete-modal h2 { margin-bottom: 24px; font-size: 1.3em; color: #333; }
+.complete-btns { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.complete-child-btn {
+  padding: 18px; border: none; border-radius: 12px;
+  background: #4caf50; color: #fff; font-size: 1.3em; font-weight: 700;
+  cursor: pointer; transition: transform 0.1s;
+}
+.complete-child-btn:hover { transform: scale(1.03); }
+.complete-child-btn:active { transform: scale(0.97); }
+.complete-cancel-btn {
+  padding: 12px 24px; border: 2px solid #ddd; border-radius: 10px;
+  background: #fff; color: #888; font-size: 1em; font-weight: 600;
+  cursor: pointer; width: 100%;
+}
+.complete-cancel-btn:hover { border-color: #999; color: #555; }
+</style>
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>📋 <span id="pageTitle">お手伝いリスト</span></h1>
+
+<div class="toolbar">
+  <div class="hiragana-toggle" id="hiraganaToggle" onclick="toggleHiragana()">
+    <span id="hiraganaLabel">ひらがなモード</span>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('active')" id="tabActive">やること</button>
+  <button class="tab-btn" onclick="switchTab('done')" id="tabDone">おわった</button>
+</div>
+
+<div class="task-list" id="taskList">
+  <div class="empty-msg">読み込み中...</div>
+</div>
+
+<!-- Admin用：お手伝い追加フォーム -->
+<div class="add-section" id="addSection" style="display:none;">
+  <!-- 定型業務から追加 -->
+  <h2>📂 定型業務から追加</h2>
+  <div id="templateList" style="margin-bottom:16px;">
+    <div style="color:#999; font-size:0.85em;">読み込み中...</div>
+  </div>
+  <div style="border-top:1px solid #eee; padding-top:14px; margin-top:8px;">
+    <h2>➕ 自由に追加</h2>
+  </div>
+  <div class="add-row" style="margin-top:8px;">
+    <input type="text" id="addTitle" placeholder="お手伝いの名前" maxlength="50">
+    <div style="font-size:0.85em; color:#555; font-weight:600; margin-top:4px;">チェックリスト</div>
+    <div class="checklist-editor" id="checklistEditor"></div>
+    <button type="button" class="btn-add-check" onclick="addChecklistItem()">＋ チェック項目を追加</button>
+    <div class="add-row-inline">
+      <input type="number" id="addPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px;">
+      <span style="font-size:0.85em; color:#888;">pt</span>
+      <select id="addPriority" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em;">
+        <option value="0">ふつう</option>
+        <option value="1">⭐ 大事</option>
+        <option value="2">🔥 とても大事</option>
+      </select>
+    </div>
+    <select id="addAssign">
+      <option value="">みんな（全員）</option>
+      <option value="いろは">いろは だけ</option>
+      <option value="かいせい">かいせい だけ</option>
+      <option value="はるちか">はるちか だけ</option>
+    </select>
+    <button class="btn-add" id="btnAdd" onclick="addTask()">追加する</button>
+    <div class="add-msg" id="addMsg">✓ 追加しました！</div>
+  </div>
+</div>
+
+<!-- Admin用：定型業務管理 -->
+<div class="add-section" id="templateSection" style="display:none; margin-top:12px;">
+  <h2>⚙️ 定型業務を管理</h2>
+  <div id="templateMgmtList" style="margin-top:10px;"></div>
+  <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
+    <div style="font-size:0.85em; font-weight:600; color:#555; margin-bottom:8px;">新しい定型業務を登録</div>
+    <input type="text" id="tplTitle" placeholder="定型業務の名前" maxlength="50" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:6px;">
+    <div style="font-size:0.8em; color:#888; margin-bottom:4px;">チェックリスト項目</div>
+    <div class="checklist-editor" id="tplChecklistEditor"></div>
+    <button type="button" class="btn-add-check" onclick="addTplChecklistItem()" style="margin-bottom:8px;">＋ チェック項目を追加</button>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <input type="number" id="tplPoints" placeholder="pt" value="1" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">
+      <span style="font-size:0.85em; color:#888;">pt</span>
+    </div>
+    <select id="tplAssign" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:8px;">
+      <option value="">みんな（全員）</option>
+      <option value="いろは">いろは だけ</option>
+      <option value="かいせい">かいせい だけ</option>
+      <option value="はるちか">はるちか だけ</option>
+    </select>
+    <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:0.88em; cursor:pointer;">
+      <input type="checkbox" id="tplAutoAdd" style="width:18px; height:18px;">
+      🔄 毎日自動で追加する
+    </label>
+    <button class="btn-add" onclick="addTemplate()">定型業務を登録</button>
+    <div class="add-msg" id="tplMsg">✓ 登録しました！</div>
+  </div>
+</div>
+
+<!-- 完了確認モーダル -->
+<div class="overlay" id="completeOverlay">
+  <div class="complete-modal">
+    <h2>🎉 ぜんぶおわった？</h2>
+    <div class="complete-btns">
+      <button class="complete-child-btn" onclick="confirmComplete('いろは')">いろは</button>
+      <button class="complete-child-btn" onclick="confirmComplete('かいせい')">かいせい</button>
+      <button class="complete-child-btn" onclick="confirmComplete('はるちか')">はるちか</button>
+    </div>
+    <button class="complete-cancel-btn" onclick="cancelComplete()">まだおわってない</button>
+  </div>
+</div>
+
+<!-- kuroshiro (lazy load on hiragana mode) -->
+<script src="https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js"></script>
+
+<script>
+let currentTab = 'active';
+let tasks = [];
+let hiraganaMode = localStorage.getItem('chore_hiragana') === 'true';
+let kuroshiroInstance = null;
+let kuroshiroReady = false;
+let kuroshiroLoading = false;
+
+const UI_LABELS = {
+  pageTitle: 'お手伝いリスト',
+  tabActive: 'やること',
+  tabDone: 'おわった',
+  emptyActive: 'やることはありません！',
+  emptyDone: 'まだありません'
+};
+
+if (hiraganaMode) document.getElementById('hiraganaToggle').classList.add('active');
+if (isAdmin) {
+  document.getElementById('addSection').style.display = 'block';
+  document.getElementById('templateSection').style.display = 'block';
+}
+
+// --- 定型業務テンプレート ---
+let templates = [];
+let tplChecklistItems = [];
+
+async function loadTemplates() {
+  try {
+    const { data, error } = await client.from('game_settings').select('chore_templates').eq('id', 1).maybeSingle();
+    if (error) { console.warn('chore_templates not found, run ALTER SQL:', error.message); templates = []; }
+    else { templates = (data && data.chore_templates) || []; }
+  } catch(e) { templates = []; }
+  renderTemplateList();
+  renderTemplateMgmt();
+}
+
+function renderTemplateList() {
+  const el = document.getElementById('templateList');
+  if (templates.length === 0) {
+    el.innerHTML = '<div style="color:#999; font-size:0.85em;">定型業務が登録されていません</div>';
+    return;
+  }
+  el.innerHTML = '';
+  templates.forEach((tpl, idx) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; background:#fafafa; cursor:pointer; margin-bottom:6px; text-align:left; font-size:0.9em;';
+    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
+    const assignInfo = tpl.assign_to ? ' 👤' + tpl.assign_to : '';
+    const autoInfo = tpl.auto_add ? ' 🔄' : '';
+    btn.innerHTML = '<span style="flex:1;font-weight:600;">' + escHtml(tpl.title) + clInfo + '<span style="color:#1976d2;font-size:0.8em;">' + escHtml(assignInfo) + '</span><span style="font-size:0.8em;">' + autoInfo + '</span></span><span style="color:#ff9800;font-weight:700;">' + tpl.points + 'pt</span><span style="color:#4caf50;font-size:1.2em;">＋</span>';
+    btn.onclick = () => addFromTemplate(idx);
+    el.appendChild(btn);
+  });
+}
+
+async function addFromTemplate(idx) {
+  const tpl = templates[idx];
+  if (!tpl) return;
+  const assignTo = tpl.assign_to || document.getElementById('addAssign').value || null;
+
+  // 重複チェック（同タイトル+同assign_toのactiveが既にある場合は追加しない）
+  const { data: existing } = await client.from('chore_tasks').select('id').eq('status', 'active').eq('title', tpl.title);
+  if (existing && existing.length > 0) {
+    alert('「' + tpl.title + '」は既にリストにあります'); return;
+  }
+
+  const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
+  const { error: insertErr } = await client.from('chore_tasks').insert({
+    title: tpl.title,
+    checklist: cl,
+    points: tpl.points || 1,
+    priority: 0,
+    assign_to: assignTo
+  });
+  if (insertErr) { alert('追加に失敗しました: ' + insertErr.message); return; }
+  const msg = document.getElementById('addMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  if (currentTab === 'active') loadTasks();
+}
+
+function renderTemplateMgmt() {
+  const el = document.getElementById('templateMgmtList');
+  if (templates.length === 0) {
+    el.innerHTML = '<div style="color:#999; font-size:0.85em;">まだ定型業務がありません</div>';
+    return;
+  }
+  el.innerHTML = '';
+  templates.forEach((tpl, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'border-bottom:1px solid #f0f0f0; padding:8px 0;';
+    const clInfo = tpl.checklist && tpl.checklist.length > 0 ? ' (' + tpl.checklist.length + '項目)' : '';
+    const assignInfo = tpl.assign_to ? ' [' + tpl.assign_to + ']' : '';
+    const autoLabel = tpl.auto_add ? ' 🔄自動' : '';
+    row.innerHTML = '<div style="display:flex; align-items:center; gap:8px;">'
+      + '<span style="flex:1; font-size:0.88em; cursor:pointer;" onclick="editTemplate(' + idx + ')">' + escHtml(tpl.title) + ' <span style="color:#ff9800;">' + tpl.points + 'pt</span><span style="color:#1976d2; font-size:0.8em;">' + escHtml(assignInfo) + '</span><span style="color:#4caf50; font-size:0.75em;">' + autoLabel + '</span><span style="color:#aaa; font-size:0.8em;">' + escHtml(clInfo) + '</span></span>'
+      + '<button onclick="duplicateTemplate(' + idx + ')" style="border:none; background:#e8f5e9; color:#4caf50; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;" title="コピー">📋</button>'
+      + '<button onclick="editTemplate(' + idx + ')" style="border:none; background:#e3f2fd; color:#1976d2; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.85em;">✏</button>'
+      + '<button onclick="deleteTemplate(' + idx + ')" style="border:none; background:#ffebee; color:#e53935; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:0.9em;">✕</button>'
+      + '</div>'
+      + '<div id="tplEdit_' + idx + '" style="display:none; margin-top:8px; padding:10px; background:#f9f9f9; border-radius:8px;"></div>';
+    el.appendChild(row);
+  });
+}
+
+let editingTplIdx = -1;
+let editTplChecklist = [];
+
+function editTemplate(idx) {
+  // 既に開いてたら閉じる
+  if (editingTplIdx === idx) {
+    document.getElementById('tplEdit_' + idx).style.display = 'none';
+    editingTplIdx = -1;
+    return;
+  }
+  // 前のを閉じる
+  if (editingTplIdx >= 0) {
+    const prev = document.getElementById('tplEdit_' + editingTplIdx);
+    if (prev) prev.style.display = 'none';
+  }
+  editingTplIdx = idx;
+  const tpl = templates[idx];
+  editTplChecklist = tpl.checklist ? tpl.checklist.slice() : [];
+  renderEditTplForm(idx);
+}
+
+function renderEditTplForm(idx) {
+  const tpl = templates[idx];
+  const el = document.getElementById('tplEdit_' + idx);
+  let clHtml = '';
+  editTplChecklist.forEach((text, i) => {
+    clHtml += '<div class="checklist-editor-item"><input type="text" value="' + escAttr(text) + '" onchange="editTplChecklist[' + i + ']=this.value" placeholder="項目' + (i + 1) + '">'
+      + '<button type="button" onclick="removeEditTplItem(' + idx + ',' + i + ')">✕</button></div>';
+  });
+  const assignVal = tpl.assign_to || '';
+  const autoChecked = tpl.auto_add ? ' checked' : '';
+  el.innerHTML = '<input type="text" id="editTplTitle_' + idx + '" value="' + escAttr(tpl.title) + '" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:6px;">'
+    + '<div style="font-size:0.8em; color:#888; margin-bottom:4px;">チェックリスト</div>'
+    + '<div id="editTplCl_' + idx + '">' + clHtml + '</div>'
+    + '<button type="button" class="btn-add-check" onclick="addEditTplItem(' + idx + ')" style="margin-bottom:8px;">＋ 項目追加</button>'
+    + '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">'
+    + '<input type="number" id="editTplPts_' + idx + '" value="' + (tpl.points || 1) + '" min="1" max="99" style="width:70px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;">'
+    + '<span style="font-size:0.85em; color:#888;">pt</span>'
+    + '</div>'
+    + '<select id="editTplAssign_' + idx + '" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em; width:100%; margin-bottom:8px;">'
+    + '<option value=""' + (assignVal === '' ? ' selected' : '') + '>みんな（全員）</option>'
+    + '<option value="いろは"' + (assignVal === 'いろは' ? ' selected' : '') + '>いろは だけ</option>'
+    + '<option value="かいせい"' + (assignVal === 'かいせい' ? ' selected' : '') + '>かいせい だけ</option>'
+    + '<option value="はるちか"' + (assignVal === 'はるちか' ? ' selected' : '') + '>はるちか だけ</option>'
+    + '</select>'
+    + '<label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:0.88em; cursor:pointer;">'
+    + '<input type="checkbox" id="editTplAuto_' + idx + '"' + autoChecked + ' style="width:18px; height:18px;">'
+    + '🔄 毎日自動で追加する'
+    + '</label>'
+    + '<div style="display:flex; gap:8px;">'
+    + '<button onclick="saveEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#4caf50; color:#fff; font-weight:600; cursor:pointer;">保存</button>'
+    + '<button onclick="cancelEditTemplate(' + idx + ')" style="flex:1; padding:8px; border:none; border-radius:6px; background:#eee; color:#333; cursor:pointer;">キャンセル</button>'
+    + '</div>';
+  el.style.display = 'block';
+}
+
+function addEditTplItem(idx) {
+  editTplChecklist.push('');
+  renderEditTplForm(idx);
+}
+
+function removeEditTplItem(idx, itemIdx) {
+  editTplChecklist.splice(itemIdx, 1);
+  renderEditTplForm(idx);
+}
+
+async function saveEditTemplate(idx) {
+  const title = document.getElementById('editTplTitle_' + idx).value.trim();
+  const points = parseInt(document.getElementById('editTplPts_' + idx).value) || 1;
+  if (!title) { alert('名前を入力してください'); return; }
+  const cl = editTplChecklist.filter(t => t.trim()).map(t => t.trim());
+  const assignTo = document.getElementById('editTplAssign_' + idx).value || null;
+  const autoAdd = document.getElementById('editTplAuto_' + idx).checked;
+  templates[idx] = { title, checklist: cl.length > 0 ? cl : null, points, assign_to: assignTo, auto_add: autoAdd };
+  await saveTemplates();
+  editingTplIdx = -1;
+}
+
+function cancelEditTemplate(idx) {
+  document.getElementById('tplEdit_' + idx).style.display = 'none';
+  editingTplIdx = -1;
+}
+
+function addTplChecklistItem() {
+  tplChecklistItems.push('');
+  renderTplChecklistEditor();
+}
+
+function removeTplChecklistItem(idx) {
+  tplChecklistItems.splice(idx, 1);
+  renderTplChecklistEditor();
+}
+
+function renderTplChecklistEditor() {
+  const editor = document.getElementById('tplChecklistEditor');
+  editor.innerHTML = '';
+  tplChecklistItems.forEach((text, idx) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-editor-item';
+    row.innerHTML = '<input type="text" value="' + escAttr(text) + '" placeholder="項目' + (idx + 1) + '" maxlength="100" onchange="tplChecklistItems[' + idx + ']=this.value">'
+      + '<button type="button" onclick="removeTplChecklistItem(' + idx + ')">✕</button>';
+    editor.appendChild(row);
+  });
+}
+
+async function addTemplate() {
+  const title = document.getElementById('tplTitle').value.trim();
+  const points = parseInt(document.getElementById('tplPoints').value) || 1;
+  const assignTo = document.getElementById('tplAssign').value || null;
+  const autoAdd = document.getElementById('tplAutoAdd').checked;
+  if (!title) { alert('定型業務の名前を入力してください'); return; }
+  const cl = tplChecklistItems.filter(t => t.trim()).map(t => t.trim());
+  templates.push({ title, checklist: cl.length > 0 ? cl : null, points, assign_to: assignTo, auto_add: autoAdd });
+  await saveTemplates();
+  document.getElementById('tplTitle').value = '';
+  document.getElementById('tplPoints').value = '1';
+  document.getElementById('tplAssign').value = '';
+  document.getElementById('tplAutoAdd').checked = false;
+  tplChecklistItems = [];
+  renderTplChecklistEditor();
+  const msg = document.getElementById('tplMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function deleteTemplate(idx) {
+  if (!confirm('「' + templates[idx].title + '」を削除しますか？')) return;
+  templates.splice(idx, 1);
+  await saveTemplates();
+}
+
+async function duplicateTemplate(idx) {
+  if (!confirm('「' + templates[idx].title + '」をコピーしますか？')) return;
+  const src = templates[idx];
+  const copy = {
+    title: src.title + '（コピー）',
+    checklist: src.checklist ? src.checklist.slice() : null,
+    points: src.points,
+    assign_to: src.assign_to || null,
+    auto_add: src.auto_add || false
+  };
+  templates.splice(idx + 1, 0, copy);
+  await saveTemplates();
+  editTemplate(idx + 1);
+}
+
+async function saveTemplates() {
+  await client.from('game_settings').update({ chore_templates: templates }).eq('id', 1);
+  renderTemplateList();
+  renderTemplateMgmt();
+}
+
+// --- kuroshiro ---
+async function initKuroshiro() {
+  if (kuroshiroReady || kuroshiroLoading) return;
+  kuroshiroLoading = true;
+  const toggle = document.getElementById('hiraganaToggle');
+  toggle.classList.add('loading');
+  document.getElementById('hiraganaLabel').textContent = 'よみこみ中...';
+  try {
+    // Kuroshiro CDN UMD: window.Kuroshiro = {default: class}
+    const KuroshiroClass = (typeof Kuroshiro === 'function') ? Kuroshiro : (Kuroshiro && Kuroshiro.default ? Kuroshiro.default : null);
+    const AnalyzerClass = (typeof KuromojiAnalyzer === 'function') ? KuromojiAnalyzer : (KuromojiAnalyzer && KuromojiAnalyzer.default ? KuromojiAnalyzer.default : null);
+    if (!KuroshiroClass) throw new Error('Kuroshiro class not found. typeof=' + typeof Kuroshiro);
+    if (!AnalyzerClass) throw new Error('KuromojiAnalyzer class not found. typeof=' + typeof KuromojiAnalyzer);
+    kuroshiroInstance = new KuroshiroClass();
+    await kuroshiroInstance.init(new AnalyzerClass({
+      dictPath: '../dict'
+    }));
+    kuroshiroReady = true;
+  } catch(e) {
+    console.error('kuroshiro init failed:', e);
+    kuroshiroReady = false;
+  }
+  kuroshiroLoading = false;
+  toggle.classList.remove('loading');
+  document.getElementById('hiraganaLabel').textContent = kuroshiroReady ? 'ひらがなモード' : 'ひらがな(かんたん)';
+}
+
+async function convertToHiragana(str) {
+  if (!str) return '';
+  let result = str;
+  if (kuroshiroReady) {
+    try { result = await kuroshiroInstance.convert(str, { to: 'hiragana' }); }
+    catch(e) { /* fall through */ }
+  }
+  // カタカナ→ひらがな変換（kuroshiroがカタカナを残す場合の補完）
+  return result.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
+async function displayText(str) {
+  if (!str) return '';
+  if (!hiraganaMode) return str;
+  return await convertToHiragana(str);
+}
+
+async function toggleHiragana() {
+  hiraganaMode = !hiraganaMode;
+  localStorage.setItem('chore_hiragana', hiraganaMode);
+  document.getElementById('hiraganaToggle').classList.toggle('active', hiraganaMode);
+  if (hiraganaMode && !kuroshiroReady) await initKuroshiro();
+  await renderTasks();
+  await updateUILabels();
+}
+
+async function updateUILabels() {
+  if (hiraganaMode) {
+    document.getElementById('pageTitle').textContent = await convertToHiragana(UI_LABELS.pageTitle);
+    document.getElementById('tabActive').textContent = await convertToHiragana(UI_LABELS.tabActive);
+    document.getElementById('tabDone').textContent = await convertToHiragana(UI_LABELS.tabDone);
+  } else {
+    document.getElementById('pageTitle').textContent = UI_LABELS.pageTitle;
+    document.getElementById('tabActive').textContent = UI_LABELS.tabActive;
+    document.getElementById('tabDone').textContent = UI_LABELS.tabDone;
+  }
+}
+
+// --- チェックリストエディター（admin追加フォーム） ---
+let checklistItems = [];
+
+function addChecklistItem() {
+  checklistItems.push('');
+  renderChecklistEditor();
+}
+
+function removeChecklistItem(idx) {
+  checklistItems.splice(idx, 1);
+  renderChecklistEditor();
+}
+
+function renderChecklistEditor() {
+  const editor = document.getElementById('checklistEditor');
+  editor.innerHTML = '';
+  checklistItems.forEach((text, idx) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-editor-item';
+    row.innerHTML = '<input type="text" value="' + escAttr(text) + '" placeholder="やること' + (idx + 1) + '" maxlength="100" onchange="checklistItems[' + idx + ']=this.value">'
+      + '<button type="button" onclick="removeChecklistItem(' + idx + ')">✕</button>';
+    editor.appendChild(row);
+  });
+}
+
+function escAttr(str) {
+  return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// --- データ ---
+async function loadTasks() {
+  const status = currentTab === 'active' ? 'active' : 'done';
+  let query = client.from('chore_tasks').select('*').eq('status', status);
+  if (currentTab === 'active') {
+    query = query.order('priority', { ascending: false }).order('created_at', { ascending: true });
+  } else {
+    query = query.order('done_at', { ascending: false });
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    document.getElementById('taskList').innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+    return;
+  }
+  tasks = data || [];
+  await renderTasks();
+}
+
+async function renderTasks() {
+  const list = document.getElementById('taskList');
+  const childFilter = new URLSearchParams(location.search).get('child') || '';
+
+  let filtered = tasks;
+  if (childFilter && !isAdmin) {
+    filtered = tasks.filter(t => !t.assign_to || t.assign_to === childFilter);
+  }
+
+  if (filtered.length === 0) {
+    const emptyText = hiraganaMode
+      ? await convertToHiragana(currentTab === 'active' ? UI_LABELS.emptyActive : UI_LABELS.emptyDone)
+      : (currentTab === 'active' ? UI_LABELS.emptyActive : UI_LABELS.emptyDone);
+    list.innerHTML = '<div class="empty-msg">' + (currentTab === 'active' ? '🎉 ' : '') + escHtml(emptyText) + '</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  for (const t of filtered) {
+    const priorityIcon = t.priority >= 2 ? '🔥' : t.priority === 1 ? '⭐' : '📌';
+    const isDone = t.status === 'done';
+    const cl = t.checklist || [];
+    const allChecked = cl.length > 0 && cl.every(item => item.checked);
+    const checkedCount = cl.filter(item => item.checked).length;
+
+    const card = document.createElement('div');
+    card.className = 'task-card' + (isDone ? ' done' : '') + (allChecked && !isDone ? ' all-checked' : '');
+    card.setAttribute('data-task-id', t.id);
+
+    const titleText = await displayText(t.title);
+    const assignName = t.assign_to ? await displayText(t.assign_to) : '';
+
+    let badgeHtml = assignName ? '<div class="task-assign-badge">' + escHtml(assignName) + '</div>' : '';
+
+    // チェックリスト進捗表示
+    let progressHtml = '';
+    if (cl.length > 0 && !isDone) {
+      progressHtml = '<div class="task-progress">' + (allChecked ? '✅ ぜんぶおわった！' : '☑ ' + checkedCount + '/' + cl.length) + '</div>';
+    }
+
+    // チェックリスト詳細
+    let detailHtml = '';
+    if (cl.length > 0) {
+      let itemsHtml = '';
+      for (let i = 0; i < cl.length; i++) {
+        const itemText = await displayText(cl[i].text);
+        const checked = cl[i].checked;
+        itemsHtml += '<div class="checklist-item">'
+          + '<input type="checkbox" id="chk_' + t.id + '_' + i + '" ' + (checked ? 'checked' : '') + ' onchange="event.stopPropagation();toggleCheck(\'' + t.id + '\',' + i + ',this.checked)">'
+          + '<label for="chk_' + t.id + '_' + i + '" class="' + (checked ? 'checked' : '') + '" onclick="event.stopPropagation();">' + escHtml(itemText) + '</label>'
+          + '</div>';
+      }
+      detailHtml = '<div class="task-detail">' + itemsHtml + '</div>';
+    } else if (t.description) {
+      const descText = await displayText(t.description);
+      detailHtml = '<div class="task-detail">' + escHtml(descText) + '</div>';
+    }
+
+    let actionsHtml = '';
+    if (isDone) {
+      const doneBy = t.done_by ? await displayText(t.done_by) : '';
+      const doneInfo = doneBy ? doneBy + ' がやった' : '';
+      if (isAdmin) {
+        actionsHtml = '<button class="task-btn undo" onclick="event.stopPropagation();undoTask(\'' + t.id + '\')" title="もどす">↩</button>'
+          + '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
+      }
+      card.innerHTML = badgeHtml
+        + '<div class="task-main"><div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body"><div class="task-title">' + escHtml(titleText) + '</div>'
+        + '<div class="task-pts">' + t.points + 'pt</div>'
+        + (doneInfo ? '<div class="task-done-info">' + escHtml(doneInfo) + '</div>' : '')
+        + '</div><div class="task-actions">' + actionsHtml + '</div></div>' + detailHtml;
+    } else {
+      actionsHtml = cl.length === 0 ? '<button class="task-btn complete" onclick="event.stopPropagation();completeTask(\'' + t.id + '\')" title="できた！">✓</button>' : '';
+      if (isAdmin) {
+        actionsHtml += '<button class="task-btn delete" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')" title="けす">✕</button>';
+      }
+      card.innerHTML = badgeHtml
+        + '<div class="task-main"><div class="task-priority">' + priorityIcon + '</div>'
+        + '<div class="task-body"><div class="task-title">' + escHtml(titleText) + '</div>'
+        + '<div class="task-pts">' + t.points + 'pt</div>'
+        + progressHtml
+        + '</div><div class="task-actions">' + actionsHtml + '</div></div>' + detailHtml;
+    }
+
+    if (cl.length > 0 || t.description) {
+      card.addEventListener('click', (e) => {
+        // チェックリスト項目内のクリックではカード展開/折りたたみしない
+        if (e.target.closest('.checklist-item')) return;
+        card.classList.toggle('expanded');
+      });
+    }
+
+    list.appendChild(card);
+  }
+}
+
+// --- チェック切り替え ---
+let checkLock = false;
+async function toggleCheck(taskId, idx, checked) {
+  if (checkLock) return;
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !task.checklist) return;
+  if (task.status === 'done') return;
+  checkLock = true;
+  task.checklist[idx].checked = checked;
+  await client.from('chore_tasks').update({ checklist: task.checklist }).eq('id', taskId);
+
+  // DOM直接更新（カードを閉じないように）
+  const card = document.querySelector('[data-task-id="' + taskId + '"]');
+  if (card) {
+    const items = card.querySelectorAll('.checklist-item');
+    if (items[idx]) {
+      const cb = items[idx].querySelector('input[type="checkbox"]');
+      const lbl = items[idx].querySelector('label');
+      if (cb) cb.checked = checked;
+      if (lbl) lbl.classList.toggle('checked', checked);
+    }
+    // 進捗更新
+    const cl = task.checklist;
+    const checkedCount = cl.filter(item => item.checked).length;
+    const allChecked = cl.every(item => item.checked);
+    const progress = card.querySelector('.task-progress');
+    if (progress) {
+      progress.textContent = allChecked ? '✅ ぜんぶおわった！' : '☑ ' + checkedCount + '/' + cl.length;
+    }
+    card.classList.toggle('all-checked', allChecked);
+
+    // 全チェック完了 → 完了確認モーダル
+    if (allChecked && checked) {
+      checkLock = false;
+      showCompleteModal(taskId, idx);
+      return;
+    }
+  }
+  checkLock = false;
+}
+
+// --- 完了確認モーダル ---
+function showCompleteModal(taskId, lastIdx) {
+  const overlay = document.getElementById('completeOverlay');
+  overlay.setAttribute('data-task-id', taskId);
+  overlay.setAttribute('data-last-idx', lastIdx);
+  overlay.classList.add('active');
+}
+
+function cancelComplete() {
+  const overlay = document.getElementById('completeOverlay');
+  const taskId = overlay.getAttribute('data-task-id');
+  const lastIdx = parseInt(overlay.getAttribute('data-last-idx'));
+  overlay.classList.remove('active');
+  // チェックボックスから来た場合のみ最後のチェックを取りやめ
+  if (lastIdx >= 0) {
+    toggleCheck(taskId, lastIdx, false);
+  }
+}
+
+async function confirmComplete(childName) {
+  const overlay = document.getElementById('completeOverlay');
+  if (!overlay.classList.contains('active')) return; // 二重実行防止
+  const taskId = overlay.getAttribute('data-task-id');
+  overlay.classList.remove('active');
+
+  const task = tasks.find(t => t.id === taskId);
+  const title = task ? task.title : '';
+  const points = task ? task.points : 1;
+
+  // 子供のIDを取得
+  const { data: childData } = await client.from('children').select('id').eq('name', childName).maybeSingle();
+  if (!childData) {
+    alert('「' + childName + '」のアカウントが見つかりません');
+    return;
+  }
+  // chore_pointsにpendingで挿入（admin承認待ち）
+  await client.from('chore_points').insert({
+    child_id: childData.id,
+    chore_name: title,
+    points: points,
+    status: 'pending'
+  });
+
+  // タスクをdoneに移動（承認後に自動削除される）
+  await client.from('chore_tasks').update({
+    status: 'done',
+    done_by: childName,
+    done_at: new Date().toISOString()
+  }).eq('id', taskId);
+
+  // Discord通知
+  notifyDiscord('✅ ' + childName + 'が「' + title + '」をやりました！（' + points + 'pt承認待ち）');
+
+  loadTasks();
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabActive').classList.toggle('active', tab === 'active');
+  document.getElementById('tabDone').classList.toggle('active', tab === 'done');
+  loadTasks();
+}
+
+async function completeTask(id) {
+  // ✓ボタンからも完了者選択モーダルを表示
+  showCompleteModal(id, -1);
+}
+
+async function undoTask(id) {
+  // 対応するpending chore_pointsを1件削除（二重付与防止）
+  const task = tasks.find(t => t.id === id);
+  if (task && task.done_by) {
+    const { data: childData } = await client.from('children').select('id').eq('name', task.done_by).maybeSingle();
+    if (childData) {
+      const { data: pendingPts } = await client.from('chore_points').select('id')
+        .eq('child_id', childData.id)
+        .eq('chore_name', task.title)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (pendingPts && pendingPts.length > 0) {
+        await client.from('chore_points').delete().eq('id', pendingPts[0].id);
+      }
+    }
+  }
+  const resetChecklist = (task && task.checklist) ? task.checklist.map(i => ({...i, checked: false})) : null;
+  await client.from('chore_tasks').update({ status: 'active', done_by: null, done_at: null, checklist: resetChecklist }).eq('id', id);
+  loadTasks();
+}
+
+async function deleteTask(id) {
+  if (!confirm('このお手伝いを削除しますか？')) return;
+  await client.from('chore_tasks').delete().eq('id', id);
+  loadTasks();
+}
+
+async function addTask() {
+  const title = document.getElementById('addTitle').value.trim();
+  const points = parseInt(document.getElementById('addPoints').value) || 1;
+  const priority = parseInt(document.getElementById('addPriority').value) || 0;
+  const assignTo = document.getElementById('addAssign').value || null;
+
+  if (!title) { alert('お手伝いの名前を入力してください'); return; }
+
+  // 重複チェック（同タイトルのactiveが既にある場合は追加しない）
+  const { data: existing } = await client.from('chore_tasks').select('id').eq('status', 'active').eq('title', title);
+  if (existing && existing.length > 0) {
+    alert('「' + title + '」は既にリストにあります'); return;
+  }
+
+  // チェックリスト構築
+  const cl = checklistItems.filter(t => t.trim()).map(t => ({ text: t.trim(), checked: false }));
+
+  document.getElementById('btnAdd').disabled = true;
+  const { error: insertErr } = await client.from('chore_tasks').insert({
+    title,
+    checklist: cl.length > 0 ? cl : null,
+    points,
+    priority,
+    assign_to: assignTo
+  });
+
+  if (insertErr) {
+    alert('追加に失敗しました: ' + insertErr.message);
+    document.getElementById('btnAdd').disabled = false;
+    return;
+  }
+
+  document.getElementById('addTitle').value = '';
+  document.getElementById('addPoints').value = '1';
+  document.getElementById('addPriority').value = '0';
+  document.getElementById('addAssign').value = '';
+  checklistItems = [];
+  renderChecklistEditor();
+  document.getElementById('btnAdd').disabled = false;
+
+  const msg = document.getElementById('addMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  if (currentTab === 'active') loadTasks();
+}
+
+document.getElementById('addTitle').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+// 初期化
+(async function init() {
+  if (isAdmin) loadTemplates();
+  if (hiraganaMode) {
+    await initKuroshiro();
+    await updateUILabels();
+  }
+  loadTasks();
+})();
+</script>
+
+</body>
+</html>

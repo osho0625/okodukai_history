@@ -161,9 +161,8 @@
     if (!state.callId) {
       state.callId = localStorage.getItem(CURRENT_CALL_KEY) || null;
     }
-    if (state.callId && state.childId) {
-      subscribeChannel(state.callId);
-    }
+    // チャネル購読（callIdがなくてもdefaultで接続）
+    subscribeChannel(state.callId || 'default');
 
     // オフラインキュー自動送信
     window.addEventListener('online', flushOfflineQueue);
@@ -283,15 +282,15 @@
       parentSection.style.display = 'none';
     }
 
-    // 理由ボタン: タップで即座に送信（はきそうはサブ選択表示）
+    // 理由ボタン: タップで即座に送信（はきそうはサブ選択表示、tempBtnは除外）
     reasonBtns.forEach(btn => {
+      if (btn.id === 'tempBtn') return; // 体温ボタンはここでは処理しない
       btn.addEventListener('click', () => {
         if (btn.dataset.hasSub) {
-          // サブ選択を表示
-          const sub = document.getElementById('hakisoSub');
-          sub.classList.toggle('active');
+          // モーダル表示
+          const modal = document.getElementById('hakisoModal');
+          modal.style.display = 'flex';
         } else {
-          document.getElementById('hakisoSub')?.classList.remove('active');
           sendCall(btn.dataset.reason);
         }
       });
@@ -300,9 +299,16 @@
     // はきそうサブ選択ボタン
     document.querySelectorAll('.reason-sub-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('hakisoSub')?.classList.remove('active');
+        document.getElementById('hakisoModal').style.display = 'none';
         sendCall(btn.dataset.reason);
       });
+    });
+
+    // モーダル背景タップで閉じる
+    document.getElementById('hakisoModal')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('hakisoModal')) {
+        document.getElementById('hakisoModal').style.display = 'none';
+      }
     });
 
     // 🔔ボタン: 理由なしで送信
@@ -334,7 +340,7 @@
 
     // Edge Function呼び出し
     callBtn.disabled = true;
-    reasonBtns.forEach(btn => btn.disabled = true);
+    reasonBtns.forEach(btn => { if (btn.id !== 'tempBtn') btn.disabled = true; });
     showStatus('おくっているよ...', 'info');
 
     try {
@@ -362,7 +368,7 @@
         subscribeChannel(data.call_id);
 
         if (data.notification_status === 'sent' || data.notification_status === 'partial') {
-          showStatus('おくったよ！', 'success');
+          showStatus('おくったよ！このがめんでまっててね！', 'success');
         } else {
           showStatus('おくったけど、とどかなかったかも', 'info');
         }
@@ -391,17 +397,21 @@
 
     // ボタン即再有効化（クールダウンなし）
     callBtn.disabled = false;
-    reasonBtns.forEach(btn => btn.disabled = false);
+    reasonBtns.forEach(btn => { if (btn.id !== 'tempBtn') btn.disabled = false; });
   }
 
   // ============================================================
   // オフラインキュー送信
   // ============================================================
 
+  let _flushingQueue = false;
+
   async function flushOfflineQueue() {
+    if (_flushingQueue) return;
     const queued = offlineQueue.peek();
     if (!queued || !navigator.onLine) return;
 
+    _flushingQueue = true;
     try {
       const token = getAccessToken();
       const res = await fetch(EDGE_FUNCTION_URL, {
@@ -424,6 +434,8 @@
       }
     } catch (e) {
       // リトライは次のonlineイベントで
+    } finally {
+      _flushingQueue = false;
     }
   }
 
@@ -437,14 +449,14 @@
       client.removeChannel(state.channel);
     }
 
-    const channelName = buildChannelName(state.childId, callId);
+    const channelName = buildChannelName(state.childId || 'default', callId || 'default');
     state.channel = client.channel(channelName);
 
     state.channel
       .on('broadcast', { event: 'response' }, (payload) => {
         const msg = payload.payload;
         if (msg.action === 'iku_yo' && !state.isParent) {
-          showResponseOverlay();
+          showResponseOverlay(msg.text || '今行くよ💨');
         }
       })
       .on('broadcast', { event: 'session' }, (payload) => {
@@ -462,43 +474,51 @@
   // ============================================================
 
   function initParentMode() {
-    // ホームビューを完全に非表示にして親セクションだけ表示
-    document.getElementById('viewHome').innerHTML = '';
+    // 子供用要素を非表示にして親セクションを表示
+    const callBtn = document.getElementById('callBtn');
+    const reasonBtns = document.getElementById('reasonBtns');
+    const navIcons = document.querySelector('.nav-icons');
+    const nameDisplay = document.getElementById('nameDisplay');
+    const hakisoModal = document.getElementById('hakisoModal');
+    if (callBtn) callBtn.style.display = 'none';
+    if (reasonBtns) reasonBtns.style.display = 'none';
+    if (navIcons) navIcons.style.display = 'none';
+    if (nameDisplay) nameDisplay.style.display = 'none';
+    if (hakisoModal) hakisoModal.style.display = 'none';
+
     parentSection.classList.add('visible');
     parentSection.style.display = 'block';
-    document.getElementById('viewHome').appendChild(parentSection);
 
     // active callがない場合
     if (!state.callId) {
       showStatus('呼び出しはまだありません', 'info');
       ikuyoBtn.disabled = true;
-      // Realtimeで新しい呼び出しを待機（全active callのチャネル）
       pollForNewCalls();
-      return;
+    } else {
+      // 呼び出し元の名前を表示
+      if (state.childName) {
+        showStatus(`📳 ${state.childName}から呼ばれています`, 'info');
+      }
     }
 
-    // 呼び出し元の名前を表示
-    if (state.childName) {
-      showStatus(`📳 ${state.childName}から呼ばれています`, 'info');
-    }
-
-    subscribeChannel(state.callId);
+    // チャネル購読はcontinueInit()で行われるためここでは不要
 
     ikuyoBtn.addEventListener('click', async () => {
-      // Realtime broadcast
-      const channelName = buildChannelName(state.childId, state.callId);
-      const channel = client.channel(channelName);
-      await channel.subscribe();
-      await channel.send({
-        type: 'broadcast',
-        event: 'response',
-        payload: { action: 'iku_yo' }
-      });
+      // 既にsubscribe済みのチャネルでbroadcast
+      if (state.channel) {
+        await state.channel.send({
+          type: 'broadcast',
+          event: 'response',
+          payload: { action: 'iku_yo', text: 'すぐ行くよ💨' }
+        });
+      }
 
       // DB更新
-      await client.from('nurse_calls')
-        .update({ responded_at: new Date().toISOString() })
-        .eq('id', state.callId);
+      if (state.callId && state.callId !== 'default') {
+        await client.from('nurse_calls')
+          .update({ responded_at: new Date().toISOString() })
+          .eq('id', state.callId);
+      }
 
       ikuyoBtn.disabled = true;
       ikuyoBtn.textContent = 'おくったよ！';
@@ -510,6 +530,30 @@
       }, 3000);
     });
 
+    // 親側: 返信ボタン（1分待って、3分待って、どうぞ、電話かけて）
+    document.querySelectorAll('.parent-reply-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const msg = btn.dataset.msg;
+        // 既にsubscribe済みのチャネルでbroadcast
+        if (state.channel) {
+          await state.channel.send({ type: 'broadcast', event: 'response', payload: { action: 'iku_yo', text: msg } });
+        }
+        // チャットにも投稿
+        if (window.NurseCallChat) NurseCallChat.sendMessage(msg);
+        btn.style.opacity = '0.5';
+        setTimeout(() => { btn.style.opacity = '1'; }, 2000);
+      });
+    });
+
+    // チャット履歴削除（親のみ）
+    window.clearChatHistory = async function() {
+      if (!confirm('チャット履歴を全部消しますか？')) return;
+      await client.from('nurse_call_messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (window.NurseCallChat) NurseCallChat.clearMessages();
+      const container = document.getElementById('parentChatMessages');
+      if (container) container.innerHTML = '<div style="text-align:center;color:#999;padding:12px;">履歴を削除しました</div>';
+    };
+
     // 親側: でんわするボタン
     const parentCallBtn = document.getElementById('parentCallBtn');
     if (parentCallBtn) {
@@ -519,38 +563,50 @@
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
         if (statusEl) statusEl.textContent = '📳 呼び出し中...';
-        // 音声通話初期化＆発信
+        // 子供端末にPush通知を送信（バックグラウンド時のフォールバック）
+        try {
+          await client.from('push_messages').insert({
+            target_role: 'user',
+            title: '📞 でんわだよ',
+            body: 'ナースコールをひらいてね',
+            sent: false
+          });
+        } catch(e) {}
+        // 発信（init済みなのでstartCallのみ）
         if (window.NurseCallVoice) {
-          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
           await NurseCallVoice.startCall();
         }
       });
     }
 
-    // 親側: 音声チャネルに事前接続（子供からの着信を受信するため）
-    const voiceChannelName = `nurse-voice-call`;
-    const voiceChannel = client.channel(voiceChannelName);
-    voiceChannel
-        .on('broadcast', { event: 'voice_state' }, (payload) => {
-          const msg = payload.payload;
-          if (msg.state === 'ringing') {
-            const acceptBtn = document.getElementById('parentAcceptCallBtn');
-            const statusEl = document.getElementById('parentVoiceStatus');
-            if (acceptBtn) acceptBtn.style.display = 'block';
-            if (parentCallBtn) parentCallBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = '📳 電話がきています...';
-          }
-          if (msg.state === 'ended') {
-            const acceptBtn = document.getElementById('parentAcceptCallBtn');
-            const endBtn = document.getElementById('parentEndCallBtn');
-            const statusEl = document.getElementById('parentVoiceStatus');
-            if (acceptBtn) acceptBtn.style.display = 'none';
-            if (endBtn) endBtn.style.display = 'none';
-            if (parentCallBtn) parentCallBtn.style.display = 'block';
-            if (statusEl) statusEl.textContent = '';
-          }
-        })
-        .subscribe();
+    // 親側: 音声通話初期化（ページ読み込み時に1回だけ。チャネル重複防止）
+    if (window.NurseCallVoice) {
+      NurseCallVoice.init(state.callId || 'default', state.childId || '', 'parent');
+      NurseCallVoice.onStateChange((voiceState) => {
+        const statusEl = document.getElementById('parentVoiceStatus');
+        const acceptBtn = document.getElementById('parentAcceptCallBtn');
+        const endBtn = document.getElementById('parentEndCallBtn');
+        const videoBtn = document.getElementById('parentVideoBtn');
+        if (voiceState === 'ringing') {
+          if (acceptBtn) acceptBtn.style.display = 'block';
+          if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'none';
+          if (statusEl) statusEl.textContent = '📳 電話がきています...';
+        } else if (voiceState === 'connected') {
+          if (acceptBtn) acceptBtn.style.display = 'none';
+          if (endBtn) endBtn.style.display = 'block';
+          if (parentCallBtn) parentCallBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'block';
+          if (statusEl) statusEl.textContent = '📞 通話中';
+        } else if (voiceState === 'idle') {
+          if (acceptBtn) acceptBtn.style.display = 'none';
+          if (endBtn) endBtn.style.display = 'none';
+          if (videoBtn) videoBtn.style.display = 'none';
+          if (parentCallBtn) parentCallBtn.style.display = 'block';
+          if (statusEl) statusEl.textContent = '';
+        }
+      });
+    }
 
     // でんわにでるボタン
     const parentAcceptBtn = document.getElementById('parentAcceptCallBtn');
@@ -560,12 +616,8 @@
         const endBtn = document.getElementById('parentEndCallBtn');
         const statusEl = document.getElementById('parentVoiceStatus');
         if (endBtn) endBtn.style.display = 'block';
-        if (statusEl) statusEl.textContent = '📞 つうわ中...';
-        // 音声通話初期化＆応答
-        if (window.NurseCallVoice) {
-          NurseCallVoice.init(state.callId || 'default', state.childId, 'parent');
-          await NurseCallVoice.acceptCall();
-        }
+        if (statusEl) statusEl.textContent = '📞 通話中';
+        if (window.NurseCallVoice) await NurseCallVoice.acceptCall();
       });
     }
 
@@ -615,13 +667,13 @@
     statusMsg.className = `status-msg ${type}`;
   }
 
-  function showResponseOverlay() {
+  function showResponseOverlay(text) {
     const container = document.getElementById('ikuyoPopupContainer');
     if (!container) return;
 
     const popup = document.createElement('div');
     popup.style.cssText = 'background:#fff; border-radius:16px; padding:14px 20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); font-size:1.2em; font-weight:600; color:#333; cursor:pointer; animation:popIn 0.3s ease-out; transition:all 0.3s ease;';
-    popup.textContent = '今行くよ💨';
+    popup.textContent = text || '今行くよ💨';
     popup.addEventListener('click', () => {
       popup.style.animation = 'slideOut 0.3s ease-in forwards';
       setTimeout(() => popup.remove(), 300);

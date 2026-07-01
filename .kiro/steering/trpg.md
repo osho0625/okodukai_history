@@ -30,7 +30,7 @@ KP（管理者）向けTRPGシナリオ進行ツール。admin限定アクセス
 - セッション終了: endingフェーズでボタン表示、Completion_State保存
 - ダークテーマ（クトゥルフ風: deep green/purple系）
 - game_settings.game_publish.game_trpg_cthulhu で公開制御
-- 初回シナリオ「毒入りスープ」: 10ノード、3NPC、5ロケーション、4フェーズ
+- 初回シナリオ「毒入りスープ」: 10ノード、1NPC（下僕の少女）、5ロケーション、4フェーズ
 
 ## localStorage キー
 

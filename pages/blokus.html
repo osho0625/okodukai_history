@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>ブロックス</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; overflow-x: hidden; }
+.header { display: flex; align-items: center; padding: 12px 16px; gap: 12px; max-width: 480px; margin: 0 auto; }
+.header .back { color: #eee; font-size: 1.6em; cursor: pointer; text-decoration: none; }
+.header .home { color: #eee; font-size: 1.4em; cursor: pointer; text-decoration: none; margin-left: auto; }
+.header .turn-info { flex: 1; text-align: center; font-size: 1em; font-weight: 600; transition: background 0.3s; padding: 4px 8px; border-radius: 8px; }
+.screen { display: none; max-width: 480px; margin: 0 auto; padding: 0 16px 24px; }
+.screen.active { display: block; }
+/* Night overlay */
+#nightOverlay { display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+#nightOverlay.active { display: flex; }
+#nightOverlay .moon { font-size: 4em; margin-bottom: 16px; }
+#nightOverlay h2 { margin-bottom: 8px; }
+#nightOverlay p { color: #aaa; }
+/* Title screen */
+#titleScreen { text-align: center; padding-top: 60px; }
+#titleScreen h1 { font-size: 2.2em; margin-bottom: 8px; }
+#titleScreen .subtitle { color: #aaa; margin-bottom: 40px; }
+#titleScreen .title-icon { font-size: 3em; margin-bottom: 16px; }
+.btn { display: inline-block; padding: 14px 32px; border-radius: 12px; font-size: 1.1em; font-weight: 600; border: none; cursor: pointer; transition: transform 0.1s, opacity 0.2s; color: #fff; text-decoration: none; }
+.btn:active { transform: scale(0.95); }
+.btn-primary { background: linear-gradient(135deg, #1976d2, #42a5f5); }
+.btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+.btn-success { background: linear-gradient(135deg, #388e3c, #66bb6a); }
+.btn-block { display: block; width: 100%; margin-bottom: 12px; }
+/* Setup screen */
+#setupScreen .mode-btns { display: flex; gap: 12px; margin-bottom: 24px; justify-content: center; }
+#setupScreen .mode-btn { padding: 12px 24px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #eee; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+#setupScreen .mode-btn.selected { border-color: #42a5f5; background: rgba(25,118,210,0.2); }
+#setupScreen .name-inputs { margin-bottom: 24px; }
+#setupScreen .name-input-group { margin-bottom: 12px; }
+#setupScreen .name-input-group label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+#setupScreen .name-input-group input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1em; outline: none; }
+#setupScreen .name-input-group input:focus { border-color: #42a5f5; }
+#setupScreen .name-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+#setupScreen .name-suggestions .sug { padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.8em; cursor: pointer; }
+#setupScreen .name-suggestions .sug:hover { background: rgba(255,255,255,0.2); }
+/* Game screen */
+#gameScreen .board-container { margin-bottom: 10px; }
+.board { display: grid; grid-template-columns: repeat(20, 1fr); gap: 1px; background: #0d0d1a; border-radius: 4px; overflow: hidden; aspect-ratio: 1; max-width: 100%; }
+.board .cell { position: relative; background: #2a2a4a; min-width: 0; min-height: 0; aspect-ratio: 1; cursor: pointer; transition: background 0.1s; }
+.board .cell.color-blue { background: #1976d2; }
+.board .cell.color-red { background: #d32f2f; }
+.board .cell.color-green { background: #388e3c; }
+.board .cell.color-yellow { background: #f9a825; }
+.board .cell.corner-blue { box-shadow: inset 0 0 0 2px rgba(25,118,210,0.5); }
+.board .cell.corner-red { box-shadow: inset 0 0 0 2px rgba(211,47,47,0.5); }
+.board .cell.corner-green { box-shadow: inset 0 0 0 2px rgba(56,142,60,0.5); }
+.board .cell.corner-yellow { box-shadow: inset 0 0 0 2px rgba(249,168,37,0.5); }
+.board .cell .legal-dot { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; border-radius: 50%; background: #66bb6a; transform: translate(-50%, -50%); pointer-events: none; }
+.board .cell.ghost { cursor: pointer; }
+.board .cell.ghost-blue { background: rgba(66,165,245,0.4); }
+.board .cell.ghost-red { background: rgba(239,83,80,0.4); }
+.board .cell.ghost-green { background: rgba(102,187,106,0.4); }
+.board .cell.ghost-yellow { background: rgba(255,238,88,0.4); }
+.board .cell.preview { opacity: 0.6; }
+.board .cell.preview-blue { background: #42a5f5; }
+.board .cell.preview-red { background: #ef5350; }
+.board .cell.preview-green { background: #66bb6a; }
+.board .cell.preview-yellow { background: #ffee58; }
+.board .cell.preview-invalid { background: #ff1744; }
+@keyframes flashRed { 0%,100% { background: inherit; } 50% { background: #ff1744; } }
+.board .cell.invalid-flash { animation: flashRed 0.3s ease 2; }
+/* Unlock animation */
+@keyframes lockShake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-10deg)} 40%{transform:rotate(10deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)} }
+@keyframes lockBreak { 0%{transform:scale(1);opacity:1} 100%{transform:scale(0.5) translateY(-40px) rotate(-30deg);opacity:0} }
+@keyframes unlockReveal { 0%{transform:scale(0.8);opacity:0} 50%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+/* Control bar */
+.control-bar { display: flex; gap: 8px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
+.control-bar .ctrl-btn { padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.control-bar .ctrl-btn:active { transform: scale(0.95); }
+.control-bar .ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.control-bar .ctrl-btn.pass { background: rgba(211,47,47,0.2); border-color: #ef5350; }
+/* Piece selector */
+.piece-selector { max-height: 280px; overflow-y: auto; padding: 8px 0; }
+.piece-group { margin-bottom: 8px; }
+.piece-group-label { font-size: 0.75em; color: #aaa; margin-bottom: 4px; }
+.piece-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.piece-item { display: inline-grid; padding: 4px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; background: rgba(255,255,255,0.05); gap: 0; }
+.piece-item:hover { background: rgba(255,255,255,0.1); }
+.piece-item.selected { border-color: #66bb6a; background: rgba(102,187,106,0.15); }
+.piece-item.used { opacity: 0.25; pointer-events: none; }
+.piece-item .piece-cell { width: 8px; height: 8px; border-radius: 0; }
+.piece-item .piece-cell.filled { background: currentColor; }
+.piece-item .piece-cell.empty { background: transparent; }
+/* Result screen */
+#resultScreen { text-align: center; padding-top: 40px; }
+#resultScreen .result-title { font-size: 1.8em; font-weight: 700; margin-bottom: 24px; }
+#resultScreen .scores-list { margin-bottom: 32px; }
+#resultScreen .score-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; background: rgba(255,255,255,0.06); }
+#resultScreen .score-row .player-label { display: flex; align-items: center; gap: 8px; }
+#resultScreen .score-row .score-val { font-size: 1.2em; font-weight: 700; }
+/* Ranking modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal { background: #1e1e3a; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+.modal h2 { text-align: center; margin-bottom: 16px; }
+.modal .ranking-list { list-style: none; }
+.modal .ranking-list li { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; background: rgba(255,255,255,0.05); }
+.modal .ranking-list li .rank { width: 30px; font-weight: 700; }
+.modal .ranking-list li .name { flex: 1; }
+.modal .ranking-list li .wins { font-weight: 700; color: #f9a825; }
+.modal .close-btn { display: block; width: 100%; margin-top: 16px; padding: 12px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: #eee; font-size: 1em; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- Night restriction overlay -->
+<div id="nightOverlay">
+  <div class="moon">🌙</div>
+  <h2>今日はおしまい！</h2>
+  <p>また明日ね</p>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <a class="back" onclick="handleBack()">←</a>
+  <div class="turn-info" id="turnInfo"></div>
+  <a class="home" href="#" onclick="handleHome(event)">🏠</a>
+</div>
+
+<!-- Title Screen -->
+<div class="screen active" id="titleScreen">
+  <div class="title-icon">🟦🟥🟩🟨</div>
+  <h1>ブロックス</h1>
+  <p class="subtitle">陣取りボードゲーム</p>
+  <button class="btn btn-primary btn-block" onclick="showScreen('setup')">ゲーム開始</button>
+  <button class="btn btn-secondary btn-block" onclick="showRanking()">🏆 ランキング</button>
+</div>
+
+<!-- Setup Screen -->
+<div class="screen" id="setupScreen">
+  <h2 style="text-align:center;margin-bottom:20px;">プレイヤー設定</h2>
+  <div class="mode-btns">
+    <button class="mode-btn" data-mode="1" onclick="selectMode(1)">1人</button>
+    <button class="mode-btn" data-mode="2" onclick="selectMode(2)">2人</button>
+    <button class="mode-btn" data-mode="3" onclick="selectMode(3)">3人</button>
+    <button class="mode-btn selected" data-mode="4" onclick="selectMode(4)">4人</button>
+  </div>
+  <div id="ruleSettings" style="margin-bottom:16px;display:none;">
+    <label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">ルール</label>
+    <div style="display:flex;gap:8px;">
+      <button class="mode-btn rule-btn selected" data-rule="cpu" onclick="selectRule('cpu')">CPU対戦</button>
+      <button class="mode-btn rule-btn" data-rule="official" onclick="selectRule('official')">公式ルール</button>
+    </div>
+  </div>
+  <div id="cpuSettings" style="margin-bottom:16px;display:none;"></div>
+  <div id="officialRuleHint" style="margin-bottom:12px;font-size:0.8em;color:#aaa;display:none;"></div>
+  <div class="name-inputs" id="nameInputs"></div>
+  <div style="margin-bottom:16px;">
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;cursor:pointer;">
+      <input type="checkbox" id="undoTimeLimitCheck" checked style="width:18px;height:18px;">
+      待った5秒制限あり
+    </label>
+  </div>
+  <button class="btn btn-success btn-block" onclick="startGame()">スタート！</button>
+</div>
+
+<!-- Game Screen -->
+<div class="screen" id="gameScreen">
+  <div class="board-container">
+    <div class="board" id="board"></div>
+  </div>
+  <div id="scoreboard" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;justify-content:center;font-size:0.8em;"></div>
+  <div class="control-bar">
+    <button class="ctrl-btn" id="btnRotate" onclick="doRotate()" disabled>↻ 回転</button>
+    <button class="ctrl-btn" id="btnFlip" onclick="doFlip()" disabled>↔ 反転</button>
+    <button class="ctrl-btn" id="btnUndo" onclick="doUndo()" disabled>↩ 待った</button>
+    <button class="ctrl-btn pass" id="btnPass" onclick="doPass()">パス</button>
+  </div>
+  <div class="piece-selector" id="pieceSelector"></div>
+</div>
+
+<!-- Result Screen -->
+<div class="screen" id="resultScreen">
+  <div class="result-title" id="resultTitle"></div>
+  <div class="scores-list" id="scoresList"></div>
+  <button class="btn btn-primary btn-block" onclick="resetGame()">もう一回</button>
+  <button class="btn btn-secondary btn-block" onclick="location.href='arcade.html'">ゲームセンターに戻る</button>
+</div>
+
+<!-- Ranking Modal -->
+<div class="modal-overlay" id="rankingModal" onclick="if(event.target===this)closeRanking()">
+  <div class="modal">
+    <h2>🏆 ランキング TOP10</h2>
+    <ul class="ranking-list" id="rankingList"></ul>
+    <button class="close-btn" onclick="closeRanking()">閉じる</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script>
+// Supabase client alias
+const sbClient = client;
+</script>
+
+<script>
+// =============================================================
+// Night restriction check
+// =============================================================
+if (isNightTime()) {
+  document.getElementById('nightOverlay').classList.add('active');
+}
+
+// =============================================================
+// Blokus Game - Piece Definitions & Core Logic
+// =============================================================
+
+const PIECES = [
+  { id: 'I1', cells: [[0,0]] },
+  { id: 'I2', cells: [[0,0],[1,0]] },
+  { id: 'I3', cells: [[0,0],[1,0],[2,0]] },
+  { id: 'L3', cells: [[0,0],[1,0],[1,1]] },
+  { id: 'I4', cells: [[0,0],[1,0],[2,0],[3,0]] },
+  { id: 'L4', cells: [[0,0],[1,0],[2,0],[2,1]] },
+  { id: 'T4', cells: [[0,0],[1,0],[2,0],[1,1]] },
+  { id: 'S4', cells: [[0,0],[1,0],[1,1],[2,1]] },
+  { id: 'O4', cells: [[0,0],[1,0],[0,1],[1,1]] },
+  { id: 'F5', cells: [[1,0],[2,0],[0,1],[1,1],[1,2]] },
+  { id: 'I5', cells: [[0,0],[1,0],[2,0],[3,0],[4,0]] },
+  { id: 'L5', cells: [[0,0],[1,0],[2,0],[3,0],[3,1]] },
+  { id: 'N5', cells: [[0,0],[1,0],[1,1],[2,1],[3,1]] },
+  { id: 'P5', cells: [[0,0],[1,0],[2,0],[1,1],[2,1]] },
+  { id: 'T5', cells: [[0,0],[1,0],[2,0],[1,1],[1,2]] },
+  { id: 'U5', cells: [[0,0],[2,0],[0,1],[1,1],[2,1]] },
+  { id: 'V5', cells: [[0,0],[1,0],[2,0],[2,1],[2,2]] },
+  { id: 'W5', cells: [[0,0],[1,0],[1,1],[2,1],[2,2]] },
+  { id: 'X5', cells: [[1,0],[0,1],[1,1],[2,1],[1,2]] },
+  { id: 'Y5', cells: [[0,0],[1,0],[2,0],[3,0],[1,1]] },
+  { id: 'Z5', cells: [[0,0],[1,0],[1,1],[1,2],[2,2]] }
+];
+
+const PLAYER_COLORS = {
+  blue:   { fill: '#1976d2', light: '#42a5f5', label: '🟦' },
+  red:    { fill: '#d32f2f', light: '#ef5350', label: '🟥' },
+  green:  { fill: '#388e3c', light: '#66bb6a', label: '🟩' },
+  yellow: { fill: '#f9a825', light: '#ffee58', label: '🟨' }
+};
+
+const STARTING_CORNERS = {
+  blue:   { x: 0,  y: 0 },
+  red:    { x: 0,  y: 19 },
+  green:  { x: 19, y: 0 },
+  yellow: { x: 19, y: 19 }
+};
+
+const COLOR_ORDER = ['blue', 'red', 'green', 'yellow'];
+
+// =============================================================
+// Game State
+// =============================================================
+let gameState = {
+  phase: 'title',
+  board: null,
+  players: [],
+  mode: 4,
+  currentTurn: 0,
+  selectedPieceIdx: -1,
+  rotation: 0,
+  flipped: false,
+  selectedPosition: null
+};
+
+let legalCache = { key: '', positions: [] };
+let boardVersion = 0;
+let undoHistory = []; // stack of { board, players, currentTurn } snapshots
+
+// =============================================================
+// Core Transform Functions
+// =============================================================
+function normalizeCells(cells) {
+  const minX = Math.min(...cells.map(c => c[0]));
+  const minY = Math.min(...cells.map(c => c[1]));
+  return cells.map(c => [c[0] - minX, c[1] - minY]);
+}
+
+function rotatePiece(cells, times) {
+  const t = ((times % 4) + 4) % 4;
+  let result = cells.map(c => [...c]);
+  for (let i = 0; i < t; i++) {
+    result = result.map(([x, y]) => [y, -x]);
+    result = normalizeCells(result);
+  }
+  return result;
+}
+
+function flipPiece(cells) {
+  const flipped = cells.map(([x, y]) => [-x, y]);
+  return normalizeCells(flipped);
+}
+
+function transformPiece(cells, rotation, flipped) {
+  let result = cells.map(c => [...c]);
+  if (flipped) result = flipPiece(result);
+  result = rotatePiece(result, rotation);
+  return result;
+}
+
+// =============================================================
+// Placement Validation
+// =============================================================
+function checkStartingCorner(cells, x, y, playerColor) {
+  const corner = STARTING_CORNERS[playerColor];
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i][0] + x === corner.x && cells[i][1] + y === corner.y) return true;
+  }
+  return false;
+}
+
+function checkCornerRule(board, cells, x, y, playerColor) {
+  const diagonals = [[-1,-1],[1,-1],[-1,1],[1,1]];
+  for (let i = 0; i < cells.length; i++) {
+    const bx = cells[i][0] + x, by = cells[i][1] + y;
+    for (let d = 0; d < diagonals.length; d++) {
+      const nx = bx + diagonals[d][0], ny = by + diagonals[d][1];
+      if (nx >= 0 && nx < 20 && ny >= 0 && ny < 20 && board[ny][nx] === playerColor) return true;
+    }
+  }
+  return false;
+}
+
+function checkNoEdgeTouch(board, cells, x, y, playerColor) {
+  const orthogonals = [[0,-1],[0,1],[-1,0],[1,0]];
+  for (let i = 0; i < cells.length; i++) {
+    const bx = cells[i][0] + x, by = cells[i][1] + y;
+    for (let d = 0; d < orthogonals.length; d++) {
+      const nx = bx + orthogonals[d][0], ny = by + orthogonals[d][1];
+      if (nx >= 0 && nx < 20 && ny >= 0 && ny < 20 && board[ny][nx] === playerColor) return false;
+    }
+  }
+  return true;
+}
+
+function canPlace(board, cells, x, y, playerColor, isFirstPiece) {
+  for (let i = 0; i < cells.length; i++) {
+    const bx = cells[i][0] + x, by = cells[i][1] + y;
+    if (bx < 0 || bx > 19 || by < 0 || by > 19) return false;
+    if (board[by][bx] !== null) return false;
+  }
+  if (isFirstPiece) return checkStartingCorner(cells, x, y, playerColor);
+  return checkCornerRule(board, cells, x, y, playerColor) && checkNoEdgeTouch(board, cells, x, y, playerColor);
+}
+
+function placePiece(board, cells, x, y, playerColor) {
+  const newBoard = board.map(row => [...row]);
+  for (let i = 0; i < cells.length; i++) {
+    newBoard[cells[i][1] + y][cells[i][0] + x] = playerColor;
+  }
+  return newBoard;
+}
+
+// =============================================================
+// Score & Turn Management
+// =============================================================
+function calculateScore(player) {
+  let remainingCells = 0, allPlaced = true;
+  for (let i = 0; i < 21; i++) {
+    if (player.pieces[i]) { remainingCells += PIECES[i].cells.length; allPlaced = false; }
+  }
+  let score = -remainingCells;
+  if (allPlaced) { score += 15; if (player.lastPieceSize === 1) score += 5; }
+  return score;
+}
+
+function calculateTeamScore(p1, p2) { return calculateScore(p1) + calculateScore(p2); }
+
+function isGameOver(gs) {
+  for (let i = 0; i < 4; i++) { if (!gs.players[i].passed) return false; }
+  return true;
+}
+
+function advanceTurn(gs) {
+  let next = gs.currentTurn;
+  do { next = (next + 1) % 4; } while (gs.players[next].passed);
+  gs.currentTurn = next;
+  // Handle 3-player official rule: rotate yellow's controller
+  const p = gs.players[next];
+  if (p.sharedColorRotation !== undefined && next === 3) {
+    const names = [gs.players[0].name, gs.players[1].name, gs.players[2].name];
+    const rotIdx = p.sharedColorRotation;
+    p.name = names[rotIdx % 3];
+    p.controlledBy = rotIdx % 3;
+    p.sharedColorRotation = rotIdx + 1;
+  }
+  return next;
+}
+
+function determineWinner(gs) {
+  const scores = [];
+  for (let i = 0; i < 4; i++) scores.push(calculateScore(gs.players[i]));
+  const max = Math.max(...scores);
+  const winners = scores.reduce((a, s, i) => s === max ? [...a, i] : a, []);
+  return { isDraw: winners.length > 1, winnerIndices: winners };
+}
+
+// =============================================================
+// Legal Positions
+// =============================================================
+function isFirstPieceForColor(board, color) {
+  for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) if (board[y][x] === color) return false;
+  return true;
+}
+
+function getLegalPositions(board, pieceIdx, rotation, flipped, playerColor) {
+  const key = `${pieceIdx}_${rotation}_${flipped}_${playerColor}_${boardVersion}`;
+  if (legalCache.key === key) return legalCache.positions;
+  const cells = transformPiece(PIECES[pieceIdx].cells, rotation, flipped);
+  const first = isFirstPieceForColor(board, playerColor);
+  const positions = [];
+  for (let y = 0; y < 20; y++) {
+    for (let x = 0; x < 20; x++) {
+      if (canPlace(board, cells, x, y, playerColor, first)) positions.push({x, y});
+    }
+  }
+  legalCache = { key, positions };
+  return positions;
+}
+</script>
+
+<script>
+// =============================================================
+// UI: Screen Management
+// =============================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(name + 'Screen');
+  if (el) el.classList.add('active');
+  gameState.phase = name;
+  // Show/hide turn info
+  const turnEl = document.getElementById('turnInfo');
+  turnEl.style.display = name === 'game' ? '' : 'none';
+  if (name === 'setup') {
+    buildSetupUI();
+    updateRuleUI();
+    // Check for meijin unlock pending
+    if (localStorage.getItem('blokus_meijin_unlock_pending') === 'true') {
+      localStorage.removeItem('blokus_meijin_unlock_pending');
+      setTimeout(playMeijinUnlock, 400);
+    }
+  }
+  if (name === 'game') { renderBoard(); renderPieces(); updateTurnInfo(); updateUndoButton(); }
+}
+
+function handleBack() {
+  if (gameState.phase === 'game') {
+    if (!confirm('ゲーム中だよ！やめる？')) return;
+  }
+  history.back();
+}
+
+function handleHome(e) {
+  e.preventDefault();
+  if (gameState.phase === 'game') {
+    if (!confirm('ゲーム中だよ！やめる？')) return;
+  }
+  location.href = '../index.html';
+}
+
+function updateTurnInfo() {
+  const p = gameState.players[gameState.currentTurn];
+  const info = PLAYER_COLORS[p.color];
+  const el = document.getElementById('turnInfo');
+  if (p.isCpu) {
+    el.textContent = `${info.label} ${p.name} 考え中...`;
+  } else {
+    el.textContent = `${info.label} ${p.name} のターン`;
+  }
+  el.style.background = info.fill + '33';
+  // Hide controls during CPU turn
+  const isCpuTurn = p.isCpu;
+  document.getElementById('pieceSelector').style.opacity = isCpuTurn ? '0.3' : '1';
+  document.getElementById('pieceSelector').style.pointerEvents = isCpuTurn ? 'none' : '';
+  document.getElementById('btnPass').disabled = isCpuTurn;
+}
+
+// =============================================================
+// UI: Setup Screen
+// =============================================================
+let selectedMode = 4;
+let selectedCpu = 'normal'; // 'weak' | 'normal' | 'strong'
+let selectedRule = 'cpu'; // 'cpu' | 'official'
+
+function selectMode(m) {
+  selectedMode = m;
+  document.querySelectorAll('.mode-btn:not(.cpu-btn):not(.rule-btn)').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.mode) === m));
+  // Show rule toggle for 2-3 players, not for 1 or 4
+  document.getElementById('ruleSettings').style.display = (m === 2 || m === 3) ? '' : 'none';
+  if (m === 1) { selectedRule = 'cpu'; }
+  if (m === 4) { selectedRule = 'official'; } // 4 player is always human
+  updateRuleUI();
+  buildSetupUI();
+}
+
+function selectRule(rule) {
+  selectedRule = rule;
+  document.querySelectorAll('.rule-btn').forEach(b => b.classList.toggle('selected', b.dataset.rule === rule));
+  updateRuleUI();
+}
+
+function updateRuleUI() {
+  const showCpu = selectedMode < 4 && selectedRule === 'cpu';
+  const cpuEl = document.getElementById('cpuSettings');
+  if (showCpu) {
+    const cpuCount = 4 - selectedMode;
+    const colorLabels = ['🟦','🟥','🟩','🟨'];
+    const meijinUnlocked = localStorage.getItem('blokus_meijin_unlocked') === 'true';
+    let html = '<label style="font-size:0.85em;color:#aaa;display:block;margin-bottom:6px;">CPUの強さ</label>';
+    for (let i = 0; i < cpuCount; i++) {
+      const colorIdx = selectedMode + i;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:1.1em;">${colorLabels[colorIdx]}</span>
+        <select id="cpuLevel${i}" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:#2a2a4a;color:#eee;font-size:0.9em;">
+          <option value="weak">よわい</option>
+          <option value="normal" selected>ふつう</option>
+          <option value="strong">つよい</option>
+          ${meijinUnlocked ? '<option value="meijin">🏆 めいじん</option>' : ''}
+        </select>
+      </div>`;
+        </select>
+      </div>`;
+    }
+    cpuEl.innerHTML = html;
+    cpuEl.style.display = '';
+  } else {
+    cpuEl.style.display = 'none';
+  }
+  const hint = document.getElementById('officialRuleHint');
+  if (selectedRule === 'official' && selectedMode === 2) {
+    hint.style.display = '';
+    hint.textContent = '2人ルール: 各プレイヤーが2色ずつ交互に操作します（🟦🟩 vs 🟥🟨）';
+  } else if (selectedRule === 'official' && selectedMode === 3) {
+    hint.style.display = '';
+    hint.textContent = '3人ルール: 余った🟨は3人が交互に操作します';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function selectCpu(level) {
+  // legacy - no longer used with per-CPU selects
+}
+
+function getSavedNames() {
+  try { return JSON.parse(localStorage.getItem('blokus_player_names') || '[]'); } catch(e) { return []; }
+}
+
+function buildSetupUI() {
+  const container = document.getElementById('nameInputs');
+  const saved = getSavedNames();
+  const labels = ['🟦 プレイヤー1', '🟥 プレイヤー2', '🟩 プレイヤー3', '🟨 プレイヤー4'];
+  let html = '';
+  for (let i = 0; i < selectedMode; i++) {
+    html += nameField(labels[i], i, saved);
+  }
+  container.innerHTML = html;
+}
+
+function nameField(label, idx, saved) {
+  const sugHtml = saved.map(n => {
+    const escaped = n.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return `<span class="sug" onclick="document.getElementById('pname${idx}').value=this.dataset.name;" data-name="${escaped}">${escaped}</span>`;
+  }).join('');
+  return `<div class="name-input-group"><label>${label}</label><input id="pname${idx}" type="text" placeholder="名前を入力" autocomplete="off"><div class="name-suggestions">${sugHtml}</div></div>`;
+}
+
+function startGame() {
+  gameState.mode = 4; // always 4 colors active
+  gameState.board = Array.from({length:20}, () => Array(20).fill(null));
+  gameState.currentTurn = 0;
+  gameState.selectedPieceIdx = -1;
+  gameState.rotation = 0;
+  gameState.flipped = false;
+  gameState.selectedPosition = null;
+  boardVersion++;
+  undoHistory = [];
+  lastPlaceTime = 0;
+  undoTimeLimit = document.getElementById('undoTimeLimitCheck').checked;
+
+  const humanCount = selectedMode;
+  const useOfficial = (selectedMode === 2 || selectedMode === 3) && selectedRule === 'official';
+  const useCpu = selectedMode < 4 && selectedRule === 'cpu';
+
+  // Collect human names
+  const names = [];
+  for (let i = 0; i < humanCount; i++) {
+    names.push(document.getElementById('pname' + i).value.trim() || ('プレイヤー' + (i+1)));
+  }
+
+  // Build players with ownership info
+  // controlledBy: index of the human player who controls this color (for UI turn display)
+  // isCpu: true if controlled by AI
+  gameState.players = COLOR_ORDER.map((color, i) => ({
+    color, name: '', pieces: Array(21).fill(true), passed: false, lastPieceSize: 0,
+    isCpu: false, cpuLevel: null, controlledBy: i
+  }));
+
+  if (selectedMode === 4) {
+    // 4 players: each human controls their own color
+    for (let i = 0; i < 4; i++) {
+      gameState.players[i].name = names[i];
+      gameState.players[i].controlledBy = i;
+    }
+  } else if (useOfficial) {
+    if (selectedMode === 2) {
+      // Official 2-player: P1 controls blue(0)+green(2), P2 controls red(1)+yellow(3)
+      // Turn order: blue→red→green→yellow = P1→P2→P1→P2
+      gameState.players[0].name = names[0]; gameState.players[0].controlledBy = 0;
+      gameState.players[1].name = names[1]; gameState.players[1].controlledBy = 1;
+      gameState.players[2].name = names[0]; gameState.players[2].controlledBy = 0;
+      gameState.players[3].name = names[1]; gameState.players[3].controlledBy = 1;
+    } else if (selectedMode === 3) {
+      // Official 3-player: P1=blue, P2=red, P3=green, yellow=rotated among P1→P2→P3→P1...
+      gameState.players[0].name = names[0]; gameState.players[0].controlledBy = 0;
+      gameState.players[1].name = names[1]; gameState.players[1].controlledBy = 1;
+      gameState.players[2].name = names[2]; gameState.players[2].controlledBy = 2;
+      // Yellow starts controlled by P1, rotates each turn it plays
+      gameState.players[3].name = names[0]; gameState.players[3].controlledBy = 0;
+      gameState.players[3].sharedColorRotation = 0; // tracks which human plays yellow next
+    }
+  } else if (useCpu) {
+    // CPU mode: first N humans, rest CPU
+    for (let i = 0; i < humanCount; i++) {
+      gameState.players[i].name = names[i];
+      gameState.players[i].controlledBy = i;
+    }
+    const cpuNames = ['CPU1', 'CPU2', 'CPU3'];
+    let cpuIdx = 0;
+    for (let i = humanCount; i < 4; i++) {
+      const levelEl = document.getElementById('cpuLevel' + cpuIdx);
+      const level = levelEl ? levelEl.value : 'normal';
+      gameState.players[i].name = cpuNames[cpuIdx];
+      gameState.players[i].isCpu = true;
+      gameState.players[i].cpuLevel = level;
+      gameState.players[i].controlledBy = -1;
+      cpuIdx++;
+    }
+  }
+
+  // Save names to localStorage
+  try {
+    const existing = getSavedNames();
+    const all = [...new Set([...existing, ...names])].slice(0, 20);
+    localStorage.setItem('blokus_player_names', JSON.stringify(all));
+  } catch(e) {}
+
+  showScreen('game');
+  // If first player is CPU, trigger CPU turn
+  if (gameState.players[0].isCpu) scheduleCpuTurn();
+}
+
+// =============================================================
+// UI: Scoreboard (live score display)
+// =============================================================
+function renderScoreboard() {
+  const el = document.getElementById('scoreboard');
+  if (!el) return;
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const p = gameState.players[i];
+    if (p.passed && p.name === '') continue; // skip unused
+    const info = PLAYER_COLORS[p.color];
+    let remainingCells = 0;
+    for (let j = 0; j < 21; j++) {
+      if (p.pieces[j]) remainingCells += PIECES[j].cells.length;
+    }
+    const isActive = i === gameState.currentTurn;
+    const border = isActive ? `border:1px solid ${info.fill}` : 'border:1px solid rgba(255,255,255,0.1)';
+    const opacity = p.passed ? 'opacity:0.4;' : '';
+    html += `<div style="padding:4px 8px;border-radius:6px;${border};${opacity}background:rgba(255,255,255,0.05);display:flex;align-items:center;gap:4px;">`;
+    html += `<span>${info.label}</span>`;
+    html += `<span style="color:#ff6b6b;font-weight:700;">-${remainingCells}</span>`;
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// =============================================================
+// UI: Board Rendering
+// =============================================================
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  const currentColor = gameState.players[gameState.currentTurn].color;
+  renderScoreboard();
+
+  // Get legal positions and build ghost cell set (only for human players)
+  let ghostCells = new Map(); // key "x,y" → position {x,y} that placed it
+  const currentPlayer = gameState.players[gameState.currentTurn];
+  if (gameState.selectedPieceIdx >= 0 && !currentPlayer.isCpu) {
+    const legalPos = getLegalPositions(gameState.board, gameState.selectedPieceIdx, gameState.rotation, gameState.flipped, currentColor);
+    const cells = transformPiece(PIECES[gameState.selectedPieceIdx].cells, gameState.rotation, gameState.flipped);
+    for (const pos of legalPos) {
+      for (const c of cells) {
+        const bx = c[0] + pos.x, by = c[1] + pos.y;
+        if (bx >= 0 && bx < 20 && by >= 0 && by < 20) {
+          ghostCells.set(`${bx},${by}`, pos);
+        }
+      }
+    }
+  }
+
+  // Check which corners are still active
+  const activeCorners = {};
+  for (const [color, pos] of Object.entries(STARTING_CORNERS)) {
+    if (gameState.mode === 3 && color === 'yellow') continue;
+    if (gameState.board[pos.y][pos.x] === null) activeCorners[`${pos.x},${pos.y}`] = color;
+  }
+
+  const frag = document.createDocumentFragment();
+  for (let y = 0; y < 20; y++) {
+    for (let x = 0; x < 20; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      const val = gameState.board[y][x];
+      if (val) {
+        cell.classList.add('color-' + val);
+      } else {
+        const key = `${x},${y}`;
+        // Show ghost (placement preview at legal positions)
+        if (ghostCells.has(key)) {
+          cell.classList.add('ghost', 'ghost-' + currentColor);
+          const placePos = ghostCells.get(key);
+          cell.addEventListener('click', () => placeAtPosition(placePos.x, placePos.y));
+        }
+        // Show corner marker
+        if (activeCorners[key]) {
+          cell.classList.add('corner-' + activeCorners[key]);
+        }
+      }
+
+      frag.appendChild(cell);
+    }
+  }
+  boardEl.appendChild(frag);
+}
+
+function placeAtPosition(x, y) {
+  if (gameState.selectedPieceIdx < 0) return;
+  const player = gameState.players[gameState.currentTurn];
+  const cells = transformPiece(PIECES[gameState.selectedPieceIdx].cells, gameState.rotation, gameState.flipped);
+  const first = isFirstPieceForColor(gameState.board, player.color);
+
+  if (!canPlace(gameState.board, cells, x, y, player.color, first)) return;
+
+  // Save undo snapshot before placing
+  undoHistory.push({
+    board: gameState.board.map(row => [...row]),
+    players: gameState.players.map(p => ({ ...p, pieces: [...p.pieces] })),
+    currentTurn: gameState.currentTurn
+  });
+
+  // Place the piece
+  gameState.board = placePiece(gameState.board, cells, x, y, player.color);
+  player.pieces[gameState.selectedPieceIdx] = false;
+  player.lastPieceSize = cells.length;
+  boardVersion++;
+  lastPlaceTime = Date.now();
+  startUndoTimer();
+
+  // Reset selection
+  gameState.selectedPieceIdx = -1;
+  gameState.rotation = 0;
+  gameState.flipped = false;
+  gameState.selectedPosition = null;
+  document.getElementById('btnRotate').disabled = true;
+  document.getElementById('btnFlip').disabled = true;
+  legalCache.key = '';
+
+  // Check game over or advance
+  if (isGameOver(gameState)) {
+    endGame();
+  } else {
+    advanceTurn(gameState);
+    autoPassLoop();
+    if (isGameOver(gameState)) { endGame(); return; }
+    renderBoard();
+    renderPieces();
+    updateTurnInfo();
+    updateUndoButton();
+    if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+  }
+}
+
+// =============================================================
+// UI: Piece Selector
+// =============================================================
+function renderPieces() {
+  const container = document.getElementById('pieceSelector');
+  const player = gameState.players[gameState.currentTurn];
+  const color = PLAYER_COLORS[player.color].fill;
+  const remainingCount = player.pieces.filter(p => p).length;
+
+  // Group pieces by size: 5, 4, 3, 2, 1
+  const groups = [
+    { label: '5マス', indices: [] },
+    { label: '4マス', indices: [] },
+    { label: '3マス', indices: [] },
+    { label: '2マス', indices: [] },
+    { label: '1マス', indices: [] }
+  ];
+  for (let i = 0; i < 21; i++) {
+    const size = PIECES[i].cells.length;
+    if (size === 5) groups[0].indices.push(i);
+    else if (size === 4) groups[1].indices.push(i);
+    else if (size === 3) groups[2].indices.push(i);
+    else if (size === 2) groups[3].indices.push(i);
+    else groups[4].indices.push(i);
+  }
+
+  let html = `<div class="piece-group-label" style="text-align:right;margin-bottom:4px;">残り ${remainingCount}/21</div>`;
+  for (const g of groups) {
+    if (g.indices.length === 0) continue;
+    html += `<div class="piece-group"><div class="piece-group-label">${g.label}</div><div class="piece-list">`;
+    for (const idx of g.indices) {
+      const used = !player.pieces[idx];
+      const selected = idx === gameState.selectedPieceIdx;
+      const cells = transformPiece(PIECES[idx].cells, selected ? gameState.rotation : 0, selected ? gameState.flipped : false);
+      const maxX = Math.max(...cells.map(c => c[0]));
+      const maxY = Math.max(...cells.map(c => c[1]));
+      const w = maxX + 1, h = maxY + 1;
+      const cellSet = new Set(cells.map(c => `${c[0]},${c[1]}`));
+
+      let cls = 'piece-item';
+      if (used) cls += ' used';
+      if (selected) cls += ' selected';
+
+      html += `<div class="${cls}" style="grid-template-columns:repeat(${w},8px);color:${color}" onclick="selectPiece(${idx})">`;
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          html += `<div class="piece-cell ${cellSet.has(`${px},${py}`) ? 'filled' : 'empty'}"></div>`;
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function selectPiece(idx) {
+  const player = gameState.players[gameState.currentTurn];
+  if (!player.pieces[idx]) return; // used
+  if (gameState.selectedPieceIdx === idx) {
+    // Deselect
+    gameState.selectedPieceIdx = -1;
+    gameState.rotation = 0;
+    gameState.flipped = false;
+  } else {
+    gameState.selectedPieceIdx = idx;
+    gameState.rotation = 0;
+    gameState.flipped = false;
+  }
+  gameState.selectedPosition = null;
+  document.getElementById('btnRotate').disabled = gameState.selectedPieceIdx < 0;
+  document.getElementById('btnFlip').disabled = gameState.selectedPieceIdx < 0;
+  renderBoard();
+  renderPieces();
+}
+
+// =============================================================
+// UI: Controls (Rotate, Flip, Confirm, Pass)
+// =============================================================
+function doRotate() {
+  if (gameState.selectedPieceIdx < 0) return;
+  gameState.rotation = (gameState.rotation + 1) % 4;
+  gameState.selectedPosition = null;
+  legalCache.key = '';
+  renderBoard();
+  renderPieces();
+}
+
+function doFlip() {
+  if (gameState.selectedPieceIdx < 0) return;
+  gameState.flipped = !gameState.flipped;
+  gameState.selectedPosition = null;
+  legalCache.key = '';
+  renderBoard();
+  renderPieces();
+}
+
+function doCancel() {
+  // No longer needed - ghost tap replaces confirm/cancel flow
+}
+
+function doConfirm() {
+  // No longer needed - ghost tap replaces confirm/cancel flow
+}
+
+function doPass() {
+  if (!confirm('本当にパスする？（この色はもう置けなくなるよ）')) return;
+  gameState.players[gameState.currentTurn].passed = true;
+  gameState.selectedPieceIdx = -1;
+  gameState.rotation = 0;
+  gameState.flipped = false;
+  gameState.selectedPosition = null;
+  document.getElementById('btnRotate').disabled = true;
+  document.getElementById('btnFlip').disabled = true;
+  legalCache.key = '';
+  proceedAfterMove();
+}
+
+// =============================================================
+// Post-move logic: advance turn, auto-pass if no moves, trigger CPU
+// =============================================================
+function proceedAfterMove() {
+  if (isGameOver(gameState)) { endGame(); return; }
+  advanceTurn(gameState);
+  // Auto-pass players who have no legal moves
+  autoPassLoop();
+  if (isGameOver(gameState)) { endGame(); return; }
+  renderBoard();
+  renderPieces();
+  updateTurnInfo();
+  updateUndoButton();
+  if (gameState.players[gameState.currentTurn].isCpu) scheduleCpuTurn();
+}
+
+function autoPassLoop() {
+  // Keep auto-passing players with no available moves (max 4 iterations to prevent infinite loop)
+  for (let safety = 0; safety < 4; safety++) {
+    const p = gameState.players[gameState.currentTurn];
+    if (p.passed) { advanceTurn(gameState); continue; }
+    if (!hasAnyLegalMove(gameState.currentTurn)) {
+      p.passed = true;
+      if (isGameOver(gameState)) return;
+      advanceTurn(gameState);
+    } else {
+      break;
+    }
+  }
+}
+
+function hasAnyLegalMove(playerIdx) {
+  const player = gameState.players[playerIdx];
+  const color = player.color;
+  const first = isFirstPieceForColor(gameState.board, color);
+  for (let i = 0; i < 21; i++) {
+    if (!player.pieces[i]) continue;
+    for (let rot = 0; rot < 4; rot++) {
+      for (let flip = 0; flip < 2; flip++) {
+        const cells = transformPiece(PIECES[i].cells, rot, !!flip);
+        for (let y = 0; y < 20; y++) {
+          for (let x = 0; x < 20; x++) {
+            if (canPlace(gameState.board, cells, x, y, color, first)) return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// =============================================================
+// Undo (待った) - 配置後5秒以内なら戻せる（設定で制限解除可）
+// =============================================================
+let undoTimeLimit = true; // true=5秒制限あり, false=無制限
+let lastPlaceTime = 0;   // 最後に配置した時刻(ms)
+
+function doUndo() {
+  if (undoHistory.length === 0) return;
+  if (undoTimeLimit && (Date.now() - lastPlaceTime > 5000)) return;
+
+  // Keep popping until we reach a state where it's a human player's turn
+  // (undo past all CPU moves back to the last human move)
+  let prev = undoHistory.pop();
+  while (undoHistory.length > 0 && prev.players[prev.currentTurn].isCpu) {
+    prev = undoHistory.pop();
+  }
+
+  gameState.board = prev.board;
+  gameState.players = prev.players;
+  gameState.currentTurn = prev.currentTurn;
+  gameState.selectedPieceIdx = -1;
+  gameState.rotation = 0;
+  gameState.flipped = false;
+  gameState.selectedPosition = null;
+  boardVersion++;
+  legalCache.key = '';
+  lastPlaceTime = 0; // prevent double undo
+
+  document.getElementById('btnRotate').disabled = true;
+  document.getElementById('btnFlip').disabled = true;
+  renderBoard();
+  renderPieces();
+  updateTurnInfo();
+  updateUndoButton();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('btnUndo');
+  if (undoHistory.length === 0) {
+    btn.disabled = true;
+    btn.textContent = '↩ 待った';
+    return;
+  }
+  if (undoTimeLimit) {
+    const elapsed = Date.now() - lastPlaceTime;
+    if (elapsed > 5000) {
+      btn.disabled = true;
+      btn.textContent = '↩ 待った';
+    } else {
+      btn.disabled = false;
+      const sec = Math.ceil((5000 - elapsed) / 1000);
+      btn.textContent = `↩ 待った(${sec}秒)`;
+    }
+  } else {
+    btn.disabled = false;
+    btn.textContent = '↩ 待った';
+  }
+}
+
+// Timer to update undo button countdown
+let undoTimer = null;
+function startUndoTimer() {
+  clearInterval(undoTimer);
+  if (!undoTimeLimit) return;
+  undoTimer = setInterval(() => {
+    if (gameState.phase !== 'game') { clearInterval(undoTimer); return; }
+    updateUndoButton();
+    if (Date.now() - lastPlaceTime > 5000) clearInterval(undoTimer);
+  }, 200);
+}
+
+// =============================================================
+// CPU AI
+// =============================================================
+function scheduleCpuTurn() {
+  // Delay to show "thinking" feel
+  const delay = 600 + Math.random() * 400;
+  setTimeout(() => {
+    if (gameState.phase !== 'game') return;
+    const player = gameState.players[gameState.currentTurn];
+    if (!player.isCpu || player.passed) return;
+    executeCpuTurn(player);
+  }, delay);
+}
+
+function executeCpuTurn(player) {
+  const color = player.color;
+  const level = player.cpuLevel;
+
+  // Find best move: { pieceIdx, rotation, flipped, x, y, score }
+  let bestMove = null;
+
+  // Get piece order based on difficulty
+  const pieceOrder = getPieceOrder(player, level);
+
+  for (const pieceIdx of pieceOrder) {
+    if (!player.pieces[pieceIdx]) continue;
+    for (let rot = 0; rot < 4; rot++) {
+      for (let flip = 0; flip < 2; flip++) {
+        const cells = transformPiece(PIECES[pieceIdx].cells, rot, !!flip);
+        const first = isFirstPieceForColor(gameState.board, color);
+        for (let y = 0; y < 20; y++) {
+          for (let x = 0; x < 20; x++) {
+            if (!canPlace(gameState.board, cells, x, y, color, first)) continue;
+            const score = evaluateMove(cells, x, y, color, pieceIdx, level);
+            if (!bestMove || score > bestMove.score) {
+              bestMove = { pieceIdx, rotation: rot, flipped: !!flip, x, y, score };
+            }
+          }
+        }
+      }
+    }
+    // For 'weak' level, stop at first piece that has any legal move
+    if (level === 'weak' && bestMove) break;
+  }
+
+  if (!bestMove) {
+    // No moves available - pass
+    player.passed = true;
+    proceedAfterMove();
+    return;
+  }
+
+  // For 'weak', pick a random legal position for the chosen piece instead of best
+  if (level === 'weak') {
+    const cells = transformPiece(PIECES[bestMove.pieceIdx].cells, bestMove.rotation, bestMove.flipped);
+    const first = isFirstPieceForColor(gameState.board, color);
+    const legalMoves = [];
+    for (let y = 0; y < 20; y++) {
+      for (let x = 0; x < 20; x++) {
+        if (canPlace(gameState.board, cells, x, y, color, first)) legalMoves.push({x, y});
+      }
+    }
+    if (legalMoves.length > 0) {
+      const pick = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+      bestMove.x = pick.x;
+      bestMove.y = pick.y;
+    }
+  }
+
+  // Execute the move
+  const cells = transformPiece(PIECES[bestMove.pieceIdx].cells, bestMove.rotation, bestMove.flipped);
+
+  // Save undo snapshot
+  undoHistory.push({
+    board: gameState.board.map(row => [...row]),
+    players: gameState.players.map(p => ({ ...p, pieces: [...p.pieces] })),
+    currentTurn: gameState.currentTurn
+  });
+
+  gameState.board = placePiece(gameState.board, cells, bestMove.x, bestMove.y, color);
+  player.pieces[bestMove.pieceIdx] = false;
+  player.lastPieceSize = cells.length;
+  boardVersion++;
+  lastPlaceTime = Date.now();
+  startUndoTimer();
+  legalCache.key = '';
+  proceedAfterMove();
+}
+
+function getPieceOrder(player, level) {
+  const indices = [];
+  for (let i = 0; i < 21; i++) { if (player.pieces[i]) indices.push(i); }
+  if (level === 'weak') {
+    // Random order
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+  } else {
+    // Sort by size descending (bigger pieces first)
+    indices.sort((a, b) => PIECES[b].cells.length - PIECES[a].cells.length);
+  }
+  return indices;
+}
+
+function evaluateMove(cells, x, y, color, pieceIdx, level) {
+  if (level === 'weak') return Math.random(); // random score
+
+  // Count new corners created by this placement
+  const diagonals = [[-1,-1],[1,-1],[-1,1],[1,1]];
+  const orthogonals = [[0,-1],[0,1],[-1,0],[1,0]];
+  const placedSet = new Set(cells.map(c => `${c[0]+x},${c[1]+y}`));
+
+  let newCorners = 0;
+  let blockedOpponent = 0;
+
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    // Check diagonal neighbors as potential future corners
+    for (const d of diagonals) {
+      const nx = bx + d[0], ny = by + d[1];
+      if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+      if (gameState.board[ny][nx] !== null) continue;
+      if (placedSet.has(`${nx},${ny}`)) continue;
+      // Check this corner isn't edge-blocked by own color
+      let edgeBlocked = false;
+      for (const o of orthogonals) {
+        const ox = nx + o[0], oy = ny + o[1];
+        if (ox >= 0 && ox < 20 && oy >= 0 && oy < 20) {
+          if (gameState.board[oy][ox] === color || placedSet.has(`${ox},${oy}`)) {
+            edgeBlocked = true; break;
+          }
+        }
+      }
+      if (!edgeBlocked) newCorners++;
+    }
+
+    // For 'strong' and 'meijin': check if we block opponent corners
+    if (level === 'strong' || level === 'meijin') {
+      for (const o of orthogonals) {
+        const nx = bx + o[0], ny = by + o[1];
+        if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+        for (const d of diagonals) {
+          const cx = nx + d[0], cy = ny + d[1];
+          if (cx < 0 || cx > 19 || cy < 0 || cy > 19) continue;
+          const val = gameState.board[cy][cx];
+          if (val && val !== color) blockedOpponent++;
+        }
+      }
+    }
+  }
+
+  const pieceSize = PIECES[pieceIdx].cells.length;
+
+  if (level === 'normal') {
+    return newCorners * 3 + pieceSize;
+  }
+  if (level === 'strong') {
+    return newCorners * 3 + blockedOpponent * 2 + pieceSize;
+  }
+  // meijin: enhanced heuristics
+  // 1. Center bias: prefer moves toward the center of the board
+  let centerScore = 0;
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    const distFromCenter = Math.abs(bx - 9.5) + Math.abs(by - 9.5);
+    centerScore += (14 - distFromCenter); // max 14 per cell at center
+  }
+  // 2. Small piece preservation: penalize using small pieces early
+  const totalPlaced = gameState.players.reduce((sum, p) => sum + p.pieces.filter(v => !v).length, 0);
+  const gameProgress = totalPlaced / 84; // 0..1 (21 pieces x 4 players)
+  let preserveBonus = 0;
+  if (pieceSize <= 2 && gameProgress < 0.5) {
+    preserveBonus = -8; // penalty for using small pieces too early
+  }
+  // 3. Avoid isolated corners (corners with only 1 access direction)
+  let accessibleCorners = 0;
+  for (const c of cells) {
+    const bx = c[0] + x, by = c[1] + y;
+    for (const d of diagonals) {
+      const nx = bx + d[0], ny = by + d[1];
+      if (nx < 0 || nx > 19 || ny < 0 || ny > 19) continue;
+      if (gameState.board[ny][nx] !== null) continue;
+      if (placedSet.has(`${nx},${ny}`)) continue;
+      // Count how many directions this corner can be reached from
+      let access = 0;
+      for (const d2 of diagonals) {
+        const ax = nx + d2[0], ay = ny + d2[1];
+        if (ax < 0 || ax > 19 || ay < 0 || ay > 19) continue;
+        if (gameState.board[ay][ax] === null && !placedSet.has(`${ax},${ay}`)) access++;
+      }
+      if (access >= 2) accessibleCorners++;
+    }
+  }
+
+  return newCorners * 4 + blockedOpponent * 3 + pieceSize * 2 + centerScore * 0.5 + preserveBonus + accessibleCorners;
+}
+
+// =============================================================
+// UI: Game Over
+// =============================================================
+function endGame() {
+  const result = determineWinner(gameState);
+  let titleText = '';
+  let scoresHtml = '';
+
+  // Check if official 2-player (P1 controls 0+2, P2 controls 1+3)
+  const isOfficial2p = selectedMode === 2 && selectedRule === 'official';
+
+  if (isOfficial2p) {
+    const p1Score = calculateScore(gameState.players[0]) + calculateScore(gameState.players[2]);
+    const p2Score = calculateScore(gameState.players[1]) + calculateScore(gameState.players[3]);
+    const p1Name = gameState.players[0].name;
+    const p2Name = gameState.players[1].name;
+    if (p1Score === p2Score) {
+      titleText = '引き分け！';
+    } else if (p1Score > p2Score) {
+      titleText = `${p1Name} 勝利！`;
+    } else {
+      titleText = `${p2Name} 勝利！`;
+    }
+    scoresHtml += `<div class="score-row"><span class="player-label">🟦🟩 ${p1Name}</span><span class="score-val">${p1Score}点</span></div>`;
+    scoresHtml += `<div class="score-row"><span class="player-label">🟥🟨 ${p2Name}</span><span class="score-val">${p2Score}点</span></div>`;
+
+    // Save ranking
+    if (p1Score !== p2Score) {
+      const winnerName = p1Score > p2Score ? p1Name : p2Name;
+      const winner = gameState.players[p1Score > p2Score ? 0 : 1];
+      if (!winner.isCpu) saveRanking(winnerName);
+    }
+  } else {
+    const scores = [];
+    for (let i = 0; i < 4; i++) scores.push(calculateScore(gameState.players[i]));
+    if (result.isDraw) {
+      titleText = '引き分け！';
+    } else {
+      titleText = `${gameState.players[result.winnerIndices[0]].name} 勝利！`;
+    }
+    for (let i = 0; i < 4; i++) {
+      const p = gameState.players[i];
+      const suffix = p.isCpu ? ' (CPU)' : '';
+      scoresHtml += `<div class="score-row"><span class="player-label">${PLAYER_COLORS[p.color].label} ${p.name}${suffix}</span><span class="score-val">${scores[i]}点</span></div>`;
+    }
+    // Save ranking (skip if draw or CPU winner)
+    if (!result.isDraw) {
+      const winner = gameState.players[result.winnerIndices[0]];
+      if (!winner.isCpu) saveRanking(winner.name);
+    }
+  }
+
+  document.getElementById('resultTitle').textContent = titleText;
+  document.getElementById('scoresList').innerHTML = scoresHtml;
+  showScreen('result');
+
+  // Check meijin unlock: human won 1v3 with all CPU at "strong"
+  if (!result.isDraw && selectedMode === 1 && selectedRule === 'cpu') {
+    const winner = gameState.players[result.winnerIndices[0]];
+    if (!winner.isCpu) {
+      const allStrong = gameState.players.filter(p => p.isCpu).every(p => p.cpuLevel === 'strong');
+      if (allStrong && localStorage.getItem('blokus_meijin_unlocked') !== 'true') {
+        localStorage.setItem('blokus_meijin_unlocked', 'true');
+        localStorage.setItem('blokus_meijin_unlock_pending', 'true');
+      }
+    }
+  }
+}
+
+function resetGame() {
+  showScreen('setup');
+}
+
+function playMeijinUnlock() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  const lockIcon = document.createElement('div');
+  lockIcon.textContent = '🔒';
+  lockIcon.style.cssText = 'font-size:4em;animation:lockShake 1.2s ease-in-out;';
+  overlay.appendChild(lockIcon);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => { lockIcon.style.animation = 'lockBreak 0.5s ease-out forwards'; }, 1200);
+
+  setTimeout(() => {
+    lockIcon.style.display = 'none';
+    const reveal = document.createElement('div');
+    reveal.style.cssText = 'text-align:center;animation:unlockReveal 0.5s ease-out;';
+    reveal.innerHTML = '<div style="font-size:3em;margin-bottom:12px;">🏆✨</div>'
+      + '<div style="font-size:1.3em;font-weight:700;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px rgba(255,215,0,0.5);">めいじん 解放！</div>'
+      + '<div style="font-size:0.9em;color:#ccc;margin-bottom:16px;">最強のCPUに挑戦できるようになりました！</div>'
+      + '<button style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#333;font-weight:700;font-size:1em;cursor:pointer;" onclick="this.closest(\'div\').parentElement.remove();updateRuleUI();">OK!</button>';
+    overlay.appendChild(reveal);
+  }, 1700);
+}
+
+// =============================================================
+// Ranking (Supabase)
+// =============================================================
+async function saveRanking(name) {
+  try {
+    // Supabase JS upsert doesn't support increment, so fetch-then-update
+    const { data } = await sbClient.from('blokus_rankings').select('wins').eq('name', name).maybeSingle();
+    if (data) {
+      await sbClient.from('blokus_rankings').update({ wins: data.wins + 1 }).eq('name', name);
+    } else {
+      await sbClient.from('blokus_rankings').insert({ name, wins: 1 });
+    }
+  } catch(e) { console.error('Ranking save failed:', e); }
+}
+
+async function showRanking() {
+  document.getElementById('rankingModal').classList.add('active');
+  const list = document.getElementById('rankingList');
+  list.innerHTML = '<li>読み込み中...</li>';
+  try {
+    const { data } = await sbClient.from('blokus_rankings').select('name, wins').order('wins', { ascending: false }).limit(10);
+    if (data && data.length > 0) {
+      list.innerHTML = data.map((r, i) => `<li><span class="rank">${i+1}.</span><span class="name">${r.name}</span><span class="wins">${r.wins}勝</span></li>`).join('');
+    } else {
+      list.innerHTML = '<li>まだランキングがありません</li>';
+    }
+  } catch(e) {
+    list.innerHTML = '<li>読み込みエラー</li>';
+  }
+}
+
+function closeRanking() {
+  document.getElementById('rankingModal').classList.remove('active');
+}
+
+// =============================================================
+// Init
+// =============================================================
+if (!isNightTime()) {
+  buildSetupUI();
+}
+</script>
+</body>
+</html>

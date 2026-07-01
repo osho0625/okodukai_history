@@ -33,6 +33,7 @@
         // ended→idle即時復帰
         if (state === 'ended') {
           state = 'idle';
+          listeners.forEach(fn => fn(state));
         }
         return true;
       },
@@ -64,6 +65,12 @@
   // ============================================================
 
   async function init(callId, childId, role) {
+    // 既に初期化済みの場合はチャネルを解除してから再初期化
+    if (voiceState.channel) {
+      client.removeChannel(voiceState.channel);
+      voiceState.channel = null;
+    }
+
     voiceState.callId = callId;
     voiceState.childId = childId;
     voiceState.role = role;
@@ -120,12 +127,35 @@
       return false;
     }
 
-    if (!voiceState.stateMachine.transition('ringing')) return false;
+    if (!voiceState.stateMachine.transition('ringing')) {
+      // 遷移失敗 → マイク解放
+      if (voiceState.localStream) {
+        voiceState.localStream.getTracks().forEach(t => t.stop());
+        voiceState.localStream = null;
+      }
+      return false;
+    }
 
     broadcastVoiceState('ringing');
-    setTimeout(() => {
-      if (voiceState.stateMachine.getState() === 'ringing') broadcastVoiceState('ringing');
-    }, 2000);
+    // 相手が接続するまで3秒間隔でringingをリトライ（最大1分）
+    let ringingRetry = 0;
+    const ringingInterval = setInterval(() => {
+      ringingRetry++;
+      if (voiceState.stateMachine.getState() !== 'ringing' || ringingRetry > 20) {
+        clearInterval(ringingInterval);
+        // タイムアウト: まだringing状態なら切断
+        if (voiceState.stateMachine.getState() === 'ringing') {
+          voiceState.stateMachine.transition('ended');
+          cleanup();
+          showVoiceStatus('つながらなかったよ', 'error');
+          updateVoiceUI();
+          const callBtn = document.getElementById('voiceCallBtn');
+          if (callBtn) callBtn.style.display = 'block';
+        }
+        return;
+      }
+      broadcastVoiceState('ringing');
+    }, 3000);
     showVoiceStatus('よびだし中...', 'info');
     updateVoiceUI();
     return true;
@@ -149,7 +179,14 @@
       }
     }
 
-    if (!voiceState.stateMachine.transition('connected')) return false;
+    if (!voiceState.stateMachine.transition('connected')) {
+      // 遷移失敗（既にendedなど） → マイク解放
+      if (voiceState.localStream) {
+        voiceState.localStream.getTracks().forEach(t => t.stop());
+        voiceState.localStream = null;
+      }
+      return false;
+    }
     broadcastVoiceState('connected');
     showVoiceStatus('つなげているよ...', 'info');
     updateVoiceUI();
@@ -188,19 +225,41 @@
     }
 
     pc.ontrack = (event) => {
-      const audio = document.getElementById('voiceRemoteAudio');
-      if (audio && event.streams[0]) audio.srcObject = event.streams[0];
+      const track = event.track;
+      const isParentMode = localStorage.getItem('deviceRole') === 'admin';
+      if (track.kind === 'video') {
+        // ビデオトラック受信 → role判定で適切なvideo要素に表示
+        const video = isParentMode
+          ? document.getElementById('parentRemoteVideo')
+          : document.getElementById('voiceRemoteVideo');
+        if (video) {
+          video.srcObject = event.streams[0];
+          video.style.display = 'block';
+        }
+      } else {
+        const audioId = isParentMode ? 'parentRemoteAudio' : 'voiceRemoteAudio';
+        const audio = document.getElementById(audioId);
+        if (audio && event.streams[0]) audio.srcObject = event.streams[0];
+      }
     };
 
     pc.onicecandidate = (event) => {
       if (event.candidate) broadcastSignal('ice', null, event.candidate);
     };
 
+    // renegotiation: 映像追加時に自動でoffer/answer再交換
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (pc.signalingState !== 'stable') return;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        broadcastSignal('offer', offer.sdp);
+      } catch(e) {}
+    };
+
     pc.onconnectionstatechange = () => {
-      const connEl = document.getElementById('voiceConnectionState');
-      if (connEl) {
-        const map = { 'new':'🔄 せつぞくじゅんび...', 'connecting':'🔄 つなげているよ...', 'connected':'✅ つながったよ！', 'disconnected':'⚠️ きれちゃった', 'failed':'❌ つながらなかった', 'closed':'⏹️ おわり' };
-        connEl.textContent = map[pc.connectionState] || '';
+      if (pc.connectionState === 'connected') {
+        showVoiceStatus('つながったよ！', 'success');
       }
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         showVoiceStatus('きれちゃったよ', 'error');
@@ -212,36 +271,93 @@
   }
 
   // ============================================================
+  // ビデオトグル
+  // ============================================================
+
+  let videoSender = null;
+
+  async function toggleVideo() {
+    const pc = voiceState.peerConnection;
+    if (!pc) return;
+
+    if (videoSender) {
+      videoSender.track.stop();
+      pc.removeTrack(videoSender);
+      videoSender = null;
+      const isParent = localStorage.getItem('deviceRole') === 'admin';
+      const localVideo = isParent ? document.getElementById('parentLocalVideo') : document.getElementById('voiceLocalVideo');
+      if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+      const videoBtn = isParent ? document.getElementById('parentVideoBtn') : document.getElementById('voiceVideoBtn');
+      if (videoBtn) videoBtn.textContent = '📹 カメラ';
+      return;
+    }
+
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const videoTrack = videoStream.getVideoTracks()[0];
+      videoSender = pc.addTrack(videoTrack, videoStream);
+      const isParent = localStorage.getItem('deviceRole') === 'admin';
+      const localVideo = isParent ? document.getElementById('parentLocalVideo') : document.getElementById('voiceLocalVideo');
+      if (localVideo) { localVideo.srcObject = videoStream; localVideo.style.display = 'block'; }
+      const videoBtn = isParent ? document.getElementById('parentVideoBtn') : document.getElementById('voiceVideoBtn');
+      if (videoBtn) videoBtn.textContent = '📹✕';
+    } catch(e) {
+      showVoiceStatus('カメラが使えないよ', 'error');
+    }
+  }
+
+  // ============================================================
   // シグナリングイベント処理
   // ============================================================
 
+  // ICE candidateキュー（PeerConnection作成前に届いた場合のバッファ）
+  let pendingIceCandidates = [];
+
   async function handleSignalEvent(data) {
     try {
+      const pc = voiceState.peerConnection;
+
       if (data.signal_type === 'offer') {
-        // 受信側（answerer）: offer受信 → PeerConnection作成 → answer返信
-        const pc = createPeerConnection();
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        // 自分が発信側（既にoffer送った側）なら無視
+        if (pc && pc.signalingState === 'have-local-offer') return;
+        // 受信側: offer受信 → PeerConnection作成 → answer返信
+        const newPc = createPeerConnection();
+        await newPc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+        const answer = await newPc.createAnswer();
+        await newPc.setLocalDescription(answer);
         broadcastSignal('answer', answer.sdp);
+        // バッファされたICE candidatesを適用
+        for (const candidate of pendingIceCandidates) {
+          await newPc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        pendingIceCandidates = [];
       }
 
       if (data.signal_type === 'answer') {
-        // 発信側（offerer）: answer受信
-        const pc = voiceState.peerConnection;
+        // 自分がoffer送信済みの場合のみ処理
         if (pc && pc.signalingState === 'have-local-offer') {
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+          // バッファされたICE candidatesを適用
+          for (const candidate of pendingIceCandidates) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          }
+          pendingIceCandidates = [];
         }
       }
 
       if (data.signal_type === 'ice') {
-        const pc = voiceState.peerConnection;
-        if (pc && data.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        if (data.candidate) {
+          const currentPc = voiceState.peerConnection;
+          if (currentPc && currentPc.remoteDescription) {
+            await currentPc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } else {
+            // PeerConnection未作成 or remoteDescription未設定 → バッファ
+            pendingIceCandidates.push(data.candidate);
+          }
         }
       }
     } catch (e) {
-      console.error('Signal handling error:', e);
+      // エラーは無視（タイミング競合）
     }
   }
 
@@ -250,8 +366,10 @@
       voiceState.stateMachine.transition('ringing');
       showVoiceStatus('でんわがきているよ！', 'info');
       updateVoiceUI();
-      // 受信側は自動応答
-      acceptCall();
+      // 子供側のみ自動応答（親側は「電話に出る」ボタンで手動応答）
+      if (voiceState.role === 'child') {
+        acceptCall();
+      }
     }
 
     if (data.state === 'connected' && voiceState.stateMachine.getState() === 'ringing') {
@@ -316,14 +434,32 @@
       voiceState.localStream.getTracks().forEach(t => t.stop());
       voiceState.localStream = null;
     }
+    // ビデオリセット
+    if (videoSender) {
+      if (videoSender.track) videoSender.track.stop();
+      videoSender = null;
+    }
+    // ICEキュークリア
+    pendingIceCandidates = [];
+    // 子供側ビデオリセット
+    const localVideo = document.getElementById('voiceLocalVideo');
+    const remoteVideo = document.getElementById('voiceRemoteVideo');
+    if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+    if (remoteVideo) { remoteVideo.srcObject = null; remoteVideo.style.display = 'none'; }
+    // 親側ビデオリセット
+    const parentLocalVideo = document.getElementById('parentLocalVideo');
+    const parentRemoteVideo = document.getElementById('parentRemoteVideo');
+    if (parentLocalVideo) { parentLocalVideo.srcObject = null; parentLocalVideo.style.display = 'none'; }
+    if (parentRemoteVideo) { parentRemoteVideo.srcObject = null; parentRemoteVideo.style.display = 'none'; }
     stopCallTimer();
   }
 
   function startCallTimer() {
     voiceState.callStartTime = Date.now();
     const timerEl = document.getElementById('voiceTimer');
+    if (!timerEl) return; // 親画面など要素が無い場合はタイマー不要
+    timerEl.style.display = 'block';
     voiceState.callTimer = setInterval(() => {
-      if (!timerEl) return;
       const elapsed = Math.floor((Date.now() - voiceState.callStartTime) / 1000);
       const min = Math.floor(elapsed / 60);
       const sec = elapsed % 60;
@@ -354,24 +490,14 @@
     const endBtn = document.getElementById('voiceEndBtn');
     const timerEl = document.getElementById('voiceTimer');
     const connEl = document.getElementById('voiceConnectionState');
+    const videoBtn = document.getElementById('voiceVideoBtn');
 
     if (callBtn) callBtn.style.display = (state === 'idle') ? 'block' : 'none';
-    if (acceptBtn) acceptBtn.style.display = (voiceState.role === 'child' && state === 'ringing') ? 'block' : 'none';
+    if (acceptBtn) acceptBtn.style.display = (state === 'ringing') ? 'block' : 'none';
     if (endBtn) endBtn.style.display = (state === 'ringing' || state === 'connected') ? 'block' : 'none';
     if (timerEl) timerEl.style.display = (state === 'connected') ? 'block' : 'none';
-
-    // 状態テキスト
-    if (connEl) {
-      const stateText = {
-        'idle': '📵 たいき中',
-        'ringing': '📳 よびだし中...',
-        'connected': '📞 つうわ中',
-        'ended': '⏹️ おわり'
-      };
-      if (!voiceState.peerConnection) {
-        connEl.textContent = stateText[state] || '';
-      }
-    }
+    if (videoBtn) videoBtn.style.display = (state === 'connected') ? 'block' : 'none';
+    if (connEl) connEl.textContent = '';
   }
 
   function destroy() {
@@ -392,10 +518,10 @@
     startCall,
     acceptCall,
     endCall,
+    toggleVideo,
     getState() { return voiceState.stateMachine.getState(); },
     onStateChange(fn) { voiceState.stateMachine.onStateChange(fn); },
     destroy,
-    // テスト用
     _stateMachine: voiceState.stateMachine,
     _VALID_TRANSITIONS: VALID_TRANSITIONS
   };

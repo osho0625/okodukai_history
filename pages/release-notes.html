@@ -36,6 +36,298 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.15.0</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 完了→ポイント承認フロー（完了者選択モーダル＋chore_points pending挿入＋承認後タスク自動削除）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 毎日自動追加機能（定型業務のauto_addフラグ＋GitHub Actions cron毎朝9時JST）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 定型業務の編集・複製・assign_to設定</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 完了時Discord通知「〇〇が△△をやりました！」</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: チェック時にカード閉じない、ラベルクリックでチェック可能</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: 連打防止lock、undo二重付与防止、confirmComplete二重実行防止</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: 同名タスク重複追加防止</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.13</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 定型業務テンプレート機能（ワンタップで追加、管理UI付き）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 子供選択をいろは・かいせい・はるちかに固定</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: ひらがなモード完全対応（漢字＋カタカナ→ひらがな、辞書をリポジトリ配置）</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: kuroshiro CDN版のdefault export対応</li>
+    <li><span class="tag tag-fix">fix</span> お手伝いリスト: insert失敗時にエラーメッセージ表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.12</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: チェックリスト機能追加（admin登録時に項目追加、子供がチェック）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 全チェック完了で緑色表示＋「ぜんぶおわった！」表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.11</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: ひらがなモードをkuroshiro対応（漢字→ひらがな完全変換、UIラベルも含む）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.10</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: タップで説明を展開表示</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 子供別割り当てを左上バッジで大きく表示（間違い防止）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.9</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: ひらがなモード追加（カタカナ→ひらがな変換トグル）</li>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 子供別のお手伝い登録対応（「かいせい だけ」等の個別割り当て）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.8</span><span class="date">2026/06/30</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> お手伝いリスト: 親がやってほしいお手伝いを登録し、子供が一覧で確認できる新機能</li>
+    <li><span class="tag tag-feat">feat</span> TOPページに📋アイコン追加（お手伝いリストへのリンク）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.6</span><span class="date">2026/06/29</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックス: 公式ルール対応（2人=各2色担当、3人=余り色交代操作）、CPU/公式切り替え可能</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: 置けるピースがなくなったら自動パス</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: 「めいじん」難易度（つよい×3に勝つと解放、解放演出付き）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: リアルタイムスコアボード（残りマス数 -○○ を常時表示）</li>
+    <li><span class="tag tag-fix">fix</span> ブロックス: CPU入り時の「待った」で進行不可になるバグ修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.5</span><span class="date">2026/06/29</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックス: CPUの強さを1体ずつ個別に設定可能に</li>
+    <li><span class="tag tag-feat">feat</span> 神経衰弱: ランキング機能追加（各難易度別TOP10、手数で競う）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.7</span><span class="date">2026/06/29</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 親から電話した時に子供端末へPush通知を送信するように追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.4</span><span class="date">2026/06/29</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲーム公開設定に漢字50問テスト・ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックスを追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.3</span><span class="date">2026/06/29</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ブロックス: ピース形状が繋がって見えない問題を修正（セル間gap=0、border-radius削除）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: ゴーストタップ配置に変更（ピース選択→配置可能な場所に半透明ゴースト表示→タップで即配置）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: 「待った」機能（5秒以内に戻せる、設定で制限解除可）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: CPU対戦追加（1人=vs CPU3体、2人=vs CPU2体、3人=vs CPU1体）。強さ3段階（よわい/ふつう/つよい）</li>
+    <li><span class="tag tag-feat">feat</span> ブロックス: 公式ルール対応（2人=各2色担当、3人=余り色を交代で操作）。CPU対戦か公式ルールか選択可能</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.1</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ブロックス: XSS修正、不正位置で赤プレビュー表示、ゲーム中←/🏠に確認ダイアログ、キャンセルボタン追加、残りピース数表示、ターン色表示改善、キャッシュ最適化、モーダル背景クリック閉じ対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.14.0</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ブロックス（陣取りボードゲーム）をゲームセンターに追加。2〜4人ローカル対戦、20×20ボード、全21種ポリオミノ、合法配置ハイライト、パス確認、スコア計算、ランキング対応</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.5</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> ボードゲーム系steering追加（ごきぶりポーカー・クアルト・コリドール・神経衰弱の仕様まとめ）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.4</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> アーキテクチャ全体構成図を最新ゲーム一覧に更新・不足spec（神経衰弱・ごきぶりポーカー・クアルト・コリドール）追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.3</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 神経衰弱: 記憶タイム中のタイトル戻りでタイマーリークするバグ修正・記憶タイム中「覚えて！」表示追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.2</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 神経衰弱: 開始時に全カードを一瞬表示する記憶タイム追加・前ゲームのタイマーリーク修正・スクロール位置リセット</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.1</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 神経衰弱: TDZバグ修正・ペア成立中の高速タップ防止・不一致カード早送り対応・夜間制限時のナビ修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.1</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> クアルト: 勝利/引き分け時にchosenPieceAreaが残留するバグ修正</li>
+    <li><span class="tag tag-fix">fix</span> クアルト: 画面遷移後にsetTimeoutが発火するバグ修正</li>
+    <li><span class="tag tag-fix">fix</span> クアルト: 非placeableセルの誤ホバー/カーソル削除</li>
+    <li><span class="tag tag-fix">fix</span> クアルト: hollow中心配置・tall突起中央揃え修正</li>
+    <li><span class="tag tag-feat">feat</span> クアルト: プレイヤー色分け・配置可能マスハイライト・プール無効化表示追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.3</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> コリドール: 壁モード中にコマタップで移動モード復帰、移動先ヒント表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.2</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> コリドール: スワイプ誤タップ防止、向き自動切替、移動先ドット表示、壁タップ領域改善</li>
+    <li><span class="tag tag-fix">fix</span> arcade/cockroach-poker からねこ汚染スクリプト除去</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.13.0</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲームセンター: コリドール追加（2人用壁置き戦略ボードゲーム）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.12.0</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲームセンター: 神経衰弱追加（3難易度・カードめくり記憶力ゲーム）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.11.0</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲームセンター: クアルト追加（2人用ボードゲーム・16ピース×4属性）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.10.0</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ゲームセンター: ごきぶりポーカー追加（CPU対戦ブラフカードゲーム）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.9.1</span><span class="date">2026/06/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ナースコール: チャットDB保存時の外部キー違反エラー修正（call_id='default'問題）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親側audio要素のID重複修正（通話音声が聞こえない問題）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親ボタン押下時のRealtimeチャネルリーク修正</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 子供発信時のUI競合修正（ボタン表示不整合）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 音声通話・チャットの二重初期化防止</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 通話タイマーのsetIntervalリーク修正（親画面）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 状態遷移失敗時のマイクリーク修正</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: チャット履歴削除後の内部配列不整合修正</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 体温ボタンが誤ってナースコール発信する重大バグ修正</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親側着信が自動応答されてしまう問題修正（ボタン手動応答に）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 体温履歴のXSSエスケープ追加</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: ICE候補キューイング追加（低速回線での接続失敗防止）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: オフラインキュー二重送信防止</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: Realtimeチャネル二重subscribe解消</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: startCall遷移失敗時のマイクリーク修正</li>
+    <li><span class="tag tag-feat">feat</span> リマインダー: 期限切れ行事リマインダーの自動削除（全画面共通）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.9.0</span><span class="date">2026/06/24</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ナースコール: チャット双方向化（名前表示 + 親から履歴削除）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 子供画面カメラボタンにテキスト追加</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親のカメラ映像が子供画面に映らない問題修正（role判定方式に変更）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親画面チャット・通知・映像の各種不具合修正</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.8.0</span><span class="date">2026/06/23</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 「子供の自立心・育成ロードマップ」ドキュメント追加</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 長男Scratchプログラミング詳細手順（アカウント作成〜迷路/脱出/シューティング/アクションの段階的ガイド）</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 「Scratchでゲームをつくろう！」子供向け独立ドキュメント追加</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: Scratchガイドをヒント・方針ベースに改修（答えを書かない教育方針）</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: Scratchガイドに折りたたみ（details/summary）追加</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 「けん玉ロードマップ」ドキュメント追加（親向け）</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 「けん玉チャレンジ！」ドキュメント追加（子供向けレベル表）</li>
+    <li><span class="tag tag-fix">fix</span> リマインダー: 日付未入力時のエラーメッセージをより分かりやすく改善</li>
+    <li><span class="tag tag-feat">feat</span> リマインダー: 日付入力欄に📅アイコン追加（カレンダーUIだと分かるように）</li>
+    <li><span class="tag tag-fix">fix</span> リマインダー: 「日付を指定しない」ラベルに「（毎日通知）」補足追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.7.0</span><span class="date">2026/06/22</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親→子供「いくよ！」通知が届かない問題修正（チャネルdefault常時接続）</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親画面チャットボタン動作しない問題修正</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: チャット通知を「名前（内容）」形式に変更</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 呼び出し成功時に「このがめんでまっててね！」表示</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.6.0</span><span class="date">2026/06/22</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 通話中ビデオ機能（📹ボタンでカメラON/OFF、双方向対応）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 親画面に返信バリエーション（1分待って/3分待って/5分待って/電話かけて）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 親画面にチャットボタン追加</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: 親から電話時の不要Push通知削除</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.5.0</span><span class="date">2026/06/18</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 通知即時化（Edge Function経由）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: ringing 1分リトライ（タイムアウト時自動切断＋再発信可能）</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 体温通知を「○○が体温を測りました（℃ 時刻）」形式に</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 親から電話時に子供端末へPush通知</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: 子供側全ビューで通話自動応答＋通話ビュー自動遷移</li>
+    <li><span class="tag tag-feat">feat</span> ナースコール: はきそうモーダルダイアログ化、体温テンキー自動ドット</li>
+    <li><span class="tag tag-feat">feat</span> メモ帳: 連絡先ドキュメント追加</li>
+    <li><span class="tag tag-fix">fix</span> ナースコール: WebRTC通話安定化（チャネル重複解消）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.4.0</span><span class="date">2026/06/18</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> ぴくぴく対戦: おじゃまぴくが出た瞬間にゲームオーバーになるバグを修正</li>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>🪳 ごきぶりポーカー</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; padding: 16px;
+  color: #eee; user-select: none;
+}
+.header {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 480px; margin: 0 auto 16px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
+.home { color: #eee; text-decoration: none; font-size: 1.4em; line-height: 1; margin-left: auto; }
+h1 { font-size: 1.3em; font-weight: 700; }
+.container { max-width: 480px; margin: 0 auto; }
+
+/* タイトル画面 */
+#titleScreen { text-align: center; padding: 40px 0; }
+#titleScreen h2 { font-size: 2em; margin-bottom: 16px; }
+#titleScreen .subtitle { color: #aaa; margin-bottom: 32px; font-size: 0.9em; }
+.btn {
+  display: inline-block; padding: 14px 32px; border-radius: 12px;
+  background: linear-gradient(135deg, #e94560, #c23152);
+  color: #fff; font-size: 1.1em; font-weight: 600;
+  border: none; cursor: pointer; transition: transform 0.1s;
+}
+.btn:hover { transform: scale(1.03); }
+.btn:active { transform: scale(0.97); }
+.btn-secondary {
+  background: linear-gradient(135deg, #533483, #3a1f6e);
+}
+.rules-box {
+  text-align: left; background: rgba(255,255,255,0.05);
+  border-radius: 12px; padding: 16px; margin-top: 24px;
+  font-size: 0.85em; line-height: 1.7; color: #ccc;
+}
+.rules-box h3 { color: #e94560; margin-bottom: 8px; }
+
+/* ゲーム画面 */
+#gameScreen { display: none; }
+.status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255,255,255,0.05); border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 16px;
+}
+.status-bar .label { font-size: 0.75em; color: #aaa; }
+.status-bar .val { font-size: 1.1em; font-weight: 700; }
+.zone {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 16px; margin-bottom: 16px;
+}
+.zone-title { font-size: 0.8em; color: #aaa; margin-bottom: 10px; }
+.face-up-cards {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px;
+}
+.face-up-group {
+  display: flex; align-items: center; gap: 2px;
+  background: rgba(255,255,255,0.08); border-radius: 8px;
+  padding: 4px 8px; font-size: 1.2em;
+}
+.face-up-group.danger {
+  background: rgba(233,69,96,0.25); border: 1px solid rgba(233,69,96,0.5);
+  animation: pulse-danger 1.5s infinite;
+}
+@keyframes pulse-danger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.face-up-emoji { font-size: 1.1em; }
+.face-up-count { font-size: 0.75em; color: #ccc; margin-left: 2px; }
+.message-area {
+  text-align: center; padding: 20px 16px;
+  background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3);
+  border-radius: 16px; margin-bottom: 16px;
+  min-height: 100px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+}
+.message-text { font-size: 1.05em; line-height: 1.6; }
+.choice-btns {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.choice-btn {
+  padding: 10px 20px; border-radius: 10px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: #eee; font-size: 1em; cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.choice-btn:hover { background: rgba(255,255,255,0.2); }
+.choice-btn:active { transform: scale(0.95); }
+.choice-btn.true-btn { border-color: #4ecdc4; color: #4ecdc4; }
+.choice-btn.false-btn { border-color: #e94560; color: #e94560; }
+.hand-area { margin-bottom: 16px; }
+.hand-cards {
+  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+}
+.hand-card {
+  font-size: 1.6em; width: 44px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 10px; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+.hand-cards:not(.disabled) .hand-card:hover { border-color: #e94560; transform: translateY(-4px); }
+.hand-card.selected { border-color: #4ecdc4; background: rgba(78,205,196,0.15); transform: translateY(-6px); }
+.hand-cards.disabled .hand-card { opacity: 0.5; cursor: default; }
+.declare-area {
+  display: none; text-align: center; margin-top: 12px;
+}
+.declare-area p { font-size: 0.85em; color: #aaa; margin-bottom: 10px; }
+.declare-btns {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+}
+.declare-btn {
+  padding: 8px 12px; border-radius: 8px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: #eee; font-size: 1em; cursor: pointer;
+  transition: background 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 56px;
+}
+.declare-btn:hover { background: rgba(255,255,255,0.2); }
+.declare-name { font-size: 0.6em; color: #aaa; }
+
+/* 結果画面 */
+#resultScreen { display: none; text-align: center; padding: 40px 0; }
+#resultScreen h2 { font-size: 2em; margin-bottom: 12px; }
+#resultScreen .result-msg { color: #aaa; margin-bottom: 12px; }
+.result-stats { color: #4ecdc4; font-size: 0.9em; margin-bottom: 24px; }
+
+/* カード数バッジ */
+.card-count { font-size: 0.7em; color: #888; margin-left: 2px; }
+.turn-indicator {
+  display: inline-block; padding: 2px 10px; border-radius: 6px;
+  font-size: 0.8em; font-weight: 700; margin-bottom: 4px;
+  background: rgba(78,205,196,0.2); color: #4ecdc4;
+}
+.result-good { color: #4ecdc4; font-weight: 600; }
+.result-bad { color: #e94560; font-weight: 600; }
+
+/* スマホ最適化: 手札が多い時に収まるよう */
+@media (max-width: 480px) {
+  .hand-card { font-size: 1.3em; width: 38px; height: 44px; }
+  .declare-btn { padding: 6px 10px; min-width: 48px; font-size: 0.95em; }
+  .declare-name { font-size: 0.55em; }
+  .message-text { font-size: 0.95em; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">←</a>
+  <h1>🪳 ごきぶりポーカー</h1>
+  <a class="home" href="../index.html">🏠</a>
+</div>
+<div class="container">
+
+<!-- タイトル画面 -->
+<div id="titleScreen">
+  <h2>🪳🦇🐀</h2>
+  <p class="subtitle">ブラフで勝負！ いやな虫を押しつけろ！</p>
+  <button class="btn" onclick="startGame()">ゲーム開始</button>
+  <div class="rules-box">
+    <h3>📖 あそびかた</h3>
+    <p>
+      8しゅるいの虫カード（各8まい、計64まい）をつかいます。<br>
+      カードをあいてに渡すとき「これは○○です」と宣言。<br>
+      ホントのことを言ってもウソでもOK！<br><br>
+      受け取る側は「ホント」か「ウソ」かを当てます。<br>
+      ・当たり → 出した人の前にカードが置かれる<br>
+      ・はずれ → 受け取った人の前にカードが置かれる<br><br>
+      <b>同じ虫が4まいたまったら負け！</b>
+    </p>
+  </div>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="gameScreen">
+  <div class="status-bar">
+    <div><div class="label">あなたの手札</div><div class="val" id="myHandCount">0</div></div>
+    <div><div class="label">CPUの手札</div><div class="val" id="cpuHandCount">0</div></div>
+  </div>
+
+  <!-- CPU表向きカード -->
+  <div class="zone">
+    <div class="zone-title">🤖 CPUの前のカード</div>
+    <div class="face-up-cards" id="cpuFaceUp"></div>
+  </div>
+
+  <!-- メッセージ＆選択エリア -->
+  <div class="message-area" id="messageArea">
+    <div class="message-text" id="messageText"></div>
+    <div class="choice-btns" id="choiceBtns"></div>
+  </div>
+
+  <!-- プレイヤー表向きカード -->
+  <div class="zone">
+    <div class="zone-title">😊 あなたの前のカード</div>
+    <div class="face-up-cards" id="myFaceUp"></div>
+  </div>
+
+  <!-- 手札 -->
+  <div class="hand-area">
+    <div class="zone-title">🃏 あなたの手札</div>
+    <div class="hand-cards" id="myHand"></div>
+    <div class="declare-area" id="declareArea">
+      <p>なんと宣言する？</p>
+      <div class="declare-btns" id="declareBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 結果画面 -->
+<div id="resultScreen">
+  <h2 id="resultTitle"></h2>
+  <p class="result-msg" id="resultMsg"></p>
+  <p class="result-stats" id="resultStats"></p>
+  <div style="margin-top:24px;">
+    <button class="btn" onclick="startGame()">もう1回</button>
+    <button class="btn btn-secondary" style="margin-left:10px" onclick="goTitle()">タイトルへ</button>
+  </div>
+</div>
+
+</div>
+
+<script src="../js/common.js"></script>
+<script src="../js/cockroach-poker.js"></script>
+<script src="../js/neko-infection.js"></script>
+</body>
+</html>

@@ -3,20 +3,22 @@ inclusion: fileMatch
 fileMatchPattern: "*tetris*,*blast*,*olimar*,*arcade*"
 ---
 
-# テトリス・ブロックブラスト・オリマーの冒険・ゲームセンター
+# テトミン・ピクミンブラスト・オリマーの冒険・ゲームセンター
 
 ## ファイル構成
 
-- `pages/tetris.html` — テトリス風ゲーム（Hold/ハードドロップ/ボタン設定対応）
-- `pages/tetris-ranking.html` — テトリスランキング
-- `pages/blast.html` — ブロックブラスト風ゲーム（ドラッグ配置/ライン消去演出）
-- `pages/blast-ranking.html` — ブロックブラストランキング
+- `pages/tetris.html` — テトミン（テトリス風ゲーム、Hold/ハードドロップ/ボタン設定対応）
+- `pages/tetris-ranking.html` — テトミンランキング
+- `pages/blast.html` — ピクミンブラスト（ブロック配置パズル、ドラッグ配置/ライン消去演出）
+- `pages/blast-ranking.html` — ピクミンブラストランキング
 - `pages/olimar.html` — オリマーの冒険（探索RPG）
 - `pages/arcade.html` — ゲームセンター（ゲーム一覧）
+- `pages/quoridor.html` — コリドール（2人用壁置き戦略ゲーム）
+- `pages/memory-game.html` — 神経衰弱（カードめくり記憶力ゲーム）
 - `js/olimar-scenario.js` — オリマーの冒険シナリオデータ（62ノード）
 - `images/olimar.png` — オリマー画像（透過PNG、完了枚数表示用）
 
-## テトリス（tetris.html）
+## テトミン（tetris.html）
 
 - タイトル画面（ゲーム開始/ランキング/設定）
 - 10×20グリッド、ゴースト表示、NEXT表示
@@ -25,7 +27,7 @@ fileMatchPattern: "*tetris*,*blast*,*olimar*,*arcade*"
 - 操作ボタン配置カスタマイズ＋ボタン表示/非表示設定
 - ランキングTOP10（tetris_rankings）
 
-## ブロックブラスト（blast.html）
+## ピクミンブラスト（blast.html）
 
 - タイトル画面（ゲーム開始/ランキング）
 - 8×8グリッド、3ピースから選んで配置
@@ -71,24 +73,42 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## ゲームセンター（arcade.html）
 
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトリス、ブロックブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、クトゥルフTRPGの8ゲームをカード形式で表示
+- ぷよ、テトミン、ピクミンブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス、SCP閲覧記録をカード形式で表示
 - game_settings.game_publish で各ゲームの公開/非公開を制御
 - クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
 
+## コリドール（quoridor.html）
+
+- 2人用対面プレイの壁置き戦略ボードゲーム
+- 9×9ボード、各プレイヤー10枚の壁
+- P1（赤）は上→下、P2（青）は下→上にゴールを目指す
+- ターンで「1マス移動」か「壁を配置」を選択
+- 壁は2マス分の長さで相手の進路を妨害
+- 相手のゴールへの経路を完全に塞ぐ壁配置は禁止（BFSで検証）
+- 相手コマの飛び越えルール対応（直線ジャンプ＋サイドジャンプ）
+
+## 神経衰弱（memory-game.html）
+
+- 3難易度（かんたん6ペア/ふつう8ペア/むずい12ペア）
+- カードをめくって同じ絵柄のペアを見つける記憶力ゲーム
+- 3Dフリップアニメーション、手数・タイマー表示
+- ペア成立時に緑ハイライト演出
+- 結果画面でタイム・手数・難易度を表示
+
 ## DBテーブル
 
-### tetris_rankings（テトリスランキング）
+### tetris_rankings（テトミンランキング）
 - id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
 
-### blast_rankings（ブロックブラストランキング）
+### blast_rankings（ピクミンブラストランキング）
 - id: UUID (PK), name: TEXT, score: INT, created_at: TIMESTAMPTZ
 
 ## localStorage キー
 
 | キー | 用途 | 永続性 |
 |------|------|--------|
-| tetrisCtrlOrder | テトリス操作ボタン並び順 | 永続 |
-| tetrisHiddenBtns | テトリス非表示ボタン | 永続 |
+| tetrisCtrlOrder | テトミン操作ボタン並び順 | 永続 |
+| tetrisHiddenBtns | テトミン非表示ボタン | 永続 |
 | olimar_device_id | オリマーの冒険端末ID | 永続 |
 | olimar_save_{deviceId} | オリマーの冒険セーブデータ | 永続 |
 | olimar_achievements | オリマーの冒険実績 | 永続 |
