@@ -167,12 +167,20 @@ function formatMessage(reminders, todayStr) {
 
   const memos = reminders.filter(r => r.type === 'memo');
   const events = reminders.filter(r => r.type === 'event');
+  const repeats = reminders.filter(r => r.type === 'repeat');
 
   let msg = '🔔 リマインダー通知\n';
 
   if (memos.length > 0) {
     msg += '\n📝 メモ:\n';
     memos.forEach(r => {
+      msg += `• [${r.child_name}] ${r.message}\n`;
+    });
+  }
+
+  if (repeats.length > 0) {
+    msg += '\n🔁 くりかえし:\n';
+    repeats.forEach(r => {
       msg += `• [${r.child_name}] ${r.message}\n`;
     });
   }
@@ -349,8 +357,10 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
   // 通知ペイロード作成
   const memos = reminders.filter(r => r.type === 'memo');
   const events = reminders.filter(r => r.type === 'event');
+  const repeats = reminders.filter(r => r.type === 'repeat');
   let bodyLines = [];
   memos.forEach(r => bodyLines.push(`📝 [${r.child_name}] ${r.message}`));
+  repeats.forEach(r => bodyLines.push(`🔁 [${r.child_name}] ${r.message}`));
   events.forEach(r => {
     const days = calcDaysRemaining(r.event_date, todayStr);
     bodyLines.push(`📅 [${r.child_name}] ${r.message}（あと${days}日）`);

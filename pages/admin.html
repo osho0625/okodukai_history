@@ -1644,7 +1644,7 @@ async function loadReminders() {
     container.innerHTML = '';
     activeData.forEach(r => {
       const createdJST = new Date(r.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const typeLabel = r.type === 'memo' ? '📝 メモ' : '📅 行事';
+      const typeLabel = r.type === 'memo' ? '📝 メモ' : r.type === 'repeat' ? '🔁 くりかえし' : '📅 行事';
       const roleLabel = r.creator_role === 'admin' ? '親' : '子';
 
       // Status determination
@@ -1678,6 +1678,12 @@ async function loadReminders() {
         ? `<span style="color:#1976d2; font-size:0.85em;">📅 ${r.event_date}</span> `
         : '';
 
+      // Repeat days display
+      const dayNamesAdmin = ['日','月','火','水','木','金','土'];
+      const repeatDaysInfo = r.type === 'repeat' && Array.isArray(r.repeat_days)
+        ? `<span style="color:#e65100; font-size:0.85em;">🔁 毎週 ${r.repeat_days.map(d => dayNamesAdmin[d]).join('・')}</span> `
+        : '';
+
       container.innerHTML += `
         <div style="padding:12px 0; border-bottom:1px solid #f0f0f0;" id="reminder-row-${r.id}">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
@@ -1690,7 +1696,7 @@ async function loadReminders() {
               </div>
               <div style="margin-top:4px; font-size:0.95em; word-break:break-word;">${esc(r.message)}</div>
               <div style="margin-top:4px; font-size:0.8em; color:#999;">
-                ${eventDateInfo}🕐 ${createdJST} ｜ 🔔 ${schedule}
+                ${eventDateInfo}${repeatDaysInfo}🕐 ${createdJST} ｜ 🔔 ${schedule}
               </div>
               ${snoozeInfo}
             </div>

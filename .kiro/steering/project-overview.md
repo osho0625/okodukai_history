@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/06/30 v2.15.0
+最終更新: 2026/07/01 v2.16.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -120,14 +120,15 @@ inclusion: auto
 - 全Discord通知トリガー（バックアップ除く）から投入 → GitHub Actions cron（5分毎）で配信
 
 ### reminders（リマインダー）
-- id: UUID (PK), type: TEXT ('memo'|'event')
+- id: UUID (PK), type: TEXT ('memo'|'event'|'repeat')
 - child_id: UUID (FK→children), child_name: TEXT (非正規化、通知用)
 - message: TEXT (1-200文字), event_date: DATE (nullable、event型のみ)
+- repeat_days: JSONB (nullable、repeat型のみ。曜日配列 [0-6], 0=日, 1=月, ..., 6=土)
 - creator_user_id: TEXT NOT NULL (端末識別子), creator_role: TEXT ('admin'|'user')
 - custom_schedule: JSONB (nullable、例: ["06:00","21:00"])
 - snooze_until: DATE (nullable、通知再開日。current_jst_date < snooze_until で通知停止)
 - created_at: TIMESTAMPTZ (UTC), deleted_at: TIMESTAMPTZ (nullable、soft delete)
-- CHECK: chk_event_date (type='memo' OR event_date IS NOT NULL), chk_custom_schedule (NULL OR jsonb array)
+- CHECK: chk_event_date (type IN ('memo','repeat') OR event_date IS NOT NULL), chk_custom_schedule (NULL OR jsonb array), chk_repeat_days (type != 'repeat' OR repeat_days IS NOT NULL AND array)
 - INDEX: idx_reminders_child_id, idx_reminders_type_event_date, idx_reminders_snooze (全てWHERE deleted_at IS NULL)
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
@@ -140,6 +141,7 @@ inclusion: auto
 - 🔬 今日のサイエンス（日替わり科学tips）
 - 🔔 リマインダー通知バナー（タイトル下に表示）
   - メモ型: 全件表示（created_at降順）、admin時×ボタン＋スヌーズボタン
+  - くりかえし型: 今日の曜日がrepeat_daysに含まれるもの表示
   - 行事型: event_dateが7日以内のもの表示（event_date昇順）
   - スヌーズ中も表示（Discord通知のみ停止）
 - 未読入金: 🔔アイコン＋入金前残高表示
@@ -156,8 +158,8 @@ inclusion: auto
   - 20ptごとにお小遣い自動入金（40円/300円/200円/400円）
   - 返済用アカウント（「〇〇が返すお金」）には半額振り分け
 - 🔔 リマインダー（アコーディオンセクション）
-  - 登録フォーム: テキスト(1-200文字) + 「日付を指定しない」チェックボックス + 日付入力
-  - 日付なし→メモ型（毎日通知）、日付あり→行事型（7日前から通知）
+  - 登録フォーム: テキスト(1-200文字) + ラジオ切替（📅日付指定/📝毎日通知/🔁くりかえし）+ 日付入力 or 曜日チェックボックス
+  - 日付指定→行事型（7日前から通知）、毎日→メモ型、くりかえし→repeat型（指定曜日に毎週通知）
   - 登録時にDiscord通知送信（3秒タイムアウト）
   - 一覧表示: 自分が作成したリマインダーのみ削除ボタン表示（creator_user_id照合）
   - 3秒デバウンスで重複送信防止
@@ -229,7 +231,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.15.0
+- 現在: v2.16.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
