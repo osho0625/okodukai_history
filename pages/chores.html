@@ -721,7 +721,11 @@ async function renderTasks() {
     }
 
     if (cl.length > 0 || t.description) {
-      card.addEventListener('click', () => card.classList.toggle('expanded'));
+      card.addEventListener('click', (e) => {
+        // チェックリスト項目内のクリックではカード展開/折りたたみしない
+        if (e.target.closest('.checklist-item')) return;
+        card.classList.toggle('expanded');
+      });
     }
 
     list.appendChild(card);
