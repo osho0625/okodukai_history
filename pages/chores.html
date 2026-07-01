@@ -362,15 +362,21 @@ async function addFromTemplate(idx) {
   }
 
   const cl = tpl.checklist ? tpl.checklist.map(t => ({ text: t, checked: false })) : null;
-  const { error: insertErr } = await client.from('chore_tasks').insert({
+  const insertData = {
     title: tpl.title,
     checklist: cl,
     points: tpl.points || 1,
     priority: 0,
-    assign_to: assignTo,
-    is_daily: tpl.auto_add || false
-  });
-  if (insertErr) { alert('追加に失敗しました: ' + insertErr.message); return; }
+    assign_to: assignTo
+  };
+  if (tpl.auto_add) insertData.is_daily = true;
+  const { error: insertErr } = await client.from('chore_tasks').insert(insertData);
+  if (insertErr && insertErr.message && insertErr.message.includes('is_daily')) {
+    // is_dailyカラムが無い場合はカラム無しで再試行
+    delete insertData.is_daily;
+    const { error: retryErr } = await client.from('chore_tasks').insert(insertData);
+    if (retryErr) { alert('追加に失敗しました: ' + retryErr.message); return; }
+  } else if (insertErr) { alert('追加に失敗しました: ' + insertErr.message); return; }
   const msg = document.getElementById('addMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
