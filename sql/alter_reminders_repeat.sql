@@ -33,14 +33,14 @@ ALTER TABLE reminders ADD CONSTRAINT chk_event_date
 -- 通知曜日 = ゴミの日の「前日」
 -- ============================================================
 
--- 燃えるゴミ（金・月）→ 前日 = 木(4)・日(0) に通知
+-- 燃えるゴミ = 金(5)・月(1)
 INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
-VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日は燃えるゴミの日！🗑️', '[4, 0]'::jsonb, 'system', 'admin');
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '燃えるゴミの日🗑️', '[5, 1]'::jsonb, 'system', 'admin');
 
--- プラごみ（土）→ 前日 = 金(5) に通知
+-- プラごみ = 土(6)
 INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
-VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日はプラごみの日！♻️', '[5]'::jsonb, 'system', 'admin');
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', 'プラごみの日♻️', '[6]'::jsonb, 'system', 'admin');
 
--- ペットボトル・びん・かん（日）→ 前日 = 土(6) に通知
+-- ペットボトル・びん・かん = 日(0)
 INSERT INTO reminders (type, child_id, child_name, message, repeat_days, creator_user_id, creator_role)
-VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', '明日はペットボトル・びん・かんの日！🫙', '[6]'::jsonb, 'system', 'admin');
+VALUES ('repeat', '6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c', 'りょうすけ', 'ペットボトル・びん・かんの日🫙', '[0]'::jsonb, 'system', 'admin');

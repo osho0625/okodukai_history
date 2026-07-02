@@ -125,10 +125,13 @@ function filterDueReminders(reminders, now) {
       const sevenDaysBeforeStr = formatDateStr(sevenDaysBefore);
       if (dateStr < sevenDaysBeforeStr || dateStr > r.event_date) return false;
     } else if (r.type === 'repeat') {
-      // repeat型: 今日の曜日がrepeat_daysに含まれるかチェック
+      // repeat型: 今日の曜日がrepeat_daysに含まれるか（当日通知）、
+      // または明日の曜日がrepeat_daysに含まれるか（前日通知）
       const todayDate = new Date(dateStr + 'T00:00:00+09:00');
       const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
-      if (!Array.isArray(r.repeat_days) || !r.repeat_days.includes(dayOfWeek)) return false;
+      const tomorrowDow = (dayOfWeek + 1) % 7; // 明日の曜日
+      if (!Array.isArray(r.repeat_days)) return false;
+      if (!r.repeat_days.includes(dayOfWeek) && !r.repeat_days.includes(tomorrowDow)) return false;
     }
     // memo type: always in notification window (no date filter)
 

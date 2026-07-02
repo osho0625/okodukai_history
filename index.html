@@ -1287,8 +1287,9 @@ async function loadReminders() {
       .order('created_at', { ascending: false });
 
     const todayDow = today.getDay(); // 0=日, 1=月, ..., 6=土
+    const tomorrowDow = (todayDow + 1) % 7;
     const filteredRepeats = (repeats || []).filter(r => {
-      return Array.isArray(r.repeat_days) && r.repeat_days.includes(todayDow);
+      return Array.isArray(r.repeat_days) && (r.repeat_days.includes(todayDow) || r.repeat_days.includes(tomorrowDow));
     });
 
     // Filter events: event_date between today and today+7 days (inclusive)
