@@ -131,7 +131,8 @@ function filterDueReminders(reminders, now) {
       const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
       const tomorrowDow = (dayOfWeek + 1) % 7; // 明日の曜日
       if (!Array.isArray(r.repeat_days)) return false;
-      if (!r.repeat_days.includes(dayOfWeek) && !r.repeat_days.includes(tomorrowDow)) return false;
+      const days = r.repeat_days.map(Number);
+      if (!days.includes(dayOfWeek) && !days.includes(tomorrowDow)) return false;
     }
     // memo type: always in notification window (no date filter)
 
