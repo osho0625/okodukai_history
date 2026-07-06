@@ -127,6 +127,9 @@ async function loadRecipeList() {
     var recipeIds = recipes.map(function(r) { return r.id; });
     var cookStats = await CookHistoryRepository.getStats(recipeIds);
 
+    // お気に入りカウント取得（ソート用）
+    var favoriteCounts = await FavoriteRepository.getCountsForRecipes(recipeIds);
+
     // コンテナをクリア
     container.innerHTML = '';
 
@@ -144,18 +147,106 @@ async function loadRecipeList() {
       return;
     }
 
-    // トップセクション描画
-    await loadTopSections(container, recipes, userFavorites, cookStats, currentUserName);
+    // --- 検索バー＋ソート＋お気に入りフィルタ UI ---
+    var searchSection = document.createElement('div');
+    searchSection.className = 'recipe-search-section';
+    searchSection.style.cssText = 'margin-bottom:16px;';
 
-    // 全レシピカード描画
+    // 検索バー行
+    var searchRow = document.createElement('div');
+    searchRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
+
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.id = 'recipe-search-input';
+    searchInput.placeholder = 'レシピを検索...';
+    searchInput.style.cssText = 'flex:1;min-width:120px;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+    searchRow.appendChild(searchInput);
+
+    // お気に入りフィルタボタン
+    var favFilterBtn = document.createElement('button');
+    favFilterBtn.type = 'button';
+    favFilterBtn.id = 'recipe-fav-filter-btn';
+    favFilterBtn.textContent = '☆';
+    favFilterBtn.title = 'お気に入りのみ表示';
+    favFilterBtn.style.cssText = 'width:42px;height:42px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:1.3em;cursor:pointer;';
+    searchRow.appendChild(favFilterBtn);
+
+    searchSection.appendChild(searchRow);
+
+    // ソートドロップダウン行
+    var sortRow = document.createElement('div');
+    sortRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+    var sortLabel = document.createElement('span');
+    sortLabel.textContent = '並び替え:';
+    sortLabel.style.cssText = 'font-size:0.85em;color:#666;';
+    sortRow.appendChild(sortLabel);
+
+    var sortSelect = document.createElement('select');
+    sortSelect.id = 'recipe-sort-select';
+    sortSelect.style.cssText = 'padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;background:#fff;';
+    var sortOptions = [
+      { value: 'newest', label: '新しい順' },
+      { value: 'oldest', label: '古い順' },
+      { value: 'name', label: '名前順' },
+      { value: 'favorite', label: 'お気に入り順' },
+      { value: 'recent', label: '最近作った順' }
+    ];
+    for (var si = 0; si < sortOptions.length; si++) {
+      var opt = document.createElement('option');
+      opt.value = sortOptions[si].value;
+      opt.textContent = sortOptions[si].label;
+      sortSelect.appendChild(opt);
+    }
+    sortRow.appendChild(sortSelect);
+    searchSection.appendChild(sortRow);
+    container.appendChild(searchSection);
+
+    // --- トップセクション描画 ---
+    var topSectionsContainer = document.createElement('div');
+    topSectionsContainer.id = 'recipe-top-sections';
+    container.appendChild(topSectionsContainer);
+    await loadTopSections(topSectionsContainer, recipes, userFavorites, cookStats, currentUserName);
+
+    // --- 自分の下書き/非公開セクション ---
+    var ownDrafts = recipes.filter(function(r) {
+      return (r.status === 'draft' || r.status === 'private') && r.author === currentUserName;
+    });
+    var draftSection = document.createElement('div');
+    draftSection.id = 'recipe-draft-section';
+    if (ownDrafts.length > 0) {
+      var draftHeading = document.createElement('h2');
+      draftHeading.style.cssText = 'font-size:1.1em;margin:16px 0 10px;color:#333;';
+      draftHeading.textContent = '📝 自分の下書き/非公開';
+      draftSection.appendChild(draftHeading);
+
+      var draftGrid = document.createElement('div');
+      draftGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;';
+
+      for (var di = 0; di < ownDrafts.length; di++) {
+        var draftCardData = recipeCardData(ownDrafts[di], userFavorites, cookStats);
+        // Add status icon to title
+        var statusIcon = ownDrafts[di].status === 'draft' ? '📝 ' : '🔒 ';
+        draftCardData.title = statusIcon + (draftCardData.title || '（無題）');
+        var draftCardFragment = renderRecipeCard(draftCardData);
+        draftGrid.appendChild(draftCardFragment);
+      }
+      draftSection.appendChild(draftGrid);
+    }
+    container.appendChild(draftSection);
+
+    // --- 全レシピカード描画エリア ---
     var allSection = document.createElement('div');
     allSection.className = 'recipe-all-section';
+    allSection.id = 'recipe-all-section';
     var allHeading = document.createElement('h2');
     allHeading.style.cssText = 'font-size:1.1em;margin:20px 0 12px;color:#333;';
     allHeading.textContent = '📖 すべてのレシピ';
     allSection.appendChild(allHeading);
 
     var cardGrid = document.createElement('div');
+    cardGrid.id = 'recipe-card-grid';
     cardGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;';
 
     for (var i = 0; i < recipes.length; i++) {
@@ -165,6 +256,74 @@ async function loadRecipeList() {
     }
     allSection.appendChild(cardGrid);
     container.appendChild(allSection);
+
+    // --- 検索結果なし表示用 ---
+    var noResultEl = document.createElement('div');
+    noResultEl.id = 'recipe-no-result';
+    noResultEl.className = 'empty-state';
+    noResultEl.style.display = 'none';
+    noResultEl.textContent = 'レシピが見つかりません';
+    container.appendChild(noResultEl);
+
+    // --- フィルタ/ソート/検索のイベントバインド ---
+    var favFilterActive = false;
+
+    function reRenderCards() {
+      var query = searchInput.value;
+      var sortMode = sortSelect.value;
+
+      // フィルタ: 可視性 → テキスト検索 → お気に入りフィルタ
+      var filtered = filterVisibleRecipes(recipes, currentUserName);
+
+      if (query && query.trim() !== '') {
+        filtered = filtered.filter(function(r) {
+          return matchesTextSearch(r, query);
+        });
+      }
+
+      if (favFilterActive) {
+        filtered = filterFavorites(filtered, userFavorites);
+      }
+
+      // ソート
+      var sorted = sortRecipes(filtered, sortMode, favoriteCounts, cookStats);
+
+      // 再描画
+      cardGrid.innerHTML = '';
+      for (var i = 0; i < sorted.length; i++) {
+        var cd = recipeCardData(sorted[i], userFavorites, cookStats);
+        var cf = renderRecipeCard(cd);
+        cardGrid.appendChild(cf);
+      }
+
+      // トップセクション・下書きセクション表示制御
+      var topEl = document.getElementById('recipe-top-sections');
+      var draftEl = document.getElementById('recipe-draft-section');
+      var hasActiveFilter = (query && query.trim() !== '') || favFilterActive;
+
+      if (topEl) topEl.style.display = hasActiveFilter ? 'none' : '';
+      if (draftEl) draftEl.style.display = hasActiveFilter ? 'none' : '';
+
+      // 結果なし表示
+      if (sorted.length === 0) {
+        noResultEl.style.display = '';
+        allSection.querySelector('h2').style.display = 'none';
+      } else {
+        noResultEl.style.display = 'none';
+        allSection.querySelector('h2').style.display = '';
+      }
+    }
+
+    searchInput.addEventListener('input', reRenderCards);
+    sortSelect.addEventListener('change', reRenderCards);
+
+    favFilterBtn.addEventListener('click', function() {
+      favFilterActive = !favFilterActive;
+      favFilterBtn.textContent = favFilterActive ? '⭐' : '☆';
+      favFilterBtn.style.background = favFilterActive ? '#fff3e0' : '#fff';
+      favFilterBtn.style.borderColor = favFilterActive ? '#e65100' : '#ddd';
+      reRenderCards();
+    });
 
   } catch (e) {
     container.innerHTML = '';
@@ -679,7 +838,585 @@ async function loadRecipeDetail(id) {
   }
 }
 
+/**
+ * フィールドエラー表示
+ * @param {string} fieldId - フィールドのID
+ * @param {string} message - エラーメッセージ
+ */
+function showFieldError(fieldId, message) {
+  var field = document.getElementById(fieldId);
+  if (field) {
+    field.style.borderColor = '#e53935';
+    var errEl = document.createElement('div');
+    errEl.className = 'field-error';
+    errEl.style.cssText = 'color:#e53935;font-size:0.8em;margin-top:4px;';
+    errEl.textContent = message;
+    field.parentNode.insertBefore(errEl, field.nextSibling);
+  }
+}
+
+/**
+ * フィールドエラーをクリア
+ */
+function clearFieldErrors() {
+  var errors = document.querySelectorAll('.field-error');
+  for (var i = 0; i < errors.length; i++) {
+    errors[i].parentNode.removeChild(errors[i]);
+  }
+  var highlighted = document.querySelectorAll('[style*="border-color: rgb(229, 57, 53)"]');
+  for (var j = 0; j < highlighted.length; j++) {
+    highlighted[j].style.borderColor = '';
+  }
+}
+
+/**
+ * 材料行を追加
+ * @param {object} [data] - {name?, quantity?, memo?}
+ * @returns {HTMLElement} 追加された行要素
+ */
+function addIngredientRow(data) {
+  data = data || {};
+  var container = document.getElementById('edit-ingredients-list');
+  if (!container) return null;
+
+  var row = document.createElement('div');
+  row.className = 'ingredient-row';
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
+
+  var nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = '材料名';
+  nameInput.value = data.name || '';
+  nameInput.className = 'ing-name';
+  nameInput.style.cssText = 'flex:2;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:80px;';
+
+  var qtyInput = document.createElement('input');
+  qtyInput.type = 'text';
+  qtyInput.placeholder = '分量';
+  qtyInput.value = data.quantity || '';
+  qtyInput.className = 'ing-quantity';
+  qtyInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:60px;';
+
+  var memoInput = document.createElement('input');
+  memoInput.type = 'text';
+  memoInput.placeholder = 'メモ';
+  memoInput.value = data.memo || '';
+  memoInput.className = 'ing-memo';
+  memoInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:60px;';
+
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.textContent = '✕';
+  removeBtn.style.cssText = 'width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:1em;color:#999;';
+  removeBtn.addEventListener('click', function() {
+    row.parentNode.removeChild(row);
+  });
+
+  row.appendChild(nameInput);
+  row.appendChild(qtyInput);
+  row.appendChild(memoInput);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+  return row;
+}
+
+/**
+ * 手順行を追加
+ * @param {object} [data] - {description?, photoUrl?}
+ * @returns {HTMLElement} 追加された行要素
+ */
+function addStepRow(data) {
+  data = data || {};
+  var container = document.getElementById('edit-steps-list');
+  if (!container) return null;
+
+  var row = document.createElement('div');
+  row.className = 'step-row';
+  row.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;';
+
+  var numLabel = document.createElement('span');
+  numLabel.className = 'step-num';
+  var stepCount = container.querySelectorAll('.step-row').length + 1;
+  numLabel.textContent = stepCount + '.';
+  numLabel.style.cssText = 'font-weight:700;font-size:1.1em;padding-top:10px;min-width:24px;';
+
+  var contentDiv = document.createElement('div');
+  contentDiv.style.cssText = 'flex:1;';
+
+  var descInput = document.createElement('textarea');
+  descInput.placeholder = '手順を入力';
+  descInput.value = data.description || '';
+  descInput.className = 'step-description';
+  descInput.rows = 2;
+  descInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;resize:vertical;';
+
+  contentDiv.appendChild(descInput);
+
+  if (data.photoUrl) {
+    var preview = document.createElement('img');
+    preview.src = data.photoUrl;
+    preview.alt = '手順写真';
+    preview.style.cssText = 'max-width:100px;height:auto;border-radius:6px;margin-top:6px;';
+    contentDiv.appendChild(preview);
+  }
+
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.textContent = '✕';
+  removeBtn.style.cssText = 'width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:1em;color:#999;margin-top:8px;';
+  removeBtn.addEventListener('click', function() {
+    row.parentNode.removeChild(row);
+    // Re-number steps
+    var rows = container.querySelectorAll('.step-row');
+    for (var i = 0; i < rows.length; i++) {
+      var num = rows[i].querySelector('.step-num');
+      if (num) num.textContent = (i + 1) + '.';
+    }
+  });
+
+  row.appendChild(numLabel);
+  row.appendChild(contentDiv);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+  return row;
+}
+
+/**
+ * レシピ保存処理
+ * @param {string} status - 'published' | 'draft' | 'private'
+ */
+async function saveRecipe(status) {
+  clearFieldErrors();
+
+  // Collect form data
+  var titleInput = document.getElementById('edit-title');
+  var descInput = document.getElementById('edit-description');
+  var categoryInput = document.getElementById('edit-category');
+  var cookTimeInput = document.getElementById('edit-cook-time');
+  var servingsInput = document.getElementById('edit-servings');
+  var recipeIdInput = document.getElementById('edit-recipe-id');
+
+  var title = titleInput ? titleInput.value : '';
+  var description = descInput ? descInput.value : '';
+  var category = categoryInput ? categoryInput.value : '';
+  var cookTime = cookTimeInput ? parseInt(cookTimeInput.value, 10) || null : null;
+  var servings = servingsInput ? servingsInput.value : '';
+  var recipeId = recipeIdInput ? recipeIdInput.value : '';
+
+  // Collect ingredients
+  var ingredientRows = document.querySelectorAll('#edit-ingredients-list .ingredient-row');
+  var ingredients = [];
+  for (var i = 0; i < ingredientRows.length; i++) {
+    var nameEl = ingredientRows[i].querySelector('.ing-name');
+    var qtyEl = ingredientRows[i].querySelector('.ing-quantity');
+    var memoEl = ingredientRows[i].querySelector('.ing-memo');
+    var name = nameEl ? nameEl.value.trim() : '';
+    if (name) {
+      ingredients.push({
+        name: name,
+        quantity: qtyEl ? qtyEl.value.trim() : '',
+        memo: memoEl ? memoEl.value.trim() : '',
+        sort_order: i
+      });
+    }
+  }
+
+  // Validate
+  var validation = validateRecipeForm({ title: title, ingredients: ingredients }, status);
+  if (!validation.valid) {
+    for (var v = 0; v < validation.errors.length; v++) {
+      showToast(validation.errors[v], 'error');
+    }
+    if (validation.errors.some(function(e) { return e.indexOf('タイトル') !== -1; })) {
+      showFieldError('edit-title', 'タイトルを入力してください');
+    }
+    return;
+  }
+
+  // Get author
+  var author = await getCurrentUserName() || '';
+
+  // Save recipe
+  var recipeData = {
+    title: title,
+    description: description,
+    author: author,
+    category: category,
+    cook_time_minutes: cookTime,
+    servings: servings,
+    status: status
+  };
+  if (recipeId) {
+    recipeData.id = recipeId;
+  }
+
+  var result = await RecipeRepository.save(recipeData);
+  if (result.error) {
+    showToast('保存に失敗しました', 'error');
+    return;
+  }
+
+  var savedId = result.data.id;
+
+  // Save ingredients
+  var ingResult = await IngredientRepository.saveAll(savedId, ingredients);
+  if (ingResult.error) {
+    showToast('材料の保存に失敗しました', 'error');
+  }
+
+  // Collect and save tags
+  var tagsInput = document.getElementById('edit-tags');
+  var tagsStr = tagsInput ? tagsInput.value : '';
+  var tagList = tagsStr.split(',').map(function(t) { return t.trim().toLowerCase(); }).filter(function(t) { return t.length > 0; });
+
+  // Allergy checkboxes
+  var allergyChecks = document.querySelectorAll('.allergy-check:checked');
+  for (var a = 0; a < allergyChecks.length; a++) {
+    tagList.push('allergy:' + allergyChecks[a].value);
+  }
+
+  if (tagList.length > 0) {
+    var tagResult = await TagRepository.saveAll(savedId, tagList);
+    if (tagResult.error) {
+      showToast('タグの保存に失敗しました', 'error');
+    }
+  }
+
+  // Upload photos
+  var photoInput = document.getElementById('edit-photo-input');
+  if (photoInput && photoInput.files && photoInput.files.length > 0) {
+    for (var p = 0; p < photoInput.files.length; p++) {
+      var file = photoInput.files[p];
+      var imgValidation = validateImageFile(file);
+      if (!imgValidation.valid) {
+        showToast(imgValidation.error, 'error');
+        continue;
+      }
+      var resizedBlob = await resizeImage(file);
+      var uploadResult = await PhotoRepository.upload({
+        file: resizedBlob,
+        recipeId: savedId,
+        stepId: null,
+        type: 'main',
+        caption: ''
+      });
+      if (uploadResult.error) {
+        showToast('写真のアップロードに失敗しました', 'error');
+      }
+    }
+  }
+
+  showToast('保存しました', 'success');
+  navigateTo('#detail/' + savedId);
+}
+
+/**
+ * 編集フォームをロード
+ * @param {string|null} id - レシピID（nullの場合新規作成）
+ */
+async function loadEditForm(id) {
+  var container = document.getElementById('view-edit');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var fragment = document.createDocumentFragment();
+
+  // Hidden input for recipe ID
+  var hiddenId = document.createElement('input');
+  hiddenId.type = 'hidden';
+  hiddenId.id = 'edit-recipe-id';
+  hiddenId.value = id || '';
+  fragment.appendChild(hiddenId);
+
+  // Title
+  var titleLabel = document.createElement('label');
+  titleLabel.textContent = 'タイトル';
+  titleLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  fragment.appendChild(titleLabel);
+
+  var titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'edit-title';
+  titleInput.placeholder = 'レシピ名を入力';
+  titleInput.style.cssText = 'width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1em;margin-bottom:16px;box-sizing:border-box;';
+  fragment.appendChild(titleInput);
+
+  // Description
+  var descLabel = document.createElement('label');
+  descLabel.textContent = '説明';
+  descLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  fragment.appendChild(descLabel);
+
+  var descInput = document.createElement('textarea');
+  descInput.id = 'edit-description';
+  descInput.placeholder = 'レシピの説明（任意）';
+  descInput.rows = 3;
+  descInput.style.cssText = 'width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1em;margin-bottom:16px;resize:vertical;box-sizing:border-box;';
+  fragment.appendChild(descInput);
+
+  // Category
+  var catLabel = document.createElement('label');
+  catLabel.textContent = 'カテゴリ';
+  catLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  fragment.appendChild(catLabel);
+
+  var catSelect = document.createElement('select');
+  catSelect.id = 'edit-category';
+  catSelect.style.cssText = 'width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1em;margin-bottom:16px;background:#fff;';
+  var categories = ['', '主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+  for (var ci = 0; ci < categories.length; ci++) {
+    var opt = document.createElement('option');
+    opt.value = categories[ci];
+    opt.textContent = categories[ci] || '選択してください';
+    catSelect.appendChild(opt);
+  }
+  fragment.appendChild(catSelect);
+
+  // Cook time + Servings row
+  var timeServRow = document.createElement('div');
+  timeServRow.style.cssText = 'display:flex;gap:12px;margin-bottom:16px;';
+
+  var timeDiv = document.createElement('div');
+  timeDiv.style.cssText = 'flex:1;';
+  var timeLabel = document.createElement('label');
+  timeLabel.textContent = '調理時間';
+  timeLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  timeDiv.appendChild(timeLabel);
+  var timeRow = document.createElement('div');
+  timeRow.style.cssText = 'display:flex;align-items:center;gap:4px;';
+  var timeInput = document.createElement('input');
+  timeInput.type = 'number';
+  timeInput.id = 'edit-cook-time';
+  timeInput.min = '0';
+  timeInput.placeholder = '30';
+  timeInput.style.cssText = 'width:80px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+  var timeUnit = document.createElement('span');
+  timeUnit.textContent = '分';
+  timeUnit.style.cssText = 'color:#666;';
+  timeRow.appendChild(timeInput);
+  timeRow.appendChild(timeUnit);
+  timeDiv.appendChild(timeRow);
+  timeServRow.appendChild(timeDiv);
+
+  var servDiv = document.createElement('div');
+  servDiv.style.cssText = 'flex:1;';
+  var servLabel = document.createElement('label');
+  servLabel.textContent = '人数';
+  servLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  servDiv.appendChild(servLabel);
+  var servInput = document.createElement('input');
+  servInput.type = 'text';
+  servInput.id = 'edit-servings';
+  servInput.placeholder = '4人分';
+  servInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;box-sizing:border-box;';
+  servDiv.appendChild(servInput);
+  timeServRow.appendChild(servDiv);
+
+  fragment.appendChild(timeServRow);
+
+  // Ingredients section
+  var ingSection = document.createElement('div');
+  ingSection.style.cssText = 'margin-bottom:16px;';
+  var ingLabel = document.createElement('label');
+  ingLabel.textContent = '🥕 材料';
+  ingLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;font-size:1.1em;';
+  ingSection.appendChild(ingLabel);
+
+  var ingList = document.createElement('div');
+  ingList.id = 'edit-ingredients-list';
+  ingSection.appendChild(ingList);
+
+  var addIngBtn = document.createElement('button');
+  addIngBtn.type = 'button';
+  addIngBtn.textContent = '＋ 材料を追加';
+  addIngBtn.style.cssText = 'width:100%;min-height:48px;padding:12px;border:2px dashed #ddd;border-radius:10px;background:#fafafa;font-size:1.1em;font-weight:600;color:#e65100;cursor:pointer;transition:border-color 0.2s;';
+  addIngBtn.addEventListener('click', function() {
+    addIngredientRow();
+  });
+  ingSection.appendChild(addIngBtn);
+  fragment.appendChild(ingSection);
+
+  // Steps section
+  var stepSection = document.createElement('div');
+  stepSection.style.cssText = 'margin-bottom:16px;';
+  var stepLabel = document.createElement('label');
+  stepLabel.textContent = '📝 手順';
+  stepLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;font-size:1.1em;';
+  stepSection.appendChild(stepLabel);
+
+  var stepList = document.createElement('div');
+  stepList.id = 'edit-steps-list';
+  stepSection.appendChild(stepList);
+
+  var addStepBtn = document.createElement('button');
+  addStepBtn.type = 'button';
+  addStepBtn.textContent = '＋ 手順を追加';
+  addStepBtn.style.cssText = 'width:100%;min-height:48px;padding:12px;border:2px dashed #ddd;border-radius:10px;background:#fafafa;font-size:1.1em;font-weight:600;color:#e65100;cursor:pointer;transition:border-color 0.2s;';
+  addStepBtn.addEventListener('click', function() {
+    addStepRow();
+  });
+  stepSection.appendChild(addStepBtn);
+  fragment.appendChild(stepSection);
+
+  // Tags
+  var tagSection = document.createElement('div');
+  tagSection.style.cssText = 'margin-bottom:16px;';
+  var tagLabel = document.createElement('label');
+  tagLabel.textContent = 'タグ（カンマ区切り）';
+  tagLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:6px;color:#333;';
+  tagSection.appendChild(tagLabel);
+  var tagInput = document.createElement('input');
+  tagInput.type = 'text';
+  tagInput.id = 'edit-tags';
+  tagInput.placeholder = '和食, 簡単, 時短';
+  tagInput.style.cssText = 'width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1em;box-sizing:border-box;';
+  tagSection.appendChild(tagInput);
+  fragment.appendChild(tagSection);
+
+  // Allergy checkboxes
+  var allergySection = document.createElement('div');
+  allergySection.style.cssText = 'margin-bottom:16px;';
+  var allergyLabel = document.createElement('label');
+  allergyLabel.textContent = '⚠️ アレルギー';
+  allergyLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;';
+  allergySection.appendChild(allergyLabel);
+
+  var allergens = ['卵', '乳', '小麦', 'えび', 'かに'];
+  var allergyGrid = document.createElement('div');
+  allergyGrid.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;';
+  for (var ai = 0; ai < allergens.length; ai++) {
+    var checkLabel = document.createElement('label');
+    checkLabel.style.cssText = 'display:flex;align-items:center;gap:4px;cursor:pointer;font-size:1em;';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'allergy-check';
+    checkbox.value = allergens[ai];
+    checkbox.style.cssText = 'width:20px;height:20px;';
+    var checkText = document.createElement('span');
+    checkText.textContent = allergens[ai];
+    checkLabel.appendChild(checkbox);
+    checkLabel.appendChild(checkText);
+    allergyGrid.appendChild(checkLabel);
+  }
+  allergySection.appendChild(allergyGrid);
+  fragment.appendChild(allergySection);
+
+  // Photo upload
+  var photoSection = document.createElement('div');
+  photoSection.style.cssText = 'margin-bottom:20px;';
+  var photoLabel = document.createElement('label');
+  photoLabel.textContent = '📷 写真';
+  photoLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;';
+  photoSection.appendChild(photoLabel);
+
+  var photoInput = document.createElement('input');
+  photoInput.type = 'file';
+  photoInput.id = 'edit-photo-input';
+  photoInput.accept = 'image/*';
+  photoInput.multiple = true;
+  photoInput.style.cssText = 'display:block;margin-bottom:8px;';
+  photoSection.appendChild(photoInput);
+
+  var photoPreview = document.createElement('div');
+  photoPreview.id = 'edit-photo-preview';
+  photoPreview.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  photoSection.appendChild(photoPreview);
+
+  // Photo preview handler
+  photoInput.addEventListener('change', function() {
+    photoPreview.innerHTML = '';
+    if (photoInput.files) {
+      for (var fi = 0; fi < photoInput.files.length; fi++) {
+        var thumb = document.createElement('img');
+        thumb.src = URL.createObjectURL(photoInput.files[fi]);
+        thumb.alt = '写真プレビュー';
+        thumb.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;';
+        photoPreview.appendChild(thumb);
+      }
+    }
+  });
+
+  fragment.appendChild(photoSection);
+
+  // Save buttons
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;';
+
+  var publishBtn = document.createElement('button');
+  publishBtn.type = 'button';
+  publishBtn.className = 'btn-primary';
+  publishBtn.textContent = '公開保存';
+  publishBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:none;border-radius:10px;background:#e65100;color:#fff;font-size:1.1em;font-weight:600;cursor:pointer;';
+  publishBtn.addEventListener('click', function() { saveRecipe('published'); });
+  btnRow.appendChild(publishBtn);
+
+  var draftBtn = document.createElement('button');
+  draftBtn.type = 'button';
+  draftBtn.className = 'btn-secondary';
+  draftBtn.textContent = '下書き保存';
+  draftBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.1em;font-weight:600;cursor:pointer;color:#333;';
+  draftBtn.addEventListener('click', function() { saveRecipe('draft'); });
+  btnRow.appendChild(draftBtn);
+
+  var privateBtn = document.createElement('button');
+  privateBtn.type = 'button';
+  privateBtn.className = 'btn-secondary';
+  privateBtn.textContent = '非公開保存';
+  privateBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.1em;font-weight:600;cursor:pointer;color:#333;';
+  privateBtn.addEventListener('click', function() { saveRecipe('private'); });
+  btnRow.appendChild(privateBtn);
+
+  fragment.appendChild(btnRow);
+  container.appendChild(fragment);
+
+  // If editing existing recipe, pre-fill form
+  if (id) {
+    var loadResult = await RecipeRepository.getById(id);
+    if (loadResult.data) {
+      var recipe = loadResult.data;
+      titleInput.value = recipe.title || '';
+      descInput.value = recipe.description || '';
+      catSelect.value = recipe.category || '';
+      timeInput.value = recipe.cook_time_minutes || '';
+      servInput.value = recipe.servings || '';
+
+      // Pre-fill ingredients
+      var ings = (recipe.recipe_ingredients || []).sort(function(a, b) {
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      for (var ii = 0; ii < ings.length; ii++) {
+        addIngredientRow({ name: ings[ii].name, quantity: ings[ii].quantity, memo: ings[ii].memo });
+      }
+
+      // Pre-fill steps
+      var steps = (recipe.recipe_steps || []).sort(function(a, b) {
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      for (var si = 0; si < steps.length; si++) {
+        addStepRow({ description: steps[si].description });
+      }
+
+      // Pre-fill tags
+      var recipeTags = (recipe.recipe_tags || []).map(function(t) { return t.tag; });
+      var generalTagsEdit = recipeTags.filter(function(t) { return t.indexOf('allergy:') !== 0; });
+      var allergyTagsEdit = recipeTags.filter(function(t) { return t.indexOf('allergy:') === 0; });
+      tagInput.value = generalTagsEdit.join(', ');
+
+      // Check allergy checkboxes
+      for (var ati = 0; ati < allergyTagsEdit.length; ati++) {
+        var allergenName = allergyTagsEdit[ati].replace('allergy:', '');
+        var checkboxEl = allergyGrid.querySelector('input[value="' + allergenName + '"]');
+        if (checkboxEl) checkboxEl.checked = true;
+      }
+    }
+  } else {
+    // New recipe: add one empty ingredient row and one empty step row
+    addIngredientRow();
+    addStepRow();
+  }
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe };
+  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors };
 }
