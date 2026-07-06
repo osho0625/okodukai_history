@@ -24,7 +24,7 @@ function validateExpenseMaster(data) {
 
 /**
  * Temporary_Expense バリデーション
- * @param {object} data - {title, payer, amount, year_month, note?}
+ * @param {object} data - {title, payer, amount, year_month, beneficiaries?, note?}
  * @returns {{valid: boolean, errors: string[]}}
  */
 function validateTemporaryExpense(data) {
@@ -40,6 +40,9 @@ function validateTemporaryExpense(data) {
   }
   if (!data.year_month || typeof data.year_month !== 'string' || !/^\d{4}-\d{2}$/.test(data.year_month)) {
     errors.push('年月はYYYY-MM形式で入力してください');
+  }
+  if (data.beneficiaries && (!Array.isArray(data.beneficiaries) || data.beneficiaries.length === 0)) {
+    errors.push('受益者は少なくとも1人選択してください');
   }
   return { valid: errors.length === 0, errors };
 }
@@ -68,41 +71,71 @@ function generateMonthlyExpenses(enabledMasters, existingRecords, yearMonth) {
 /**
  * 月次精算計算（2人前提）
  * @param {Array} monthlyExpenses - 当月のMonthly_Expense配列 [{payer, planned_amount}]
- * @param {Array} temporaryExpenses - 当月の未精算Temporary_Expense配列 [{payer, amount}]
+ * @param {Array} temporaryExpenses - 当月の未精算Temporary_Expense配列 [{payer, amount, beneficiaries?}]
  * @returns {{payerTotals: Object, payerDiffs: Object, householdTotal: number, fairShare: number, transfers: Array}}
  */
 function calculateSettlement(monthlyExpenses, temporaryExpenses) {
-  const payerTotals = {};
+  // まずpayer全員を特定
+  const allPayerSet = new Set();
+  for (const exp of monthlyExpenses) allPayerSet.add(exp.payer);
+  for (const temp of temporaryExpenses) allPayerSet.add(temp.payer);
+  const allPayerNames = [...allPayerSet];
 
-  // 固定費の基準額を各payerに加算
+  const payerPaid = {}; // 各人が実際に支払った総額
+  const payerOwes = {}; // 各人が負担すべき総額
+
+  // 固定費: 各payerの支払いかつ折半対象（両者の負担）
   for (const exp of monthlyExpenses) {
-    payerTotals[exp.payer] = (payerTotals[exp.payer] || 0) + exp.planned_amount;
+    payerPaid[exp.payer] = (payerPaid[exp.payer] || 0) + exp.planned_amount;
+    // 固定費は全員で折半（2人前提）
+    const perPerson = Math.floor(exp.planned_amount / allPayerNames.length);
+    for (const p of allPayerNames) {
+      payerOwes[p] = (payerOwes[p] || 0) + perPerson;
+    }
   }
 
-  // 一時立替金を各payerに加算
+  // 一時立替: payerが実際に支払い、受益者が按分で負担
   for (const temp of temporaryExpenses) {
-    payerTotals[temp.payer] = (payerTotals[temp.payer] || 0) + temp.amount;
+    const beneficiaries = (temp.beneficiaries && temp.beneficiaries.length > 0) ? temp.beneficiaries : allPayerNames;
+    payerPaid[temp.payer] = (payerPaid[temp.payer] || 0) + temp.amount;
+    const perPerson = Math.floor(temp.amount / beneficiaries.length);
+    for (const b of beneficiaries) {
+      payerOwes[b] = (payerOwes[b] || 0) + perPerson;
+    }
   }
 
-  const payers = Object.keys(payerTotals);
-  const householdTotal = Object.values(payerTotals).reduce((sum, v) => sum + v, 0);
+  // payerTotals = 各人が実際に支払った額（互換性のため残す）
+  const payerTotals = {};
+  for (const p of allPayerNames) {
+    payerPaid[p] = payerPaid[p] || 0;
+    payerOwes[p] = payerOwes[p] || 0;
+    payerTotals[p] = payerPaid[p];
+  }
+
+  const householdTotal = Object.values(payerPaid).reduce((sum, v) => sum + v, 0);
   const fairShare = Math.floor(householdTotal / 2);
 
-  // payerDiffs: fairShare - total（プラス=支払い不足、マイナス=支払い超過）
+  // payerDiffs: fairShare - paid（プラス=支払い不足、マイナス=支払い超過）
   const payerDiffs = {};
-  for (const payer of payers) {
-    payerDiffs[payer] = fairShare - payerTotals[payer];
+  for (const payer of allPayerNames) {
+    payerDiffs[payer] = fairShare - payerPaid[payer];
   }
 
-  // transfers算出（2人前提）
+  // transfers: 受益者ベースの計算
+  // 各人の net = paid - owes（プラスなら払い過ぎ、マイナスなら払い不足）
   const transfers = [];
-  const sorted = payers.slice().sort((a, b) => payerTotals[a] - payerTotals[b]);
-  if (sorted.length >= 2) {
-    const payerFrom = sorted[0]; // 少なく払った人（支払い不足）
-    const payerTo = sorted[1];   // 多く払った人（支払い超過）
-    const amount = fairShare - payerTotals[payerFrom];
+  if (allPayerNames.length >= 2) {
+    const nets = {};
+    for (const p of allPayerNames) {
+      nets[p] = payerPaid[p] - payerOwes[p];
+    }
+    // net < 0 の人が net > 0 の人に支払う
+    const sorted = allPayerNames.slice().sort((a, b) => nets[a] - nets[b]);
+    const debtor = sorted[0]; // 払い不足
+    const creditor = sorted[1]; // 払い超過
+    const amount = Math.abs(Math.min(nets[debtor], 0));
     if (amount > 0) {
-      transfers.push({ from: payerFrom, to: payerTo, amount });
+      transfers.push({ from: debtor, to: creditor, amount });
     }
   }
 

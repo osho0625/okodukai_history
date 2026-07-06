@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS temporary_expenses (
   title TEXT NOT NULL,
   payer TEXT NOT NULL,
   amount INTEGER NOT NULL,
+  beneficiaries TEXT[] NOT NULL DEFAULT ARRAY['めぐみ','涼介'],
   year_month TEXT NOT NULL,
   note TEXT,
   settled BOOLEAN NOT NULL DEFAULT false,

@@ -36,6 +36,20 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.24.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍳レシピ機能: カテゴリをボタン選択UIに変更、＋ボタンでカテゴリ追加可能に</li>
+    <li><span class="tag tag-feat">feat</span> 🍳レシピ機能: 材料と調味料を分離、調味料はボタン入力（大さじ/小さじ/カップ ±）対応</li>
+    <li><span class="tag tag-feat">feat</span> 🍳レシピ機能: タグをpill形式UIに変更、既存タグのワンタップ追加に対応</li>
+    <li><span class="tag tag-feat">feat</span> 🍳レシピ機能: admin用⚙️カテゴリ管理モーダル追加（動的追加/削除）</li>
+    <li><span class="tag tag-fix">fix</span> レシピ編集時にタグ/手順を全削除しても反映されないバグを修正</li>
+    <li><span class="tag tag-fix">fix</span> 素材検索のN+1クエリ問題を修正（getAllWithIngredients追加）</li>
+    <li><span class="tag tag-fix">fix</span> タグ重複時のUNIQUE制約エラーを修正（保存前に重複排除）</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v274</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.23.0</span><span class="date">2026/07/06</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 家庭内精算機能を追加（💰）: 固定費マスタ管理、月次精算の自動計算、半年ごとの差額精算、一時立替金管理、基準額調整提案</li>

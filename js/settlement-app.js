@@ -72,7 +72,7 @@ async function loadDashboard() {
 
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, note, settled')
+      .select('id, title, payer, amount, beneficiaries, note, settled')
       .eq('year_month', yearMonth)
       .eq('settled', false);
     if (teErr) throw teErr;
@@ -240,10 +240,14 @@ async function showExpenseMasterModal(id) {
         <span style="font-weight:600;">項目名</span>
         <input id="master-name" type="text" value="${existing ? escapeHtml(existing.name) : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
-      <label style="display:block;margin-bottom:12px;">
+      <div style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">支払担当者</span>
-        <input id="master-payer" type="text" value="${existing ? escapeHtml(existing.payer) : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
-      </label>
+        <input id="master-payer" type="hidden" value="${existing ? escapeHtml(existing.payer) : ''}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="payer-btn" data-target="master-payer" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid ${existing && existing.payer === 'めぐみ' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.payer === 'めぐみ' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
+          <button type="button" class="payer-btn" data-target="master-payer" data-value="涼介" style="flex:1;padding:10px;border:2px solid ${existing && existing.payer === '涼介' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.payer === '涼介' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">涼介</button>
+        </div>
+      </div>
       <label style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">基準額（円）</span>
         <input id="master-amount" type="number" min="0" value="${existing ? existing.base_amount : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
@@ -263,6 +267,18 @@ async function showExpenseMasterModal(id) {
   `;
   document.body.appendChild(modal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeMasterModal(); });
+  modal.querySelectorAll('.payer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      target.value = btn.dataset.value;
+      btn.parentElement.querySelectorAll('.payer-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
 }
 
 function closeMasterModal() {
@@ -362,7 +378,7 @@ async function loadMonthlySettlement(yearMonth) {
     // 5. Get temporary expenses for this month
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, note, settled')
+      .select('id, title, payer, amount, beneficiaries, note, settled')
       .eq('year_month', yearMonth)
       .order('created_at', { ascending: true });
     if (teErr) throw teErr;
@@ -526,7 +542,7 @@ async function executeMonthlySettlement(yearMonth) {
 
     const { data: tempExpenses } = await client
       .from('temporary_expenses')
-      .select('id, payer, amount, settled')
+      .select('id, payer, amount, beneficiaries, settled')
       .eq('year_month', yearMonth)
       .eq('settled', false);
 
@@ -626,7 +642,7 @@ function renderTemporaryExpensesList(tempExpenses, isMonthSettled) {
     html += `<li style="padding:10px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;">`;
     html += `<div>`;
     html += `<div style="font-weight:600;">${escapeHtml(t.title)} ${settledBadge}</div>`;
-    html += `<div style="color:#666;font-size:0.9em;">${escapeHtml(t.payer)} / ${formatAmount(t.amount)}${t.note ? ' / ' + escapeHtml(t.note) : ''}</div>`;
+    html += `<div style="color:#666;font-size:0.9em;">${escapeHtml(t.payer)}が${t.beneficiaries && t.beneficiaries.length === 1 ? escapeHtml(t.beneficiaries[0]) + 'の分' : 'みんなの分'}を立替 / ${formatAmount(t.amount)}${t.note ? ' / ' + escapeHtml(t.note) : ''}</div>`;
     html += `</div>`;
     if (!t.settled && !isMonthSettled) {
       html += `<div style="display:flex;gap:6px;">`;
@@ -663,6 +679,9 @@ async function showTemporaryExpenseModal(id, yearMonth) {
   }
 
   const ym = existing ? existing.year_month : (yearMonth || currentMonthlyYearMonth);
+  const existingBeneficiaries = existing && existing.beneficiaries ? existing.beneficiaries : ['めぐみ', '涼介'];
+  const megumiBenef = existingBeneficiaries.includes('めぐみ');
+  const ryosukeBenef = existingBeneficiaries.includes('涼介');
 
   const modal = document.createElement('div');
   modal.id = 'temp-modal';
@@ -675,10 +694,21 @@ async function showTemporaryExpenseModal(id, yearMonth) {
         <span style="font-weight:600;">タイトル</span>
         <input id="temp-title" type="text" value="${existing ? escapeHtml(existing.title) : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
-      <label style="display:block;margin-bottom:12px;">
+      <div style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">支払担当者</span>
-        <input id="temp-payer" type="text" value="${existing ? escapeHtml(existing.payer) : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
-      </label>
+        <input id="temp-payer" type="hidden" value="${existing ? escapeHtml(existing.payer) : ''}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="payer-btn" data-target="temp-payer" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid ${existing && existing.payer === 'めぐみ' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.payer === 'めぐみ' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
+          <button type="button" class="payer-btn" data-target="temp-payer" data-value="涼介" style="flex:1;padding:10px;border:2px solid ${existing && existing.payer === '涼介' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.payer === '涼介' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">涼介</button>
+        </div>
+      </div>
+      <div style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">誰の分？</span>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="beneficiary-btn" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid ${megumiBenef ? '#43a047' : '#ddd'};border-radius:8px;background:${megumiBenef ? '#e8f5e9' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
+          <button type="button" class="beneficiary-btn" data-value="涼介" style="flex:1;padding:10px;border:2px solid ${ryosukeBenef ? '#43a047' : '#ddd'};border-radius:8px;background:${ryosukeBenef ? '#e8f5e9' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">涼介</button>
+        </div>
+      </div>
       <label style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">金額（円）</span>
         <input id="temp-amount" type="number" min="1" value="${existing ? existing.amount : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
@@ -699,6 +729,37 @@ async function showTemporaryExpenseModal(id, yearMonth) {
   `;
   document.body.appendChild(modal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeTempModal(); });
+  modal.querySelectorAll('.payer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      target.value = btn.dataset.value;
+      btn.parentElement.querySelectorAll('.payer-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
+  // 受益者ボタン（トグル式：複数選択可、最低1人）
+  modal.querySelectorAll('.beneficiary-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isActive = btn.style.borderColor === 'rgb(67, 160, 71)';
+      const allBtns = modal.querySelectorAll('.beneficiary-btn');
+      const activeCount = [...allBtns].filter(b => b.style.borderColor === 'rgb(67, 160, 71)').length;
+      if (isActive && activeCount <= 1) {
+        showToast('少なくとも1人は選択してください');
+        return;
+      }
+      if (isActive) {
+        btn.style.borderColor = '#ddd';
+        btn.style.background = '#fff';
+      } else {
+        btn.style.borderColor = '#43a047';
+        btn.style.background = '#e8f5e9';
+      }
+    });
+  });
 }
 
 function closeTempModal() {
@@ -713,7 +774,16 @@ async function saveTemporaryExpense(id) {
   const yearMonth = document.getElementById('temp-yearmonth').value;
   const note = document.getElementById('temp-note').value || null;
 
-  const data = { title, payer, amount: isNaN(amount) ? 0 : amount, year_month: yearMonth, note };
+  // 受益者ボタンから選択状態を読み取る
+  const modal = document.getElementById('temp-modal');
+  const beneficiaries = [];
+  modal.querySelectorAll('.beneficiary-btn').forEach(btn => {
+    if (btn.style.borderColor === 'rgb(67, 160, 71)') {
+      beneficiaries.push(btn.dataset.value);
+    }
+  });
+
+  const data = { title, payer, amount: isNaN(amount) ? 0 : amount, year_month: yearMonth, beneficiaries, note };
   const validation = validateTemporaryExpense(data);
   if (!validation.valid) {
     document.getElementById('temp-errors').innerHTML = validation.errors.map(e => '<div>' + escapeHtml(e) + '</div>').join('');
@@ -724,14 +794,14 @@ async function saveTemporaryExpense(id) {
     if (id) {
       const { error } = await client
         .from('temporary_expenses')
-        .update({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, note })
+        .update({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note })
         .eq('id', id);
       if (error) throw error;
       showToast('立替金を更新しました');
     } else {
       const { error } = await client
         .from('temporary_expenses')
-        .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, note });
+        .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note });
       if (error) throw error;
       showToast('立替金を追加しました');
     }
