@@ -375,7 +375,46 @@ function mergeQuantities(items) {
   return result;
 }
 
+/**
+ * レシピ複製データ生成（写真除く）
+ * @param {object} recipe - 元レシピオブジェクト
+ * @returns {object} 複製用データ
+ */
+function duplicateRecipeData(recipe) {
+  var ingredients = (recipe.recipe_ingredients || []).map(function(ing) {
+    return {
+      name: ing.name,
+      quantity: ing.quantity || '',
+      memo: ing.memo || '',
+      sort_order: ing.sort_order !== undefined ? ing.sort_order : 0
+    };
+  });
+
+  var steps = (recipe.recipe_steps || []).map(function(step) {
+    return {
+      description: step.description || '',
+      sort_order: step.sort_order !== undefined ? step.sort_order : 0
+    };
+  });
+
+  var tags = (recipe.recipe_tags || []).map(function(t) {
+    return typeof t === 'string' ? t : t.tag;
+  });
+
+  return {
+    title: (recipe.title || '') + 'のコピー',
+    description: recipe.description || '',
+    author: recipe.author || '',
+    category: recipe.category || '',
+    cook_time_minutes: recipe.cook_time_minutes || null,
+    servings: recipe.servings || '',
+    ingredients: ingredients,
+    steps: steps,
+    tags: tags
+  };
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions, normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags, computeDeficiencyRatio, parseQuantity, mergeQuantities };
+  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions, normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags, computeDeficiencyRatio, parseQuantity, mergeQuantities, duplicateRecipeData };
 }

@@ -109,6 +109,10 @@ function handleRoute() {
     if (typeof loadEditForm === 'function') {
       loadEditForm(id);
     }
+  } else if (view === 'print' && id) {
+    if (typeof showPrintView === 'function') {
+      showPrintView(id);
+    }
   }
 }
 

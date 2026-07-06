@@ -80,6 +80,16 @@ function renderRecipeCard(cardData) {
     bottomRow.appendChild(document.createElement('span'));
   }
 
+  // アレルギー⚠️表示
+  var allergyTagsOnCard = (cardData.tags || []).filter(function(t) { return t.indexOf('allergy:') === 0; });
+  if (allergyTagsOnCard.length > 0) {
+    var allergyIcon = document.createElement('span');
+    allergyIcon.style.cssText = 'font-size:1em;';
+    allergyIcon.title = allergyTagsOnCard.map(function(t) { return t.replace('allergy:', ''); }).join(', ');
+    allergyIcon.textContent = '⚠️';
+    bottomRow.appendChild(allergyIcon);
+  }
+
   // お気に入り⭐
   var favSpan = document.createElement('span');
   favSpan.style.cssText = 'font-size:1.2em;';
@@ -235,6 +245,80 @@ async function loadRecipeList() {
       draftSection.appendChild(draftGrid);
     }
     container.appendChild(draftSection);
+
+    // --- 🎲 ランダムレシピセクション ---
+    var randomSection = document.createElement('div');
+    randomSection.id = 'recipe-random-section';
+    randomSection.style.cssText = 'margin-bottom:20px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);';
+
+    var randomHeading = document.createElement('h2');
+    randomHeading.style.cssText = 'font-size:1.1em;margin-bottom:12px;color:#333;';
+    randomHeading.textContent = '🎲 ランダムレシピ';
+    randomSection.appendChild(randomHeading);
+
+    var randomControls = document.createElement('div');
+    randomControls.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;';
+
+    var randomCatSelect = document.createElement('select');
+    randomCatSelect.id = 'random-category-select';
+    randomCatSelect.style.cssText = 'padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;background:#fff;';
+    var randomCats = ['全て', '主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+    for (var rci = 0; rci < randomCats.length; rci++) {
+      var rcOpt = document.createElement('option');
+      rcOpt.value = randomCats[rci] === '全て' ? '' : randomCats[rci];
+      rcOpt.textContent = randomCats[rci];
+      randomCatSelect.appendChild(rcOpt);
+    }
+    randomControls.appendChild(randomCatSelect);
+
+    var randomBtn = document.createElement('button');
+    randomBtn.className = 'btn-primary';
+    randomBtn.style.cssText = 'padding:8px 16px;font-size:1.1em;';
+    randomBtn.textContent = '🎲';
+    randomControls.appendChild(randomBtn);
+
+    randomSection.appendChild(randomControls);
+
+    var randomResult = document.createElement('div');
+    randomResult.id = 'random-result';
+    randomSection.appendChild(randomResult);
+
+    container.appendChild(randomSection);
+
+    // Random button event
+    randomBtn.addEventListener('click', async function() {
+      var cat = randomCatSelect.value || null;
+      randomResult.innerHTML = '';
+      var loadingDiv = document.createElement('div');
+      loadingDiv.style.cssText = 'text-align:center;color:#999;padding:12px;';
+      loadingDiv.textContent = '選んでいます...';
+      randomResult.appendChild(loadingDiv);
+
+      var res = await RecipeRepository.getRandom(cat);
+      randomResult.innerHTML = '';
+
+      if (!res.data) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'text-align:center;color:#999;padding:12px;';
+        emptyDiv.textContent = 'レシピが見つかりません';
+        randomResult.appendChild(emptyDiv);
+        return;
+      }
+
+      var rCardData = recipeCardData(res.data, userFavorites, cookStats);
+      var rCardFrag = renderRecipeCard(rCardData);
+      randomResult.appendChild(rCardFrag);
+
+      // もう一回ボタン
+      var retryBtn = document.createElement('button');
+      retryBtn.className = 'btn-secondary';
+      retryBtn.style.cssText = 'margin-top:8px;width:100%;';
+      retryBtn.textContent = 'もう一回 🎲';
+      retryBtn.addEventListener('click', function() {
+        randomBtn.click();
+      });
+      randomResult.appendChild(retryBtn);
+    });
 
     // --- 全レシピカード描画エリア ---
     var allSection = document.createElement('div');
@@ -582,6 +666,25 @@ async function loadRecipeDetail(id) {
     }
 
     var recipe = result.data;
+
+    // Visibility check: draft/private recipes only visible to author
+    var currentUserName = await getCurrentUserName();
+    if (recipe.status === 'draft' || recipe.status === 'private') {
+      if (recipe.author !== currentUserName) {
+        container.innerHTML = '';
+        var notAllowed = document.createElement('div');
+        notAllowed.className = 'empty-state';
+        notAllowed.textContent = 'レシピが見つかりません';
+        var backLink2 = document.createElement('a');
+        backLink2.href = '#list';
+        backLink2.textContent = '← 一覧に戻る';
+        backLink2.style.cssText = 'display:block;margin-top:12px;color:#e65100;';
+        notAllowed.appendChild(backLink2);
+        container.appendChild(notAllowed);
+        return;
+      }
+    }
+
     container.innerHTML = '';
 
     // Allergy tags at top with ⚠️
@@ -791,6 +894,31 @@ async function loadRecipeDetail(id) {
       }
     });
     actionBar.appendChild(deleteBtn);
+
+    // "📋 複製" button
+    var dupBtn = document.createElement('button');
+    dupBtn.className = 'btn-secondary';
+    dupBtn.textContent = '📋 複製';
+    dupBtn.addEventListener('click', function() {
+      RecipeRepository.duplicate(id).then(function(result) {
+        if (result.error || !result.data) {
+          showToast('複製に失敗しました', 'error');
+        } else {
+          showToast('レシピを複製しました', 'success');
+          navigateTo('#edit/' + result.data.id);
+        }
+      });
+    });
+    actionBar.appendChild(dupBtn);
+
+    // "🖨️ 印刷" button
+    var printBtn = document.createElement('button');
+    printBtn.className = 'btn-secondary';
+    printBtn.textContent = '🖨️ 印刷';
+    printBtn.addEventListener('click', function() {
+      navigateTo('#print/' + id);
+    });
+    actionBar.appendChild(printBtn);
 
     // "🛒 買い物リストに追加" button
     var shoppingBtn = document.createElement('button');
@@ -2119,7 +2247,135 @@ function renderAllergyFilterUI(container, onFilterChange) {
   container.appendChild(allergySection);
 }
 
+/**
+ * 印刷モード表示
+ * @param {string} id - レシピID
+ */
+async function showPrintView(id) {
+  var container = document.getElementById('view-print');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var result = await RecipeRepository.getById(id);
+  if (!result.data) {
+    container.innerHTML = '<div class="empty-state">レシピが見つかりません</div>';
+    return;
+  }
+  var recipe = result.data;
+
+  // Print-friendly styles
+  var style = document.createElement('style');
+  style.textContent = '@media print { .tab-bar, .fab, .back, .home-btn, .no-print { display: none !important; } body { padding: 10px; } }';
+  container.appendChild(style);
+
+  // Back button (no-print)
+  var backBtn = document.createElement('button');
+  backBtn.className = 'btn-secondary no-print';
+  backBtn.textContent = '← 戻る';
+  backBtn.style.cssText = 'margin-bottom:16px;';
+  backBtn.addEventListener('click', function() {
+    navigateTo('#detail/' + id);
+  });
+  container.appendChild(backBtn);
+
+  // Title
+  var titleEl = document.createElement('h1');
+  titleEl.style.cssText = 'font-size:1.8em;margin-bottom:12px;color:#333;';
+  titleEl.textContent = recipe.title || '（無題）';
+  container.appendChild(titleEl);
+
+  // Meta info
+  var metaEl = document.createElement('div');
+  metaEl.style.cssText = 'margin-bottom:16px;font-size:1em;color:#666;';
+  var metaParts = [];
+  if (recipe.category) metaParts.push(recipe.category);
+  if (recipe.cook_time_minutes) metaParts.push('⏱ ' + recipe.cook_time_minutes + '分');
+  if (recipe.servings) metaParts.push('👥 ' + recipe.servings);
+  if (recipe.author) metaParts.push('by ' + recipe.author);
+  metaEl.textContent = metaParts.join(' ｜ ');
+  container.appendChild(metaEl);
+
+  // Description
+  if (recipe.description) {
+    var descEl = document.createElement('p');
+    descEl.style.cssText = 'margin-bottom:20px;line-height:1.6;color:#555;';
+    descEl.textContent = recipe.description;
+    container.appendChild(descEl);
+  }
+
+  // Ingredients table
+  var ings = (recipe.recipe_ingredients || []).slice().sort(function(a, b) {
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+  if (ings.length > 0) {
+    var ingHeading = document.createElement('h2');
+    ingHeading.style.cssText = 'font-size:1.3em;margin-bottom:12px;color:#333;';
+    ingHeading.textContent = '材料';
+    container.appendChild(ingHeading);
+
+    var table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;margin-bottom:24px;';
+    for (var i = 0; i < ings.length; i++) {
+      var tr = document.createElement('tr');
+      tr.style.cssText = 'border-bottom:1px solid #ddd;';
+      var tdName = document.createElement('td');
+      tdName.style.cssText = 'padding:8px 6px;font-weight:600;font-size:1.1em;';
+      tdName.textContent = ings[i].name;
+      var tdQty = document.createElement('td');
+      tdQty.style.cssText = 'padding:8px 6px;font-size:1.1em;color:#555;';
+      tdQty.textContent = ings[i].quantity || '';
+      tr.appendChild(tdName);
+      tr.appendChild(tdQty);
+      if (ings[i].memo) {
+        var tdMemo = document.createElement('td');
+        tdMemo.style.cssText = 'padding:8px 6px;font-size:0.9em;color:#999;';
+        tdMemo.textContent = ings[i].memo;
+        tr.appendChild(tdMemo);
+      }
+      table.appendChild(tr);
+    }
+    container.appendChild(table);
+  }
+
+  // Steps (numbered)
+  var steps = (recipe.recipe_steps || []).slice().sort(function(a, b) {
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+  if (steps.length > 0) {
+    var stepsHeading = document.createElement('h2');
+    stepsHeading.style.cssText = 'font-size:1.3em;margin-bottom:12px;color:#333;';
+    stepsHeading.textContent = '手順';
+    container.appendChild(stepsHeading);
+
+    var ol = document.createElement('ol');
+    ol.style.cssText = 'padding-left:24px;font-size:1.1em;line-height:1.8;';
+    for (var s = 0; s < steps.length; s++) {
+      var li = document.createElement('li');
+      li.style.cssText = 'margin-bottom:12px;';
+      li.textContent = steps[s].description || '';
+      ol.appendChild(li);
+    }
+    container.appendChild(ol);
+  }
+
+  // Footer: date
+  var footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:24px;padding-top:12px;border-top:1px solid #ddd;font-size:0.85em;color:#999;';
+  footer.textContent = '印刷日: ' + new Date().toLocaleDateString('ja-JP');
+  container.appendChild(footer);
+
+  // Auto-trigger print (no-print button to trigger manually)
+  var printTrigger = document.createElement('button');
+  printTrigger.className = 'btn-primary no-print';
+  printTrigger.textContent = '🖨️ 印刷する';
+  printTrigger.style.cssText = 'margin-top:16px;width:100%;';
+  printTrigger.addEventListener('click', function() {
+    window.print();
+  });
+  container.appendChild(printTrigger);
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal };
+  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal, showPrintView };
 }

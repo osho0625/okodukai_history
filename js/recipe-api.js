@@ -100,6 +100,53 @@ const RecipeRepository = {
   },
 
   /**
+   * ランダム1件取得（カテゴリフィルタ対応）
+   * @param {string|null} category - カテゴリ（nullで全カテゴリ）
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async getRandom(category) {
+    let query = client.from('recipes').select('id').eq('status', 'published');
+    if (category) query = query.eq('category', category);
+    const { data, error } = await query;
+    if (error) return { data: null, error };
+    if (!data || data.length === 0) return { data: null, error: null };
+    var randomIndex = Math.floor(Math.random() * data.length);
+    return await this.getById(data[randomIndex].id);
+  },
+
+  /**
+   * レシピを複製（写真除く）
+   * @param {string} id - 複製元レシピID
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async duplicate(id) {
+    var original = await this.getById(id);
+    if (original.error || !original.data) return { data: null, error: original.error || new Error('Recipe not found') };
+    var dupData = duplicateRecipeData(original.data);
+    // Save new recipe
+    var saveResult = await this.save({
+      title: dupData.title,
+      description: dupData.description,
+      author: dupData.author,
+      category: dupData.category,
+      cook_time_minutes: dupData.cook_time_minutes,
+      servings: dupData.servings,
+      status: 'draft'
+    });
+    if (saveResult.error) return { data: null, error: saveResult.error };
+    var newRecipe = saveResult.data;
+    // Save ingredients
+    if (dupData.ingredients && dupData.ingredients.length > 0) {
+      await IngredientRepository.saveAll(newRecipe.id, dupData.ingredients);
+    }
+    // Save tags
+    if (dupData.tags && dupData.tags.length > 0) {
+      await TagRepository.saveAll(newRecipe.id, dupData.tags);
+    }
+    return { data: newRecipe, error: null };
+  },
+
+  /**
    * レシピを削除（Storage写真削除 → DB CASCADE削除）
    * @param {string} id - レシピID
    * @returns {Promise<{error: object|null}>}

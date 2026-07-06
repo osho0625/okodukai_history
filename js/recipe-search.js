@@ -181,7 +181,18 @@ function searchFridgeLogic(recipes, available) {
   return results.map(function(r) { return r.recipe; });
 }
 
+/**
+ * カテゴリフィルタ: 指定カテゴリのレシピのみ抽出
+ * @param {Array} recipes
+ * @param {string|null} category - カテゴリ（null/空で全て）
+ * @returns {Array}
+ */
+function filterByCategory(recipes, category) {
+  if (!category || category === '') return recipes.slice();
+  return recipes.filter(function(r) { return r.category === category; });
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { matchesTextSearch, sortRecipes, filterVisibleRecipes, filterFavorites, filterByTag, filterExcludeAllergy, searchByIngredientsLogic, searchFridgeLogic };
+  module.exports = { matchesTextSearch, sortRecipes, filterVisibleRecipes, filterFavorites, filterByTag, filterExcludeAllergy, searchByIngredientsLogic, searchFridgeLogic, filterByCategory };
 }
