@@ -195,6 +195,14 @@ function switchTab(tabName) {
     if (typeof loadIngredientSearchView === 'function') {
       loadIngredientSearchView();
     }
+  } else if (viewName === 'shopping') {
+    if (typeof loadShoppingView === 'function') {
+      loadShoppingView();
+    }
+  } else if (viewName === 'meal-plan') {
+    if (typeof loadMealPlanView === 'function') {
+      loadMealPlanView();
+    }
   }
 }
 

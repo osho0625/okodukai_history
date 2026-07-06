@@ -490,7 +490,135 @@ const PhotoRepository = {
   }
 };
 
+// === ShoppingListRepository ===
+const ShoppingListRepository = {
+  /**
+   * 買い物リスト全件取得（レシピ名JOIN、created_at昇順）
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getAll() {
+    const { data, error } = await client.from('shopping_list')
+      .select('*, recipes(title)')
+      .order('created_at', { ascending: true });
+    return { data: data || [], error };
+  },
+
+  /**
+   * 買い物リストに材料を追加
+   * @param {string} recipeId - レシピID
+   * @param {Array<{ingredient_name: string, quantity: string}>} items
+   * @returns {Promise<{error: object|null}>}
+   */
+  async addItems(recipeId, items) {
+    const rows = items.map(function(item) {
+      return {
+        recipe_id: recipeId,
+        ingredient_name: item.ingredient_name,
+        quantity: item.quantity || ''
+      };
+    });
+    const { error } = await client.from('shopping_list').insert(rows);
+    return { error };
+  },
+
+  /**
+   * チェック状態トグル
+   * @param {string} id - 買い物リスト項目ID
+   * @param {boolean} checked - チェック状態
+   * @returns {Promise<{error: object|null}>}
+   */
+  async toggleChecked(id, checked) {
+    const { error } = await client.from('shopping_list')
+      .update({ checked: checked }).eq('id', id);
+    return { error };
+  },
+
+  /**
+   * チェック済み一括削除
+   * @returns {Promise<{error: object|null}>}
+   */
+  async deleteChecked() {
+    const { error } = await client.from('shopping_list')
+      .delete().eq('checked', true);
+    return { error };
+  },
+
+  /**
+   * 個別削除
+   * @param {string} id - 買い物リスト項目ID
+   * @returns {Promise<{error: object|null}>}
+   */
+  async deleteItem(id) {
+    const { error } = await client.from('shopping_list').delete().eq('id', id);
+    return { error };
+  }
+};
+
+// === MealPlanRepository ===
+const MealPlanRepository = {
+  /**
+   * 指定日の献立を取得
+   * @param {string} date - 'YYYY-MM-DD'
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getByDate(date) {
+    const { data, error } = await client.from('meal_plans')
+      .select('*')
+      .eq('plan_date', date);
+    return { data: data || [], error };
+  },
+
+  /**
+   * 期間指定で献立を取得
+   * @param {string} startDate - 'YYYY-MM-DD'
+   * @param {string} endDate - 'YYYY-MM-DD'
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getByDateRange(startDate, endDate) {
+    const { data, error } = await client.from('meal_plans')
+      .select('*')
+      .gte('plan_date', startDate)
+      .lte('plan_date', endDate)
+      .order('plan_date', { ascending: true });
+    return { data: data || [], error };
+  },
+
+  /**
+   * 献立保存（UPSERT: plan_date + meal_type が一意）
+   * @param {string} date - 'YYYY-MM-DD'
+   * @param {string} mealType - '朝' | '昼' | '夜'
+   * @param {object} slots - {main: recipeId|null, side: recipeId|null, soup: recipeId|null}
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async save(date, mealType, slots) {
+    const { data, error } = await client.from('meal_plans')
+      .upsert({
+        plan_date: date,
+        meal_type: mealType,
+        main_dish_id: slots.main || null,
+        side_dish_id: slots.side || null,
+        soup_id: slots.soup || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'plan_date,meal_type' })
+      .select();
+    return { data, error };
+  },
+
+  /**
+   * スロットクリア
+   * @param {string} id - 献立レコードID
+   * @param {string} slotName - 'main_dish_id' | 'side_dish_id' | 'soup_id'
+   * @returns {Promise<{error: object|null}>}
+   */
+  async clearSlot(id, slotName) {
+    var update = { updated_at: new Date().toISOString() };
+    update[slotName] = null;
+    const { error } = await client.from('meal_plans').update(update).eq('id', id);
+    return { error };
+  }
+};
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, TagRepository, PhotoRepository };
+  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository };
 }

@@ -298,7 +298,84 @@ function computeDeficiencyRatio(totalIngredients, missingCount) {
   return missingCount / totalIngredients;
 }
 
+/**
+ * 数量文字列を解析
+ * @param {string} str - "300g", "1.5kg", "200ml", "1個", "1/2個", "適量", "少々"
+ * @returns {{value: number|null, unit: string|null, raw: string}}
+ */
+function parseQuantity(str) {
+  if (!str || str.trim() === '') return { value: null, unit: null, raw: str || '' };
+  var trimmed = str.trim();
+
+  // Match fraction format: 1/2個, 3/4カップ
+  var fractionMatch = trimmed.match(/^(\d+)\/(\d+)(.*)$/);
+  if (fractionMatch) {
+    var num = parseInt(fractionMatch[1], 10);
+    var denom = parseInt(fractionMatch[2], 10);
+    var unit = fractionMatch[3].trim() || null;
+    return { value: denom !== 0 ? num / denom : null, unit: unit, raw: trimmed };
+  }
+
+  // Match decimal number + unit: 300g, 1.5kg, 200ml, 2個
+  var numMatch = trimmed.match(/^(\d+\.?\d*)(.*)$/);
+  if (numMatch) {
+    var value = parseFloat(numMatch[1]);
+    var unitStr = numMatch[2].trim() || null;
+    return { value: value, unit: unitStr, raw: trimmed };
+  }
+
+  // Non-numeric: 適量, 少々, etc
+  return { value: null, unit: null, raw: trimmed };
+}
+
+/**
+ * 同名材料の数量合算
+ * @param {Array<{ingredient_name: string, quantity: string}>} items
+ * @returns {Array<{ingredient_name: string, quantity: string, merged: boolean}>}
+ */
+function mergeQuantities(items) {
+  if (!items || items.length === 0) return [];
+
+  // Group by ingredient_name
+  var groups = Object.create(null);
+  var order = [];
+  for (var i = 0; i < items.length; i++) {
+    var name = items[i].ingredient_name;
+    if (!groups[name]) {
+      groups[name] = [];
+      order.push(name);
+    }
+    groups[name].push(items[i]);
+  }
+
+  var result = [];
+  for (var n = 0; n < order.length; n++) {
+    var group = groups[order[n]];
+    if (group.length === 1) {
+      result.push({ ingredient_name: order[n], quantity: group[0].quantity, merged: false });
+      continue;
+    }
+
+    // Try to merge: all must be numeric with same unit
+    var parsed = group.map(function(g) { return parseQuantity(g.quantity); });
+    var allNumeric = parsed.every(function(p) { return p.value !== null; });
+    var allSameUnit = allNumeric && parsed.every(function(p) { return p.unit === parsed[0].unit; });
+
+    if (allNumeric && allSameUnit) {
+      var sum = parsed.reduce(function(acc, p) { return acc + p.value; }, 0);
+      var mergedQty = sum + (parsed[0].unit || '');
+      result.push({ ingredient_name: order[n], quantity: mergedQty, merged: true });
+    } else {
+      // Cannot merge - add separately
+      for (var g = 0; g < group.length; g++) {
+        result.push({ ingredient_name: order[n], quantity: group[g].quantity, merged: false });
+      }
+    }
+  }
+  return result;
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions, normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags, computeDeficiencyRatio };
+  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions, normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags, computeDeficiencyRatio, parseQuantity, mergeQuantities };
 }

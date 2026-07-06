@@ -792,6 +792,22 @@ async function loadRecipeDetail(id) {
     });
     actionBar.appendChild(deleteBtn);
 
+    // "🛒 買い物リストに追加" button
+    var shoppingBtn = document.createElement('button');
+    shoppingBtn.className = 'btn-secondary';
+    shoppingBtn.textContent = '🛒 買い物リスト';
+    shoppingBtn.addEventListener('click', function() {
+      var ings = (recipe.recipe_ingredients || []).map(function(ing) {
+        return { name: ing.name, quantity: ing.quantity };
+      });
+      if (ings.length === 0) {
+        showToast('材料がありません', 'info');
+        return;
+      }
+      showShoppingModal(id, ings);
+    });
+    actionBar.appendChild(shoppingBtn);
+
     container.appendChild(actionBar);
 
     // Render ingredients
@@ -1642,6 +1658,422 @@ async function loadIngredientSearchView() {
 }
 
 /**
+ * 買い物リストタブUIをロード
+ * Task 19.3: レシピ別グループ化表示 + チェックオフ + 削除
+ */
+async function loadShoppingView() {
+  var container = document.getElementById('view-shopping');
+  if (!container) return;
+
+  container.innerHTML = '';
+  var loadingEl = document.createElement('div');
+  loadingEl.className = 'loading';
+  loadingEl.textContent = '買い物リストを読み込み中...';
+  container.appendChild(loadingEl);
+
+  try {
+    var grouped = await loadShoppingList();
+    container.innerHTML = '';
+
+    var groupNames = Object.keys(grouped);
+    if (groupNames.length === 0) {
+      var emptyEl = document.createElement('div');
+      emptyEl.className = 'empty-state';
+      var emojiDiv = document.createElement('div');
+      emojiDiv.className = 'emoji';
+      emojiDiv.textContent = '🛒';
+      var msgDiv = document.createElement('div');
+      msgDiv.textContent = '買い物リストはまだ空です';
+      emptyEl.appendChild(emojiDiv);
+      emptyEl.appendChild(msgDiv);
+      container.appendChild(emptyEl);
+      return;
+    }
+
+    // Header
+    var header = document.createElement('h2');
+    header.style.cssText = 'font-size:1.2em;margin-bottom:16px;color:#333;';
+    header.textContent = '🛒 買い物リスト';
+    container.appendChild(header);
+
+    // Render grouped items
+    for (var gi = 0; gi < groupNames.length; gi++) {
+      var recipeName = groupNames[gi];
+      var items = grouped[recipeName];
+
+      var groupCard = document.createElement('div');
+      groupCard.className = 'card';
+      groupCard.style.cssText = 'margin-bottom:12px;padding:16px;';
+
+      var groupTitle = document.createElement('div');
+      groupTitle.style.cssText = 'font-weight:600;font-size:1em;margin-bottom:10px;color:#e65100;';
+      groupTitle.textContent = '📖 ' + recipeName;
+      groupCard.appendChild(groupTitle);
+
+      // Apply mergeQuantities for display
+      var mergeInput = items.map(function(item) {
+        return { ingredient_name: item.ingredient_name, quantity: item.quantity };
+      });
+      var mergedItems = mergeQuantities(mergeInput);
+
+      for (var ii = 0; ii < items.length; ii++) {
+        var item = items[ii];
+        var itemRow = document.createElement('div');
+        itemRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;';
+        itemRow.setAttribute('data-item-id', item.id);
+
+        // Checkbox
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = item.checked || false;
+        checkbox.style.cssText = 'width:20px;height:20px;cursor:pointer;flex-shrink:0;';
+        (function(itemId, cb, row) {
+          cb.addEventListener('change', function() {
+            ShoppingListRepository.toggleChecked(itemId, cb.checked).then(function(result) {
+              if (result.error) {
+                cb.checked = !cb.checked;
+                showToast('更新に失敗しました', 'error');
+              } else {
+                // Update strikethrough
+                var textEl = row.querySelector('.shopping-item-text');
+                if (textEl) {
+                  textEl.style.textDecoration = cb.checked ? 'line-through' : 'none';
+                  textEl.style.color = cb.checked ? '#aaa' : '#333';
+                }
+              }
+            });
+          });
+        })(item.id, checkbox, itemRow);
+        itemRow.appendChild(checkbox);
+
+        // Ingredient name + quantity
+        var textEl = document.createElement('span');
+        textEl.className = 'shopping-item-text';
+        textEl.style.cssText = 'flex:1;font-size:0.95em;' + (item.checked ? 'text-decoration:line-through;color:#aaa;' : 'color:#333;');
+        textEl.textContent = item.ingredient_name + (item.quantity ? ' ' + item.quantity : '');
+        itemRow.appendChild(textEl);
+
+        // Delete button
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = '✕';
+        deleteBtn.style.cssText = 'width:28px;height:28px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:0.9em;color:#999;flex-shrink:0;';
+        (function(itemId, row) {
+          deleteBtn.addEventListener('click', function() {
+            ShoppingListRepository.deleteItem(itemId).then(function(result) {
+              if (result.error) {
+                showToast('削除に失敗しました', 'error');
+              } else {
+                row.parentNode.removeChild(row);
+              }
+            });
+          });
+        })(item.id, itemRow);
+        itemRow.appendChild(deleteBtn);
+
+        groupCard.appendChild(itemRow);
+      }
+
+      container.appendChild(groupCard);
+    }
+
+    // "チェック済みを削除" button
+    var clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn-secondary';
+    clearBtn.textContent = '🗑️ チェック済みを削除';
+    clearBtn.style.cssText = 'width:100%;padding:14px;margin-top:16px;font-size:1em;';
+    clearBtn.addEventListener('click', function() {
+      if (confirm('チェック済みの項目をすべて削除しますか？')) {
+        ShoppingListRepository.deleteChecked().then(function(result) {
+          if (result.error) {
+            showToast('削除に失敗しました', 'error');
+          } else {
+            showToast('チェック済みを削除しました', 'success');
+            loadShoppingView(); // Reload
+          }
+        });
+      }
+    });
+    container.appendChild(clearBtn);
+
+  } catch (e) {
+    container.innerHTML = '';
+    var errorEl = document.createElement('div');
+    errorEl.className = 'empty-state';
+    errorEl.textContent = 'エラーが発生しました。再読み込みしてください。';
+    container.appendChild(errorEl);
+  }
+}
+
+/**
+ * 献立タブUIをロード
+ * Task 20.3: 日付選択 + 朝昼夜グリッド表示
+ */
+async function loadMealPlanView() {
+  var container = document.getElementById('view-meal-plan');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // Header
+  var header = document.createElement('h2');
+  header.style.cssText = 'font-size:1.2em;margin-bottom:16px;color:#333;';
+  header.textContent = '📅 献立';
+  container.appendChild(header);
+
+  // Date picker row
+  var dateRow = document.createElement('div');
+  dateRow.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:20px;';
+
+  var dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.id = 'meal-plan-date';
+  var today = new Date();
+  dateInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  dateInput.style.cssText = 'padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+  dateRow.appendChild(dateInput);
+
+  var todayBtn = document.createElement('button');
+  todayBtn.type = 'button';
+  todayBtn.className = 'btn-secondary';
+  todayBtn.textContent = '今日';
+  todayBtn.style.cssText = 'padding:10px 16px;font-size:0.9em;';
+  todayBtn.addEventListener('click', function() {
+    var now = new Date();
+    dateInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    renderMealGrid(dateInput.value);
+  });
+  dateRow.appendChild(todayBtn);
+
+  container.appendChild(dateRow);
+
+  // Grid container
+  var gridContainer = document.createElement('div');
+  gridContainer.id = 'meal-plan-grid';
+  container.appendChild(gridContainer);
+
+  // Load all recipes for dropdown
+  var allRecipes = [];
+  try {
+    var result = await RecipeRepository.getAll({ status: 'published' });
+    allRecipes = result.data || [];
+  } catch (e) {
+    // continue with empty list
+  }
+
+  async function renderMealGrid(date) {
+    gridContainer.innerHTML = '';
+
+    var loadingEl = document.createElement('div');
+    loadingEl.className = 'loading';
+    loadingEl.textContent = '読み込み中...';
+    gridContainer.appendChild(loadingEl);
+
+    try {
+      var planResult = await loadMealPlan(date);
+      var plans = planResult.data || [];
+      gridContainer.innerHTML = '';
+
+      var mealTypes = ['朝', '昼', '夜'];
+      var slotLabels = [
+        { key: 'main_dish_id', label: '主菜' },
+        { key: 'side_dish_id', label: '副菜' },
+        { key: 'soup_id', label: '汁物' }
+      ];
+
+      for (var mi = 0; mi < mealTypes.length; mi++) {
+        var mealType = mealTypes[mi];
+        var plan = plans.find(function(p) { return p.meal_type === mealType; });
+
+        var mealCard = document.createElement('div');
+        mealCard.className = 'card';
+        mealCard.style.cssText = 'margin-bottom:12px;padding:16px;';
+
+        var mealTitle = document.createElement('div');
+        mealTitle.style.cssText = 'font-weight:700;font-size:1.1em;margin-bottom:12px;color:#333;';
+        var mealEmojis = { '朝': '🌅', '昼': '☀️', '夜': '🌙' };
+        mealTitle.textContent = (mealEmojis[mealType] || '') + ' ' + mealType + 'ごはん';
+        mealCard.appendChild(mealTitle);
+
+        for (var si = 0; si < slotLabels.length; si++) {
+          var slot = slotLabels[si];
+          var slotRow = document.createElement('div');
+          slotRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+
+          var slotLabel = document.createElement('span');
+          slotLabel.style.cssText = 'font-size:0.85em;color:#666;min-width:40px;';
+          slotLabel.textContent = slot.label;
+          slotRow.appendChild(slotLabel);
+
+          var selectEl = document.createElement('select');
+          selectEl.style.cssText = 'flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;background:#fff;';
+          selectEl.setAttribute('data-meal-type', mealType);
+          selectEl.setAttribute('data-slot', slot.key);
+
+          // Default empty option
+          var emptyOpt = document.createElement('option');
+          emptyOpt.value = '';
+          emptyOpt.textContent = '＋ レシピを選択';
+          selectEl.appendChild(emptyOpt);
+
+          // Add recipe options
+          for (var ri = 0; ri < allRecipes.length; ri++) {
+            var opt = document.createElement('option');
+            opt.value = allRecipes[ri].id;
+            opt.textContent = allRecipes[ri].title || '（無題）';
+            if (plan && plan[slot.key] === allRecipes[ri].id) {
+              opt.selected = true;
+            }
+            selectEl.appendChild(opt);
+          }
+
+          // Save on change
+          (function(mType, sKey, sel) {
+            sel.addEventListener('change', async function() {
+              var currentDate = dateInput.value;
+              // Get current slot values from the grid
+              var selects = gridContainer.querySelectorAll('select[data-meal-type="' + mType + '"]');
+              var slots = { main: null, side: null, soup: null };
+              for (var k = 0; k < selects.length; k++) {
+                var sName = selects[k].getAttribute('data-slot');
+                var val = selects[k].value || null;
+                if (sName === 'main_dish_id') slots.main = val;
+                if (sName === 'side_dish_id') slots.side = val;
+                if (sName === 'soup_id') slots.soup = val;
+              }
+              var saveResult = await saveMealPlan(currentDate, mType, slots);
+              if (saveResult.error) {
+                showToast('保存に失敗しました', 'error');
+              } else {
+                showToast('献立を保存しました', 'success');
+              }
+            });
+          })(mealType, slot.key, selectEl);
+
+          slotRow.appendChild(selectEl);
+          mealCard.appendChild(slotRow);
+        }
+
+        gridContainer.appendChild(mealCard);
+      }
+    } catch (e) {
+      gridContainer.innerHTML = '';
+      var errorEl = document.createElement('div');
+      errorEl.className = 'empty-state';
+      errorEl.textContent = 'エラーが発生しました';
+      gridContainer.appendChild(errorEl);
+    }
+  }
+
+  // Date change listener
+  dateInput.addEventListener('change', function() {
+    renderMealGrid(dateInput.value);
+  });
+
+  // Initial render
+  await renderMealGrid(dateInput.value);
+}
+
+/**
+ * 買い物リストに追加モーダルを表示
+ * @param {string} recipeId - レシピID
+ * @param {Array<{name: string, quantity: string}>} ingredients - 材料リスト
+ */
+function showShoppingModal(recipeId, ingredients) {
+  // Remove existing modal if any
+  var existing = document.getElementById('shopping-modal-overlay');
+  if (existing) existing.parentNode.removeChild(existing);
+
+  var overlay = document.createElement('div');
+  overlay.id = 'shopping-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;';
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:90%;width:360px;max-height:80vh;overflow-y:auto;';
+
+  var title = document.createElement('h3');
+  title.style.cssText = 'margin-bottom:16px;font-size:1.1em;color:#333;';
+  title.textContent = '🛒 買い物リストに追加';
+  modal.appendChild(title);
+
+  var checkboxes = [];
+  for (var i = 0; i < ingredients.length; i++) {
+    var ing = ingredients[i];
+    var row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;';
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.style.cssText = 'width:20px;height:20px;';
+    cb.setAttribute('data-index', i.toString());
+    checkboxes.push(cb);
+    row.appendChild(cb);
+
+    var text = document.createElement('span');
+    text.style.cssText = 'flex:1;font-size:0.95em;';
+    text.textContent = ing.name + (ing.quantity ? ' ' + ing.quantity : '');
+    row.appendChild(text);
+
+    modal.appendChild(row);
+  }
+
+  // Button row
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:16px;';
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn-secondary';
+  cancelBtn.textContent = 'キャンセル';
+  cancelBtn.style.cssText = 'flex:1;padding:12px;';
+  cancelBtn.addEventListener('click', function() {
+    overlay.parentNode.removeChild(overlay);
+  });
+  btnRow.appendChild(cancelBtn);
+
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn-primary';
+  addBtn.textContent = '追加';
+  addBtn.style.cssText = 'flex:1;padding:12px;';
+  addBtn.addEventListener('click', async function() {
+    var selected = [];
+    for (var j = 0; j < checkboxes.length; j++) {
+      if (checkboxes[j].checked) {
+        var idx = parseInt(checkboxes[j].getAttribute('data-index'), 10);
+        selected.push(ingredients[idx]);
+      }
+    }
+    if (selected.length === 0) {
+      showToast('材料を選択してください', 'info');
+      return;
+    }
+    var result = await addToShoppingList(recipeId, selected);
+    if (result.error) {
+      showToast('追加に失敗しました', 'error');
+    } else {
+      showToast(selected.length + '件を買い物リストに追加しました', 'success');
+      overlay.parentNode.removeChild(overlay);
+    }
+  });
+  btnRow.appendChild(addBtn);
+  modal.appendChild(btnRow);
+
+  overlay.appendChild(modal);
+
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+/**
  * 一覧画面にアレルギー除外UIを追加する
  * Task 16.3: タグタップ→フィルタ + アレルギー除外UI
  * This is called from within loadRecipeList to add allergy filter to the search section
@@ -1689,5 +2121,5 @@ function renderAllergyFilterUI(container, onFilterChange) {
 
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI };
+  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal };
 }
