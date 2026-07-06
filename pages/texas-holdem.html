@@ -78,6 +78,22 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .card-red { color: #ff6b6b; }
 .card-black { color: #eee; }
 
+/* トランプカード風 */
+.card-visual {
+  display: inline-flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  width: 38px; height: 54px; border-radius: 6px;
+  background: #fff; color: #333; font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin: 2px; font-size: 0.75em; line-height: 1.1;
+  position: relative;
+}
+.card-visual.red { color: #d32f2f; }
+.card-visual.black { color: #222; }
+.card-visual .card-rank { font-size: 1.1em; }
+.card-visual .card-suit { font-size: 1.0em; }
+.cards-row { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0; }
+
 /* 進行フロー */
 .flow-step {
   display: flex; gap: 12px; margin: 12px 0;
@@ -136,6 +152,34 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .preflop-table .tier2 { background: rgba(100,181,246,0.35); color: #e3f2fd; }
 .preflop-table .tier3 { background: rgba(255,213,79,0.3); color: #fff8e1; }
 .preflop-table .tier4 { background: rgba(255,255,255,0.04); color: #888; }
+
+/* 役一覧ビジュアル */
+.hand-visual-list { display: flex; flex-direction: column; gap: 12px; }
+.hand-visual-item {
+  display: flex; gap: 12px; padding: 12px;
+  background: rgba(255,255,255,0.04); border-radius: 10px;
+  align-items: center;
+}
+.hand-visual-rank {
+  color: #ffd700; font-weight: 700; font-size: 1.2em;
+  min-width: 28px; text-align: center;
+}
+.hand-visual-info { flex: 1; min-width: 0; }
+.hand-visual-name { color: #fff; font-weight: 700; font-size: 1em; margin-bottom: 2px; }
+.hand-visual-desc { color: #aaa; font-size: 0.8em; margin-bottom: 4px; }
+
+/* ハンド表セレクター */
+.preflop-selector {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0;
+}
+.preflop-selector button {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #aaa;
+  font-size: 0.8em; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.preflop-selector button.active {
+  background: rgba(76,175,80,0.3); color: #4caf50; border-color: #4caf50;
+}
 </style>
 </head>
 <body>
@@ -237,73 +281,148 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <h2>🏆 役の強さ一覧（上が最強）</h2>
     <p>手札2枚 + コミュニティカード5枚の計7枚から最強の5枚を選んで役を作る。</p>
 
-    <table class="hand-table">
-      <thead>
-        <tr><th class="rank-num">#</th><th>役</th><th>説明</th><th>例</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="rank-num">1</td>
-          <td class="hand-name">ロイヤルフラッシュ</td>
-          <td class="hand-desc">同じスートのA-K-Q-J-10</td>
-          <td class="hand-example"><span class="card-red">♥A ♥K ♥Q ♥J ♥10</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">2</td>
-          <td class="hand-name">ストレートフラッシュ</td>
-          <td class="hand-desc">同じスートで5枚連番</td>
-          <td class="hand-example"><span class="card-black">♠9 ♠8 ♠7 ♠6 ♠5</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">3</td>
-          <td class="hand-name">フォーカード</td>
-          <td class="hand-desc">同じ数字4枚</td>
-          <td class="hand-example"><span class="card-black">♠K</span> <span class="card-red">♥K ♦K</span> <span class="card-black">♣K</span> +1枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">4</td>
-          <td class="hand-name">フルハウス</td>
-          <td class="hand-desc">スリーカード + ワンペア</td>
-          <td class="hand-example"><span class="card-red">♥Q ♦Q</span> <span class="card-black">♣Q ♠7</span> <span class="card-red">♥7</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">5</td>
-          <td class="hand-name">フラッシュ</td>
-          <td class="hand-desc">同じスート5枚（連番でない）</td>
-          <td class="hand-example"><span class="card-red">♦A ♦J ♦8 ♦6 ♦2</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">6</td>
-          <td class="hand-name">ストレート</td>
-          <td class="hand-desc">5枚連番（スートばらばら）</td>
-          <td class="hand-example"><span class="card-black">♠10</span> <span class="card-red">♥9</span> <span class="card-black">♣8 ♠7</span> <span class="card-red">♦6</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">7</td>
-          <td class="hand-name">スリーカード</td>
-          <td class="hand-desc">同じ数字3枚</td>
-          <td class="hand-example"><span class="card-red">♥8 ♦8</span> <span class="card-black">♣8</span> +2枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">8</td>
-          <td class="hand-name">ツーペア</td>
-          <td class="hand-desc">ペアが2組</td>
-          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥A</span> <span class="card-black">♣5</span> <span class="card-red">♦5</span> +1枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">9</td>
-          <td class="hand-name">ワンペア</td>
-          <td class="hand-desc">同じ数字2枚</td>
-          <td class="hand-example"><span class="card-red">♥J</span> <span class="card-black">♣J</span> +3枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">10</td>
-          <td class="hand-name">ハイカード</td>
-          <td class="hand-desc">役なし（一番高いカードで勝負）</td>
-          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥J</span> <span class="card-black">♣8 ♠5</span> <span class="card-red">♦2</span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="hand-visual-list">
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">1</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ロイヤルフラッシュ</div>
+          <div class="hand-visual-desc">同じスートのA-K-Q-J-10</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">10</span><span class="card-suit">♥</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">2</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ストレートフラッシュ</div>
+          <div class="hand-visual-desc">同じスートで5枚連番</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">9</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">6</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♠</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">3</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フォーカード</div>
+          <div class="hand-visual-desc">同じ数字4枚</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">K</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">K</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">4</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フルハウス</div>
+          <div class="hand-visual-desc">スリーカード + ワンペア</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">Q</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">7</span><span class="card-suit">♥</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">5</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フラッシュ</div>
+          <div class="hand-visual-desc">同じスート5枚（連番でない）</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">6</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">2</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">6</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ストレート</div>
+          <div class="hand-visual-desc">5枚連番（スートばらばら）</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">10</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">9</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">6</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">7</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">スリーカード</div>
+          <div class="hand-visual-desc">同じ数字3枚</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">8</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ツーペア</div>
+          <div class="hand-visual-desc">ペアが2組</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">A</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♣</span></div>
+            <div class="card-visual red"><span class="card-rank">5</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">9</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ワンペア</div>
+          <div class="hand-visual-desc">同じ数字2枚</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">J</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">10</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ハイカード</div>
+          <div class="hand-visual-desc">役なし（一番高いカードで勝負）</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">A</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">2</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="tip-box">
       同じ役同士は数字の大きさで比較。数字の強さ: A &gt; K &gt; Q &gt; J &gt; 10 &gt; 9 &gt; ... &gt; 2<br>
@@ -331,56 +450,34 @@ h1 { font-size: 1.3em; font-weight: 700; }
   <!-- プリフロップ ハンド強さ表 -->
   <div class="content-section" id="tab-preflop">
     <h2>📋 プリフロップ ハンド強さ表</h2>
-    <p>手札2枚の組み合わせを強さ別に色分け。s = 同じスート（スーテッド）、o = 違うスート（オフスート）。</p>
+    <p>手札2枚の組み合わせを強さ別に色分け。s = スーテッド、o = オフスート。ポジション/人数で変わる。</p>
+
+    <div class="preflop-selector" id="preflopSelector">
+      <button class="active" data-chart="9max-ep">9人 EP</button>
+      <button data-chart="9max-mp">9人 MP</button>
+      <button data-chart="9max-co">9人 CO</button>
+      <button data-chart="9max-btn">9人 BTN</button>
+      <button data-chart="9max-sb">9人 SB</button>
+      <button data-chart="9max-bb">9人 BB</button>
+      <button data-chart="6max-ep">6人 EP</button>
+      <button data-chart="6max-co">6人 CO</button>
+      <button data-chart="6max-btn">6人 BTN</button>
+      <button data-chart="6max-sb">6人 SB</button>
+      <button data-chart="6max-bb">6人 BB</button>
+      <button data-chart="5p">5人</button>
+      <button data-chart="4p">4人</button>
+    </div>
 
     <div class="tip-box">
-      🟢 緑 = 超強い（どのポジションからでもレイズ）<br>
-      🔵 青 = 強い（中盤〜後半ポジションでレイズ）<br>
-      🟡 黄 = まあまあ（後半ポジションでプレイ可）<br>
-      ⬜ 白 = 弱い（基本フォールド）
+      🟢 緑 = レイズ/3ベット ｜ 🔵 青 = レイズ ｜ 🟡 黄 = コール可 ｜ ⬜ 白 = フォールド
     </div>
 
-    <div style="overflow-x:auto; margin:12px 0;">
-      <table class="preflop-table">
-        <thead>
-          <tr><th></th><th>A</th><th>K</th><th>Q</th><th>J</th><th>T</th><th>9</th><th>8</th><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th></tr>
-        </thead>
-        <tbody>
-          <tr><th>A</th><td class="tier1">AA</td><td class="tier1">AKs</td><td class="tier1">AQs</td><td class="tier2">AJs</td><td class="tier2">ATs</td><td class="tier3">A9s</td><td class="tier3">A8s</td><td class="tier3">A7s</td><td class="tier3">A6s</td><td class="tier3">A5s</td><td class="tier3">A4s</td><td class="tier3">A3s</td><td class="tier3">A2s</td></tr>
-          <tr><th>K</th><td class="tier1">AKo</td><td class="tier1">KK</td><td class="tier2">KQs</td><td class="tier2">KJs</td><td class="tier2">KTs</td><td class="tier3">K9s</td><td class="tier4">K8s</td><td class="tier4">K7s</td><td class="tier4">K6s</td><td class="tier4">K5s</td><td class="tier4">K4s</td><td class="tier4">K3s</td><td class="tier4">K2s</td></tr>
-          <tr><th>Q</th><td class="tier2">AQo</td><td class="tier2">KQo</td><td class="tier1">QQ</td><td class="tier2">QJs</td><td class="tier2">QTs</td><td class="tier3">Q9s</td><td class="tier4">Q8s</td><td class="tier4">Q7s</td><td class="tier4">Q6s</td><td class="tier4">Q5s</td><td class="tier4">Q4s</td><td class="tier4">Q3s</td><td class="tier4">Q2s</td></tr>
-          <tr><th>J</th><td class="tier2">AJo</td><td class="tier3">KJo</td><td class="tier3">QJo</td><td class="tier1">JJ</td><td class="tier2">JTs</td><td class="tier3">J9s</td><td class="tier3">J8s</td><td class="tier4">J7s</td><td class="tier4">J6s</td><td class="tier4">J5s</td><td class="tier4">J4s</td><td class="tier4">J3s</td><td class="tier4">J2s</td></tr>
-          <tr><th>T</th><td class="tier3">ATo</td><td class="tier3">KTo</td><td class="tier3">QTo</td><td class="tier3">JTo</td><td class="tier1">TT</td><td class="tier3">T9s</td><td class="tier3">T8s</td><td class="tier4">T7s</td><td class="tier4">T6s</td><td class="tier4">T5s</td><td class="tier4">T4s</td><td class="tier4">T3s</td><td class="tier4">T2s</td></tr>
-          <tr><th>9</th><td class="tier4">A9o</td><td class="tier4">K9o</td><td class="tier4">Q9o</td><td class="tier4">J9o</td><td class="tier3">T9o</td><td class="tier2">99</td><td class="tier3">98s</td><td class="tier3">97s</td><td class="tier4">96s</td><td class="tier4">95s</td><td class="tier4">94s</td><td class="tier4">93s</td><td class="tier4">92s</td></tr>
-          <tr><th>8</th><td class="tier4">A8o</td><td class="tier4">K8o</td><td class="tier4">Q8o</td><td class="tier4">J8o</td><td class="tier4">T8o</td><td class="tier4">98o</td><td class="tier2">88</td><td class="tier3">87s</td><td class="tier3">86s</td><td class="tier4">85s</td><td class="tier4">84s</td><td class="tier4">83s</td><td class="tier4">82s</td></tr>
-          <tr><th>7</th><td class="tier4">A7o</td><td class="tier4">K7o</td><td class="tier4">Q7o</td><td class="tier4">J7o</td><td class="tier4">T7o</td><td class="tier4">97o</td><td class="tier4">87o</td><td class="tier2">77</td><td class="tier3">76s</td><td class="tier3">75s</td><td class="tier4">74s</td><td class="tier4">73s</td><td class="tier4">72s</td></tr>
-          <tr><th>6</th><td class="tier4">A6o</td><td class="tier4">K6o</td><td class="tier4">Q6o</td><td class="tier4">J6o</td><td class="tier4">T6o</td><td class="tier4">96o</td><td class="tier4">86o</td><td class="tier4">76o</td><td class="tier2">66</td><td class="tier3">65s</td><td class="tier3">64s</td><td class="tier4">63s</td><td class="tier4">62s</td></tr>
-          <tr><th>5</th><td class="tier4">A5o</td><td class="tier4">K5o</td><td class="tier4">Q5o</td><td class="tier4">J5o</td><td class="tier4">T5o</td><td class="tier4">95o</td><td class="tier4">85o</td><td class="tier4">75o</td><td class="tier4">65o</td><td class="tier2">55</td><td class="tier3">54s</td><td class="tier4">53s</td><td class="tier4">52s</td></tr>
-          <tr><th>4</th><td class="tier4">A4o</td><td class="tier4">K4o</td><td class="tier4">Q4o</td><td class="tier4">J4o</td><td class="tier4">T4o</td><td class="tier4">94o</td><td class="tier4">84o</td><td class="tier4">74o</td><td class="tier4">64o</td><td class="tier4">54o</td><td class="tier2">44</td><td class="tier4">43s</td><td class="tier4">42s</td></tr>
-          <tr><th>3</th><td class="tier4">A3o</td><td class="tier4">K3o</td><td class="tier4">Q3o</td><td class="tier4">J3o</td><td class="tier4">T3o</td><td class="tier4">93o</td><td class="tier4">83o</td><td class="tier4">73o</td><td class="tier4">63o</td><td class="tier4">53o</td><td class="tier4">43o</td><td class="tier2">33</td><td class="tier4">32s</td></tr>
-          <tr><th>2</th><td class="tier4">A2o</td><td class="tier4">K2o</td><td class="tier4">Q2o</td><td class="tier4">J2o</td><td class="tier4">T2o</td><td class="tier4">92o</td><td class="tier4">82o</td><td class="tier4">72o</td><td class="tier4">62o</td><td class="tier4">52o</td><td class="tier4">42o</td><td class="tier4">32o</td><td class="tier2">22</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div style="overflow-x:auto; margin:12px 0;" id="preflopGrid"></div>
 
     <p style="font-size:0.8em; color:#aaa; margin-top:8px;">
-      ※ 対角線 = ポケットペア（同じ数字2枚）。左上 = スーテッド（同スート）。右下 = オフスート。
+      ※ 対角線 = ポケットペア。左上 = スーテッド。右下 = オフスート。<br>
+      ※ 一般的なオープンレイズ/コールレンジの目安。相手のプレイスタイルや状況で調整が必要。
     </p>
-
-    <h3>🏅 Tier別の目安</h3>
-    <table class="hand-table">
-      <thead><tr><th>Tier</th><th>代表ハンド</th><th>アクション目安</th></tr></thead>
-      <tbody>
-        <tr><td style="color:#4caf50; font-weight:700;">Tier 1</td><td>AA, KK, QQ, JJ, TT, AKs, AQs, AKo</td><td>どこからでもレイズ / 3ベット</td></tr>
-        <tr><td style="color:#64b5f6; font-weight:700;">Tier 2</td><td>99-22, AJs-ATs, KQs-KTs, QJs-JTs</td><td>中盤〜後半ポジションでレイズ</td></tr>
-        <tr><td style="color:#ffd54f; font-weight:700;">Tier 3</td><td>A9s-A2s, スーテッドコネクタ(98s,87s等), KJo-JTo</td><td>後半ポジション（CO/BTN）で参加</td></tr>
-        <tr><td style="color:#999;">Tier 4</td><td>その他</td><td>基本フォールド（特にUTG/MP）</td></tr>
-      </tbody>
-    </table>
-
-    <div class="tip-box">
-      初心者はTier 1〜2だけでプレイするのがおすすめ。慣れてきたらTier 3を後ろのポジションで追加していこう。
-    </div>
   </div>
 
   <!-- ゲームの進め方 -->
@@ -610,6 +707,245 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
   });
 });
+
+// ============================================================
+// プリフロップハンド表 - ポジション別データ
+// 1=tier1(レイズ/3bet), 2=tier2(レイズ), 3=tier3(コール可), 4=tier4(フォールド)
+// 13x13 マトリクス: 行=左カード、列=上カード、対角=ペア、上三角=スーテッド、下三角=オフスート
+// ============================================================
+const RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+const CHARTS = {
+  '9max-ep': [
+    [1,1,1,2,2,4,4,4,4,4,4,4,4],
+    [1,1,2,2,3,4,4,4,4,4,4,4,4],
+    [2,3,1,2,3,4,4,4,4,4,4,4,4],
+    [3,4,4,1,2,4,4,4,4,4,4,4,4],
+    [4,4,4,4,1,3,4,4,4,4,4,4,4],
+    [4,4,4,4,4,2,4,4,4,4,4,4,4],
+    [4,4,4,4,4,4,2,4,4,4,4,4,4],
+    [4,4,4,4,4,4,4,2,4,4,4,4,4],
+    [4,4,4,4,4,4,4,4,3,4,4,4,4],
+    [4,4,4,4,4,4,4,4,4,3,4,4,4],
+    [4,4,4,4,4,4,4,4,4,4,3,4,4],
+    [4,4,4,4,4,4,4,4,4,4,4,3,4],
+    [4,4,4,4,4,4,4,4,4,4,4,4,3]
+  ],
+  '9max-mp': [
+    [1,1,1,2,2,3,4,4,4,4,4,4,4],
+    [1,1,2,2,2,3,4,4,4,4,4,4,4],
+    [2,3,1,2,2,3,4,4,4,4,4,4,4],
+    [2,4,4,1,2,3,3,4,4,4,4,4,4],
+    [3,4,4,4,1,3,3,4,4,4,4,4,4],
+    [4,4,4,4,3,2,3,3,4,4,4,4,4],
+    [4,4,4,4,4,4,2,3,4,4,4,4,4],
+    [4,4,4,4,4,4,4,2,3,4,4,4,4],
+    [4,4,4,4,4,4,4,4,3,4,4,4,4],
+    [4,4,4,4,4,4,4,4,4,3,4,4,4],
+    [4,4,4,4,4,4,4,4,4,4,3,4,4],
+    [4,4,4,4,4,4,4,4,4,4,4,3,4],
+    [4,4,4,4,4,4,4,4,4,4,4,4,3]
+  ],
+  '9max-co': [
+    [1,1,1,2,2,3,3,3,3,3,3,3,3],
+    [1,1,2,2,2,3,3,4,4,4,4,4,4],
+    [2,2,1,2,2,3,4,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,4,4,4,4,4,4],
+    [3,3,3,3,1,3,3,3,4,4,4,4,4],
+    [4,4,4,4,3,2,3,3,3,4,4,4,4],
+    [4,4,4,4,4,4,2,3,3,4,4,4,4],
+    [4,4,4,4,4,4,4,2,3,3,4,4,4],
+    [4,4,4,4,4,4,4,4,2,3,3,4,4],
+    [4,4,4,4,4,4,4,4,4,2,3,4,4],
+    [4,4,4,4,4,4,4,4,4,4,2,4,4],
+    [4,4,4,4,4,4,4,4,4,4,4,2,4],
+    [4,4,4,4,4,4,4,4,4,4,4,4,2]
+  ],
+  '9max-btn': [
+    [1,1,1,1,2,2,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,3,3,3,4,4,4],
+    [2,2,1,2,2,3,3,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,3,4,4,4,4,4],
+    [3,3,3,3,1,2,3,3,3,4,4,4,4],
+    [3,3,4,4,3,1,3,3,3,3,4,4,4],
+    [3,4,4,4,4,3,1,3,3,3,4,4,4],
+    [3,4,4,4,4,4,3,1,3,3,3,4,4],
+    [3,4,4,4,4,4,4,3,1,3,3,4,4],
+    [3,4,4,4,4,4,4,4,3,1,3,3,4],
+    [3,4,4,4,4,4,4,4,4,3,1,3,4],
+    [3,4,4,4,4,4,4,4,4,4,4,1,3],
+    [3,4,4,4,4,4,4,4,4,4,4,4,1]
+  ],
+  '9max-sb': [
+    [1,1,1,1,2,3,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,4,4,4,4,4,4],
+    [2,2,1,2,2,3,4,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,4,4,4,4,4,4],
+    [3,3,3,3,1,3,3,4,4,4,4,4,4],
+    [3,4,4,4,3,1,3,3,4,4,4,4,4],
+    [3,4,4,4,4,4,1,3,3,4,4,4,4],
+    [3,4,4,4,4,4,4,1,3,3,4,4,4],
+    [3,4,4,4,4,4,4,4,1,3,3,4,4],
+    [3,4,4,4,4,4,4,4,4,1,3,4,4],
+    [3,4,4,4,4,4,4,4,4,4,1,4,4],
+    [3,4,4,4,4,4,4,4,4,4,4,1,4],
+    [3,4,4,4,4,4,4,4,4,4,4,4,1]
+  ],
+  '9max-bb': [
+    [1,1,1,1,2,3,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,3,3,3,3,4,4],
+    [2,2,1,2,2,3,3,3,4,4,4,4,4],
+    [2,3,3,1,2,3,3,3,4,4,4,4,4],
+    [3,3,3,3,1,3,3,3,3,4,4,4,4],
+    [3,3,3,3,3,1,3,3,3,3,4,4,4],
+    [3,3,3,3,3,3,1,3,3,3,4,4,4],
+    [3,3,4,4,3,3,3,1,3,3,3,4,4],
+    [3,3,4,4,4,3,3,3,1,3,3,4,4],
+    [3,3,4,4,4,4,4,3,3,1,3,3,4],
+    [3,4,4,4,4,4,4,4,3,3,1,3,4],
+    [3,4,4,4,4,4,4,4,4,3,3,1,3],
+    [3,4,4,4,4,4,4,4,4,4,4,3,1]
+  ],
+  '6max-ep': [
+    [1,1,1,2,2,3,4,4,4,4,4,4,4],
+    [1,1,2,2,2,3,4,4,4,4,4,4,4],
+    [2,3,1,2,2,3,4,4,4,4,4,4,4],
+    [2,4,4,1,2,3,3,4,4,4,4,4,4],
+    [3,4,4,4,1,3,3,4,4,4,4,4,4],
+    [4,4,4,4,3,2,3,3,4,4,4,4,4],
+    [4,4,4,4,4,4,2,3,4,4,4,4,4],
+    [4,4,4,4,4,4,4,2,3,4,4,4,4],
+    [4,4,4,4,4,4,4,4,3,4,4,4,4],
+    [4,4,4,4,4,4,4,4,4,3,4,4,4],
+    [4,4,4,4,4,4,4,4,4,4,3,4,4],
+    [4,4,4,4,4,4,4,4,4,4,4,3,4],
+    [4,4,4,4,4,4,4,4,4,4,4,4,3]
+  ],
+  '6max-co': [
+    [1,1,1,2,2,3,3,3,3,3,3,3,3],
+    [1,1,2,2,2,3,3,4,4,4,4,4,4],
+    [2,2,1,2,2,3,4,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,4,4,4,4,4,4],
+    [3,3,3,3,1,3,3,3,4,4,4,4,4],
+    [4,4,4,4,3,2,3,3,3,4,4,4,4],
+    [4,4,4,4,4,4,2,3,3,4,4,4,4],
+    [4,4,4,4,4,4,4,2,3,3,4,4,4],
+    [4,4,4,4,4,4,4,4,2,3,3,4,4],
+    [4,4,4,4,4,4,4,4,4,2,3,4,4],
+    [4,4,4,4,4,4,4,4,4,4,2,4,4],
+    [4,4,4,4,4,4,4,4,4,4,4,2,4],
+    [4,4,4,4,4,4,4,4,4,4,4,4,2]
+  ],
+  '6max-btn': [
+    [1,1,1,1,2,2,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,3,3,3,4,4,4],
+    [2,2,1,2,2,3,3,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,3,4,4,4,4,4],
+    [3,3,3,3,1,2,3,3,3,4,4,4,4],
+    [3,3,4,4,3,1,3,3,3,3,4,4,4],
+    [3,4,4,4,4,3,1,3,3,3,4,4,4],
+    [3,4,4,4,4,4,3,1,3,3,3,4,4],
+    [3,4,4,4,4,4,4,3,1,3,3,4,4],
+    [3,4,4,4,4,4,4,4,3,1,3,3,4],
+    [3,4,4,4,4,4,4,4,4,3,1,3,4],
+    [3,4,4,4,4,4,4,4,4,4,4,1,3],
+    [3,4,4,4,4,4,4,4,4,4,4,4,1]
+  ],
+  '6max-sb': [
+    [1,1,1,1,2,3,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,4,4,4,4,4,4],
+    [2,2,1,2,2,3,4,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,4,4,4,4,4,4],
+    [3,3,3,3,1,3,3,4,4,4,4,4,4],
+    [3,4,4,4,3,1,3,3,4,4,4,4,4],
+    [3,4,4,4,4,4,1,3,3,4,4,4,4],
+    [3,4,4,4,4,4,4,1,3,3,4,4,4],
+    [3,4,4,4,4,4,4,4,1,3,3,4,4],
+    [3,4,4,4,4,4,4,4,4,1,3,4,4],
+    [3,4,4,4,4,4,4,4,4,4,1,4,4],
+    [3,4,4,4,4,4,4,4,4,4,4,1,4],
+    [3,4,4,4,4,4,4,4,4,4,4,4,1]
+  ],
+  '6max-bb': [
+    [1,1,1,1,2,3,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,3,3,3,3,4,4],
+    [2,2,1,2,2,3,3,3,4,4,4,4,4],
+    [2,3,3,1,2,3,3,3,4,4,4,4,4],
+    [3,3,3,3,1,3,3,3,3,4,4,4,4],
+    [3,3,3,3,3,1,3,3,3,3,4,4,4],
+    [3,3,3,3,3,3,1,3,3,3,4,4,4],
+    [3,3,4,4,3,3,3,1,3,3,3,4,4],
+    [3,3,4,4,4,3,3,3,1,3,3,4,4],
+    [3,3,4,4,4,4,4,3,3,1,3,3,4],
+    [3,4,4,4,4,4,4,4,3,3,1,3,4],
+    [3,4,4,4,4,4,4,4,4,3,3,1,3],
+    [3,4,4,4,4,4,4,4,4,4,4,3,1]
+  ],
+  '5p': [
+    [1,1,1,1,2,2,3,3,3,3,3,3,3],
+    [1,1,1,2,2,3,3,3,3,4,4,4,4],
+    [2,2,1,2,2,3,3,4,4,4,4,4,4],
+    [2,3,3,1,2,3,3,3,4,4,4,4,4],
+    [3,3,3,3,1,3,3,3,4,4,4,4,4],
+    [3,3,4,4,3,1,3,3,3,4,4,4,4],
+    [3,4,4,4,4,3,1,3,3,4,4,4,4],
+    [3,4,4,4,4,4,3,1,3,3,4,4,4],
+    [3,4,4,4,4,4,4,3,1,3,3,4,4],
+    [3,4,4,4,4,4,4,4,3,1,3,4,4],
+    [3,4,4,4,4,4,4,4,4,3,1,4,4],
+    [3,4,4,4,4,4,4,4,4,4,4,1,4],
+    [3,4,4,4,4,4,4,4,4,4,4,4,1]
+  ],
+  '4p': [
+    [1,1,1,1,1,2,2,3,3,3,3,3,3],
+    [1,1,1,1,2,2,3,3,3,3,3,4,4],
+    [1,2,1,2,2,3,3,3,4,4,4,4,4],
+    [2,2,3,1,2,3,3,3,4,4,4,4,4],
+    [2,3,3,3,1,2,3,3,3,4,4,4,4],
+    [3,3,3,3,3,1,3,3,3,3,4,4,4],
+    [3,3,3,3,3,3,1,3,3,3,4,4,4],
+    [3,3,4,4,3,3,3,1,3,3,3,4,4],
+    [3,3,4,4,4,3,3,3,1,3,3,4,4],
+    [3,3,4,4,4,4,4,3,3,1,3,3,4],
+    [3,3,4,4,4,4,4,4,3,3,1,3,3],
+    [3,4,4,4,4,4,4,4,4,3,3,1,3],
+    [3,4,4,4,4,4,4,4,4,4,3,3,1]
+  ]
+};
+
+function renderPreflopChart(chartKey) {
+  const data = CHARTS[chartKey];
+  if (!data) return;
+  const tierClass = ['','tier1','tier2','tier3','tier4'];
+  let html = '<table class="preflop-table"><thead><tr><th></th>';
+  RANKS.forEach(r => html += '<th>' + r + '</th>');
+  html += '</tr></thead><tbody>';
+  for (let row = 0; row < 13; row++) {
+    html += '<tr><th>' + RANKS[row] + '</th>';
+    for (let col = 0; col < 13; col++) {
+      const tier = data[row][col];
+      let label;
+      if (row === col) label = RANKS[row] + RANKS[col];
+      else if (col > row) label = RANKS[row] + RANKS[col] + 's';
+      else label = RANKS[col] + RANKS[row] + 'o';
+      html += '<td class="' + tierClass[tier] + '">' + label + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('preflopGrid').innerHTML = html;
+}
+
+// セレクター切り替え
+document.getElementById('preflopSelector').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#preflopSelector button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPreflopChart(btn.dataset.chart);
+});
+
+// 初期表示
+renderPreflopChart('9max-ep');
 </script>
 </body>
 </html>
