@@ -104,33 +104,33 @@
     - **Property 12: ユーザー別お気に入り独立性**
     - **Validates: Requirements 5.3**
 
-- [ ] 7. レシピ登録/編集画面の実装
-  - [-] 7.1 validateRecipeForm, validateImageFile を実装（js/recipe-utils.js）
+- [x] 7. レシピ登録/編集画面の実装
+  - [x] 7.1 validateRecipeForm, validateImageFile を実装（js/recipe-utils.js）
     - validateRecipeForm: published時はtitle必須＋材料1件以上、draft時はtitle不要
     - validateImageFile: MIME type（jpeg/png/webp）＋サイズ3MBチェック
     - resizeImage(file): Promise<Blob> — Canvas API使用、max 1200px、アスペクト比保持
     - _Requirements: 1.5, 4.2, 4.3, 4.4, 12.2_
-  - [ ] 7.2 プロパティテスト: レシピフォームバリデーション
+  - [x] 7.2 プロパティテスト: レシピフォームバリデーション
     - **Property 1: レシピフォームバリデーション**
     - **Validates: Requirements 1.5, 12.2**
-  - [ ] 7.3 プロパティテスト: 画像アップロードバリデーション
+  - [x] 7.3 プロパティテスト: 画像アップロードバリデーション
     - **Property 9: 画像アップロードバリデーション**
     - **Validates: Requirements 4.2, 4.3**
-  - [ ] 7.4 プロパティテスト: 画像リサイズ制約
+  - [x] 7.4 プロパティテスト: 画像リサイズ制約
     - **Property 10: 画像リサイズ制約**
     - **Validates: Requirements 4.4**
-  - [ ] 7.5 RecipeRepository.save, RecipeRepository.delete を実装
+  - [x] 7.5 RecipeRepository.save, RecipeRepository.delete を実装
     - save: idの有無でINSERT/UPDATE判定、updated_at自動更新
     - delete: CASCADE削除（Storage写真も削除）
     - _Requirements: 1.6, 1.15_
-  - [ ] 7.6 IngredientRepository.saveAll, TagRepository.saveAll, PhotoRepository.upload/delete を実装
+  - [x] 7.6 IngredientRepository.saveAll, TagRepository.saveAll, PhotoRepository.upload/delete を実装
     - IngredientRepository.saveAll: 全削除＋全挿入（sort_order付き）
     - TagRepository.saveAll: 正規化済みタグを全削除＋全挿入
     - TagRepository.getSuggestions: オートコンプリート候補
     - PhotoRepository.upload: リサイズ済みBlobをStorageアップロード＋recipe_photos INSERT
     - PhotoRepository.delete: Storage＋DBから削除
     - _Requirements: 1.2, 1.3, 4.5, 4.10, 6.4, 6.5_
-  - [ ] 7.7 登録/編集フォームUI（loadEditForm, addIngredientRow, addStepRow, saveRecipe）を実装
+  - [x] 7.7 登録/編集フォームUI（loadEditForm, addIngredientRow, addStepRow, saveRecipe）を実装
     - title, description, category(SELECT), cook_time_minutes, servings 入力フィールド
     - 材料: 名前＋分量＋メモ行、「＋材料を追加」大ボタン
     - 手順: 説明＋写真、「＋手順を追加」大ボタン
@@ -143,7 +143,7 @@
     - 材料・手順の並び替え（sort_order更新）
     - _Requirements: 1.14_
 
-- [ ] 8. Checkpoint — Milestone 1 完了確認
+- [x] 8. Checkpoint — Milestone 1 完了確認
   - ESLint OK（エラー0件）
   - Property Test OK（Property 1, 3, 9, 10, 11, 12, 13, 14 全パス）
   - 手動確認: レシピ登録 → 一覧表示 → 詳細表示 → 編集 → 削除が動作すること
@@ -153,40 +153,40 @@
 
 ## Milestone 2: テキスト検索・ソート・お気に入り・調理記録
 
-- [ ] 9. テキスト検索・ソートの実装
-  - [ ] 9.1 matchesTextSearch, sortRecipes を実装（js/recipe-search.js）
+- [x] 9. テキスト検索・ソートの実装
+  - [x] 9.1 matchesTextSearch, sortRecipes を実装（js/recipe-search.js）
     - matchesTextSearch: title/description/category/author/tags部分一致(case-insensitive)
     - sortRecipes: 新しい順/古い順/名前順/お気に入り順/最近作った順
     - _Requirements: 2.3, 2.6_
-  - [ ] 9.2 プロパティテスト: テキスト検索部分一致
+  - [x] 9.2 プロパティテスト: テキスト検索部分一致
     - **Property 4: テキスト検索部分一致**
     - **Validates: Requirements 2.3**
-  - [ ] 9.3 プロパティテスト: ソート正確性
+  - [x] 9.3 プロパティテスト: ソート正確性
     - **Property 5: ソート正確性**
     - **Validates: Requirements 2.6**
-  - [ ] 9.4 一覧画面に検索バー＋ソートドロップダウンを追加（js/recipe-ui.js）
+  - [x] 9.4 一覧画面に検索バー＋ソートドロップダウンを追加（js/recipe-ui.js）
     - テキスト入力→リアルタイムフィルタ
     - ソートモード切替→再描画
     - 検索結果0件時「レシピが見つかりません」表示
     - _Requirements: 2.3, 2.5, 2.6_
 
-- [ ] 10. お気に入りフィルタ・可視性ルールの実装
-  - [ ] 10.1 filterVisibleRecipes, filterFavorites を実装（js/recipe-search.js）
+- [x] 10. お気に入りフィルタ・可視性ルールの実装
+  - [x] 10.1 filterVisibleRecipes, filterFavorites を実装（js/recipe-search.js）
     - filterVisibleRecipes: published全表示 + 自分のdraft/private表示
     - filterFavorites: 指定ユーザーのお気に入りレシピのみ抽出
     - _Requirements: 2.7, 12.5, 12.6, 12.8, 9.7_
-  - [ ] 10.2 プロパティテスト: レシピ可視性ルール
+  - [x] 10.2 プロパティテスト: レシピ可視性ルール
     - **Property 2: レシピ可視性ルール**
     - **Validates: Requirements 2.1, 12.5, 12.6, 12.8**
-  - [ ] 10.3 プロパティテスト: お気に入りフィルタ正確性
+  - [x] 10.3 プロパティテスト: お気に入りフィルタ正確性
     - **Property 23: お気に入りフィルタ正確性**
     - **Validates: Requirements 2.7, 9.7**
-  - [ ] 10.4 一覧画面にお気に入りフィルタボタン＋下書き/非公開セクション表示を追加
+  - [x] 10.4 一覧画面にお気に入りフィルタボタン＋下書き/非公開セクション表示を追加
     - お気に入りフィルタ切替ボタン
     - 自分の下書き📝/非公開🔒レシピを別セクション表示
     - _Requirements: 2.7, 12.6, 12.7, 9.7_
 
-- [ ] 11. Checkpoint — Milestone 2 完了確認
+- [x] 11. Checkpoint — Milestone 2 完了確認
   - ESLint OK（エラー0件）
   - Property Test OK（Property 2, 4, 5, 23 全パス）
   - 手動確認: テキスト検索 → ソート切替 → お気に入りフィルタが動作すること
@@ -197,71 +197,71 @@
 ## Milestone 3: 素材逆引き・冷蔵庫検索・タグ
 
 
-- [ ] 12. タグ関連ユーティリティの実装
-  - [ ] 12.1 normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags を実装（js/recipe-utils.js）
+- [x] 12. タグ関連ユーティリティの実装
+  - [x] 12.1 normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags を実装（js/recipe-utils.js）
     - normalizeTag: trim + lowercase
     - isAllergyTag: "allergy:"プレフィックス判定
     - filterAllergyTags: アレルギータグのみ抽出
     - filterGeneralTags: 一般タグのみ抽出（allergy:除外）
     - _Requirements: 6.6, 13.4, 13.6_
-  - [ ] 12.2 プロパティテスト: タグ正規化
+  - [x] 12.2 プロパティテスト: タグ正規化
     - **Property 16: タグ正規化**
     - **Validates: Requirements 6.6**
-  - [ ] 12.3 プロパティテスト: アレルギータグ分離
+  - [x] 12.3 プロパティテスト: アレルギータグ分離
     - **Property 21: アレルギータグ分離**
     - **Validates: Requirements 13.4, 13.6**
 
-- [ ] 13. タグフィルタ・アレルギー除外の実装
-  - [ ] 13.1 filterByTag, filterExcludeAllergy を実装（js/recipe-search.js）
+- [x] 13. タグフィルタ・アレルギー除外の実装
+  - [x] 13.1 filterByTag, filterExcludeAllergy を実装（js/recipe-search.js）
     - filterByTag: タグtを持つレシピのみ抽出
     - filterExcludeAllergy: 指定アレルゲンタグを持つレシピを除外
     - _Requirements: 6.3, 13.3_
-  - [ ] 13.2 プロパティテスト: タグフィルタ正確性
+  - [x] 13.2 プロパティテスト: タグフィルタ正確性
     - **Property 15: タグフィルタ正確性**
     - **Validates: Requirements 6.3**
-  - [ ] 13.3 プロパティテスト: アレルギー除外フィルタ
+  - [x] 13.3 プロパティテスト: アレルギー除外フィルタ
     - **Property 22: アレルギー除外フィルタ**
     - **Validates: Requirements 13.3**
 
-- [ ] 14. 素材逆引き検索の実装
-  - [ ] 14.1 searchByIngredientsLogic を実装（js/recipe-search.js）
+- [x] 14. 素材逆引き検索の実装
+  - [x] 14.1 searchByIngredientsLogic を実装（js/recipe-search.js）
     - AND/OR検索、部分一致
     - ORモード時はマッチ数降順ソート
     - _Requirements: 3.2, 3.4, 3.6_
-  - [ ] 14.2 プロパティテスト: 材料検索 AND/OR ロジック
+  - [x] 14.2 プロパティテスト: 材料検索 AND/OR ロジック
     - **Property 6: 材料検索 AND/OR ロジック**
     - **Validates: Requirements 3.2, 3.4**
-  - [ ] 14.3 プロパティテスト: OR検索一致数順ソート
+  - [x] 14.3 プロパティテスト: OR検索一致数順ソート
     - **Property 7: OR検索一致数順ソート**
     - **Validates: Requirements 3.6**
-  - [ ] 14.4 IngredientRepository.searchByNames を実装（js/recipe-api.js）
+  - [x] 14.4 IngredientRepository.searchByNames を実装（js/recipe-api.js）
     - 部分一致検索（ilike）
     - _Requirements: 3.2, 3.4_
 
-- [ ] 15. 冷蔵庫検索の実装
-  - [ ] 15.1 searchFridgeLogic, computeDeficiencyRatio を実装（js/recipe-search.js / js/recipe-utils.js）
+- [x] 15. 冷蔵庫検索の実装
+  - [x] 15.1 searchFridgeLogic, computeDeficiencyRatio を実装（js/recipe-search.js / js/recipe-utils.js）
     - 不足2品以内のレシピのみ返却
     - 不足率（不足数/全材料数）昇順ソート
     - _Requirements: 3.7_
-  - [ ] 15.2 プロパティテスト: 冷蔵庫検索（不足品数＋不足率ソート）
+  - [x] 15.2 プロパティテスト: 冷蔵庫検索（不足品数＋不足率ソート）
     - **Property 8: 冷蔵庫検索（不足品数＋不足率ソート）**
     - **Validates: Requirements 3.7**
 
-- [ ] 16. 素材検索タブUIの実装
-  - [ ] 16.1 材料入力フィールド＋AND/OR切替UIを実装（js/recipe-ui.js）
+- [x] 16. 素材検索タブUIの実装
+  - [x] 16.1 材料入力フィールド＋AND/OR切替UIを実装（js/recipe-ui.js）
     - 材料名入力（カンマ/スペース区切り）
     - AND/ORトグルボタン
     - _Requirements: 3.1, 3.3_
-  - [ ] 16.2 冷蔵庫検索モードUI＋検索結果カード表示を実装
+  - [x] 16.2 冷蔵庫検索モードUI＋検索結果カード表示を実装
     - 冷蔵庫検索モードスイッチ
     - 検索結果: レシピカード＋マッチ材料名ハイライト＋不足材料表示
     - _Requirements: 3.5, 3.7_
-  - [ ] 16.3 一覧画面にタグタップ→フィルタ＋アレルギー除外UIを追加
+  - [x] 16.3 一覧画面にタグタップ→フィルタ＋アレルギー除外UIを追加
     - タグタップ→一覧画面にフィルタ適用
     - アレルギー除外フィルタUI（卵なし/乳なし等）
     - _Requirements: 6.3, 13.3_
 
-- [ ] 17. Checkpoint — Milestone 3 完了確認
+- [x] 17. Checkpoint — Milestone 3 完了確認
   - ESLint OK（エラー0件）
   - Property Test OK（Property 6, 7, 8, 15, 16, 21, 22 全パス）
   - 手動確認: 素材逆引きAND/OR → 冷蔵庫検索 → タグフィルタ → アレルギー除外が動作すること
@@ -271,60 +271,60 @@
 
 ## Milestone 4: 買い物リスト・献立
 
-- [ ] 18. 買い物リスト数量合算ロジックの実装
-  - [ ] 18.1 parseQuantity, mergeQuantities を実装（js/recipe-utils.js）
+- [x] 18. 買い物リスト数量合算ロジックの実装
+  - [x] 18.1 parseQuantity, mergeQuantities を実装（js/recipe-utils.js）
     - parseQuantity(str): "300g"→{value:300,unit:"g"}, "適量"→{value:null,unit:null,raw:"適量"}, "1/2個"→{value:0.5,unit:"個"}
     - mergeQuantities(items): 同名＋同単位の数値合算、単位不一致・非数値は別項目
     - ※mergeQuantitiesは汎用純粋関数としてrecipe-utils.jsに配置
     - _Requirements: 7.6, 7.7_
-  - [ ] 18.2 プロパティテスト: parseQuantity 解析正確性
+  - [x] 18.2 プロパティテスト: parseQuantity 解析正確性
     - **Property 18: parseQuantity 解析正確性**
     - **Validates: Requirements 7.6, 7.7**
-  - [ ] 18.3 プロパティテスト: 買い物リスト数量合算ルール
+  - [x] 18.3 プロパティテスト: 買い物リスト数量合算ルール
     - **Property 17: 買い物リスト数量合算ルール**
     - **Validates: Requirements 7.6, 7.7**
 
-- [ ] 19. 買い物リスト機能の実装
-  - [ ] 19.1 ShoppingListRepository を実装（js/recipe-api.js）
+- [x] 19. 買い物リスト機能の実装
+  - [x] 19.1 ShoppingListRepository を実装（js/recipe-api.js）
     - getAll: recipes.title JOIN、created_at昇順
     - addItems: [{ingredient_name, quantity}]をINSERT
     - toggleChecked: チェック状態トグル
     - deleteChecked: チェック済み一括削除
     - deleteItem: 個別削除
     - _Requirements: 7.4, 7.8, 7.9_
-  - [ ] 19.2 addToShoppingList, loadShoppingList を実装（js/recipe-shopping.js）
+  - [x] 19.2 addToShoppingList, loadShoppingList を実装（js/recipe-shopping.js）
     - addToShoppingList: 選択材料をDB追加
     - loadShoppingList: 取得＋レシピ別グループ化＋mergeQuantities適用
     - _Requirements: 7.1, 7.2, 7.3, 7.5, 7.10_
-  - [ ] 19.3 買い物リストタブUI — リスト表示＋チェックオフを実装（js/recipe-ui.js）
+  - [x] 19.3 買い物リストタブUI — リスト表示＋チェックオフを実装（js/recipe-ui.js）
     - レシピ別グループ化表示
     - チェックオフ（取り消し線表示）
     - 個別削除＋チェック済み一括削除ボタン
     - _Requirements: 7.4, 7.5, 7.8, 7.9, 7.10_
-  - [ ] 19.4 詳細画面に「買い物リストに追加」ボタン＋材料チェックボックスモーダルを追加
+  - [x] 19.4 詳細画面に「買い物リストに追加」ボタン＋材料チェックボックスモーダルを追加
     - 材料一覧チェックボックス表示
     - 選択→addToShoppingList呼出
     - _Requirements: 7.1, 7.2, 7.3, 7.11_
 
-- [ ] 20. 献立機能の実装
-  - [ ] 20.1 MealPlanRepository を実装（js/recipe-api.js）
+- [x] 20. 献立機能の実装
+  - [x] 20.1 MealPlanRepository を実装（js/recipe-api.js）
     - getByDate: 指定日の朝・昼・夜取得（recipes JOIN）
     - getByDateRange: 期間取得
     - save: UPSERT（plan_date, meal_type 一意制約）
     - clearSlot: スロットクリア
     - _Requirements: 8.2, 8.5, 8.6, 8.7_
-  - [ ] 20.2 loadMealPlan, saveMealPlan を実装（js/recipe-meal-plan.js）
+  - [x] 20.2 loadMealPlan, saveMealPlan を実装（js/recipe-meal-plan.js）
     - loadMealPlan: 指定日の朝・昼・夜取得
     - saveMealPlan: UPSERT
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
-  - [ ] 20.3 献立タブUI — 日付選択＋朝昼夜グリッドを実装（js/recipe-ui.js）
+  - [x] 20.3 献立タブUI — 日付選択＋朝昼夜グリッドを実装（js/recipe-ui.js）
     - 日付ピッカー
     - 朝・昼・夜 × 主菜/副菜/汁物 グリッド表示
     - 各スロットにレシピ選択ドロップダウン
     - 当日献立を目立たせて表示
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-- [ ] 21. Checkpoint — Milestone 4 完了確認
+- [x] 21. Checkpoint — Milestone 4 完了確認
   - ESLint OK（エラー0件）
   - Property Test OK（Property 17, 18 全パス）
   - 手動確認: 買い物リスト追加・チェック・削除 → 献立登録・表示が動作すること
@@ -334,7 +334,7 @@
 
 ## Milestone 5: ランダム・複製・印刷・下書き/非公開・アレルギー・PWA
 
-- [ ] 22. ランダムレシピの実装
+- [-] 22. ランダムレシピの実装
   - [ ] 22.1 RecipeRepository.getRandom を実装（js/recipe-api.js）
     - カテゴリフィルタ対応のランダム1件取得
     - _Requirements: 9.2, 9.3_

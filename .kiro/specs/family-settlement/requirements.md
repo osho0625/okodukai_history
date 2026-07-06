@@ -195,7 +195,11 @@ CREATE TABLE IF NOT EXISTS monthly_expenses (
   payer TEXT NOT NULL,
   planned_amount INTEGER NOT NULL DEFAULT 0,
   actual_amount INTEGER,
-  difference INTEGER NOT NULL DEFAULT 0,
+  difference INTEGER GENERATED ALWAYS AS (
+    CASE WHEN actual_amount IS NULL THEN 0
+         ELSE actual_amount - planned_amount
+    END
+  ) STORED,
   difference_settled BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -208,11 +212,12 @@ CREATE INDEX idx_monthly_expenses_payer ON monthly_expenses (payer);
 -- 精算履歴
 CREATE TABLE IF NOT EXISTS settlement_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  year_month TEXT NOT NULL,
+  target_period TEXT NOT NULL,
   payer_from TEXT NOT NULL,
   payer_to TEXT NOT NULL,
   amount INTEGER NOT NULL,
   settlement_type TEXT NOT NULL DEFAULT 'monthly' CHECK (settlement_type IN ('monthly', 'difference')),
+  settlement_period TEXT CHECK (settlement_period IN ('first_half', 'second_half')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
   memo TEXT,
   paid_at TIMESTAMPTZ,
@@ -220,7 +225,7 @@ CREATE TABLE IF NOT EXISTS settlement_history (
 );
 
 ALTER TABLE settlement_history DISABLE ROW LEVEL SECURITY;
-CREATE INDEX idx_settlement_history_year_month ON settlement_history (year_month);
+CREATE INDEX idx_settlement_history_target_period ON settlement_history (target_period);
 CREATE INDEX idx_settlement_history_status ON settlement_history (status);
 CREATE INDEX idx_settlement_history_type ON settlement_history (settlement_type);
 
