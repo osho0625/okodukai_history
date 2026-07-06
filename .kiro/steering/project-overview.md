@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/07 v2.21.1
+最終更新: 2026/07/06 v2.22.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -44,7 +44,8 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v5, Push通知対応)
+├── sw.js               # Service Worker (v272, Push通知対応)
+├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
 ├── images/             # アプリアイコン・ゲーム画像

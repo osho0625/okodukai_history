@@ -22,6 +22,15 @@
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
 | `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 
+## CSS構成
+
+| ファイル | 用途 |
+|----------|------|
+| `css/index.css` | TOPページ（index.html）のスタイル |
+| `css/kanji-test.css` | 漢字テスト |
+| `css/puyo-escape.css` | ぷよ脱出演出 |
+| `css/texas-holdem.css` | テキサスホールデム ルールガイド |
+
 ## 運用
 
 - 対象ファイルをエディタで開けば自動で該当steeringが読み込まれる

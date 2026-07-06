@@ -36,6 +36,18 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.22.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> TOP画面: インラインCSS 200行を css/index.css に外部化</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面: データ読み込み時の防御的チェック強化（SCIENCE_DATA/SCP_DATA未定義時）</li>
+    <li><span class="tag tag-fix">fix</span> js/common.js: UUID生成フォールバックの演算子優先順位バグ修正</li>
+    <li><span class="tag tag-fix">fix</span> js/garden.js: incrementPuyoCount未定義時のReferenceError防止</li>
+    <li><span class="tag tag-fix">fix</span> テキサスホールデム: 文字化け（UTF-8エンコーディング破損）を修復、全コンテンツ再作成</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v272: css/index.cssキャッシュ追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.21.1</span><span class="date">2026/07/07</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> TOP画面: 📝家族メモ帳アイコンをヘッダーから画面下部に移動</li>

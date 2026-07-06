@@ -90,7 +90,7 @@ function pullSinglePuyo(sprout, imgSrc) {
   if (sprout.dataset.pulled) return;
   sprout.dataset.pulled = 'true';
   doPullAnimation(sprout, imgSrc);
-  incrementPuyoCount(imgSrc);
+  if (typeof incrementPuyoCount === 'function') incrementPuyoCount(imgSrc);
   puyoCount--;
   checkGardenClear();
 }
@@ -103,7 +103,7 @@ function pullAllPuyo() {
       sprout.dataset.pulled = 'true';
       const imgSrc = sprout.dataset.img || '';
       doPullAnimation(sprout, imgSrc);
-      incrementPuyoCount(imgSrc);
+      if (typeof incrementPuyoCount === 'function') incrementPuyoCount(imgSrc);
       puyoCount--;
       checkGardenClear();
     }, i * 120);
