@@ -334,32 +334,32 @@
 
 ## Milestone 5: ランダム・複製・印刷・下書き/非公開・アレルギー・PWA
 
-- [-] 22. ランダムレシピの実装
-  - [ ] 22.1 RecipeRepository.getRandom を実装（js/recipe-api.js）
+- [x] 22. ランダムレシピの実装
+  - [x] 22.1 RecipeRepository.getRandom を実装（js/recipe-api.js）
     - カテゴリフィルタ対応のランダム1件取得
     - _Requirements: 9.2, 9.3_
-  - [ ] 22.2 ランダムボタンUI（🎲 + カテゴリフィルタ + もう一回ボタン）を実装
+  - [x] 22.2 ランダムボタンUI（🎲 + カテゴリフィルタ + もう一回ボタン）を実装
     - カテゴリ選択→🎲タップ→ランダム表示→「もう一回」
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [ ] 22.3 プロパティテスト: ランダムレシピのカテゴリフィルタ
+  - [x] 22.3 プロパティテスト: ランダムレシピのカテゴリフィルタ
     - **Property 19: ランダムレシピのカテゴリフィルタ**
     - **Validates: Requirements 9.3**
 
-- [ ] 23. レシピ複製の実装
-  - [ ] 23.1 duplicateRecipeData を実装（js/recipe-utils.js）
+- [x] 23. レシピ複製の実装
+  - [x] 23.1 duplicateRecipeData を実装（js/recipe-utils.js）
     - title末尾に"のコピー"付加
     - ingredients, steps, tags, category, cook_time_minutes, servings をコピー
     - photosは複製しない
     - _Requirements: 10.2, 10.4_
-  - [ ] 23.2 RecipeRepository.duplicate を実装 + 詳細画面に「複製」ボタン追加
+  - [x] 23.2 RecipeRepository.duplicate を実装 + 詳細画面に「複製」ボタン追加
     - 複製後に編集画面（#edit/{newId}）に遷移
     - _Requirements: 10.1, 10.2, 10.3_
-  - [ ] 23.3 プロパティテスト: レシピ複製データ保持
+  - [x] 23.3 プロパティテスト: レシピ複製データ保持
     - **Property 20: レシピ複製データ保持**
     - **Validates: Requirements 10.2, 10.4**
 
-- [ ] 24. 印刷モードの実装
-  - [ ] 24.1 showPrintView を実装（js/recipe-ui.js）
+- [x] 24. 印刷モードの実装
+  - [x] 24.1 showPrintView を実装（js/recipe-ui.js）
     - 1ページ表示、大きい文字、材料と手順を見やすく配置
     - ナビゲーション・非必須UIを非表示
     - ブラウザ印刷ダイアログ自動トリガー
@@ -369,28 +369,28 @@
     - ナビゲーション非表示確認
     - _Requirements: 10.7_
 
-- [ ] 25. 下書き/非公開ステータスの仕上げ
-  - [ ] 25.1 編集画面の公開/非公開トグル＋下書き保存のステータス管理を確認・修正
+- [x] 25. 下書き/非公開ステータスの仕上げ
+  - [x] 25.1 編集画面の公開/非公開トグル＋下書き保存のステータス管理を確認・修正
     - status='published'/'draft'/'private' の遷移ロジック最終確認
     - 一覧での📝/🔒アイコン表示
     - 他ユーザーからのdraft/private詳細アクセス拒否
     - _Requirements: 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
 
-- [ ] 26. アレルギー表示の仕上げ
-  - [ ] 26.1 アレルギータグ⚠️表示＋詳細上部サマリーの最終確認・修正
+- [x] 26. アレルギー表示の仕上げ
+  - [x] 26.1 アレルギータグ⚠️表示＋詳細上部サマリーの最終確認・修正
     - レシピカードへの⚠️アイコン表示
     - 詳細画面上部にアレルギーサマリ表示
     - _Requirements: 13.2, 13.5_
 
-- [ ] 27. TOPページ連携とPWA更新
-  - [ ] 27.1 index.htmlに🍳アイコン追加
+- [x] 27. TOPページ連携とPWA更新
+  - [x] 27.1 index.htmlに🍳アイコン追加
     - 既存アイコン列に `&#x1F373;` アイコンリンクを追加（pages/recipe.htmlへ遷移）
     - _Requirements: 11.1_
-  - [ ] 27.2 sw.jsのキャッシュ対象にレシピ関連ファイルを追加
+  - [x] 27.2 sw.jsのキャッシュ対象にレシピ関連ファイルを追加
     - pages/recipe.html, js/recipe-*.js をキャッシュリストに追加
     - CACHE_NAMEバージョン +1
 
-- [ ] 28. Checkpoint — Milestone 5 完了確認
+- [x] 28. Checkpoint — Milestone 5 完了確認
   - ESLint OK（エラー0件）
   - Property Test OK（全23 Property パス）
   - 手動確認: ランダム → 複製 → 印刷 → 下書き/非公開 → アレルギー表示が動作すること
@@ -400,11 +400,11 @@
 
 ## リリース準備
 
-- [ ] 29. リリース準備（バージョン更新・リリースノート）
-  - [ ] 29.1 release-notes.html に「🍳家族レシピ機能追加」をfeat(緑)タグで追記
-  - [ ] 29.2 sw.js の CACHE_NAME バージョン +1
-  - [ ] 29.3 index.html 末尾のバージョン表示を新バージョンに更新（例: v2.18.0）
-  - [ ] 29.4 最終コミット＋プッシュ
+- [x] 29. リリース準備（バージョン更新・リリースノート）
+  - [x] 29.1 release-notes.html に「🍳家族レシピ機能追加」をfeat(緑)タグで追記
+  - [x] 29.2 sw.js の CACHE_NAME バージョン +1
+  - [x] 29.3 index.html 末尾のバージョン表示を新バージョンに更新（例: v2.18.0）
+  - [x] 29.4 最終コミット＋プッシュ
     - `git commit -m "release: v2.18.0 - 家族レシピ機能"`
     - `git push`
 

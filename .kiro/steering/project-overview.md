@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/06 v2.22.0
+最終更新: 2026/07/06 v2.23.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -26,6 +26,7 @@ inclusion: auto
 | お手伝いリスト、chore_tasks | `.kiro/steering/chores.md` |
 | メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
 | テキサスホールデム、ポーカー、texas | `.kiro/steering/texas-holdem.md` |
+| 精算、settlement、精算機能 | `.kiro/steering/family-settlement.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 

@@ -10,7 +10,7 @@ const RecipeRepository = {
    */
   async getAll(options) {
     const opts = options || {};
-    const status = opts.status || 'published';
+    const status = opts.hasOwnProperty('status') ? opts.status : 'published';
     const sort = opts.sort || 'updated_at DESC';
     const limit = opts.limit || null;
 
@@ -97,6 +97,28 @@ const RecipeRepository = {
 
       return { data: inserted, error: error || null };
     }
+  },
+
+  /**
+   * レシピ一覧を材料情報付きで取得（N+1回避用）
+   * @param {object} [options] - {status}
+   * @returns {Promise<{data: Array|null, error: object|null}>}
+   */
+  async getAllWithIngredients(options) {
+    const opts = options || {};
+    const status = opts.hasOwnProperty('status') ? opts.status : 'published';
+
+    let query = client
+      .from('recipes')
+      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    query = query.order('updated_at', { ascending: false });
+    const { data, error } = await query;
+    return { data, error };
   },
 
   /**
@@ -375,6 +397,44 @@ const IngredientRepository = {
   }
 };
 
+// === StepRepository ===
+const StepRepository = {
+  /**
+   * レシピの全手順を保存（全削除＋全挿入）
+   * @param {string} recipeId - レシピID
+   * @param {Array<{description: string, sort_order: number}>} steps
+   * @returns {Promise<{error: object|null}>}
+   */
+  async saveAll(recipeId, steps) {
+    // 1. Delete all existing steps for recipeId
+    const { error: deleteError } = await client
+      .from('recipe_steps')
+      .delete()
+      .eq('recipe_id', recipeId);
+
+    if (deleteError) return { error: deleteError };
+
+    // 2. Insert all new steps with sort_order
+    if (!steps || steps.length === 0) {
+      return { error: null };
+    }
+
+    const rows = steps.map(function(step, idx) {
+      return {
+        recipe_id: recipeId,
+        description: step.description,
+        sort_order: step.sort_order !== undefined ? step.sort_order : idx
+      };
+    });
+
+    const { error: insertError } = await client
+      .from('recipe_steps')
+      .insert(rows);
+
+    return { error: insertError || null };
+  }
+};
+
 // === TagRepository ===
 const TagRepository = {
   /**
@@ -392,12 +452,23 @@ const TagRepository = {
 
     if (deleteError) return { error: deleteError };
 
-    // 2. Insert normalized tags
+    // 2. Insert normalized tags (deduplicated)
     if (!tags || tags.length === 0) {
       return { error: null };
     }
 
-    const rows = tags.map(function(tag) {
+    // Deduplicate tags
+    var uniqueTags = [];
+    var seen = {};
+    for (var i = 0; i < tags.length; i++) {
+      var t = tags[i];
+      if (!seen[t]) {
+        seen[t] = true;
+        uniqueTags.push(t);
+      }
+    }
+
+    const rows = uniqueTags.map(function(tag) {
       return { recipe_id: recipeId, tag: tag };
     });
 
@@ -667,5 +738,5 @@ const MealPlanRepository = {
 
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository };
+  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, StepRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository };
 }
