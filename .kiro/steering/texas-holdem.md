@@ -13,7 +13,11 @@ fileMatchPattern: "*texas*,*holdem*,*poker-guide*"
 
 - `pages/texas-holdem.html` — ルールガイドページ（HTMLコンテンツのみ）
 - `css/texas-holdem.css` — スタイルシート
-- `js/texas-holdem-charts.js` — プリフロップハンドデータ（22パターン）＋描画ロジック＋UI制御
+- `js/texas-holdem-charts.js` — 描画ロジック＋UI制御（JSONデータをfetchで読み込み）
+- `data/preflop/9max.json` — 9人テーブル レンジデータ
+- `data/preflop/6max.json` — 6人テーブル レンジデータ
+- `data/preflop/5p.json` — 5人テーブル レンジデータ
+- `data/preflop/4p.json` — 4人テーブル レンジデータ
 
 ## 機能
 

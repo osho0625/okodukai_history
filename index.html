@@ -9,220 +9,13 @@
 <meta name="apple-mobile-web-app-title" content="お小遣い手帳">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="images/2728.png">
+<link rel="stylesheet" href="css/index.css">
 <title>お小遣い手帳 - トップ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="js/common.js"></script>
 <script src=".kiro/specs/today-science/science-list.js"></script>
 <script src="data/scp-list.js"></script>
 <script src="js/scp-selector.js"></script>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
-h1 { text-align: center; margin-bottom: 24px; color: #333; }
-.children-list { max-width: 480px; margin: 0 auto; width: 100%; }
-.child-row-wrap {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 12px;
-}
-.child-card {
-  display: flex; justify-content: space-between; align-items: center;
-  background: #fff; border-radius: 12px; padding: 20px 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-  text-decoration: none; color: inherit; gap: 10px; flex: 1;
-}
-.child-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-.child-name { font-size: 1.3em; font-weight: 600; flex: 1; }
-.child-balance { font-size: 1.3em; font-weight: 700; color: #4caf50; }
-.child-balance.negative { color: #e53935; }
-.notify-bell {
-  font-size: 1.6em; cursor: pointer; line-height: 1;
-  filter: drop-shadow(0 1px 3px rgba(255,152,0,0.4));
-}
-.notify-bell.ringing {
-  animation: bellRing 0.6s ease-in-out;
-}
-.pending-badge {
-  font-size: 1.4em; cursor: pointer; line-height: 1;
-  filter: drop-shadow(0 1px 3px rgba(76,175,80,0.4));
-}
-.sort-item {
-  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-  background: #f9f9f9; border-radius: 8px; margin-bottom: 6px;
-}
-.sort-item .sort-name { flex: 1; font-weight: 600; font-size: 0.95em; }
-.sort-btn {
-  width: 32px; height: 32px; border: none; border-radius: 6px;
-  background: #e0e0e0; font-size: 1em; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-.sort-btn:hover { background: #bbb; }
-.sort-btn:active { background: #999; }
-.acc-arrow-s { display: inline-block; transition: transform 0.2s; font-size: 0.8em; }
-.acc-arrow-s.open { transform: rotate(90deg); }
-@keyframes pendingPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-@keyframes bellRing {
-  0% { transform: rotate(0deg); }
-  15% { transform: rotate(18deg); }
-  30% { transform: rotate(-16deg); }
-  45% { transform: rotate(12deg); }
-  60% { transform: rotate(-10deg); }
-  75% { transform: rotate(6deg); }
-  90% { transform: rotate(-3deg); }
-  100% { transform: rotate(0deg); }
-}
-.loading { text-align: center; color: #999; margin-top: 40px; }
-
-/* モーダル */
-.overlay {
-  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center;
-}
-.overlay.active { display: flex; }
-.modal {
-  background: #fff; border-radius: 16px; padding: 28px 24px;
-  width: 90%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  text-align: center;
-}
-.modal h2 { margin-bottom: 16px; font-size: 1.2em; color: #333; }
-.modal input {
-  width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
-  font-size: 1em; margin-bottom: 12px; text-align: center;
-}
-.modal .error-msg { color: #e53935; font-size: 0.9em; margin-bottom: 10px; display: none; }
-.modal-btns { display: flex; gap: 8px; }
-.modal-btns button {
-  flex: 1; padding: 12px; border: none; border-radius: 8px;
-  font-size: 1em; font-weight: 600; cursor: pointer;
-}
-.btn-ok { background: #4caf50; color: #fff; }
-.btn-cancel { background: #eee; color: #333; }
-.btn-ok:hover, .btn-cancel:hover { opacity: 0.9; }
-
-@media (max-width: 520px) {
-  body { padding: 12px; }
-  h1 { font-size: 1.4em; }
-  .child-card { padding: 16px 18px; }
-  .child-name, .child-balance { font-size: 1.1em; }
-}
-
-/* リマインダーバナー */
-.reminder-item {
-  background: #fff0f3; border-radius: 6px; padding: 6px 10px;
-  margin-bottom: 4px;
-  display: flex; align-items: center; gap: 6px;
-}
-.reminder-item.event { background: #f0f4ff; }
-.reminder-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }
-.reminder-child { font-size: 0.65em; color: #999; flex-shrink: 0; }
-.reminder-msg { font-size: 0.82em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.reminder-meta { font-size: 0.65em; color: #888; flex-shrink: 0; white-space: nowrap; }
-.reminder-snooze-badge { font-size: 0.65em; color: #ff9800; margin-left: 2px; }
-.reminder-btns { display: flex; gap: 4px; flex-shrink: 0; }
-.reminder-btn {
-  width: 22px; height: 22px; border: none; border-radius: 5px;
-  font-size: 0.7em; cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-.reminder-btn.delete { background: #ffebee; color: #e53935; }
-.reminder-btn.snooze { background: #fff3e0; color: #ff9800; }
-.reminder-btn:hover { opacity: 0.8; }
-.reminder-section-label { font-size: 0.7em; color: #888; font-weight: 600; margin: 6px 0 2px; }
-
-/* 承認UI（TOP画面admin用） */
-.approval-section {
-  max-width: 480px; margin: -4px auto 12px; padding: 0 8px;
-}
-.approval-item {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #fff8e1; border-radius: 8px; padding: 8px 12px;
-  margin-bottom: 4px; border: 1px solid #ffe082;
-}
-.approval-info { display: flex; flex-direction: column; gap: 2px; }
-.approval-chore { font-size: 0.85em; font-weight: 600; color: #555; }
-.approval-date { font-size: 0.75em; color: #aaa; }
-.approval-btns { display: flex; gap: 6px; }
-.approval-btn {
-  padding: 4px 10px; border: none; border-radius: 6px;
-  font-size: 0.8em; font-weight: 600; cursor: pointer; color: #fff;
-}
-.approval-btn.approve { background: #4caf50; }
-.approval-btn.reject { background: #e53935; }
-.approval-btn:hover { opacity: 0.85; }
-
-/* ぷよ畑（garden.jsと連動） */
-.puyo-garden {
-  position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
-  z-index: 50; pointer-events: none;
-}
-.garden-ground {
-  position: absolute; bottom: 0; left: 0; width: 100%; height: 35px;
-  background: linear-gradient(to bottom, #8B6914, #6B4F12, #5a4210);
-  border-top: 3px solid #9acd32;
-}
-.garden-grass {
-  position: absolute; bottom: 33px; left: 0; width: 100%; height: 8px;
-  background: repeating-linear-gradient(90deg, transparent, transparent 8px, #6a9f30 8px, #6a9f30 10px);
-  opacity: 0.6;
-}
-.puyo-sprout {
-  position: absolute; bottom: 20px; cursor: pointer; pointer-events: auto;
-  transition: transform 0.15s;
-  display: flex; flex-direction: column; align-items: center;
-}
-.puyo-sprout:hover { transform: translateY(-3px); }
-.puyo-sprout .sprout-leaf {
-  font-size: 22px; line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
-}
-.puyo-sprout.pulled .sprout-leaf {
-  transition: transform 0.3s, opacity 0.3s;
-  transform: scale(0.3);
-  opacity: 0;
-}
-.puyo-sprout.pulled {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform: translateY(-120px) scale(1.2);
-  opacity: 0;
-}
-.dirt-poof {
-  position: absolute; pointer-events: none; font-size: 20px;
-  animation: poofUp 0.6s ease-out forwards;
-}
-@keyframes poofUp {
-  0% { opacity: 1; transform: translateY(0) scale(0.5); }
-  100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
-}
-.puyo-fly {
-  position: fixed; pointer-events: none; z-index: 200;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
-}
-.puyo-fly img {
-  width: 65px; height: 65px; border-radius: 50%; object-fit: cover;
-}
-@keyframes puyoJump {
-  0% { transform: translateY(0) scale(1); }
-  40% { transform: translateY(-80px) scale(1.15); }
-  60% { transform: translateY(-80px) scale(1.15); }
-  85% { transform: translateY(0) scale(0.95); }
-  100% { transform: translateY(0) scale(1); }
-}
-@keyframes puyoWalk {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-4px) rotate(-8deg); }
-  75% { transform: translateY(-4px) rotate(8deg); }
-}
-@keyframes puyoFly {
-  0%, 100% { transform: translateY(0) rotate(-5deg); }
-  50% { transform: translateY(-8px) rotate(5deg); }
-}
-@keyframes puyoGhost {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
-  50% { transform: translateY(-12px) scale(1.05); opacity: 0.6; }
-}
-</style>
 </head>
 <body>
 
@@ -230,7 +23,7 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 
 <!-- 隠しボタン（左上透明） -->
 <div id="secretBtn" style="position:fixed; top:0; left:0; width:60px; height:60px; z-index:90; cursor:default;"></div>
-<h1><a href="pages/arcade.html" style="text-decoration:none; font-size:1.2em;">&#x1F579;&#xFE0F;</a> <a href="pages/chores.html" style="text-decoration:none; font-size:1.2em;">&#x1F4CB;</a> <a href="pages/recipe.html" style="text-decoration:none; font-size:1.2em;">&#x1F373;</a> <a href="pages/settlement.html" style="text-decoration:none; font-size:1.2em;">&#x1F4B0;</a> &#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <span id="gardenBtn" style="cursor:pointer; font-size:1.2em;">&#x1FAB4;</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
+<h1><a href="pages/arcade.html" style="text-decoration:none; font-size:1.2em;">&#x1F579;&#xFE0F;</a> <a href="pages/chores.html" style="text-decoration:none; font-size:1.2em;">&#x1F4CB;</a> <a href="pages/recipe.html" style="text-decoration:none; font-size:1.2em;">&#x1F373;</a> &#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <span id="gardenBtn" style="cursor:pointer; font-size:1.2em;">&#x1FAB4;</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
 
 <div id="mathReviewNotice" style="display:none; text-align:center; margin:8px 0;">
   <a href="pages/math-olympiad.html#admin-review" style="color:#ffa500; font-weight:600; text-decoration:none; font-size:0.85em;">
@@ -305,6 +98,7 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 <!-- 家族メモ帳アイコン（下部） -->
 <div style="text-align:center; margin-top:16px;">
   <a href="pages/family-notes.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">📝</a>
+  <a href="pages/settlement.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15)); margin-left:16px;">💰</a>
 </div>
 
 <script>
@@ -443,8 +237,10 @@ let currentScienceItem = null;
 let scienceData = [];
 
 async function loadTodayScience() {
-  scienceData = window.SCIENCE_DATA || [];
-  if (scienceData.length === 0) {
+  try {
+    scienceData = window.SCIENCE_DATA || [];
+  } catch(e) { scienceData = []; }
+  if (!Array.isArray(scienceData) || scienceData.length === 0) {
     document.getElementById('todayScienceSection').style.display = 'none';
     return;
   }
@@ -504,7 +300,7 @@ async function loadTodayScience() {
 
 // bfcache復帰時にNEWバッジを再チェック
 window.addEventListener('pageshow', function(e) {
-  if (e.persisted) loadTodayScience();
+  if (e.persisted) { loadTodayScience(); loadTodayScp(); }
 });
 
 function getScienceViewed() {
@@ -530,8 +326,9 @@ function markScpViewed(id) {
 }
 
 async function loadTodayScp() {
-  var scpData = window.SCP_DATA || [];
-  if (scpData.length === 0) {
+  var scpData;
+  try { scpData = window.SCP_DATA || []; } catch(e) { scpData = []; }
+  if (!Array.isArray(scpData) || scpData.length === 0) {
     document.getElementById('todayScpSection').style.display = 'none';
     return;
   }
@@ -612,10 +409,7 @@ async function loadTodayScp() {
   }
 }
 
-// bfcache復帰時にSCPセクションも再チェック
-window.addEventListener('pageshow', function(e) {
-  if (e.persisted) loadTodayScp();
-});
+
 
 // --- パスワード読み込み（Supabase） ---
 async function loadPasswords() {
@@ -646,53 +440,63 @@ async function load() {
   allChildren = data;
   container.innerHTML = '';
 
-  // 承認待ちポイントをチェック
+  // 並列でデータ取得（レースコンディション修正）
   let pendingByChild = {};
   let pendingDetailsByChild = {};
-  try {
-    const { data: pendingData } = await client.from('chore_points').select('id, child_id, chore_name, points, created_at').eq('status', 'pending').order('created_at', { ascending: true });
-    (pendingData || []).forEach(p => {
-      pendingByChild[p.child_id] = (pendingByChild[p.child_id] || 0) + p.points;
-      if (!pendingDetailsByChild[p.child_id]) pendingDetailsByChild[p.child_id] = [];
-      pendingDetailsByChild[p.child_id].push(p);
-    });
-  } catch(e) {}
-
-  // ポイント情報を取得
   let pointsByChild = {};
-  try {
-    const { data: ptsData } = await client.from('chore_points').select('child_id, points').eq('status', 'approved');
-    (ptsData || []).forEach(p => {
-      pointsByChild[p.child_id] = (pointsByChild[p.child_id] || 0) + p.points;
-    });
-  } catch(e) {}
-
-  // 未読入金演出データを取得（Supabase）
   let depositEffectsByChild = {};
-  try {
-    const { data: depEffects } = await client.from('pending_effects').select('child_id, data').eq('type', 'deposit');
-    (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
-  } catch(e) {}
-
-  // チケット残数を取得
   let ticketCountByOwner = {};
-  try {
-    const { data: tktData } = await client.from('tickets').select('owner').eq('status', 'unused');
-    (tktData || []).forEach(t => { ticketCountByOwner[t.owner] = (ticketCountByOwner[t.owner] || 0) + 1; });
-  } catch(e) {}
-
-  // チケット予約待ち（pending）を取得
   let ticketPendingByOwner = {};
   let ticketApprovedAll = [];
-  try {
-    const { data: tktPending } = await client.from('tickets').select('*').eq('status', 'pending').order('reserved_at', { ascending: true });
-    (tktPending || []).forEach(t => {
-      if (!ticketPendingByOwner[t.owner]) ticketPendingByOwner[t.owner] = [];
-      ticketPendingByOwner[t.owner].push(t);
-    });
-    const { data: tktApproved } = await client.from('tickets').select('*').in('status', ['approved']).order('reserved_at', { ascending: true });
-    ticketApprovedAll = tktApproved || [];
-  } catch(e) {}
+
+  await Promise.all([
+    // 承認待ちポイント
+    (async () => {
+      try {
+        const { data: pendingData } = await client.from('chore_points').select('id, child_id, chore_name, points, created_at').eq('status', 'pending').order('created_at', { ascending: true });
+        (pendingData || []).forEach(p => {
+          pendingByChild[p.child_id] = (pendingByChild[p.child_id] || 0) + p.points;
+          if (!pendingDetailsByChild[p.child_id]) pendingDetailsByChild[p.child_id] = [];
+          pendingDetailsByChild[p.child_id].push(p);
+        });
+      } catch(e) {}
+    })(),
+    // ポイント情報
+    (async () => {
+      try {
+        const { data: ptsData } = await client.from('chore_points').select('child_id, points').eq('status', 'approved');
+        (ptsData || []).forEach(p => {
+          pointsByChild[p.child_id] = (pointsByChild[p.child_id] || 0) + p.points;
+        });
+      } catch(e) {}
+    })(),
+    // 未読入金演出データ
+    (async () => {
+      try {
+        const { data: depEffects } = await client.from('pending_effects').select('child_id, data').eq('type', 'deposit');
+        (depEffects || []).forEach(e => { depositEffectsByChild[e.child_id] = e.data; });
+      } catch(e) {}
+    })(),
+    // チケット残数
+    (async () => {
+      try {
+        const { data: tktData } = await client.from('tickets').select('owner').eq('status', 'unused');
+        (tktData || []).forEach(t => { ticketCountByOwner[t.owner] = (ticketCountByOwner[t.owner] || 0) + 1; });
+      } catch(e) {}
+    })(),
+    // チケット予約待ち + 承認済み
+    (async () => {
+      try {
+        const { data: tktPending } = await client.from('tickets').select('*').eq('status', 'pending').order('reserved_at', { ascending: true });
+        (tktPending || []).forEach(t => {
+          if (!ticketPendingByOwner[t.owner]) ticketPendingByOwner[t.owner] = [];
+          ticketPendingByOwner[t.owner].push(t);
+        });
+        const { data: tktApproved } = await client.from('tickets').select('*').in('status', ['approved']).order('reserved_at', { ascending: true });
+        ticketApprovedAll = tktApproved || [];
+      } catch(e) {}
+    })()
+  ]);
 
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
@@ -721,7 +525,6 @@ async function load() {
     if (!c.name.endsWith('が返すお金')) {
       const totalPts = pointsByChild[c.id] || 0;
       const sheetNum = totalPts > 0 ? Math.floor((totalPts - 1) / 400) + 1 : 1;
-      const currentSheetPts = totalPts > 0 ? ((totalPts - 1) % 400) + 1 : 0;
       const displayPts = totalPts === 0 ? 0 : (totalPts % 400 === 0 ? 400 : totalPts % 400);
       let nextInfo = '';
       for (let m = 20; m <= 400; m += 20) {
