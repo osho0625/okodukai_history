@@ -118,6 +118,24 @@ h1 { font-size: 1.3em; font-weight: 700; }
   font-size: 0.85em;
 }
 .tip-box::before { content: "💡 "; }
+
+/* プリフロップ表 */
+.preflop-table {
+  border-collapse: collapse; font-size: 0.65em; text-align: center;
+  margin: 0 auto;
+}
+.preflop-table th {
+  background: rgba(255,255,255,0.1); color: #ccc;
+  padding: 4px 2px; min-width: 32px; font-weight: 700;
+}
+.preflop-table td {
+  padding: 3px 2px; border: 1px solid rgba(255,255,255,0.08);
+  font-weight: 600; min-width: 32px;
+}
+.preflop-table .tier1 { background: rgba(76,175,80,0.4); color: #fff; }
+.preflop-table .tier2 { background: rgba(100,181,246,0.35); color: #e3f2fd; }
+.preflop-table .tier3 { background: rgba(255,213,79,0.3); color: #fff8e1; }
+.preflop-table .tier4 { background: rgba(255,255,255,0.04); color: #888; }
 </style>
 </head>
 <body>
@@ -129,14 +147,93 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 <div class="container">
   <div class="tabs">
-    <button class="tab active" data-tab="hands">役の強さ</button>
+    <button class="tab active" data-tab="basics">基本ルール</button>
+    <button class="tab" data-tab="hands">役の強さ</button>
+    <button class="tab" data-tab="preflop">ハンド表</button>
     <button class="tab" data-tab="flow">ゲームの進め方</button>
     <button class="tab" data-tab="positions">ポジション</button>
     <button class="tab" data-tab="terms">用語集</button>
   </div>
 
+  <!-- 基本ルール（初心者向け） -->
+  <div class="content-section active" id="tab-basics">
+    <h2>🎮 テキサスホールデム 基本ルール</h2>
+    <p>トランプ52枚（ジョーカーなし）を使う、2〜10人で遊べるポーカーゲーム。</p>
+
+    <h3>🎯 ゲームの目的</h3>
+    <p>他のプレイヤーのチップを奪うこと。方法は2つ:</p>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content"><strong>ショーダウンで勝つ</strong> — 最後まで残って一番強い役を見せる</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content"><strong>相手を降ろす</strong> — ベットやレイズで相手全員をフォールドさせる（役が弱くても勝てる！）</div>
+    </div>
+
+    <h3>🃏 カードの使い方</h3>
+    <div class="flow-step">
+      <div class="flow-num">🤫</div>
+      <div class="flow-content"><strong>手札（ホールカード）</strong> — 各プレイヤーに2枚ずつ裏向きで配る。自分だけが見れる秘密のカード。</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">👀</div>
+      <div class="flow-content"><strong>共有カード（コミュニティカード）</strong> — テーブル中央に最大5枚、表向きで出る。全員が使える。</div>
+    </div>
+    <div class="tip-box">
+      手札2枚 + 共有カード5枚 = 合計7枚の中から、最強の5枚を選んで役を作る。
+    </div>
+
+    <h3>💰 チップとベット</h3>
+    <table class="hand-table">
+      <thead><tr><th>用語</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td class="hand-name">チェック</td><td>パス。誰もベットしてないときだけ使える</td></tr>
+        <tr><td class="hand-name">ベット</td><td>最初にチップを賭ける</td></tr>
+        <tr><td class="hand-name">コール</td><td>前の人と同じ額を出す</td></tr>
+        <tr><td class="hand-name">レイズ</td><td>前の人より多く賭ける（上乗せ）</td></tr>
+        <tr><td class="hand-name">フォールド</td><td>降りる。カードを捨ててそのゲームから抜ける</td></tr>
+        <tr><td class="hand-name">オールイン</td><td>持ってるチップ全部を賭ける</td></tr>
+      </tbody>
+    </table>
+
+    <h3>🔄 ゲームの流れ（ざっくり）</h3>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content"><strong>手札が来る</strong> — 2枚もらう。ここで最初のベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content"><strong>フロップ</strong> — 共有カード3枚オープン → ベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content"><strong>ターン</strong> — 共有カード4枚目オープン → ベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content"><strong>リバー</strong> — 共有カード5枚目オープン → 最後のベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content"><strong>ショーダウン</strong> — 残った人同士でカードを見せ合い、一番強い人が勝ち</div>
+    </div>
+
+    <h3>⚡ 覚えておきたいポイント</h3>
+    <ul class="term-list">
+      <li><strong>ブラインド</strong> — 2人が強制ベット（ゲームが動くようにするため）</li>
+      <li><strong>ボタン（D）</strong> — ディーラー役の目印。毎回時計回りに移動する</li>
+      <li><strong>ポット</strong> — みんなが賭けたチップの合計。勝った人がもらえる</li>
+      <li><strong>ブラフ</strong> — 弱い手でも強気にベットして相手を降ろすテクニック</li>
+    </ul>
+
+    <div class="tip-box">
+      最初は「良い手が来たらベット、微妙ならフォールド」でOK。慣れたらブラフや位置取りを覚えよう！
+    </div>
+  </div>
+
   <!-- 役の強さ一覧 -->
-  <div class="content-section active" id="tab-hands">
+  <div class="content-section" id="tab-hands">
     <h2>🏆 役の強さ一覧（上が最強）</h2>
     <p>手札2枚 + コミュニティカード5枚の計7枚から最強の5枚を選んで役を作る。</p>
 
@@ -229,6 +326,61 @@ h1 { font-size: 1.3em; font-weight: 700; }
         <tr><td>ハイカード</td><td>17.4%</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- プリフロップ ハンド強さ表 -->
+  <div class="content-section" id="tab-preflop">
+    <h2>📋 プリフロップ ハンド強さ表</h2>
+    <p>手札2枚の組み合わせを強さ別に色分け。s = 同じスート（スーテッド）、o = 違うスート（オフスート）。</p>
+
+    <div class="tip-box">
+      🟢 緑 = 超強い（どのポジションからでもレイズ）<br>
+      🔵 青 = 強い（中盤〜後半ポジションでレイズ）<br>
+      🟡 黄 = まあまあ（後半ポジションでプレイ可）<br>
+      ⬜ 白 = 弱い（基本フォールド）
+    </div>
+
+    <div style="overflow-x:auto; margin:12px 0;">
+      <table class="preflop-table">
+        <thead>
+          <tr><th></th><th>A</th><th>K</th><th>Q</th><th>J</th><th>T</th><th>9</th><th>8</th><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>A</th><td class="tier1">AA</td><td class="tier1">AKs</td><td class="tier1">AQs</td><td class="tier2">AJs</td><td class="tier2">ATs</td><td class="tier3">A9s</td><td class="tier3">A8s</td><td class="tier3">A7s</td><td class="tier3">A6s</td><td class="tier3">A5s</td><td class="tier3">A4s</td><td class="tier3">A3s</td><td class="tier3">A2s</td></tr>
+          <tr><th>K</th><td class="tier1">AKo</td><td class="tier1">KK</td><td class="tier2">KQs</td><td class="tier2">KJs</td><td class="tier2">KTs</td><td class="tier3">K9s</td><td class="tier4">K8s</td><td class="tier4">K7s</td><td class="tier4">K6s</td><td class="tier4">K5s</td><td class="tier4">K4s</td><td class="tier4">K3s</td><td class="tier4">K2s</td></tr>
+          <tr><th>Q</th><td class="tier2">AQo</td><td class="tier2">KQo</td><td class="tier1">QQ</td><td class="tier2">QJs</td><td class="tier2">QTs</td><td class="tier3">Q9s</td><td class="tier4">Q8s</td><td class="tier4">Q7s</td><td class="tier4">Q6s</td><td class="tier4">Q5s</td><td class="tier4">Q4s</td><td class="tier4">Q3s</td><td class="tier4">Q2s</td></tr>
+          <tr><th>J</th><td class="tier2">AJo</td><td class="tier3">KJo</td><td class="tier3">QJo</td><td class="tier1">JJ</td><td class="tier2">JTs</td><td class="tier3">J9s</td><td class="tier3">J8s</td><td class="tier4">J7s</td><td class="tier4">J6s</td><td class="tier4">J5s</td><td class="tier4">J4s</td><td class="tier4">J3s</td><td class="tier4">J2s</td></tr>
+          <tr><th>T</th><td class="tier3">ATo</td><td class="tier3">KTo</td><td class="tier3">QTo</td><td class="tier3">JTo</td><td class="tier1">TT</td><td class="tier3">T9s</td><td class="tier3">T8s</td><td class="tier4">T7s</td><td class="tier4">T6s</td><td class="tier4">T5s</td><td class="tier4">T4s</td><td class="tier4">T3s</td><td class="tier4">T2s</td></tr>
+          <tr><th>9</th><td class="tier4">A9o</td><td class="tier4">K9o</td><td class="tier4">Q9o</td><td class="tier4">J9o</td><td class="tier3">T9o</td><td class="tier2">99</td><td class="tier3">98s</td><td class="tier3">97s</td><td class="tier4">96s</td><td class="tier4">95s</td><td class="tier4">94s</td><td class="tier4">93s</td><td class="tier4">92s</td></tr>
+          <tr><th>8</th><td class="tier4">A8o</td><td class="tier4">K8o</td><td class="tier4">Q8o</td><td class="tier4">J8o</td><td class="tier4">T8o</td><td class="tier4">98o</td><td class="tier2">88</td><td class="tier3">87s</td><td class="tier3">86s</td><td class="tier4">85s</td><td class="tier4">84s</td><td class="tier4">83s</td><td class="tier4">82s</td></tr>
+          <tr><th>7</th><td class="tier4">A7o</td><td class="tier4">K7o</td><td class="tier4">Q7o</td><td class="tier4">J7o</td><td class="tier4">T7o</td><td class="tier4">97o</td><td class="tier4">87o</td><td class="tier2">77</td><td class="tier3">76s</td><td class="tier3">75s</td><td class="tier4">74s</td><td class="tier4">73s</td><td class="tier4">72s</td></tr>
+          <tr><th>6</th><td class="tier4">A6o</td><td class="tier4">K6o</td><td class="tier4">Q6o</td><td class="tier4">J6o</td><td class="tier4">T6o</td><td class="tier4">96o</td><td class="tier4">86o</td><td class="tier4">76o</td><td class="tier2">66</td><td class="tier3">65s</td><td class="tier3">64s</td><td class="tier4">63s</td><td class="tier4">62s</td></tr>
+          <tr><th>5</th><td class="tier4">A5o</td><td class="tier4">K5o</td><td class="tier4">Q5o</td><td class="tier4">J5o</td><td class="tier4">T5o</td><td class="tier4">95o</td><td class="tier4">85o</td><td class="tier4">75o</td><td class="tier4">65o</td><td class="tier2">55</td><td class="tier3">54s</td><td class="tier4">53s</td><td class="tier4">52s</td></tr>
+          <tr><th>4</th><td class="tier4">A4o</td><td class="tier4">K4o</td><td class="tier4">Q4o</td><td class="tier4">J4o</td><td class="tier4">T4o</td><td class="tier4">94o</td><td class="tier4">84o</td><td class="tier4">74o</td><td class="tier4">64o</td><td class="tier4">54o</td><td class="tier2">44</td><td class="tier4">43s</td><td class="tier4">42s</td></tr>
+          <tr><th>3</th><td class="tier4">A3o</td><td class="tier4">K3o</td><td class="tier4">Q3o</td><td class="tier4">J3o</td><td class="tier4">T3o</td><td class="tier4">93o</td><td class="tier4">83o</td><td class="tier4">73o</td><td class="tier4">63o</td><td class="tier4">53o</td><td class="tier4">43o</td><td class="tier2">33</td><td class="tier4">32s</td></tr>
+          <tr><th>2</th><td class="tier4">A2o</td><td class="tier4">K2o</td><td class="tier4">Q2o</td><td class="tier4">J2o</td><td class="tier4">T2o</td><td class="tier4">92o</td><td class="tier4">82o</td><td class="tier4">72o</td><td class="tier4">62o</td><td class="tier4">52o</td><td class="tier4">42o</td><td class="tier4">32o</td><td class="tier2">22</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:0.8em; color:#aaa; margin-top:8px;">
+      ※ 対角線 = ポケットペア（同じ数字2枚）。左上 = スーテッド（同スート）。右下 = オフスート。
+    </p>
+
+    <h3>🏅 Tier別の目安</h3>
+    <table class="hand-table">
+      <thead><tr><th>Tier</th><th>代表ハンド</th><th>アクション目安</th></tr></thead>
+      <tbody>
+        <tr><td style="color:#4caf50; font-weight:700;">Tier 1</td><td>AA, KK, QQ, JJ, TT, AKs, AQs, AKo</td><td>どこからでもレイズ / 3ベット</td></tr>
+        <tr><td style="color:#64b5f6; font-weight:700;">Tier 2</td><td>99-22, AJs-ATs, KQs-KTs, QJs-JTs</td><td>中盤〜後半ポジションでレイズ</td></tr>
+        <tr><td style="color:#ffd54f; font-weight:700;">Tier 3</td><td>A9s-A2s, スーテッドコネクタ(98s,87s等), KJo-JTo</td><td>後半ポジション（CO/BTN）で参加</td></tr>
+        <tr><td style="color:#999;">Tier 4</td><td>その他</td><td>基本フォールド（特にUTG/MP）</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      初心者はTier 1〜2だけでプレイするのがおすすめ。慣れてきたらTier 3を後ろのポジションで追加していこう。
+    </div>
   </div>
 
   <!-- ゲームの進め方 -->
