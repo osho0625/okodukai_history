@@ -2,9 +2,9 @@
 // プリフロップハンド表 - JSON読み込み＋描画ロジック
 //
 // Tier定義:
-//   1 = プレミアム（AA-QQ, AK）— 100% Raise / 3bet
+//   1 = プレミアム（AA-QQ, AKs, AKo, AQs）— 100% Raise / 3bet
 //   2 = 基本レイズ — 高頻度でオープンレイズ
-//   3 = 状況次第 — 低頻度レイズ候補（BBのみ: 相手レイズへのコール）
+//   3 = 状況次第（ミックス）— 相手・状況次第で低頻度レイズ。BBのみコール
 //   4 = フォールド
 
 const RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
@@ -19,7 +19,12 @@ async function loadChartData(players) {
   if (chartCache[players]) return chartCache[players];
   try {
     const res = await fetch('../data/preflop/' + filename + '.json');
-    const data = await res.json();
+    const json = await res.json();
+    // メタ情報(version, tiers)を除いたポジションデータのみキャッシュ
+    const data = {};
+    for (const key of Object.keys(json)) {
+      if (key !== 'version' && key !== 'tiers') data[key] = json[key];
+    }
     chartCache[players] = data;
     return data;
   } catch (e) {
