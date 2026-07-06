@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>レシピ - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; padding: 20px; padding-bottom: 80px; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+.home-btn { color: #333; text-decoration: none; font-size: 1.4em; position: absolute; top: 20px; right: 20px; }
+
+h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
+
+/* タブバー */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar button {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  font-size: 1em;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.tab-bar button.active {
+  color: #e65100;
+  border-bottom-color: #e65100;
+}
+.tab-bar button:hover {
+  color: #e65100;
+}
+
+/* ビューコンテナ共通 */
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+
+/* カード */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+
+/* ローディング */
+.loading {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-size: 1.1em;
+}
+
+/* 空状態 */
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 60px 20px;
+  font-size: 1.1em;
+}
+.empty-state .emoji {
+  font-size: 3em;
+  margin-bottom: 12px;
+}
+
+/* ボタン共通 */
+.btn-primary {
+  display: inline-block;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  background: #e65100;
+  color: #fff;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-secondary {
+  display: inline-block;
+  padding: 10px 20px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.btn-secondary:hover { border-color: #e65100; color: #e65100; }
+
+/* FAB（新規作成ボタン） */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e65100;
+  color: #fff;
+  font-size: 1.8em;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(230, 81, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  transition: transform 0.2s;
+}
+.fab:hover { transform: scale(1.1); }
+
+/* トースト */
+.toast {
+  display: none;
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 600;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.error { background: #e53935; color: #fff; }
+.toast.success { background: #43a047; color: #fff; }
+.toast.info { background: #1976d2; color: #fff; }
+.toast.show { display: block; }
+
+/* レスポンシブ */
+@media (max-width: 520px) {
+  body { padding: 12px; padding-bottom: 80px; }
+  h1 { font-size: 1.2em; }
+  .tab-bar button { font-size: 0.9em; padding: 10px 6px; }
+}
+</style>
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" class="home-btn">🏠</a>
+<h1>🍳 レシピ</h1>
+
+<!-- タブバー -->
+<div class="tab-bar">
+  <button class="active" data-tab="recipe">レシピ</button>
+  <button data-tab="ingredient-search">素材検索</button>
+  <button data-tab="meal-plan">献立</button>
+  <button data-tab="shopping">買い物</button>
+</div>
+
+<!-- レシピ一覧 -->
+<div id="view-list" class="view active">
+  <div class="empty-state">
+    <div class="emoji">🍳</div>
+    <div>レシピを読み込み中...</div>
+  </div>
+</div>
+
+<!-- レシピ詳細 -->
+<div id="view-detail" class="view">
+</div>
+
+<!-- レシピ編集/新規 -->
+<div id="view-edit" class="view">
+</div>
+
+<!-- 素材検索 -->
+<div id="view-ingredient-search" class="view">
+  <div class="empty-state">
+    <div class="emoji">🔍</div>
+    <div>材料名を入力してレシピを検索</div>
+  </div>
+</div>
+
+<!-- 献立 -->
+<div id="view-meal-plan" class="view">
+  <div class="empty-state">
+    <div class="emoji">📅</div>
+    <div>今日の献立を計画しよう</div>
+  </div>
+</div>
+
+<!-- 買い物リスト -->
+<div id="view-shopping" class="view">
+  <div class="empty-state">
+    <div class="emoji">🛒</div>
+    <div>買い物リストはまだ空です</div>
+  </div>
+</div>
+
+<!-- 印刷モード -->
+<div id="view-print" class="view">
+</div>
+
+<!-- 新規作成FAB -->
+<button class="fab" id="fab-new-recipe" title="新しいレシピを追加">＋</button>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+
+<script src="../js/recipe-utils.js"></script>
+<script src="../js/recipe-search.js"></script>
+<script src="../js/recipe-api.js"></script>
+<script src="../js/recipe-shopping.js"></script>
+<script src="../js/recipe-meal-plan.js"></script>
+<script src="../js/recipe-ui.js"></script>
+<script src="../js/recipe-router.js"></script>
+</body>
+</html>
