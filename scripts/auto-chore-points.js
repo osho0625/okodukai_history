@@ -16,6 +16,15 @@ const AUTO_CHORE_RULES = [
   { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
 ];
 
+// マイルストーン入金額（child.html / common.js と同一ロジック）
+function getAllowanceForMilestone(pts) {
+  if (pts === 400) return 400;
+  if (pts === 200) return 200;
+  if (pts % 60 === 0) return 300;
+  if (pts % 20 === 0) return 40;
+  return 0;
+}
+
 // ============================================================
 // Main
 // ============================================================
@@ -38,7 +47,7 @@ async function main() {
   console.log(`Auto chore points: ${dateStr} (day of year: ${dayOfYear})`);
 
   // childrenテーブルから対象の子供を取得
-  const childrenRes = await fetch(`${SUPABASE_URL}/rest/v1/children?select=id,name`, {
+  const childrenRes = await fetch(`${SUPABASE_URL}/rest/v1/children?select=id,name,balance`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
   });
   if (!childrenRes.ok) {
@@ -47,7 +56,8 @@ async function main() {
   }
   const children = await childrenRes.json();
 
-  const results = [];
+  // 付与対象の子供IDを収集
+  const affectedChildIds = new Set();
 
   for (const rule of AUTO_CHORE_RULES) {
     // N日に1回の判定（dayOfYear % N === 0）
@@ -81,21 +91,16 @@ async function main() {
 
     if (insertRes.ok) {
       console.log(`✓ ${rule.childName}: ${rule.choreName} +${rule.points}pt`);
-      results.push(`${rule.childName}: ${rule.choreName} +${rule.points}pt`);
+      affectedChildIds.add(child.id);
     } else {
       console.error(`Failed to insert for ${rule.childName}: ${insertRes.status}`);
     }
   }
 
-  // マイルストーンチェック＆お小遣い付与
-  for (const rule of AUTO_CHORE_RULES) {
-    if (dayOfYear % rule.everyNDays !== 0) continue;
-    const child = children.find(c => c.name === rule.childName);
+  // マイルストーンチェック＆お小遣い自動付与
+  for (const childId of affectedChildIds) {
+    const child = children.find(c => c.id === childId);
     if (!child) continue;
-
-    // 重複チェック（同じ子供の合計は1回だけ計算）
-    if (results.find(r => r.startsWith(rule.childName + ':')) !== results.find(r => r === `${rule.childName}: ${rule.choreName} +${rule.points}pt`)) continue;
-
     await checkAndGiveAllowance(SUPABASE_URL, SUPABASE_KEY, child, children);
   }
 
@@ -106,25 +111,129 @@ async function main() {
 // マイルストーンチェック＆お小遣い付与
 // ============================================================
 async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildren) {
-  // 現在の合計ポイントを取得
+  // 合計承認済みポイントを取得
   const ptsRes = await fetch(
     `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
     { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
   );
   if (!ptsRes.ok) return;
   const ptsData = await ptsRes.json();
-  const totalNow = ptsData.reduce((s, r) => s + r.points, 0);
+  const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
 
-  // 今日付与した分だけマイルストーンをチェック
-  // （totalNow - todayAdded + 1 ~ totalNow の範囲）
-  // ここでは簡略化: 最新のマイルストーン到達のみチェック
-  const sheetPt = ((totalNow - 1) % 400) + 1;
-  if (sheetPt % 20 !== 0) return; // ちょうどマイルストーンでなければスキップ
+  // 期待されるお小遣い総額を計算（ポイント1〜totalPtsの全マイルストーン）
+  const expectedAllowance = calcExpectedAllowance(totalPts);
 
-  // 既にお小遣いが付与されてないか確認（最後のtransactionをチェック）
-  // → 安全のため、この自動スクリプトではマイルストーンお小遣いは付与しない
-  // （手動操作で確認してから付与する設計）
-  console.log(`⚠️ ${child.name}: マイルストーン ${sheetPt}pt 到達の可能性あり（お小遣い付与は手動で確認してください）`);
+  // 実際に入金されたお小遣い総額を取得（memo='ポイント表ご褒美'のtransactions合計）
+  const txRes = await fetch(
+    `${supabaseUrl}/rest/v1/transactions?child_id=eq.${child.id}&type=eq.add&memo=eq.ポイント表ご褒美&select=amount`,
+    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+  );
+  if (!txRes.ok) return;
+  const txData = await txRes.json();
+  const actualAllowance = txData.reduce((s, r) => s + r.amount, 0);
+
+  // 返済用アカウントの入金分も加算
+  const repayChild = allChildren.find(c => c.name === child.name + 'が返すお金');
+  let repayAllowance = 0;
+  if (repayChild) {
+    const repayRes = await fetch(
+      `${supabaseUrl}/rest/v1/transactions?child_id=eq.${repayChild.id}&type=eq.add&memo=like.ポイント表ご褒美*&select=amount`,
+      { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    );
+    if (repayRes.ok) {
+      const repayData = await repayRes.json();
+      repayAllowance = repayData.reduce((s, r) => s + r.amount, 0);
+    }
+  }
+
+  const totalActual = actualAllowance + repayAllowance;
+  const deficit = expectedAllowance - totalActual;
+
+  if (deficit <= 0) {
+    console.log(`  ${child.name}: お小遣い正常（期待=${expectedAllowance}円, 実績=${totalActual}円）`);
+    return;
+  }
+
+  console.log(`  ${child.name}: お小遣い不足 ${deficit}円 を入金（期待=${expectedAllowance}円, 実績=${totalActual}円）`);
+
+  // 入金実行
+  if (repayChild) {
+    const half = Math.floor(deficit / 2);
+    const remainder = deficit - half;
+
+    // 本人への入金
+    const { balance: curBal } = await getBalance(supabaseUrl, supabaseKey, child.id);
+    const newBal = curBal + remainder;
+    await updateBalance(supabaseUrl, supabaseKey, child.id, newBal);
+    await insertTransaction(supabaseUrl, supabaseKey, child.id, remainder, 'ポイント表ご褒美');
+
+    // 返済用アカウントへの入金
+    const { balance: repBal } = await getBalance(supabaseUrl, supabaseKey, repayChild.id);
+    const newRepBal = repBal + half;
+    await updateBalance(supabaseUrl, supabaseKey, repayChild.id, newRepBal);
+    await insertTransaction(supabaseUrl, supabaseKey, repayChild.id, half, `ポイント表ご褒美（${child.name}分）`);
+
+    console.log(`    → 本人 +${remainder}円, 返済用 +${half}円`);
+  } else {
+    const { balance: curBal } = await getBalance(supabaseUrl, supabaseKey, child.id);
+    const newBal = curBal + deficit;
+    await updateBalance(supabaseUrl, supabaseKey, child.id, newBal);
+    await insertTransaction(supabaseUrl, supabaseKey, child.id, deficit, 'ポイント表ご褒美');
+    console.log(`    → +${deficit}円`);
+  }
+}
+
+// ============================================================
+// お小遣い期待額を計算
+// ============================================================
+function calcExpectedAllowance(totalPts) {
+  let total = 0;
+  for (let pt = 1; pt <= totalPts; pt++) {
+    // 枚内のポイント位置（1-400）
+    const sheetPt = ((pt - 1) % 400) + 1;
+    if (sheetPt % 20 === 0) {
+      total += getAllowanceForMilestone(sheetPt);
+    }
+  }
+  return total;
+}
+
+// ============================================================
+// Supabase ヘルパー
+// ============================================================
+async function getBalance(supabaseUrl, supabaseKey, childId) {
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/children?id=eq.${childId}&select=balance`,
+    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+  );
+  const data = await res.json();
+  return { balance: data[0]?.balance || 0 };
+}
+
+async function updateBalance(supabaseUrl, supabaseKey, childId, newBalance) {
+  await fetch(`${supabaseUrl}/rest/v1/children?id=eq.${childId}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ balance: newBalance })
+  });
+}
+
+async function insertTransaction(supabaseUrl, supabaseKey, childId, amount, memo) {
+  await fetch(`${supabaseUrl}/rest/v1/transactions`, {
+    method: 'POST',
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ child_id: childId, type: 'add', amount, memo })
+  });
 }
 
 // ============================================================
