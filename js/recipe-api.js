@@ -311,6 +311,20 @@ const IngredientRepository = {
       .insert(rows);
 
     return { error: insertError || null };
+  },
+
+  /**
+   * 材料名で部分一致検索（複数名対応、OR結合）
+   * @param {string[]} names - 検索材料名リスト
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async searchByNames(names) {
+    if (!names || names.length === 0) return { data: [], error: null };
+    var query = client.from('recipe_ingredients').select('recipe_id, name');
+    var orFilter = names.map(function(n) { return 'name.ilike.%' + n + '%'; }).join(',');
+    query = query.or(orFilter);
+    var { data, error } = await query;
+    return { data: data || [], error: error || null };
   }
 };
 

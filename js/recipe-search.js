@@ -85,7 +85,103 @@ function filterFavorites(recipes, userFavorites) {
   return recipes.filter(function(r) { return userFavorites.includes(r.id); });
 }
 
+/**
+ * タグフィルタ: 指定タグを持つレシピのみ抽出
+ * @param {Array} recipes
+ * @param {string} tag
+ * @returns {Array}
+ */
+function filterByTag(recipes, tag) {
+  return recipes.filter(function(r) {
+    var tags = (r.recipe_tags || []).map(function(t) { return typeof t === 'string' ? t : t.tag; });
+    return tags.includes(tag);
+  });
+}
+
+/**
+ * アレルギー除外フィルタ: 指定アレルゲンタグを持つレシピを除外
+ * @param {Array} recipes
+ * @param {string} allergen - アレルゲン名（例: "卵"）
+ * @returns {Array}
+ */
+function filterExcludeAllergy(recipes, allergen) {
+  var allergyTag = 'allergy:' + allergen;
+  return recipes.filter(function(r) {
+    var tags = (r.recipe_tags || []).map(function(t) { return typeof t === 'string' ? t : t.tag; });
+    return !tags.includes(allergyTag);
+  });
+}
+
+/**
+ * 素材逆引き検索ロジック（AND/OR）
+ * @param {Array} recipes - [{id, recipe_ingredients: [{name}]}]
+ * @param {string[]} names - 検索材料名リスト
+ * @param {string} mode - 'and' | 'or'
+ * @returns {Array} フィルタ＋ソート済みレシピ配列
+ */
+function searchByIngredientsLogic(recipes, names, mode) {
+  if (!names || names.length === 0) return recipes;
+
+  var results = [];
+  for (var i = 0; i < recipes.length; i++) {
+    var ingNames = (recipes[i].recipe_ingredients || []).map(function(ing) { return ing.name.toLowerCase(); });
+    var matchCount = 0;
+    for (var j = 0; j < names.length; j++) {
+      var searchTerm = names[j].toLowerCase();
+      var matched = ingNames.some(function(n) { return n.includes(searchTerm); });
+      if (matched) matchCount++;
+    }
+
+    if (mode === 'and' && matchCount === names.length) {
+      results.push({ recipe: recipes[i], matchCount: matchCount });
+    } else if (mode === 'or' && matchCount > 0) {
+      results.push({ recipe: recipes[i], matchCount: matchCount });
+    }
+  }
+
+  // Sort by matchCount DESC (for OR mode ordering, also stable for AND)
+  results.sort(function(a, b) { return b.matchCount - a.matchCount; });
+  return results.map(function(r) { return r.recipe; });
+}
+
+/**
+ * 冷蔵庫検索ロジック
+ * @param {Array} recipes - [{id, recipe_ingredients: [{name}]}]
+ * @param {string[]} available - 手持ち材料名リスト
+ * @returns {Array} 不足2品以内のレシピ（不足率昇順）
+ */
+function searchFridgeLogic(recipes, available) {
+  if (!available || available.length === 0) return [];
+
+  var results = [];
+  for (var i = 0; i < recipes.length; i++) {
+    var ings = (recipes[i].recipe_ingredients || []).map(function(ing) { return ing.name.toLowerCase(); });
+    var totalCount = ings.length;
+    if (totalCount === 0) continue;
+
+    var matchedCount = 0;
+    for (var j = 0; j < ings.length; j++) {
+      var found = available.some(function(a) { return ings[j].includes(a.toLowerCase()) || a.toLowerCase().includes(ings[j]); });
+      if (found) matchedCount++;
+    }
+
+    var missingCount = totalCount - matchedCount;
+    if (missingCount <= 2) {
+      var ratio = totalCount === 0 ? 1 : missingCount / totalCount;
+      results.push({
+        recipe: recipes[i],
+        missingCount: missingCount,
+        ratio: ratio
+      });
+    }
+  }
+
+  // Sort by ratio ASC (lowest deficiency first)
+  results.sort(function(a, b) { return a.ratio - b.ratio; });
+  return results.map(function(r) { return r.recipe; });
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { matchesTextSearch, sortRecipes, filterVisibleRecipes, filterFavorites };
+  module.exports = { matchesTextSearch, sortRecipes, filterVisibleRecipes, filterFavorites, filterByTag, filterExcludeAllergy, searchByIngredientsLogic, searchFridgeLogic };
 }

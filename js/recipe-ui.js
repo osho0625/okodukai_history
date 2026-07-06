@@ -1416,7 +1416,278 @@ async function loadEditForm(id) {
   }
 }
 
+/**
+ * 素材検索タブUIを初期化・描画
+ * Task 16.1 + 16.2: 材料入力フィールド＋AND/OR切替 + 冷蔵庫検索モード
+ */
+async function loadIngredientSearchView() {
+  var container = document.getElementById('view-ingredient-search');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // --- 入力セクション ---
+  var inputSection = document.createElement('div');
+  inputSection.style.cssText = 'margin-bottom:20px;';
+
+  // 説明
+  var desc = document.createElement('p');
+  desc.style.cssText = 'color:#666;font-size:0.9em;margin-bottom:12px;';
+  desc.textContent = '材料名を入力してレシピを検索（カンマまたはスペース区切りで複数指定可）';
+  inputSection.appendChild(desc);
+
+  // 材料名入力フィールド
+  var searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.id = 'ingredient-search-input';
+  searchInput.placeholder = '例: 鶏肉, 玉ねぎ, にんじん';
+  searchInput.style.cssText = 'width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:8px;font-size:1em;margin-bottom:12px;box-sizing:border-box;';
+  inputSection.appendChild(searchInput);
+
+  // AND/OR 切替ボタン行
+  var modeRow = document.createElement('div');
+  modeRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:12px;';
+
+  var modeLabel = document.createElement('span');
+  modeLabel.style.cssText = 'font-size:0.9em;color:#555;';
+  modeLabel.textContent = '検索モード:';
+  modeRow.appendChild(modeLabel);
+
+  var andBtn = document.createElement('button');
+  andBtn.type = 'button';
+  andBtn.textContent = 'AND（すべて含む）';
+  andBtn.className = 'btn-secondary';
+  andBtn.style.cssText = 'padding:8px 16px;font-size:0.85em;border-radius:20px;background:#e65100;color:#fff;border-color:#e65100;';
+  modeRow.appendChild(andBtn);
+
+  var orBtn = document.createElement('button');
+  orBtn.type = 'button';
+  orBtn.textContent = 'OR（いずれか含む）';
+  orBtn.className = 'btn-secondary';
+  orBtn.style.cssText = 'padding:8px 16px;font-size:0.85em;border-radius:20px;';
+  modeRow.appendChild(orBtn);
+
+  inputSection.appendChild(modeRow);
+
+  // 冷蔵庫検索モードスイッチ
+  var fridgeRow = document.createElement('div');
+  fridgeRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;';
+
+  var fridgeLabel = document.createElement('label');
+  fridgeLabel.style.cssText = 'font-size:0.9em;color:#555;cursor:pointer;display:flex;align-items:center;gap:6px;';
+
+  var fridgeCheckbox = document.createElement('input');
+  fridgeCheckbox.type = 'checkbox';
+  fridgeCheckbox.id = 'fridge-mode-toggle';
+  fridgeLabel.appendChild(fridgeCheckbox);
+
+  var fridgeLabelText = document.createTextNode('🧊 冷蔵庫検索モード（不足2品以内のレシピを表示）');
+  fridgeLabel.appendChild(fridgeLabelText);
+  fridgeRow.appendChild(fridgeLabel);
+  inputSection.appendChild(fridgeRow);
+
+  // 検索ボタン
+  var searchBtn = document.createElement('button');
+  searchBtn.type = 'button';
+  searchBtn.textContent = '🔍 検索';
+  searchBtn.className = 'btn-primary';
+  searchBtn.style.cssText = 'width:100%;padding:14px;font-size:1.05em;';
+  inputSection.appendChild(searchBtn);
+
+  container.appendChild(inputSection);
+
+  // --- 検索結果エリア ---
+  var resultsArea = document.createElement('div');
+  resultsArea.id = 'ingredient-search-results';
+  container.appendChild(resultsArea);
+
+  // --- State ---
+  var currentMode = 'and'; // 'and' or 'or'
+
+  function updateModeButtons() {
+    if (currentMode === 'and') {
+      andBtn.style.background = '#e65100';
+      andBtn.style.color = '#fff';
+      andBtn.style.borderColor = '#e65100';
+      orBtn.style.background = '#fff';
+      orBtn.style.color = '#333';
+      orBtn.style.borderColor = '#ddd';
+    } else {
+      orBtn.style.background = '#e65100';
+      orBtn.style.color = '#fff';
+      orBtn.style.borderColor = '#e65100';
+      andBtn.style.background = '#fff';
+      andBtn.style.color = '#333';
+      andBtn.style.borderColor = '#ddd';
+    }
+  }
+
+  andBtn.addEventListener('click', function() {
+    currentMode = 'and';
+    updateModeButtons();
+  });
+
+  orBtn.addEventListener('click', function() {
+    currentMode = 'or';
+    updateModeButtons();
+  });
+
+  // --- 検索実行 ---
+  searchBtn.addEventListener('click', async function() {
+    var input = searchInput.value.trim();
+    if (!input) {
+      resultsArea.innerHTML = '';
+      var emptyMsg = document.createElement('div');
+      emptyMsg.className = 'empty-state';
+      emptyMsg.textContent = '材料名を入力してください';
+      resultsArea.appendChild(emptyMsg);
+      return;
+    }
+
+    // Parse input (comma or space separated)
+    var names = input.split(/[,、\s]+/).filter(function(n) { return n.trim() !== ''; });
+    if (names.length === 0) return;
+
+    resultsArea.innerHTML = '';
+    var loadingEl = document.createElement('div');
+    loadingEl.className = 'loading';
+    loadingEl.textContent = '検索中...';
+    resultsArea.appendChild(loadingEl);
+
+    try {
+      // Load all published recipes with ingredients
+      var result = await RecipeRepository.getAll();
+      var allRecipes = result.data || [];
+
+      // Get full recipe details with ingredients (getAll may not include full ingredients)
+      // Load all recipe_ingredients for the recipes
+      var recipesWithIngredients = [];
+      for (var i = 0; i < allRecipes.length; i++) {
+        var fullResult = await RecipeRepository.getById(allRecipes[i].id);
+        if (fullResult.data) {
+          recipesWithIngredients.push(fullResult.data);
+        }
+      }
+
+      var filteredRecipes;
+      var isFridgeMode = fridgeCheckbox.checked;
+
+      if (isFridgeMode) {
+        filteredRecipes = searchFridgeLogic(recipesWithIngredients, names);
+      } else {
+        filteredRecipes = searchByIngredientsLogic(recipesWithIngredients, names, currentMode);
+      }
+
+      resultsArea.innerHTML = '';
+
+      if (filteredRecipes.length === 0) {
+        var noResult = document.createElement('div');
+        noResult.className = 'empty-state';
+        noResult.textContent = isFridgeMode
+          ? '不足2品以内のレシピが見つかりませんでした'
+          : 'レシピが見つかりませんでした';
+        resultsArea.appendChild(noResult);
+        return;
+      }
+
+      // 結果表示ヘッダー
+      var resultHeader = document.createElement('div');
+      resultHeader.style.cssText = 'margin-bottom:12px;font-size:0.9em;color:#666;';
+      resultHeader.textContent = filteredRecipes.length + ' 件のレシピが見つかりました';
+      resultsArea.appendChild(resultHeader);
+
+      // 結果カードグリッド
+      var cardGrid = document.createElement('div');
+      cardGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;';
+
+      var currentUserName = await getCurrentUserName();
+      var userFavorites = await FavoriteRepository.getByUser(currentUserName);
+      var recipeIds = filteredRecipes.map(function(r) { return r.id; });
+      var cookStats = await CookHistoryRepository.getStats(recipeIds);
+
+      for (var ri = 0; ri < filteredRecipes.length; ri++) {
+        var recipe = filteredRecipes[ri];
+        var cardData = recipeCardData(recipe, userFavorites, cookStats);
+
+        // For fridge mode, calculate missing ingredients
+        if (isFridgeMode) {
+          var ings = (recipe.recipe_ingredients || []).map(function(ing) { return ing.name; });
+          var missing = [];
+          for (var mi = 0; mi < ings.length; mi++) {
+            var ingLower = ings[mi].toLowerCase();
+            var found = names.some(function(a) {
+              return ingLower.includes(a.toLowerCase()) || a.toLowerCase().includes(ingLower);
+            });
+            if (!found) missing.push(ings[mi]);
+          }
+          if (missing.length > 0) {
+            cardData.title = cardData.title + '\n（あと ' + missing.join('・') + ' があれば作れる）';
+          }
+        }
+
+        var cardFragment = renderRecipeCard(cardData);
+        cardGrid.appendChild(cardFragment);
+      }
+
+      resultsArea.appendChild(cardGrid);
+
+    } catch (e) {
+      resultsArea.innerHTML = '';
+      var errorEl = document.createElement('div');
+      errorEl.className = 'empty-state';
+      errorEl.textContent = 'エラーが発生しました。再読み込みしてください。';
+      resultsArea.appendChild(errorEl);
+    }
+  });
+}
+
+/**
+ * 一覧画面にアレルギー除外UIを追加する
+ * Task 16.3: タグタップ→フィルタ + アレルギー除外UI
+ * This is called from within loadRecipeList to add allergy filter to the search section
+ */
+function renderAllergyFilterUI(container, onFilterChange) {
+  var allergySection = document.createElement('div');
+  allergySection.style.cssText = 'margin-top:12px;padding:10px 14px;background:#fff9f0;border-radius:8px;border:1px solid #ffe0b2;';
+
+  var heading = document.createElement('div');
+  heading.style.cssText = 'font-size:0.85em;color:#e65100;font-weight:600;margin-bottom:8px;';
+  heading.textContent = '⚠️ アレルギー除外';
+  allergySection.appendChild(heading);
+
+  var allergens = ['卵', '乳', '小麦', 'えび', 'かに'];
+  var checkboxes = [];
+
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;';
+
+  for (var i = 0; i < allergens.length; i++) {
+    var label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:0.85em;color:#555;cursor:pointer;';
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = allergens[i];
+    cb.addEventListener('change', function() {
+      var selected = [];
+      for (var j = 0; j < checkboxes.length; j++) {
+        if (checkboxes[j].checked) selected.push(checkboxes[j].value);
+      }
+      onFilterChange(selected);
+    });
+    checkboxes.push(cb);
+
+    label.appendChild(cb);
+    var text = document.createTextNode(allergens[i] + 'なし');
+    label.appendChild(text);
+    grid.appendChild(label);
+  }
+
+  allergySection.appendChild(grid);
+  container.appendChild(allergySection);
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors };
+  module.exports = { renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI };
 }

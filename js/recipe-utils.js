@@ -251,7 +251,54 @@ function computeResizeDimensions(originalWidth, originalHeight, maxWidth) {
   };
 }
 
+/**
+ * タグ正規化（trim + lowercase）
+ * @param {string} tag
+ * @returns {string}
+ */
+function normalizeTag(tag) {
+  return (tag || '').trim().toLowerCase();
+}
+
+/**
+ * アレルギータグ判定（"allergy:"プレフィックス）
+ * @param {string} tag
+ * @returns {boolean}
+ */
+function isAllergyTag(tag) {
+  return (tag || '').startsWith('allergy:');
+}
+
+/**
+ * アレルギータグのみ抽出
+ * @param {string[]} tags
+ * @returns {string[]}
+ */
+function filterAllergyTags(tags) {
+  return (tags || []).filter(function(t) { return isAllergyTag(t); });
+}
+
+/**
+ * 一般タグのみ抽出（allergy:除外）
+ * @param {string[]} tags
+ * @returns {string[]}
+ */
+function filterGeneralTags(tags) {
+  return (tags || []).filter(function(t) { return !isAllergyTag(t); });
+}
+
+/**
+ * 不足率計算
+ * @param {number} totalIngredients - 全材料数
+ * @param {number} missingCount - 不足材料数
+ * @returns {number}
+ */
+function computeDeficiencyRatio(totalIngredients, missingCount) {
+  if (totalIngredients === 0) return 1;
+  return missingCount / totalIngredients;
+}
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions };
+  module.exports = { recipeCardData, computeCookStats, getTopRecipes, getCurrentUserName, simulateToggle, toggleUserFavorite, validateRecipeForm, validateImageFile, resizeImage, computeResizeDimensions, normalizeTag, isAllergyTag, filterAllergyTags, filterGeneralTags, computeDeficiencyRatio };
 }
