@@ -158,7 +158,6 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 </div>
 
 <div id="adminIcons" style="text-align:center; margin-top:16px; display:none; justify-content:center; gap:20px;">
-  <a href="#" onclick="goAllowance(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F9F9;</a>
   <a href="pages/kenka-chat.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F916;</a>
   <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F3E5;</a>
   <a href="https://osho0625.github.io/kc_pickleball_club_app/" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F3D3;</a>
@@ -185,19 +184,6 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 </script>
 
 <!-- お手伝いアイコン（アカウント一覧の下に配置） -->
-
-<!-- お手伝いパスワードモーダル -->
-<div class="overlay" id="allowanceOverlay">
-  <div class="modal">
-    <h2>&#x1F9F9; パスワードを入力</h2>
-    <div class="error-msg" id="allowanceError">パスワードが違います</div>
-    <input type="password" id="allowancePwInput" placeholder="パスワード" autocomplete="off">
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeAllowanceModal()">キャンセル</button>
-      <button class="btn-ok" onclick="submitAllowancePw()">OK</button>
-    </div>
-  </div>
-</div>
 
 <!-- 設定モーダル -->
 <div class="overlay" id="sortOverlay">
@@ -258,7 +244,6 @@ let allChildren = [];
 let pendingChildId = null;
 let adminFailCount = 0;
 let childPwFailCount = 0;
-let allowancePassword = null;
 let adminPassword = null;
 
 // --- 設定モーダル内アコーディオン ---
@@ -503,46 +488,10 @@ async function loadTodayScp() {
 // --- パスワード読み込み（Supabase） ---
 async function loadPasswords() {
   try {
-    const { data } = await client.from('game_settings').select('allowance_password, admin_password').eq('id', 1).maybeSingle();
-    allowancePassword = (data && data.allowance_password) || null;
+    const { data } = await client.from('game_settings').select('admin_password').eq('id', 1).maybeSingle();
     adminPassword = (data && data.admin_password) || null;
   } catch(e) {}
 }
-
-function goAllowance() {
-  if (!allowancePassword || localStorage.getItem('deviceRole') === 'admin') {
-    window.location.href = 'pages/allowance.html';
-    return;
-  }
-  document.getElementById('allowanceError').style.display = 'none';
-  document.getElementById('allowancePwInput').value = '';
-  document.getElementById('allowanceOverlay').classList.add('active');
-  setTimeout(() => document.getElementById('allowancePwInput').focus(), 100);
-}
-
-function submitAllowancePw() {
-  const input = document.getElementById('allowancePwInput').value;
-  if (input === allowancePassword) {
-    closeAllowanceModal();
-    window.location.href = 'pages/allowance.html';
-  } else {
-    document.getElementById('allowanceError').style.display = 'block';
-    document.getElementById('allowancePwInput').value = '';
-    document.getElementById('allowancePwInput').focus();
-  }
-}
-
-function closeAllowanceModal() {
-  document.getElementById('allowanceOverlay').classList.remove('active');
-}
-
-// Enterキー対応
-document.getElementById('allowancePwInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitAllowancePw();
-});
-document.getElementById('allowanceOverlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeAllowanceModal();
-});
 
 // --- ベル揺れ演出 ---
 function ringBell(e, el) {
