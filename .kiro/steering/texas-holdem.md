@@ -29,7 +29,8 @@ fileMatchPattern: "*texas*,*holdem*,*poker-guide*"
 - DB不使用
 - 夜間制限非対応（ルール参照ページのため）
 - common.js非読み込み（Supabase接続不要）
-- ゲームセンターからのリンク対象外（ルール参照のみ）
+- ゲームセンター（arcade.html）にカード表示あり（game_texas_holdem）
+- game_publishで表示/非表示制御可能（管理者ページのゲーム公開設定）
 
 ## UI構成
 
