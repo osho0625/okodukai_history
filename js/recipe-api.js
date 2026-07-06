@@ -100,6 +100,53 @@ const RecipeRepository = {
   },
 
   /**
+   * ランダム1件取得（カテゴリフィルタ対応）
+   * @param {string|null} category - カテゴリ（nullで全カテゴリ）
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async getRandom(category) {
+    let query = client.from('recipes').select('id').eq('status', 'published');
+    if (category) query = query.eq('category', category);
+    const { data, error } = await query;
+    if (error) return { data: null, error };
+    if (!data || data.length === 0) return { data: null, error: null };
+    var randomIndex = Math.floor(Math.random() * data.length);
+    return await this.getById(data[randomIndex].id);
+  },
+
+  /**
+   * レシピを複製（写真除く）
+   * @param {string} id - 複製元レシピID
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async duplicate(id) {
+    var original = await this.getById(id);
+    if (original.error || !original.data) return { data: null, error: original.error || new Error('Recipe not found') };
+    var dupData = duplicateRecipeData(original.data);
+    // Save new recipe
+    var saveResult = await this.save({
+      title: dupData.title,
+      description: dupData.description,
+      author: dupData.author,
+      category: dupData.category,
+      cook_time_minutes: dupData.cook_time_minutes,
+      servings: dupData.servings,
+      status: 'draft'
+    });
+    if (saveResult.error) return { data: null, error: saveResult.error };
+    var newRecipe = saveResult.data;
+    // Save ingredients
+    if (dupData.ingredients && dupData.ingredients.length > 0) {
+      await IngredientRepository.saveAll(newRecipe.id, dupData.ingredients);
+    }
+    // Save tags
+    if (dupData.tags && dupData.tags.length > 0) {
+      await TagRepository.saveAll(newRecipe.id, dupData.tags);
+    }
+    return { data: newRecipe, error: null };
+  },
+
+  /**
    * レシピを削除（Storage写真削除 → DB CASCADE削除）
    * @param {string} id - レシピID
    * @returns {Promise<{error: object|null}>}
@@ -311,6 +358,20 @@ const IngredientRepository = {
       .insert(rows);
 
     return { error: insertError || null };
+  },
+
+  /**
+   * 材料名で部分一致検索（複数名対応、OR結合）
+   * @param {string[]} names - 検索材料名リスト
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async searchByNames(names) {
+    if (!names || names.length === 0) return { data: [], error: null };
+    var query = client.from('recipe_ingredients').select('recipe_id, name');
+    var orFilter = names.map(function(n) { return 'name.ilike.%' + n + '%'; }).join(',');
+    query = query.or(orFilter);
+    var { data, error } = await query;
+    return { data: data || [], error: error || null };
   }
 };
 
@@ -476,7 +537,135 @@ const PhotoRepository = {
   }
 };
 
+// === ShoppingListRepository ===
+const ShoppingListRepository = {
+  /**
+   * 買い物リスト全件取得（レシピ名JOIN、created_at昇順）
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getAll() {
+    const { data, error } = await client.from('shopping_list')
+      .select('*, recipes(title)')
+      .order('created_at', { ascending: true });
+    return { data: data || [], error };
+  },
+
+  /**
+   * 買い物リストに材料を追加
+   * @param {string} recipeId - レシピID
+   * @param {Array<{ingredient_name: string, quantity: string}>} items
+   * @returns {Promise<{error: object|null}>}
+   */
+  async addItems(recipeId, items) {
+    const rows = items.map(function(item) {
+      return {
+        recipe_id: recipeId,
+        ingredient_name: item.ingredient_name,
+        quantity: item.quantity || ''
+      };
+    });
+    const { error } = await client.from('shopping_list').insert(rows);
+    return { error };
+  },
+
+  /**
+   * チェック状態トグル
+   * @param {string} id - 買い物リスト項目ID
+   * @param {boolean} checked - チェック状態
+   * @returns {Promise<{error: object|null}>}
+   */
+  async toggleChecked(id, checked) {
+    const { error } = await client.from('shopping_list')
+      .update({ checked: checked }).eq('id', id);
+    return { error };
+  },
+
+  /**
+   * チェック済み一括削除
+   * @returns {Promise<{error: object|null}>}
+   */
+  async deleteChecked() {
+    const { error } = await client.from('shopping_list')
+      .delete().eq('checked', true);
+    return { error };
+  },
+
+  /**
+   * 個別削除
+   * @param {string} id - 買い物リスト項目ID
+   * @returns {Promise<{error: object|null}>}
+   */
+  async deleteItem(id) {
+    const { error } = await client.from('shopping_list').delete().eq('id', id);
+    return { error };
+  }
+};
+
+// === MealPlanRepository ===
+const MealPlanRepository = {
+  /**
+   * 指定日の献立を取得
+   * @param {string} date - 'YYYY-MM-DD'
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getByDate(date) {
+    const { data, error } = await client.from('meal_plans')
+      .select('*')
+      .eq('plan_date', date);
+    return { data: data || [], error };
+  },
+
+  /**
+   * 期間指定で献立を取得
+   * @param {string} startDate - 'YYYY-MM-DD'
+   * @param {string} endDate - 'YYYY-MM-DD'
+   * @returns {Promise<{data: Array, error: object|null}>}
+   */
+  async getByDateRange(startDate, endDate) {
+    const { data, error } = await client.from('meal_plans')
+      .select('*')
+      .gte('plan_date', startDate)
+      .lte('plan_date', endDate)
+      .order('plan_date', { ascending: true });
+    return { data: data || [], error };
+  },
+
+  /**
+   * 献立保存（UPSERT: plan_date + meal_type が一意）
+   * @param {string} date - 'YYYY-MM-DD'
+   * @param {string} mealType - '朝' | '昼' | '夜'
+   * @param {object} slots - {main: recipeId|null, side: recipeId|null, soup: recipeId|null}
+   * @returns {Promise<{data: object|null, error: object|null}>}
+   */
+  async save(date, mealType, slots) {
+    const { data, error } = await client.from('meal_plans')
+      .upsert({
+        plan_date: date,
+        meal_type: mealType,
+        main_dish_id: slots.main || null,
+        side_dish_id: slots.side || null,
+        soup_id: slots.soup || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'plan_date,meal_type' })
+      .select();
+    return { data, error };
+  },
+
+  /**
+   * スロットクリア
+   * @param {string} id - 献立レコードID
+   * @param {string} slotName - 'main_dish_id' | 'side_dish_id' | 'soup_id'
+   * @returns {Promise<{error: object|null}>}
+   */
+  async clearSlot(id, slotName) {
+    var update = { updated_at: new Date().toISOString() };
+    update[slotName] = null;
+    const { error } = await client.from('meal_plans').update(update).eq('id', id);
+    return { error };
+  }
+};
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, TagRepository, PhotoRepository };
+  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository };
 }

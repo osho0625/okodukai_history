@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v261';
+const CACHE_NAME = 'okozukai-v273';
 const ASSETS = [
   './',
   './index.html',
@@ -17,6 +17,17 @@ const ASSETS = [
   './pages/puyo-battle.html',
   './css/puyo-escape.css',
   './pages/trpg-cthulhu.html',
+  './pages/recipe.html',
+  './pages/settlement.html',
+  './js/recipe-router.js',
+  './js/recipe-api.js',
+  './js/recipe-ui.js',
+  './js/recipe-search.js',
+  './js/recipe-shopping.js',
+  './js/recipe-meal-plan.js',
+  './js/recipe-utils.js',
+  './js/settlement-utils.js',
+  './js/settlement-app.js',
   './data/math-olympiad-grade5.json',
   './data/math-olympiad-grade1.json',
   './data/math-olympiad-grade2.json',

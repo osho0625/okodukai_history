@@ -105,6 +105,14 @@ function handleRoute() {
     if (typeof loadRecipeDetail === 'function') {
       loadRecipeDetail(id);
     }
+  } else if (view === 'edit') {
+    if (typeof loadEditForm === 'function') {
+      loadEditForm(id);
+    }
+  } else if (view === 'print' && id) {
+    if (typeof showPrintView === 'function') {
+      showPrintView(id);
+    }
   }
 }
 
@@ -181,6 +189,25 @@ function switchTab(tabName) {
 
   // タブアクティブ状態更新
   updateActiveTab(viewName);
+
+  // タブ固有のロード処理
+  if (viewName === 'list') {
+    if (typeof loadRecipeList === 'function') {
+      loadRecipeList();
+    }
+  } else if (viewName === 'ingredient-search') {
+    if (typeof loadIngredientSearchView === 'function') {
+      loadIngredientSearchView();
+    }
+  } else if (viewName === 'shopping') {
+    if (typeof loadShoppingView === 'function') {
+      loadShoppingView();
+    }
+  } else if (viewName === 'meal-plan') {
+    if (typeof loadMealPlanView === 'function') {
+      loadMealPlanView();
+    }
+  }
 }
 
 /**

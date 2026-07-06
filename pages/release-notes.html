@@ -36,6 +36,99 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.22.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> TOP画面: インラインCSS 200行を css/index.css に外部化</li>
+    <li><span class="tag tag-fix">fix</span> TOP画面: データ読み込み時の防御的チェック強化（SCIENCE_DATA/SCP_DATA未定義時）</li>
+    <li><span class="tag tag-fix">fix</span> js/common.js: UUID生成フォールバックの演算子優先順位バグ修正</li>
+    <li><span class="tag tag-fix">fix</span> js/garden.js: incrementPuyoCount未定義時のReferenceError防止</li>
+    <li><span class="tag tag-fix">fix</span> テキサスホールデム: 文字化け（UTF-8エンコーディング破損）を修復、全コンテンツ再作成</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v272: css/index.cssキャッシュ追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.21.1</span><span class="date">2026/07/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> TOP画面: 📝家族メモ帳アイコンをヘッダーから画面下部に移動</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面: 🧹お小遣い管理アイコン（allowance）を削除</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.21.0</span><span class="date">2026/07/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 🍳 家族レシピ機能追加</li>
+    <li>レシピ登録・詳細表示・編集・削除</li>
+    <li>テキスト検索・ソート（新しい順/名前順/お気に入り順/最近作った順）</li>
+    <li>素材逆引き検索（AND/OR）・冷蔵庫検索（不足2品以内）</li>
+    <li>タグ管理・アレルギー表示⚠️・除外フィルタ</li>
+    <li>お気に入り⭐・調理記録🍳・よく作る/最近作ったセクション</li>
+    <li>買い物リスト🛒（材料追加・チェックオフ・数量合算）</li>
+    <li>献立📅（朝昼夜×主菜/副菜/汁物グリッド）</li>
+    <li>ランダムレシピ🎲・レシピ複製📋・印刷モード🖨️</li>
+    <li>下書き/非公開ステータス管理</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.21.1</span><span class="date">2026/07/07</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: Tier定義をGTO準拠に変更（プレミアム/基本レイズ/低頻度レイズ/フォールド）</li>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: レンジデータをGTOベースで拡大（BTN/SB/4人テーブル）</li>
+    <li><span class="tag tag-infra">infra</span> テキサスホールデム: チャートデータをJSON分離（data/preflop/）、CSS/JS完全外部化</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.21.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: Tier定義をGTO準拠に変更（プレミアム/基本レイズ/低頻度レイズ/フォールド）</li>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: レンジデータをGTOベースで拡大（BTN/SB/4人テーブル）</li>
+    <li><span class="tag tag-infra">infra</span> テキサスホールデム: チャートデータをJSON分離（data/preflop/）、CSS/JS完全外部化</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.20.1</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: 用語集を5カテゴリ40語超に拡充</li>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: ハンド表を人数×ポジション2段階UIに改善、ベッティングの流れ追加</li>
+    <li><span class="tag tag-infra">infra</span> テキサスホールデム: CSS/JSを外部ファイルに分離（texas-holdem.css, texas-holdem-charts.js）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.20.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: 役の強さ一覧をトランプカード風ビジュアルに刷新</li>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: プリフロップハンド表を人数別・ポジション別（13パターン）で切り替え可能に</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.19.2</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: マイルストーン到達時のお小遣い自動入金を実装（過去未入金分も自動補填）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.19.1</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: ポジション解説を9人テーブル対応に拡充（UTG+1/+2, HJ, EP/MP/LP分類追加）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.19.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: 初心者向け基本ルールタブ追加</li>
+    <li><span class="tag tag-feat">feat</span> テキサスホールデム: プリフロップ ハンド強さ表（13×13マトリクス、Tier色分け）追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.18.2</span><span class="date">2026/07/06</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> リマインダー通知: GitHub Actions ワークフロー追加（5分毎cron、Discord＋Push通知が実際に動くように）</li>

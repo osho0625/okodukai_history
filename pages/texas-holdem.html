@@ -5,120 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
 <title>🃏 テキサスホールデム ルールガイド</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #0d4d1a 50%, #1a1a2e 100%);
-  min-height: 100vh; padding: 16px;
-  color: #eee; user-select: none;
-}
-.header {
-  display: flex; align-items: center; gap: 12px;
-  max-width: 600px; margin: 0 auto 16px;
-}
-.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
-.home { color: #eee; text-decoration: none; font-size: 1.4em; line-height: 1; margin-left: auto; }
-h1 { font-size: 1.3em; font-weight: 700; }
-.container { max-width: 600px; margin: 0 auto; }
-
-/* タブナビゲーション */
-.tabs {
-  display: flex; gap: 4px; margin-bottom: 16px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-}
-.tab {
-  padding: 10px 16px; border-radius: 8px 8px 0 0;
-  background: rgba(255,255,255,0.08); color: #aaa;
-  font-size: 0.85em; font-weight: 600; cursor: pointer;
-  white-space: nowrap; border: none; transition: all 0.2s;
-}
-.tab.active {
-  background: rgba(255,255,255,0.15); color: #4caf50;
-  border-bottom: 2px solid #4caf50;
-}
-
-/* コンテンツエリア */
-.content-section {
-  display: none; background: rgba(255,255,255,0.05);
-  border-radius: 0 12px 12px 12px; padding: 20px;
-  line-height: 1.8; font-size: 0.9em;
-}
-.content-section.active { display: block; }
-.content-section h2 {
-  color: #4caf50; font-size: 1.2em; margin-bottom: 12px;
-  border-bottom: 1px solid rgba(76,175,80,0.3); padding-bottom: 8px;
-}
-.content-section h3 {
-  color: #81c784; font-size: 1em; margin: 16px 0 8px;
-}
-
-/* 役一覧テーブル */
-.hand-table {
-  width: 100%; border-collapse: collapse; margin: 12px 0;
-  font-size: 0.85em;
-}
-.hand-table th {
-  background: rgba(76,175,80,0.2); color: #4caf50;
-  padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.hand-table td {
-  padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
-  vertical-align: top;
-}
-.hand-table tr:hover { background: rgba(255,255,255,0.03); }
-.rank-num {
-  color: #ffd700; font-weight: 700; text-align: center; width: 30px;
-}
-.hand-name { color: #fff; font-weight: 600; white-space: nowrap; }
-.hand-example { color: #aaa; font-size: 0.9em; }
-.hand-desc { color: #ccc; }
-
-/* カード表現 */
-.card-red { color: #ff6b6b; }
-.card-black { color: #eee; }
-
-/* 進行フロー */
-.flow-step {
-  display: flex; gap: 12px; margin: 12px 0;
-  padding: 12px; background: rgba(255,255,255,0.03);
-  border-radius: 8px; border-left: 3px solid #4caf50;
-}
-.flow-num {
-  background: #4caf50; color: #fff; font-weight: 700;
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 0.85em;
-}
-.flow-content { flex: 1; }
-.flow-content strong { color: #81c784; }
-
-/* 用語 */
-.term-list { list-style: none; padding: 0; }
-.term-list li {
-  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.term-list li strong { color: #ffd700; }
-
-/* ポジション図 */
-.position-diagram {
-  background: rgba(0,80,0,0.3); border-radius: 50%;
-  width: 280px; height: 180px; margin: 16px auto;
-  position: relative; border: 2px solid rgba(76,175,80,0.4);
-}
-.pos-label {
-  position: absolute; font-size: 0.7em; font-weight: 600;
-  background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px;
-}
-
-/* Tips */
-.tip-box {
-  background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
-  border-radius: 8px; padding: 12px; margin: 12px 0;
-  font-size: 0.85em;
-}
-.tip-box::before { content: "💡 "; }
-</style>
+<link rel="stylesheet" href="../css/texas-holdem.css">
 </head>
 <body>
 <div class="header">
@@ -129,84 +16,259 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
 <div class="container">
   <div class="tabs">
-    <button class="tab active" data-tab="hands">役の強さ</button>
-    <button class="tab" data-tab="flow">ゲームの進め方</button>
+    <button class="tab active" data-tab="basics">基本ルール</button>
+    <button class="tab" data-tab="hands">役の強さ</button>
+    <button class="tab" data-tab="preflop">ハンド表</button>
+    <button class="tab" data-tab="flow">ディーラーの進め方</button>
     <button class="tab" data-tab="positions">ポジション</button>
     <button class="tab" data-tab="terms">用語集</button>
   </div>
 
+  <!-- 基本ルール（初心者向け） -->
+  <div class="content-section active" id="tab-basics">
+    <h2>🎮 テキサスホールデム 基本ルール</h2>
+    <p>トランプ52枚（ジョーカーなし）を使う、2〜10人で遊べるポーカーゲーム。</p>
+
+    <h3>🎯 ゲームの目的</h3>
+    <p>他のプレイヤーのチップを奪うこと。方法は2つ:</p>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content"><strong>ショーダウンで勝つ</strong> — 最後まで残って一番強い役を見せる</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content"><strong>相手を降ろす</strong> — ベットやレイズで相手全員をフォールドさせる（役が弱くても勝てる！）</div>
+    </div>
+
+    <h3>🃏 カードの使い方</h3>
+    <div class="flow-step">
+      <div class="flow-num">🤫</div>
+      <div class="flow-content"><strong>手札（ホールカード）</strong> — 各プレイヤーに2枚ずつ裏向きで配る。自分だけが見れる秘密のカード。</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">👀</div>
+      <div class="flow-content"><strong>共有カード（コミュニティカード）</strong> — テーブル中央に最大5枚、表向きで出る。全員が使える。</div>
+    </div>
+    <div class="tip-box">
+      手札2枚 + 共有カード5枚 = 合計7枚の中から、最強の5枚を選んで役を作る。
+    </div>
+
+    <h3>💰 チップとベット</h3>
+    <table class="hand-table">
+      <thead><tr><th>用語</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td class="hand-name">チェック</td><td>パス。誰もベットしてないときだけ使える</td></tr>
+        <tr><td class="hand-name">ベット</td><td>最初にチップを賭ける</td></tr>
+        <tr><td class="hand-name">コール</td><td>前の人と同じ額を出す</td></tr>
+        <tr><td class="hand-name">レイズ</td><td>前の人より多く賭ける（上乗せ）</td></tr>
+        <tr><td class="hand-name">フォールド</td><td>降りる。カードを捨ててそのゲームから抜ける</td></tr>
+        <tr><td class="hand-name">オールイン</td><td>持ってるチップ全部を賭ける</td></tr>
+      </tbody>
+    </table>
+
+    <h3>🔄 ゲームの流れ（ざっくり）</h3>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content"><strong>手札が来る</strong> — 2枚もらう。ここで最初のベッティング（※詳しい流れは下に）</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content"><strong>フロップ</strong> — 共有カード3枚オープン → ベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content"><strong>ターン</strong> — 共有カード4枚目オープン → ベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content"><strong>リバー</strong> — 共有カード5枚目オープン → 最後のベッティング</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content"><strong>ショーダウン</strong> — 残った人同士でカードを見せ合い、一番強い人が勝ち</div>
+    </div>
+
+    <h3>🔁 ベッティングの流れ（各ラウンド共通）</h3>
+    <p>フロップ・ターン・リバーのベッティングは全て同じ流れ:</p>
+    <div class="flow-step">
+      <div class="flow-num">①</div>
+      <div class="flow-content"><strong>最初の人から時計回りに順番が来る</strong><br>プリフロップ = BBの左隣(UTG)から / フロップ以降 = SBから</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">②</div>
+      <div class="flow-content"><strong>アクションを選ぶ</strong><br>
+        誰もベットしていない → チェック or ベット<br>
+        誰かがベットした → コール / レイズ / フォールド
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">③</div>
+      <div class="flow-content"><strong>全員のベット額が揃ったら終了</strong><br>全員チェック or 最後のレイズに全員コール → 次のラウンドへ</div>
+    </div>
+    <div class="tip-box">
+      レイズがあったら、まだアクションしていない人＋既にコールした人も再度選択が必要。全員が同額になるまで続く。
+    </div>
+
+    <h3>⚡ 覚えておきたいポイント</h3>
+    <ul class="term-list">
+      <li><strong>ブラインド</strong> — 2人が強制ベット（ゲームが動くようにするため）</li>
+      <li><strong>ボタン（D）</strong> — ディーラー役の目印。毎回時計回りに移動する</li>
+      <li><strong>ポット</strong> — みんなが賭けたチップの合計。勝った人がもらえる</li>
+      <li><strong>ブラフ</strong> — 弱い手でも強気にベットして相手を降ろすテクニック</li>
+    </ul>
+
+    <div class="tip-box">
+      最初は「良い手が来たらベット、微妙ならフォールド」でOK。慣れたらブラフや位置取りを覚えよう！
+    </div>
+  </div>
+
   <!-- 役の強さ一覧 -->
-  <div class="content-section active" id="tab-hands">
+  <div class="content-section" id="tab-hands">
     <h2>🏆 役の強さ一覧（上が最強）</h2>
     <p>手札2枚 + コミュニティカード5枚の計7枚から最強の5枚を選んで役を作る。</p>
 
-    <table class="hand-table">
-      <thead>
-        <tr><th class="rank-num">#</th><th>役</th><th>説明</th><th>例</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="rank-num">1</td>
-          <td class="hand-name">ロイヤルフラッシュ</td>
-          <td class="hand-desc">同じスートのA-K-Q-J-10</td>
-          <td class="hand-example"><span class="card-red">♥A ♥K ♥Q ♥J ♥10</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">2</td>
-          <td class="hand-name">ストレートフラッシュ</td>
-          <td class="hand-desc">同じスートで5枚連番</td>
-          <td class="hand-example"><span class="card-black">♠9 ♠8 ♠7 ♠6 ♠5</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">3</td>
-          <td class="hand-name">フォーカード</td>
-          <td class="hand-desc">同じ数字4枚</td>
-          <td class="hand-example"><span class="card-black">♠K</span> <span class="card-red">♥K ♦K</span> <span class="card-black">♣K</span> +1枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">4</td>
-          <td class="hand-name">フルハウス</td>
-          <td class="hand-desc">スリーカード + ワンペア</td>
-          <td class="hand-example"><span class="card-red">♥Q ♦Q</span> <span class="card-black">♣Q ♠7</span> <span class="card-red">♥7</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">5</td>
-          <td class="hand-name">フラッシュ</td>
-          <td class="hand-desc">同じスート5枚（連番でない）</td>
-          <td class="hand-example"><span class="card-red">♦A ♦J ♦8 ♦6 ♦2</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">6</td>
-          <td class="hand-name">ストレート</td>
-          <td class="hand-desc">5枚連番（スートばらばら）</td>
-          <td class="hand-example"><span class="card-black">♠10</span> <span class="card-red">♥9</span> <span class="card-black">♣8 ♠7</span> <span class="card-red">♦6</span></td>
-        </tr>
-        <tr>
-          <td class="rank-num">7</td>
-          <td class="hand-name">スリーカード</td>
-          <td class="hand-desc">同じ数字3枚</td>
-          <td class="hand-example"><span class="card-red">♥8 ♦8</span> <span class="card-black">♣8</span> +2枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">8</td>
-          <td class="hand-name">ツーペア</td>
-          <td class="hand-desc">ペアが2組</td>
-          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥A</span> <span class="card-black">♣5</span> <span class="card-red">♦5</span> +1枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">9</td>
-          <td class="hand-name">ワンペア</td>
-          <td class="hand-desc">同じ数字2枚</td>
-          <td class="hand-example"><span class="card-red">♥J</span> <span class="card-black">♣J</span> +3枚</td>
-        </tr>
-        <tr>
-          <td class="rank-num">10</td>
-          <td class="hand-name">ハイカード</td>
-          <td class="hand-desc">役なし（一番高いカードで勝負）</td>
-          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥J</span> <span class="card-black">♣8 ♠5</span> <span class="card-red">♦2</span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="hand-visual-list">
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">1</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ロイヤルフラッシュ</div>
+          <div class="hand-visual-desc">同じスートのA-K-Q-J-10</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">10</span><span class="card-suit">♥</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">2</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ストレートフラッシュ</div>
+          <div class="hand-visual-desc">同じスートで5枚連番</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">9</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">6</span><span class="card-suit">♠</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♠</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">3</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フォーカード</div>
+          <div class="hand-visual-desc">同じ数字4枚</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">K</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">K</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">K</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">4</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フルハウス</div>
+          <div class="hand-visual-desc">スリーカード + ワンペア</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">Q</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">Q</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">7</span><span class="card-suit">♥</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">5</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">フラッシュ</div>
+          <div class="hand-visual-desc">同じスート5枚（連番でない）</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">6</span><span class="card-suit">♦</span></div>
+            <div class="card-visual red"><span class="card-rank">2</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">6</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ストレート</div>
+          <div class="hand-visual-desc">5枚連番（スートばらばら）</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">10</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">9</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">7</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">6</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">7</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">スリーカード</div>
+          <div class="hand-visual-desc">同じ数字3枚</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♥</span></div>
+            <div class="card-visual red"><span class="card-rank">8</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">8</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ツーペア</div>
+          <div class="hand-visual-desc">ペアが2組</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">A</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">A</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♣</span></div>
+            <div class="card-visual red"><span class="card-rank">5</span><span class="card-suit">♦</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">9</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ワンペア</div>
+          <div class="hand-visual-desc">同じ数字2枚</div>
+          <div class="cards-row">
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">J</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+            <div class="card-visual black" style="opacity:0.5"><span class="card-rank">?</span><span class="card-suit"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hand-visual-item">
+        <div class="hand-visual-rank">10</div>
+        <div class="hand-visual-info">
+          <div class="hand-visual-name">ハイカード</div>
+          <div class="hand-visual-desc">役なし（一番高いカードで勝負）</div>
+          <div class="cards-row">
+            <div class="card-visual black"><span class="card-rank">A</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">J</span><span class="card-suit">♥</span></div>
+            <div class="card-visual black"><span class="card-rank">8</span><span class="card-suit">♣</span></div>
+            <div class="card-visual black"><span class="card-rank">5</span><span class="card-suit">♠</span></div>
+            <div class="card-visual red"><span class="card-rank">2</span><span class="card-suit">♦</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="tip-box">
       同じ役同士は数字の大きさで比較。数字の強さ: A &gt; K &gt; Q &gt; J &gt; 10 &gt; 9 &gt; ... &gt; 2<br>
@@ -231,9 +293,41 @@ h1 { font-size: 1.3em; font-weight: 700; }
     </table>
   </div>
 
+  <!-- プリフロップ ハンド強さ表 -->
+  <div class="content-section" id="tab-preflop">
+    <h2>📋 プリフロップ ハンド強さ表</h2>
+    <p>手札2枚の組み合わせを強さ別に色分け。s = スーテッド、o = オフスート。人数とポジションで変わる。</p>
+
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.8em; color:#aaa; margin-bottom:4px;">人数:</div>
+      <div class="preflop-selector" id="playerCountSelector">
+        <button class="active" data-players="9">9人</button>
+        <button data-players="6">6人</button>
+        <button data-players="5">5人</button>
+        <button data-players="4">4人</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:0.8em; color:#aaa; margin-bottom:4px;">ポジション:</div>
+      <div class="preflop-selector" id="positionSelector"></div>
+    </div>
+
+    <div class="tip-box">
+      🟢 緑 = プレミアム（AA-QQ, AKs, AKo, AQs。100%レイズ/3bet）｜ 🔵 青 = 基本レイズ ｜ 🟡 黄 = 状況次第（ミックス。BBのみ: コール）｜ ⬜ 白 = フォールド<br>
+      <span style="font-size:0.85em; color:#ccc;">※ BB以外のファーストインは「レイズかフォールド」。黄色 = 相手・状況次第で低頻度レイズ or フォールド。</span>
+    </div>
+
+    <div style="overflow-x:auto; margin:12px 0;" id="preflopGrid"></div>
+
+    <p style="font-size:0.8em; color:#aaa; margin-top:8px;">
+      ※ 対角線 = ポケットペア。左上 = スーテッド。右下 = オフスート。<br>
+      ※ 一般的なオープンレイズ/コールレンジの目安。相手のプレイスタイルや状況で調整が必要。
+    </p>
+  </div>
+
   <!-- ゲームの進め方 -->
   <div class="content-section" id="tab-flow">
-    <h2>🎯 ゲームの進め方（ディーラーの手順）</h2>
+    <h2>🎯 ディーラーの進め方</h2>
 
     <h3>準備</h3>
     <div class="flow-step">
@@ -341,49 +435,165 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <h2>🪑 ポジション（席順）</h2>
     <p>ディーラーボタンを基準に、各席に名前がついている。後ろの席ほど有利（情報が多い）。</p>
 
+    <h3>9人テーブル（フルリング）</h3>
     <table class="hand-table">
       <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
       <tbody>
         <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション。最も有利</td></tr>
-        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>Dの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
         <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
         <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション。最も不利</td></tr>
-        <tr><td><strong>MP</strong></td><td>ミドルポジション</td><td>中間の席</td></tr>
-        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>Dの右隣。2番目に有利</td></tr>
+        <tr><td><strong>UTG+1</strong></td><td>アンダーザガン+1</td><td>UTGの左。2番目にアクション</td></tr>
+        <tr><td><strong>UTG+2</strong></td><td>アンダーザガン+2</td><td>UTG+1の左</td></tr>
+        <tr><td><strong>LJ</strong></td><td>ロージャック</td><td>UTG+2の左。ミドルポジション寄り</td></tr>
+        <tr><td><strong>HJ</strong></td><td>ハイジャック</td><td>COの右隣。中盤〜後半の境目</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>BTNの右隣。2番目に有利</td></tr>
       </tbody>
     </table>
 
     <div class="tip-box">
-      6人テーブルの場合: UTG → MP → CO → BTN → SB → BB の順にアクション（プリフロップ時はUTGから、フロップ以降はSBから）。
+      9人テーブルのアクション順（プリフロップ）:<br>
+      UTG → UTG+1 → UTG+2 → LJ → HJ → CO → BTN → SB → BB<br><br>
+      フロップ以降: SB → BB → UTG → ... → CO → BTN
     </div>
+
+    <h3>6人テーブル（ショートハンド）</h3>
+    <table class="hand-table">
+      <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション。最も有利</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
+        <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション。最も不利</td></tr>
+        <tr><td><strong>HJ</strong></td><td>ハイジャック</td><td>中間の席</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>BTNの右隣。2番目に有利</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      6人テーブルのアクション順（プリフロップ）:<br>
+      UTG → HJ → CO → BTN → SB → BB
+    </div>
+
+    <h3>5人テーブル</h3>
+    <table class="hand-table">
+      <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
+        <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>BTNの右隣</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      5人テーブルのアクション順（プリフロップ）:<br>
+      UTG → CO → BTN → SB → BB
+    </div>
+
+    <h3>4人テーブル</h3>
+    <table class="hand-table">
+      <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
+        <tr><td><strong>UTG/CO</strong></td><td>アンダーザガン（＝カットオフ）</td><td>BBの左＆BTNの右。1人だけなので両方の役割</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      4人テーブルのアクション順（プリフロップ）:<br>
+      UTG/CO → BTN → SB → BB<br><br>
+      ※ 人数が少ないほどアクション回数が減るため、プレイするハンドの幅を広げる必要がある。
+    </div>
+
+    <h3>💡 ポジションの考え方</h3>
+    <ul class="term-list">
+      <li><strong>アーリーポジション（EP）</strong> — UTG, UTG+1, UTG+2。情報が少なく不利。強い手だけでプレイ</li>
+      <li><strong>ミドルポジション（MP）</strong> — LJ, HJ。中間。やや広い範囲でプレイ可</li>
+      <li><strong>レイトポジション（LP）</strong> — CO, BTN。他の人のアクションを見てから判断できる。最も有利</li>
+      <li><strong>ブラインド（SB/BB）</strong> — 強制ベット済み。フロップ以降は最初にアクションするので不利</li>
+    </ul>
   </div>
 
   <!-- 用語集 -->
   <div class="content-section" id="tab-terms">
     <h2>📖 用語集</h2>
+
+    <h3>🎮 基本アクション</h3>
+    <ul class="term-list">
+      <li><strong>チェック</strong> — ベットせずに次の人に回す（誰もベットしてない時のみ可）</li>
+      <li><strong>ベット</strong> — そのラウンドで最初にチップを賭ける</li>
+      <li><strong>コール</strong> — 前の人と同額をベット</li>
+      <li><strong>レイズ</strong> — 前の人より多くベット（最低額 = 前のレイズ幅と同額以上）</li>
+      <li><strong>リレイズ（3ベット）</strong> — レイズに対してさらにレイズすること</li>
+      <li><strong>4ベット / 5ベット</strong> — 3ベットに対するレイズ / さらにその上</li>
+      <li><strong>オールイン</strong> — 持ちチップ全額をベット</li>
+      <li><strong>フォールド</strong> — 手札を捨てて降りる（そのハンドは終了）</li>
+      <li><strong>リンプ</strong> — プリフロップでレイズせずBBと同額だけ入れること（一般に弱いプレイとされる）</li>
+    </ul>
+
+    <h3>🃏 カード・役関連</h3>
     <ul class="term-list">
       <li><strong>ホールカード</strong> — 各プレイヤーに配られる裏向きの手札2枚</li>
-      <li><strong>コミュニティカード</strong> — テーブル中央に表向きで出る共有カード（最大5枚）</li>
+      <li><strong>コミュニティカード（ボード）</strong> — テーブル中央に表向きで出る共有カード（最大5枚）</li>
+      <li><strong>スート</strong> — カードのマーク（♠♥♦♣）。ポーカーでは強さに差はない</li>
+      <li><strong>スーテッド（s）</strong> — 手札2枚が同じスート（例: A♥K♥）。フラッシュを狙える</li>
+      <li><strong>オフスート（o）</strong> — 手札2枚が違うスート（例: A♥K♠）</li>
+      <li><strong>ポケットペア</strong> — 手札2枚が同じ数字（例: QQ、77）</li>
+      <li><strong>コネクター</strong> — 連続した数字の手札（例: 98, JT）。ストレートを狙える</li>
+      <li><strong>ナッツ</strong> — その場面で最強の手（ボードを見てこれ以上の役がない）</li>
+      <li><strong>セット</strong> — ポケットペア + ボードの1枚でスリーカード</li>
+      <li><strong>トリップス</strong> — ボードのペア + 手札の1枚でスリーカード</li>
+      <li><strong>キッカー</strong> — 同じ役同士の比較で使われる、役に含まれない最高カード</li>
+      <li><strong>バーンカード</strong> — コミュニティカード配布前に1枚捨てるカード（イカサマ防止）</li>
+    </ul>
+
+    <h3>💰 ベッティング構造</h3>
+    <ul class="term-list">
       <li><strong>ポット</strong> — 全員のベットが集まった賞金プール</li>
       <li><strong>ブラインド</strong> — ゲーム開始時の強制ベット（SBとBB）</li>
       <li><strong>アンティ</strong> — 全員が出す参加費（トーナメントで使用）</li>
-      <li><strong>チェック</strong> — ベットせずに次の人に回す（誰もベットしてない時のみ可）</li>
-      <li><strong>コール</strong> — 前の人と同額をベット</li>
-      <li><strong>レイズ</strong> — 前の人より多くベット（最低額 = 前のレイズ幅と同額以上）</li>
-      <li><strong>オールイン</strong> — 持ちチップ全額をベット</li>
-      <li><strong>フォールド</strong> — 手札を捨てて降りる（そのハンドは終了）</li>
-      <li><strong>バーンカード</strong> — コミュニティカード配布前に1枚捨てるカード</li>
-      <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
-      <li><strong>ナッツ</strong> — その場面で最強の手（例: ボードを見てこれ以上の役がない）</li>
+      <li><strong>ポットリミット</strong> — ベット/レイズの上限がポットサイズまでのルール</li>
+      <li><strong>ノーリミット</strong> — ベット額に上限なし（テキサスホールデムの標準）</li>
+      <li><strong>サイドポット</strong> — オールインした人が参加できるポットと、それ以降のベットで作られるポットが分かれる</li>
+      <li><strong>レーキ</strong> — カジノが徴収する手数料（ポットの一部）</li>
+    </ul>
+
+    <h3>📐 戦略用語</h3>
+    <ul class="term-list">
+      <li><strong>レンジ</strong> — あるポジション/状況で参加するハンドの範囲</li>
+      <li><strong>オープンレイズ</strong> — プリフロップで最初にレイズすること（推奨される入り方）</li>
+      <li><strong>Cベット（コンティニュエーションベット）</strong> — プリフロップのレイザーがフロップでもベットすること</li>
+      <li><strong>ドンクベット</strong> — 前のラウンドのレイザーより先にベットすること（通常は非推奨）</li>
+      <li><strong>バリューベット</strong> — 強い手で相手にコールしてもらうためのベット</li>
+      <li><strong>ブラフ</strong> — 弱い手で強気にベットして相手を降ろすテクニック</li>
+      <li><strong>セミブラフ</strong> — 今は弱いが改善の可能性がある手（ドロー）でのブラフ</li>
       <li><strong>アウツ</strong> — 自分の手を改善してくれる残りカードの枚数</li>
-      <li><strong>ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>オッズ / ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>エクイティ</strong> — 現在の手がショーダウンまで行った場合に勝つ確率</li>
+      <li><strong>EV（期待値）</strong> — ある行動の平均的な利益/損失</li>
+      <li><strong>ドロー</strong> — あと1枚来れば役が完成する状態（例: フラッシュドロー = あと1枚で同スート5枚）</li>
+      <li><strong>テル</strong> — 相手の手の強さを示す無意識のサイン（表情、仕草など）</li>
       <li><strong>ティルト</strong> — 感情的になってプレイが雑になること（気をつけよう！）</li>
+      <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
+    </ul>
+
+    <h3>🎯 ゲーム形式</h3>
+    <ul class="term-list">
+      <li><strong>キャッシュゲーム（リングゲーム）</strong> — いつでも参加/退席可。チップ = リアルマネー</li>
+      <li><strong>トーナメント</strong> — 全員同額でスタート。チップが無くなったら脱落。最後の1人が優勝</li>
+      <li><strong>シットアンドゴー（SNG）</strong> — 人数が揃ったら始まるミニトーナメント</li>
+      <li><strong>フリーロール</strong> — 参加費無料のトーナメント</li>
+      <li><strong>ヘッズアップ</strong> — 1対1の対戦</li>
     </ul>
   </div>
 </div>
 
+<script src="../js/texas-holdem-charts.js"></script>
 <script>
-// タブ切り替え
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -392,6 +602,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
   });
 });
+initPreflopUI();
 </script>
 </body>
 </html>
