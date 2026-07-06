@@ -261,6 +261,9 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | TSJ260603 | 作業中 | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
 | TSJ260618 | 作業中 | お手伝いリスト機能（チェックリスト、定型業務テンプレート、自動追加cron、ひらがなモード、完了→ポイント承認フロー） |
 
+### マージルール
+- mainへのマージは必ず `git merge --no-ff` を使う（fast-forward禁止、マージコミットを残す）
+
 ## 既知の注意点
 
 - 全画面の←ボタンはhistory.back()（一つ前の画面に戻る）、🏠は右上でホーム（index.html）に直帰
