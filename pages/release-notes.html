@@ -36,6 +36,18 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.23.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算機能を追加（💰）: 固定費マスタ管理、月次精算の自動計算、半年ごとの差額精算、一時立替金管理、基準額調整提案</li>
+    <li><span class="tag tag-feat">feat</span> Supabase RPC（Transaction）で精算確定の原子性を保証</li>
+    <li><span class="tag tag-feat">feat</span> 精算メモ機能（PayPay/現金/銀行振込等の記録）</li>
+    <li><span class="tag tag-feat">feat</span> TOP画面下部に💰精算アイコンを追加</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v270: 精算関連ファイルのキャッシュ追加</li>
+    <li><span class="tag tag-infra">infra</span> プロパティベーステスト17件 + 統合テスト追加（計55テスト）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.22.0</span><span class="date">2026/07/06</span></div>
   <ul>
     <li><span class="tag tag-infra">infra</span> TOP画面: インラインCSS 200行を css/index.css に外部化</li>

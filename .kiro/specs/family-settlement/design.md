@@ -14,6 +14,29 @@
 - **differenceカラム**: monthly_expensesテーブルの `difference` は Generated Column として定義する。`actual_amount IS NULL` のときは 0（差額なし）、入力済みのときは `actual_amount - planned_amount` を返す。手動更新不要。
 - **Transaction**: 精算確定（月次・差額とも）は複数テーブル更新を伴うため、Supabase RPC（Postgres Function）でトランザクション化する。
 
+## State Management Policy（状態管理方針）
+
+状態の分散を防ぐため、以下の方針を定める:
+
+| 精算種別 | 「精算済み」の判定基準 | 正（Single Source of Truth） |
+|---------|----------------------|---------------------------|
+| 月次精算 | settlement_history に該当year_monthのtype=monthlyレコードが存在する | settlement_history |
+| 差額精算 | monthly_expenses.difference_settled = true | monthly_expenses |
+| 一時立替 | temporary_expenses.settled = true | temporary_expenses |
+
+- `monthly_expenses` には月次精算済みフラグを **持たせない**。settlement_historyの存在で判定する（導出可能な値は保存しない原則）。
+- 「今月は精算済みか？」→ `SELECT EXISTS(settlement_history WHERE target_period = '2026-07' AND settlement_type = 'monthly')`
+- Expense_Masterのbase_amount変更は **既に生成済みのMonthly_Expenseには反映しない**。変更は翌月以降の新規生成分のみに適用。今月分が既に生成済みの場合も更新しない。
+
+## Expense_Master変更時の挙動
+
+| タイミング | Monthly_Expense生成済み？ | 動作 |
+|-----------|------------------------|------|
+| base_amount変更 | YES（今月分あり） | 既存レコードは不変。次月以降に新base_amountで生成 |
+| base_amount変更 | NO（今月分なし） | 次回画面表示時に新base_amountで生成 |
+| payer変更 | YES | 既存レコードは不変。次月以降に新payerで生成 |
+| enabled→false | YES | 既存レコードは残る。次月以降は生成されない |
+
 ## Architecture
 
 ```mermaid
@@ -114,21 +137,29 @@ DECLARE
   v_count INTEGER;
   v_expected INTEGER;
 BEGIN
+  -- 重複実行チェック
+  IF EXISTS (
+    SELECT 1 FROM settlement_history
+    WHERE target_period = p_year_month AND settlement_type = 'monthly'
+  ) THEN
+    RAISE EXCEPTION 'Already settled: monthly settlement for % already exists', p_year_month;
+  END IF;
+
   -- 1. settlement_history を作成
-  INSERT INTO settlement_history (year_month, payer_from, payer_to, amount, settlement_type, status)
+  INSERT INTO settlement_history (target_period, payer_from, payer_to, amount, settlement_type, status)
   VALUES (p_year_month, p_payer_from, p_payer_to, p_amount, 'monthly', 'pending')
   RETURNING id INTO v_settlement_id;
   
-  -- 2. 対象の temporary_expenses を精算済みに（件数チェック付き）
-  v_expected := array_length(p_temporary_expense_ids, 1);
-  IF v_expected IS NOT NULL AND v_expected > 0 THEN
+  -- 2. 対象の temporary_expenses を精算済みに（指定IDがある場合のみ件数チェック）
+  v_expected := COALESCE(array_length(p_temporary_expense_ids, 1), 0);
+  IF v_expected > 0 THEN
     UPDATE temporary_expenses
     SET settled = true
     WHERE id = ANY(p_temporary_expense_ids) AND settled = false;
     
     GET DIAGNOSTICS v_count = ROW_COUNT;
     IF v_count != v_expected THEN
-      RAISE EXCEPTION 'temporary_expenses update mismatch: expected %, got %', v_expected, v_count;
+      RAISE EXCEPTION 'temporary_expenses update mismatch: expected %, got % (some may already be settled)', v_expected, v_count;
     END IF;
   END IF;
   
@@ -149,23 +180,33 @@ DECLARE
   v_settlement_id UUID;
   v_count INTEGER;
   v_expected INTEGER;
+  v_target TEXT;
 BEGIN
+  v_target := p_year || '-' || CASE WHEN p_period = 'first_half' THEN 'H1' ELSE 'H2' END;
+
+  -- 重複実行チェック
+  IF EXISTS (
+    SELECT 1 FROM settlement_history
+    WHERE target_period = v_target AND settlement_type = 'difference'
+  ) THEN
+    RAISE EXCEPTION 'Already settled: difference settlement for % already exists', v_target;
+  END IF;
+
   -- 1. settlement_history を作成
   INSERT INTO settlement_history (target_period, payer_from, payer_to, amount, settlement_type, settlement_period, status)
-  VALUES (p_year || '-' || CASE WHEN p_period = 'first_half' THEN 'H1' ELSE 'H2' END,
-          p_payer_from, p_payer_to, p_amount, 'difference', p_period, 'pending')
+  VALUES (v_target, p_payer_from, p_payer_to, p_amount, 'difference', p_period, 'pending')
   RETURNING id INTO v_settlement_id;
   
-  -- 2. 対象の monthly_expenses を差額精算済みに（件数チェック付き）
-  v_expected := array_length(p_monthly_expense_ids, 1);
-  IF v_expected IS NOT NULL AND v_expected > 0 THEN
+  -- 2. 対象の monthly_expenses を差額精算済みに（件数チェック）
+  v_expected := COALESCE(array_length(p_monthly_expense_ids, 1), 0);
+  IF v_expected > 0 THEN
     UPDATE monthly_expenses
     SET difference_settled = true
     WHERE id = ANY(p_monthly_expense_ids) AND difference_settled = false;
     
     GET DIAGNOSTICS v_count = ROW_COUNT;
     IF v_count != v_expected THEN
-      RAISE EXCEPTION 'monthly_expenses update mismatch: expected %, got %', v_expected, v_count;
+      RAISE EXCEPTION 'monthly_expenses update mismatch: expected %, got % (some may already be settled)', v_expected, v_count;
     END IF;
   END IF;
   
@@ -173,6 +214,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+### target_period フォーマット
+
+| settlement_type | target_period例 | 説明 |
+|----------------|----------------|------|
+| monthly | `2026-07` | YYYY-MM形式 |
+| difference | `2026-H1` | YYYY-H1 or YYYY-H2 |
 
 ### settlement-utils.js（純粋関数モジュール）
 
@@ -268,6 +316,20 @@ function getPeriodMonths(year, period)
  * @returns {boolean}
  */
 function shouldCreateSettlement(amount)
+
+/**
+ * Temporary_Expenseの編集可否判定
+ * @param {{settled: boolean}} expense
+ * @returns {boolean} settled=falseのときのみtrue
+ */
+function canEditTemporaryExpense(expense)
+
+/**
+ * Temporary_Expenseの削除可否判定
+ * @param {{settled: boolean}} expense
+ * @returns {boolean} settled=falseのときのみtrue
+ */
+function canDeleteTemporaryExpense(expense)
 </javascript>
 ```
 
@@ -539,9 +601,10 @@ graph LR
 
 ### Property 11: 精算済みTemporary_Expenseの不変性
 
-*For any* settled=trueのTemporary_Expenseにおいて、編集・削除操作は拒否される（settled=falseの場合のみ許可）。
+*For any* settled=trueのTemporary_Expenseにおいて、canEditTemporaryExpense(expense)およびcanDeleteTemporaryExpense(expense)はfalseを返す（UI層でのガード）。DB層の制約はRPC側で保証する。
 
 **Validates: Requirements 7.8, 7.9**
+**Test Type: ユーティリティ関数テスト（canEdit/canDelete判定ロジック）**
 
 ### Property 12: Transfer総額の収支均衡
 
@@ -573,6 +636,12 @@ graph LR
 
 **Validates: Design Principle（テスタビリティ）**
 
+### Property 17: calculateSettlementは入力順序に依存しない（順序不変性）
+
+*For any* monthlyExpenses配列とtemporaryExpenses配列において、要素の順番をランダムにシャッフルしてもcalculateSettlementの結果（payerTotals, householdTotal, fairShare, transfers）は同一である。
+
+**Validates: Requirements 3.1, 3.2, 3.3, 3.4**
+
 ## Error Handling
 
 | エラー状況 | 処理 |
@@ -583,6 +652,21 @@ graph LR
 | Monthly_Expense重複生成 | INSERT ... ON CONFLICT (year_month, expense_master_id) DO NOTHING でサイレント無視（同時アクセス対策） |
 | 精算額0での精算実行試行 | ボタン非活性 + メッセージ「精算額が0円のため精算不要です」 |
 | 精算済み後の金額変更試行 | UIで入力欄を非活性化 + メッセージ「精算済みのため変更できません」 |
+| RPC Transaction失敗 | 全テーブル更新がROLLBACK、UIにエラーToast表示、ボタン再活性化 |
+| ネットワーク/Supabaseエラー | Toast通知「通信エラーが発生しました」、リトライボタン表示 |
+
+### Monthly_Expense重複防御の三層構造
+
+| 層 | 役割 | 実装 |
+|---|------|------|
+| JS（generateMonthlyExpenses） | 画面表示時のフィルタリング | existingRecordsと比較し新規分のみ返す |
+| SQL（ON CONFLICT DO NOTHING） | 同時アクセス対策 | INSERTが衝突してもエラーにならない |
+| DB（UNIQUE INDEX） | 最終防衛 | データ整合性の保証 |
+
+### calculateDifference() と Generated Column の二重実装について
+
+- **DB（Generated Column）**: 永続化されたdifference値。クエリで直接利用可能
+- **JS（calculateDifference）**: UI上でのリアルタイム計算用。actual_amount入力時にDBに保存する前に即時表示する目的で使用。DBとの整合性はGenerated Columnが保証するため、JS側は表示のみに使う
 
 ## Testing Strategy
 
