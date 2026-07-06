@@ -192,20 +192,56 @@ async function loadExpenseMasters() {
     if (!masters || masters.length === 0) {
       html += '<div class="empty-state"><div class="emoji">📋</div><div>固定費マスタが登録されていません</div></div>';
     } else {
-      for (const m of masters) {
-        const cycleLabel = m.settlement_cycle === 'monthly' ? '月次' : '半年';
-        const enabledClass = m.enabled ? '' : 'opacity:0.5;';
-        html += `<div class="card" style="${enabledClass}">`;
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;">`;
-        html += `<div>`;
-        html += `<div style="font-weight:600;font-size:1.05em;">${escapeHtml(m.name)}</div>`;
-        html += `<div style="color:#666;margin-top:4px;">${escapeHtml(m.payer)} / ${formatAmount(m.base_amount)} / ${cycleLabel}</div>`;
-        html += `</div>`;
-        html += `<div style="display:flex;gap:8px;align-items:center;">`;
-        html += `<button class="btn-secondary" style="padding:6px 12px;font-size:0.85em;" onclick="showExpenseMasterModal('${m.id}')">編集</button>`;
-        html += `<label style="cursor:pointer;"><input type="checkbox" ${m.enabled ? 'checked' : ''} onchange="toggleExpenseMasterEnabled('${m.id}', this.checked)"> 有効</label>`;
-        html += `</div></div></div>`;
+      const monthlyMasters = masters.filter(m => m.settlement_cycle === 'monthly');
+      const halfYearMasters = masters.filter(m => m.settlement_cycle === 'half_year');
+
+      // 月次セクション
+      html += `<details class="card" style="padding:0;">`;
+      html += `<summary style="padding:16px 20px;cursor:pointer;font-weight:600;font-size:1.05em;list-style:none;display:flex;justify-content:space-between;align-items:center;">`;
+      html += `<span>💴 月次（${monthlyMasters.length}件）</span><span style="font-size:0.8em;color:#888;">タップで開閉</span>`;
+      html += `</summary>`;
+      html += `<div style="padding:0 20px 16px;">`;
+      if (monthlyMasters.length === 0) {
+        html += '<div style="color:#888;text-align:center;padding:12px;">月次項目はありません</div>';
+      } else {
+        for (const m of monthlyMasters) {
+          const enabledClass = m.enabled ? '' : 'opacity:0.5;';
+          html += `<div style="${enabledClass}border-bottom:1px solid #f0f0f0;padding:12px 0;display:flex;justify-content:space-between;align-items:center;">`;
+          html += `<div>`;
+          html += `<div style="font-weight:600;">${escapeHtml(m.name)}</div>`;
+          html += `<div style="color:#666;margin-top:2px;font-size:0.9em;">${escapeHtml(m.payer)} / ${formatAmount(m.base_amount)}</div>`;
+          html += `</div>`;
+          html += `<div style="display:flex;gap:8px;align-items:center;">`;
+          html += `<button class="btn-secondary" style="padding:4px 10px;font-size:0.8em;" onclick="showExpenseMasterModal('${m.id}')">編集</button>`;
+          html += `<label style="cursor:pointer;font-size:0.85em;"><input type="checkbox" ${m.enabled ? 'checked' : ''} onchange="toggleExpenseMasterEnabled('${m.id}', this.checked)"> 有効</label>`;
+          html += `</div></div>`;
+        }
       }
+      html += `</div></details>`;
+
+      // 半年セクション
+      html += `<details class="card" style="padding:0;margin-top:12px;">`;
+      html += `<summary style="padding:16px 20px;cursor:pointer;font-weight:600;font-size:1.05em;list-style:none;display:flex;justify-content:space-between;align-items:center;">`;
+      html += `<span>📈 半年（${halfYearMasters.length}件）</span><span style="font-size:0.8em;color:#888;">タップで開閉</span>`;
+      html += `</summary>`;
+      html += `<div style="padding:0 20px 16px;">`;
+      if (halfYearMasters.length === 0) {
+        html += '<div style="color:#888;text-align:center;padding:12px;">半年項目はありません</div>';
+      } else {
+        for (const m of halfYearMasters) {
+          const enabledClass = m.enabled ? '' : 'opacity:0.5;';
+          html += `<div style="${enabledClass}border-bottom:1px solid #f0f0f0;padding:12px 0;display:flex;justify-content:space-between;align-items:center;">`;
+          html += `<div>`;
+          html += `<div style="font-weight:600;">${escapeHtml(m.name)}</div>`;
+          html += `<div style="color:#666;margin-top:2px;font-size:0.9em;">${escapeHtml(m.payer)} / ${formatAmount(m.base_amount)}</div>`;
+          html += `</div>`;
+          html += `<div style="display:flex;gap:8px;align-items:center;">`;
+          html += `<button class="btn-secondary" style="padding:4px 10px;font-size:0.8em;" onclick="showExpenseMasterModal('${m.id}')">編集</button>`;
+          html += `<label style="cursor:pointer;font-size:0.85em;"><input type="checkbox" ${m.enabled ? 'checked' : ''} onchange="toggleExpenseMasterEnabled('${m.id}', this.checked)"> 有効</label>`;
+          html += `</div></div>`;
+        }
+      }
+      html += `</div></details>`;
     }
 
     container.innerHTML = html;
@@ -251,13 +287,14 @@ async function showExpenseMasterModal(id) {
         <span style="font-weight:600;">基準額（円）</span>
         <input id="master-amount" type="number" min="0" value="${existing ? existing.base_amount : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
-      <label style="display:block;margin-bottom:16px;">
+      <div style="display:block;margin-bottom:16px;">
         <span style="font-weight:600;">精算周期</span>
-        <select id="master-cycle" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
-          <option value="monthly" ${existing && existing.settlement_cycle === 'monthly' ? 'selected' : ''}>月次 (monthly)</option>
-          <option value="half_year" ${existing && existing.settlement_cycle === 'half_year' ? 'selected' : ''}>半年 (half_year)</option>
-        </select>
-      </label>
+        <input id="master-cycle" type="hidden" value="${existing ? existing.settlement_cycle : 'monthly'}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="cycle-btn" data-value="monthly" style="flex:1;padding:10px;border:2px solid ${!existing || existing.settlement_cycle === 'monthly' ? '#1565c0' : '#ddd'};border-radius:8px;background:${!existing || existing.settlement_cycle === 'monthly' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">月次</button>
+          <button type="button" class="cycle-btn" data-value="half_year" style="flex:1;padding:10px;border:2px solid ${existing && existing.settlement_cycle === 'half_year' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.settlement_cycle === 'half_year' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">半年</button>
+        </div>
+      </div>
       <div style="display:flex;gap:12px;">
         <button class="btn-primary" style="flex:1;" onclick="saveExpenseMaster(${existing ? "'" + existing.id + "'" : 'null'})">${existing ? '更新' : '追加'}</button>
         <button class="btn-secondary" style="flex:1;" onclick="closeMasterModal()">キャンセル</button>
@@ -271,6 +308,17 @@ async function showExpenseMasterModal(id) {
       const target = document.getElementById(btn.dataset.target);
       target.value = btn.dataset.value;
       btn.parentElement.querySelectorAll('.payer-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
+  modal.querySelectorAll('.cycle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('master-cycle').value = btn.dataset.value;
+      modal.querySelectorAll('.cycle-btn').forEach(b => {
         b.style.borderColor = '#ddd';
         b.style.background = '#fff';
       });
@@ -338,6 +386,8 @@ async function toggleExpenseMasterEnabled(id, enabled) {
 
 // ========== Monthly Settlement ==========
 async function loadMonthlySettlement(yearMonth) {
+  // 開始月より前には遡らせない
+  if (yearMonth < SETTLEMENT_START_MONTH) yearMonth = SETTLEMENT_START_MONTH;
   currentMonthlyYearMonth = yearMonth;
   const container = document.getElementById('tab-monthly');
   container.innerHTML = '<div class="loading">読み込み中...</div>';
@@ -401,7 +451,8 @@ async function loadMonthlySettlement(yearMonth) {
 
     // Year-month selector
     html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">';
-    html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadMonthlySettlement(prevMonth('${yearMonth}'))">◀</button>`;
+    const prevDisabled = yearMonth <= SETTLEMENT_START_MONTH ? 'disabled style="padding:8px 12px;opacity:0.3;cursor:not-allowed;"' : 'style="padding:8px 12px;"';
+    html += `<button class="btn-secondary" ${prevDisabled} onclick="loadMonthlySettlement(prevMonth('${yearMonth}'))">◀</button>`;
     html += `<h3 style="margin:0;">💴 ${yearMonth} の精算</h3>`;
     html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadMonthlySettlement(nextMonth('${yearMonth}'))">▶</button>`;
     html += '</div>';
@@ -486,6 +537,19 @@ async function loadMonthlySettlement(yearMonth) {
         html += `<button class="btn-primary" disabled style="opacity:0.5;cursor:not-allowed;">精算額が0円のため精算不要です</button>`;
       }
       html += '</div>';
+    } else if (unsettledTemp.length > 0) {
+      // 精算確定後に追加された未精算立替がある
+      const additionalResult = calculateSettlement([], unsettledTemp, ['めぐみ', '涼介']);
+      if (additionalResult.transfers.length > 0 && additionalResult.transfers[0].amount > 0) {
+        const at = additionalResult.transfers[0];
+        html += '<div class="card" style="background:#fff3e0;border:1px solid #ffcc80;">';
+        html += `<div style="color:#e65100;font-weight:600;">⚠️ 精算後に追加された立替があります</div>`;
+        html += `<div style="margin-top:8px;font-size:1.05em;font-weight:600;">${escapeHtml(at.from)} → ${escapeHtml(at.to)}: ${formatAmount(at.amount)}</div>`;
+        html += `<div style="margin-top:12px;text-align:center;">`;
+        html += `<button class="btn-primary" id="btn-execute-monthly" onclick="executeAdditionalSettlement('${yearMonth}')">追加精算を確定する</button>`;
+        html += `</div>`;
+        html += '</div>';
+      }
     }
 
     // Temporary expenses section
@@ -579,6 +643,49 @@ async function executeMonthlySettlement(yearMonth) {
   }
 }
 
+async function executeAdditionalSettlement(yearMonth) {
+  if (!confirm('追加精算を確定しますか？')) return;
+
+  const btn = document.getElementById('btn-execute-monthly');
+  if (btn) btn.disabled = true;
+
+  try {
+    const { data: tempExpenses } = await client
+      .from('temporary_expenses')
+      .select('id, payer, amount, beneficiaries, settled')
+      .eq('year_month', yearMonth)
+      .eq('settled', false);
+
+    const result = calculateSettlement([], tempExpenses || [], ['めぐみ', '涼介']);
+
+    if (result.transfers.length === 0 || !shouldCreateSettlement(result.transfers[0].amount)) {
+      showToast('追加精算額が0円のため精算不要です');
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    const transfer = result.transfers[0];
+    const tempIds = (tempExpenses || []).map(t => t.id);
+
+    const { error } = await client.rpc('execute_monthly_settlement', {
+      p_year_month: yearMonth,
+      p_payer_from: transfer.from,
+      p_payer_to: transfer.to,
+      p_amount: transfer.amount,
+      p_temporary_expense_ids: tempIds
+    });
+
+    if (error) throw error;
+
+    showToast('追加精算を確定しました');
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Execute additional settlement error:', err);
+    if (btn) btn.disabled = false;
+    showToast('追加精算確定に失敗しました');
+  }
+}
+
 async function markSettlementPaid(id) {
   try {
     const { error } = await client
@@ -618,7 +725,11 @@ async function editSettlementMemo(id) {
   }
 }
 
+// 精算機能の開始年月（これ以前には遡れない）
+const SETTLEMENT_START_MONTH = '2026-06';
+
 function prevMonth(ym) {
+  if (ym <= SETTLEMENT_START_MONTH) return SETTLEMENT_START_MONTH;
   const [y, m] = ym.split('-').map(Number);
   const d = new Date(y, m - 2, 1);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -643,7 +754,7 @@ function renderTemporaryExpensesList(tempExpenses, isMonthSettled) {
     html += `<div style="font-weight:600;">${escapeHtml(t.title)} ${settledBadge}</div>`;
     html += `<div style="color:#666;font-size:0.9em;">${escapeHtml(t.payer)}が${t.beneficiaries && t.beneficiaries.length === 1 ? escapeHtml(t.beneficiaries[0]) + 'の分' : 'みんなの分'}を立替 / ${formatAmount(t.amount)}${t.note ? ' / ' + escapeHtml(t.note) : ''}</div>`;
     html += `</div>`;
-    if (!t.settled && !isMonthSettled) {
+    if (!t.settled) {
       html += `<div style="display:flex;gap:6px;">`;
       html += `<button class="btn-secondary" style="padding:4px 10px;font-size:0.8em;" onclick="showTemporaryExpenseModal('${t.id}')">編集</button>`;
       html += `<button class="btn-secondary" style="padding:4px 10px;font-size:0.8em;color:#d32f2f;border-color:#d32f2f;" onclick="deleteTemporaryExpense('${t.id}')">削除</button>`;
