@@ -65,7 +65,7 @@ fileMatchPattern: "*settlement*"
 - Expense_Master変更は既生成のMonthly_Expenseに影響しない
 - 「月次精算済み」の判定: settlement_historyにレコードがあるかで導出
 - 精算確定はSupabase RPC（Transaction + ROW_COUNTチェック）
-- Monthly_Expense生成: INSERT ON CONFLICT DO NOTHING
+- Monthly_Expense生成: 手動ボタン「この月の精算データを作成する」で明示的に作成（INSERT ON CONFLICT DO NOTHING）
 
 ## RPC Functions
 
