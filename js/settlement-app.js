@@ -85,8 +85,7 @@ async function loadDashboard() {
       .eq('settlement_type', 'monthly')
       .maybeSingle();
 
-    // Calculate settlement
-    const result = calculateSettlement(monthlyExpenses || [], tempExpenses || []);
+    const result = calculateSettlement(monthlyExpenses || [], tempExpenses || [], ['めぐみ', '涼介']);
 
     // 2. Pending (unpaid) count across all months
     const { data: pendingItems, error: piErr } = await client
@@ -395,7 +394,7 @@ async function loadMonthlySettlement(yearMonth) {
     const unsettledTemp = (tempExpenses || []).filter(t => !t.settled);
 
     // 7. Calculate settlement
-    const result = calculateSettlement(monthlyExpenses || [], unsettledTemp);
+    const result = calculateSettlement(monthlyExpenses || [], unsettledTemp, ['めぐみ', '涼介']);
 
     // Render
     let html = '';
@@ -546,7 +545,7 @@ async function executeMonthlySettlement(yearMonth) {
       .eq('year_month', yearMonth)
       .eq('settled', false);
 
-    const result = calculateSettlement(monthlyExpenses || [], tempExpenses || []);
+    const result = calculateSettlement(monthlyExpenses || [], tempExpenses || [], ['めぐみ', '涼介']);
 
     if (result.transfers.length === 0 || !shouldCreateSettlement(result.transfers[0].amount)) {
       showToast('精算額が0円のため精算不要です');

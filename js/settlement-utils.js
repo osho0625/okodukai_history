@@ -74,9 +74,9 @@ function generateMonthlyExpenses(enabledMasters, existingRecords, yearMonth) {
  * @param {Array} temporaryExpenses - 当月の未精算Temporary_Expense配列 [{payer, amount, beneficiaries?}]
  * @returns {{payerTotals: Object, payerDiffs: Object, householdTotal: number, fairShare: number, transfers: Array}}
  */
-function calculateSettlement(monthlyExpenses, temporaryExpenses) {
-  // まずpayer全員を特定
-  const allPayerSet = new Set();
+function calculateSettlement(monthlyExpenses, temporaryExpenses, payers) {
+  // 2人前提: payersが渡された場合はそれを使う、なければデータから推定
+  const allPayerSet = new Set(payers || []);
   for (const exp of monthlyExpenses) allPayerSet.add(exp.payer);
   for (const temp of temporaryExpenses) allPayerSet.add(temp.payer);
   const allPayerNames = [...allPayerSet];

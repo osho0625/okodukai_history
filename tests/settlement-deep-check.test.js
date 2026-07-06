@@ -200,11 +200,13 @@ describe('Bug: calculateSettlement fairShare is hardcoded /2', () => {
     const result = calculateSettlement(monthly, []);
     // 18000 / 2 = 9000（3人いても/2のまま）
     expect(result.fairShare).toBe(9000);
-    // transfers: sorted by total asc = C(3000), B(5000), A(10000)
-    // payerFrom=C, payerTo=A（sortedの最初と2番目だけ使用）
-    // amount = 9000 - 3000 = 6000
+    // 新ロジック: 固定費は全payer按分で負担計算
+    // payerOwes: 各人 floor(10000/3)+floor(5000/3)+floor(3000/3)=3333+1666+1000=5999
+    // net: A=10000-5999=4001, B=5000-5999=-999, C=3000-5999=-2999
+    // sorted by net: C(-2999), B(-999), A(4001)
+    // transfer: debtor=C, amount=abs(min(-2999,0))=2999
     // NOTE: これは3人の場合に不正な結果になる
     // → 2人前提のため許容。設計書に明記済み。
-    expect(result.transfers[0].amount).toBe(6000);
+    expect(result.transfers[0].amount).toBe(2999);
   });
 });
