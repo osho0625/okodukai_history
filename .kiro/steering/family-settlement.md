@@ -41,7 +41,8 @@ fileMatchPattern: "*settlement*"
 - RLS無効
 
 ### temporary_expenses（一時的な立替金）
-- id, title, payer, amount, year_month, note, settled, created_at
+- id, title, payer, amount, beneficiaries (TEXT[], default ['めぐみ','涼介']), year_month, note, settled, created_at
+- beneficiaries: 受益者（誰の分を立て替えたか）。両方=折半、片方のみ=全額その人が返す
 - RLS無効
 
 ## 画面構成（タブ）
