@@ -36,6 +36,35 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.26.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 精算確定後の追加立替に対応（追加精算ボタン表示、同月複数回精算可）</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 固定費マスタを月次/半年でアコーディオン分離表示</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 精算周期をボタン選択式に変更</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 年月ナビゲーションに下限設定（2026-06〜）</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: タブUIをスマホ対応（2行チップ表示）</li>
+    <li><span class="tag tag-infra">infra</span> settlement_history UNIQUE制約削除（同月複数精算対応）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.25.1</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 家庭内精算: 片方のみ固定費登録時に精算額が0円になるバグ修正（payers引数で常に両名を含める）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.25.0</span><span class="date">2026/07/06</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: タブUIをスマホ対応（非アクティブタブはアイコンのみ表示）</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 支払担当者をボタン選択式に変更（めぐみ/涼介）</li>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 一時立替に「誰の分？」受益者選択を追加（片方のみ=全額返済、両方=折半）</li>
+    <li><span class="tag tag-infra">infra</span> temporary_expensesテーブルにbeneficiariesカラム追加</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.24.0</span><span class="date">2026/07/06</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 🍳レシピ機能: カテゴリをボタン選択UIに変更、＋ボタンでカテゴリ追加可能に</li>

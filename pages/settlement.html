@@ -21,12 +21,13 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 /* タブバー */
 .tab-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   margin-bottom: 20px;
   border-bottom: 2px solid #e0e0e0;
 }
 .tab-bar button {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   padding: 12px 8px;
   border: none;
@@ -144,9 +145,23 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 @media (max-width: 480px) {
   body { padding: 12px; padding-bottom: 80px; }
   h1 { font-size: 1.2em; }
-  .tab-bar button { font-size: 0.85em; padding: 10px 4px; }
-  .tab-bar button .tab-label { display: none; }
-  .tab-bar button.active .tab-label { display: inline; }
+  .tab-bar {
+    border-bottom: none;
+    gap: 4px;
+  }
+  .tab-bar button {
+    flex: 1 1 30%;
+    font-size: 0.85em;
+    padding: 10px 6px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .tab-bar button.active {
+    border-color: #1565c0;
+    background: #e3f2fd;
+    border-bottom-color: #1565c0;
+  }
 }
 </style>
 </head>

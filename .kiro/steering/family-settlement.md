@@ -41,7 +41,8 @@ fileMatchPattern: "*settlement*"
 - RLS無効
 
 ### temporary_expenses（一時的な立替金）
-- id, title, payer, amount, year_month, note, settled, created_at
+- id, title, payer, amount, beneficiaries (TEXT[], default ['めぐみ','涼介']), year_month, note, settled, created_at
+- beneficiaries: 受益者（誰の分を立て替えたか）。両方=折半、片方のみ=全額その人が返す
 - RLS無効
 
 ## 画面構成（タブ）
@@ -54,12 +55,16 @@ fileMatchPattern: "*settlement*"
 
 ## 設計上の制約
 
-- payer数 = 2（2人前提）
+- payer数 = 2（めぐみ・涼介の2人前提）
+- calculateSettlement(monthlyExpenses, temporaryExpenses, payers) — 第3引数payersで常に['めぐみ','涼介']を渡す（片方のみ登録時でも折半計算を保証）
+- 一時立替の受益者(beneficiaries): 全員=折半、片方のみ=全額返済
+- 精算開始月: 2026-06（SETTLEMENT_START_MONTH）。これ以前のデータは生成・表示しない
+- 同月に複数回の月次精算が可能（精算後の追加立替対応）
 - 端数: floor()で切り捨て、payer_from（支払う側）に有利
 - 差額精算期間: 固定2期間（1〜6月=上半期、7〜12月=下半期）
 - Expense_Master変更は既生成のMonthly_Expenseに影響しない
 - 「月次精算済み」の判定: settlement_historyにレコードがあるかで導出
-- 精算確定はSupabase RPC（Transaction + ROW_COUNTチェック + 重複防止）
+- 精算確定はSupabase RPC（Transaction + ROW_COUNTチェック）
 - Monthly_Expense生成: INSERT ON CONFLICT DO NOTHING
 
 ## RPC Functions
