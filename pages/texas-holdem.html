@@ -194,7 +194,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <button class="tab active" data-tab="basics">基本ルール</button>
     <button class="tab" data-tab="hands">役の強さ</button>
     <button class="tab" data-tab="preflop">ハンド表</button>
-    <button class="tab" data-tab="flow">ゲームの進め方</button>
+    <button class="tab" data-tab="flow">ディーラーの進め方</button>
     <button class="tab" data-tab="positions">ポジション</button>
     <button class="tab" data-tab="terms">用語集</button>
   </div>
@@ -244,7 +244,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <h3>🔄 ゲームの流れ（ざっくり）</h3>
     <div class="flow-step">
       <div class="flow-num">1</div>
-      <div class="flow-content"><strong>手札が来る</strong> — 2枚もらう。ここで最初のベッティング</div>
+      <div class="flow-content"><strong>手札が来る</strong> — 2枚もらう。ここで最初のベッティング（※詳しい流れは下に）</div>
     </div>
     <div class="flow-step">
       <div class="flow-num">2</div>
@@ -261,6 +261,27 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <div class="flow-step">
       <div class="flow-num">5</div>
       <div class="flow-content"><strong>ショーダウン</strong> — 残った人同士でカードを見せ合い、一番強い人が勝ち</div>
+    </div>
+
+    <h3>🔁 ベッティングの流れ（各ラウンド共通）</h3>
+    <p>フロップ・ターン・リバーのベッティングは全て同じ流れ:</p>
+    <div class="flow-step">
+      <div class="flow-num">①</div>
+      <div class="flow-content"><strong>最初の人から時計回りに順番が来る</strong><br>プリフロップ = BBの左隣(UTG)から / フロップ以降 = SBから</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">②</div>
+      <div class="flow-content"><strong>アクションを選ぶ</strong><br>
+        誰もベットしていない → チェック or ベット<br>
+        誰かがベットした → コール / レイズ / フォールド
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">③</div>
+      <div class="flow-content"><strong>全員のベット額が揃ったら終了</strong><br>全員チェック or 最後のレイズに全員コール → 次のラウンドへ</div>
+    </div>
+    <div class="tip-box">
+      レイズがあったら、まだアクションしていない人＋既にコールした人も再度選択が必要。全員が同額になるまで続く。
     </div>
 
     <h3>⚡ 覚えておきたいポイント</h3>
@@ -482,7 +503,7 @@ h1 { font-size: 1.3em; font-weight: 700; }
 
   <!-- ゲームの進め方 -->
   <div class="content-section" id="tab-flow">
-    <h2>🎯 ゲームの進め方（ディーラーの手順）</h2>
+    <h2>🎯 ディーラーの進め方</h2>
 
     <h3>準備</h3>
     <div class="flow-step">
