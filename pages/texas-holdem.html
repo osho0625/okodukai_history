@@ -134,3 +134,264 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <button class="tab" data-tab="positions">ポジション</button>
     <button class="tab" data-tab="terms">用語集</button>
   </div>
+
+  <!-- 役の強さ一覧 -->
+  <div class="content-section active" id="tab-hands">
+    <h2>🏆 役の強さ一覧（上が最強）</h2>
+    <p>手札2枚 + コミュニティカード5枚の計7枚から最強の5枚を選んで役を作る。</p>
+
+    <table class="hand-table">
+      <thead>
+        <tr><th class="rank-num">#</th><th>役</th><th>説明</th><th>例</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="rank-num">1</td>
+          <td class="hand-name">ロイヤルフラッシュ</td>
+          <td class="hand-desc">同じスートのA-K-Q-J-10</td>
+          <td class="hand-example"><span class="card-red">♥A ♥K ♥Q ♥J ♥10</span></td>
+        </tr>
+        <tr>
+          <td class="rank-num">2</td>
+          <td class="hand-name">ストレートフラッシュ</td>
+          <td class="hand-desc">同じスートで5枚連番</td>
+          <td class="hand-example"><span class="card-black">♠9 ♠8 ♠7 ♠6 ♠5</span></td>
+        </tr>
+        <tr>
+          <td class="rank-num">3</td>
+          <td class="hand-name">フォーカード</td>
+          <td class="hand-desc">同じ数字4枚</td>
+          <td class="hand-example"><span class="card-black">♠K</span> <span class="card-red">♥K ♦K</span> <span class="card-black">♣K</span> +1枚</td>
+        </tr>
+        <tr>
+          <td class="rank-num">4</td>
+          <td class="hand-name">フルハウス</td>
+          <td class="hand-desc">スリーカード + ワンペア</td>
+          <td class="hand-example"><span class="card-red">♥Q ♦Q</span> <span class="card-black">♣Q ♠7</span> <span class="card-red">♥7</span></td>
+        </tr>
+        <tr>
+          <td class="rank-num">5</td>
+          <td class="hand-name">フラッシュ</td>
+          <td class="hand-desc">同じスート5枚（連番でない）</td>
+          <td class="hand-example"><span class="card-red">♦A ♦J ♦8 ♦6 ♦2</span></td>
+        </tr>
+        <tr>
+          <td class="rank-num">6</td>
+          <td class="hand-name">ストレート</td>
+          <td class="hand-desc">5枚連番（スートばらばら）</td>
+          <td class="hand-example"><span class="card-black">♠10</span> <span class="card-red">♥9</span> <span class="card-black">♣8 ♠7</span> <span class="card-red">♦6</span></td>
+        </tr>
+        <tr>
+          <td class="rank-num">7</td>
+          <td class="hand-name">スリーカード</td>
+          <td class="hand-desc">同じ数字3枚</td>
+          <td class="hand-example"><span class="card-red">♥8 ♦8</span> <span class="card-black">♣8</span> +2枚</td>
+        </tr>
+        <tr>
+          <td class="rank-num">8</td>
+          <td class="hand-name">ツーペア</td>
+          <td class="hand-desc">ペアが2組</td>
+          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥A</span> <span class="card-black">♣5</span> <span class="card-red">♦5</span> +1枚</td>
+        </tr>
+        <tr>
+          <td class="rank-num">9</td>
+          <td class="hand-name">ワンペア</td>
+          <td class="hand-desc">同じ数字2枚</td>
+          <td class="hand-example"><span class="card-red">♥J</span> <span class="card-black">♣J</span> +3枚</td>
+        </tr>
+        <tr>
+          <td class="rank-num">10</td>
+          <td class="hand-name">ハイカード</td>
+          <td class="hand-desc">役なし（一番高いカードで勝負）</td>
+          <td class="hand-example"><span class="card-black">♠A</span> <span class="card-red">♥J</span> <span class="card-black">♣8 ♠5</span> <span class="card-red">♦2</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      同じ役同士は数字の大きさで比較。数字の強さ: A &gt; K &gt; Q &gt; J &gt; 10 &gt; 9 &gt; ... &gt; 2<br>
+      ※ストレートのみ A-2-3-4-5（最弱のストレート）も認められる。
+    </div>
+
+    <h3>📊 出現確率（参考）</h3>
+    <table class="hand-table">
+      <thead><tr><th>役</th><th>確率</th></tr></thead>
+      <tbody>
+        <tr><td>ロイヤルフラッシュ</td><td>0.0032%</td></tr>
+        <tr><td>ストレートフラッシュ</td><td>0.028%</td></tr>
+        <tr><td>フォーカード</td><td>0.17%</td></tr>
+        <tr><td>フルハウス</td><td>2.6%</td></tr>
+        <tr><td>フラッシュ</td><td>3.0%</td></tr>
+        <tr><td>ストレート</td><td>4.6%</td></tr>
+        <tr><td>スリーカード</td><td>4.8%</td></tr>
+        <tr><td>ツーペア</td><td>23.5%</td></tr>
+        <tr><td>ワンペア</td><td>43.8%</td></tr>
+        <tr><td>ハイカード</td><td>17.4%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ゲームの進め方 -->
+  <div class="content-section" id="tab-flow">
+    <h2>🎯 ゲームの進め方（ディーラーの手順）</h2>
+
+    <h3>準備</h3>
+    <div class="flow-step">
+      <div class="flow-num">0</div>
+      <div class="flow-content">
+        <strong>ディーラーボタン配置</strong><br>
+        ボタン（D）を持つ人がディーラー役。毎ハンド時計回りに移動する。
+      </div>
+    </div>
+
+    <h3>① プリフロップ（手札配り）</h3>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <strong>ブラインド投入</strong><br>
+        ディーラー左隣 = SB（スモールブラインド）→ 最低ベット額の半分を強制投入<br>
+        SBの左隣 = BB（ビッグブラインド）→ 最低ベット額を強制投入
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <strong>手札を配る</strong><br>
+        SBから時計回りに1枚ずつ、計2周。各プレイヤーに裏向き2枚（ホールカード）。<br>
+        ※ 配る前にデッキの一番上を1枚バーン（捨て札）する場合もある。
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <strong>最初のベッティングラウンド</strong><br>
+        BBの左隣（UTG）から時計回りにアクション。<br>
+        選択: コール（BBと同額）/ レイズ（上乗せ）/ フォールド（降りる）
+      </div>
+    </div>
+
+    <h3>② フロップ</h3>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <strong>1枚バーン → 3枚オープン</strong><br>
+        デッキの上から1枚を裏で捨て（バーンカード）、続く3枚をテーブル中央に表向きで並べる。<br>
+        これがコミュニティカード（共有札）の最初の3枚。
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <strong>2回目のベッティング</strong><br>
+        ディーラーの左隣の残っているプレイヤーから時計回り。<br>
+        選択: チェック（パス）/ ベット / コール / レイズ / フォールド
+      </div>
+    </div>
+
+    <h3>③ ターン</h3>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <strong>1枚バーン → 1枚オープン</strong><br>
+        1枚バーンして、1枚を表向きで追加（計4枚目のコミュニティカード）。
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-content">
+        <strong>3回目のベッティング</strong><br>
+        フロップと同じ順序で進行。
+      </div>
+    </div>
+
+    <h3>④ リバー</h3>
+    <div class="flow-step">
+      <div class="flow-num">8</div>
+      <div class="flow-content">
+        <strong>1枚バーン → 1枚オープン</strong><br>
+        1枚バーンして、最後の1枚を表向きで追加（計5枚目のコミュニティカード）。
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">9</div>
+      <div class="flow-content">
+        <strong>最後のベッティング</strong><br>
+        同じ順序で最終ベッティング。
+      </div>
+    </div>
+
+    <h3>⑤ ショーダウン</h3>
+    <div class="flow-step">
+      <div class="flow-num">10</div>
+      <div class="flow-content">
+        <strong>手札公開 → 勝者決定</strong><br>
+        残ったプレイヤーが手札を公開。手札2枚 + コミュニティ5枚 = 7枚から最強の5枚を選んで役を作る。<br>
+        最強の役を持つプレイヤーがポット（全ベット合計）を獲得。<br>
+        ※途中で全員フォールドして1人残った場合、ショーダウンなしでその人が勝ち。
+      </div>
+    </div>
+
+    <div class="tip-box">
+      バーンカードはイカサマ防止のため。「次に来るカードを事前に見た」可能性を排除する。
+    </div>
+  </div>
+
+  <!-- ポジション -->
+  <div class="content-section" id="tab-positions">
+    <h2>🪑 ポジション（席順）</h2>
+    <p>ディーラーボタンを基準に、各席に名前がついている。後ろの席ほど有利（情報が多い）。</p>
+
+    <table class="hand-table">
+      <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション。最も有利</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>Dの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
+        <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション。最も不利</td></tr>
+        <tr><td><strong>MP</strong></td><td>ミドルポジション</td><td>中間の席</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>Dの右隣。2番目に有利</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      6人テーブルの場合: UTG → MP → CO → BTN → SB → BB の順にアクション（プリフロップ時はUTGから、フロップ以降はSBから）。
+    </div>
+  </div>
+
+  <!-- 用語集 -->
+  <div class="content-section" id="tab-terms">
+    <h2>📖 用語集</h2>
+    <ul class="term-list">
+      <li><strong>ホールカード</strong> — 各プレイヤーに配られる裏向きの手札2枚</li>
+      <li><strong>コミュニティカード</strong> — テーブル中央に表向きで出る共有カード（最大5枚）</li>
+      <li><strong>ポット</strong> — 全員のベットが集まった賞金プール</li>
+      <li><strong>ブラインド</strong> — ゲーム開始時の強制ベット（SBとBB）</li>
+      <li><strong>アンティ</strong> — 全員が出す参加費（トーナメントで使用）</li>
+      <li><strong>チェック</strong> — ベットせずに次の人に回す（誰もベットしてない時のみ可）</li>
+      <li><strong>コール</strong> — 前の人と同額をベット</li>
+      <li><strong>レイズ</strong> — 前の人より多くベット（最低額 = 前のレイズ幅と同額以上）</li>
+      <li><strong>オールイン</strong> — 持ちチップ全額をベット</li>
+      <li><strong>フォールド</strong> — 手札を捨てて降りる（そのハンドは終了）</li>
+      <li><strong>バーンカード</strong> — コミュニティカード配布前に1枚捨てるカード</li>
+      <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
+      <li><strong>ナッツ</strong> — その場面で最強の手（例: ボードを見てこれ以上の役がない）</li>
+      <li><strong>アウツ</strong> — 自分の手を改善してくれる残りカードの枚数</li>
+      <li><strong>ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>ティルト</strong> — 感情的になってプレイが雑になること（気をつけよう！）</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// タブ切り替え
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

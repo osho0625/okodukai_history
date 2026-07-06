@@ -20,6 +20,7 @@
 | `nurse-call.md` | `*nurse*` ファイルを開いた時 | ナースコール |
 | `chores.md` | `*chore*` ファイルを開いた時 | お手伝いリスト |
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
+| `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 
 ## 運用
 
