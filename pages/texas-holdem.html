@@ -493,21 +493,53 @@ h1 { font-size: 1.3em; font-weight: 700; }
     <h2>🪑 ポジション（席順）</h2>
     <p>ディーラーボタンを基準に、各席に名前がついている。後ろの席ほど有利（情報が多い）。</p>
 
+    <h3>9人テーブル（フルリング）</h3>
     <table class="hand-table">
       <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
       <tbody>
         <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション。最も有利</td></tr>
-        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>Dの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
         <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
         <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション。最も不利</td></tr>
-        <tr><td><strong>MP</strong></td><td>ミドルポジション</td><td>中間の席</td></tr>
-        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>Dの右隣。2番目に有利</td></tr>
+        <tr><td><strong>UTG+1</strong></td><td>アンダーザガン+1</td><td>UTGの左。2番目にアクション</td></tr>
+        <tr><td><strong>UTG+2</strong></td><td>アンダーザガン+2</td><td>UTG+1の左</td></tr>
+        <tr><td><strong>MP</strong></td><td>ミドルポジション</td><td>中間の席（ロージャック/LJとも呼ぶ）</td></tr>
+        <tr><td><strong>HJ</strong></td><td>ハイジャック</td><td>COの右隣。中盤〜後半の境目</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>BTNの右隣。2番目に有利</td></tr>
       </tbody>
     </table>
 
     <div class="tip-box">
-      6人テーブルの場合: UTG → MP → CO → BTN → SB → BB の順にアクション（プリフロップ時はUTGから、フロップ以降はSBから）。
+      9人テーブルのアクション順（プリフロップ）:<br>
+      UTG → UTG+1 → UTG+2 → MP → HJ → CO → BTN → SB → BB<br><br>
+      フロップ以降: SB → BB → UTG → ... → CO → BTN
     </div>
+
+    <h3>6人テーブル（ショートハンド）</h3>
+    <table class="hand-table">
+      <thead><tr><th>略称</th><th>名前</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D/BTN</strong></td><td>ディーラー（ボタン）</td><td>最後にアクション。最も有利</td></tr>
+        <tr><td><strong>SB</strong></td><td>スモールブラインド</td><td>BTNの左。強制ベット（半額）</td></tr>
+        <tr><td><strong>BB</strong></td><td>ビッグブラインド</td><td>SBの左。強制ベット（全額）</td></tr>
+        <tr><td><strong>UTG</strong></td><td>アンダーザガン</td><td>BBの左。最初にアクション。最も不利</td></tr>
+        <tr><td><strong>MP</strong></td><td>ミドルポジション</td><td>中間の席</td></tr>
+        <tr><td><strong>CO</strong></td><td>カットオフ</td><td>BTNの右隣。2番目に有利</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      6人テーブルのアクション順（プリフロップ）:<br>
+      UTG → MP → CO → BTN → SB → BB
+    </div>
+
+    <h3>💡 ポジションの考え方</h3>
+    <ul class="term-list">
+      <li><strong>アーリーポジション（EP）</strong> — UTG, UTG+1, UTG+2。情報が少なく不利。強い手だけでプレイ</li>
+      <li><strong>ミドルポジション（MP）</strong> — MP, HJ。中間。やや広い範囲でプレイ可</li>
+      <li><strong>レイトポジション（LP）</strong> — CO, BTN。他の人のアクションを見てから判断できる。最も有利</li>
+      <li><strong>ブラインド（SB/BB）</strong> — 強制ベット済み。フロップ以降は最初にアクションするので不利</li>
+    </ul>
   </div>
 
   <!-- 用語集 -->
