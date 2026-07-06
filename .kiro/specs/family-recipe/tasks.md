@@ -38,74 +38,74 @@
     - view-*コンテナの表示/非表示切替
     - _Requirements: 11.2_
 
-- [ ] 4. ユーティリティ関数の実装（js/recipe-utils.js）— 一覧・詳細で必要な分
-  - [ ] 4.1 recipeCardData, computeCookStats, getTopRecipes を実装
+- [x] 4. ユーティリティ関数の実装（js/recipe-utils.js）— 一覧・詳細で必要な分
+  - [x] 4.1 recipeCardData, computeCookStats, getTopRecipes を実装
     - recipeCardData(recipe): レシピカード用データオブジェクト生成（title, author, category, cook_time_minutes, servings, お気に入り状態, thumbnail URL）
     - computeCookStats(historyRecords): cook_count = レコード数、last_cooked_at = MAX(created_at)
     - getTopRecipes(recipes, stats, mode, limit): よく作る(cook_count DESC)/最近作った(last_cooked_at DESC) 上位N件
     - getCurrentUserName(): common.jsの既存パターンでユーザー名取得
     - _Requirements: 2.2, 4.13, 5.6, 5.7, 9.5, 9.6_
-  - [ ] 4.2 プロパティテスト: レシピカードデータ完全性
+  - [x] 4.2 プロパティテスト: レシピカードデータ完全性
     - **Property 3: レシピカードデータ完全性**
     - **Validates: Requirements 2.2, 4.13**
-  - [ ] 4.3 プロパティテスト: 調理回数・最終日時集計
+  - [x] 4.3 プロパティテスト: 調理回数・最終日時集計
     - **Property 13: 調理回数・最終日時集計**
     - **Validates: Requirements 5.6**
-  - [ ] 4.4 プロパティテスト: よく作る/最近作ったセクション順序
+  - [x] 4.4 プロパティテスト: よく作る/最近作ったセクション順序
     - **Property 14: よく作る/最近作ったセクション順序**
     - **Validates: Requirements 5.7, 9.5, 9.6**
 
 
-- [ ] 5. レシピ一覧画面の実装
-  - [ ] 5.1 RecipeRepository.getAll, RecipeRepository.getById を実装（js/recipe-api.js）
+- [x] 5. レシピ一覧画面の実装
+  - [x] 5.1 RecipeRepository.getAll, RecipeRepository.getById を実装（js/recipe-api.js）
     - common.jsのclientを使用してSupabaseアクセス
     - getAll: status/sort/limit対応、recipe_photos/recipe_tags/recipe_favoritesをJOIN
     - getById: レシピ＋材料＋手順＋写真＋タグ一括取得
     - _Requirements: 2.1, 1.6_
-  - [ ] 5.2 FavoriteRepository.getByUser, FavoriteRepository.getCountsForRecipes を実装
+  - [x] 5.2 FavoriteRepository.getByUser, FavoriteRepository.getCountsForRecipes を実装
     - getByUser: 指定ユーザーのお気に入りレシピID一覧
     - getCountsForRecipes: 複数レシピのお気に入り数一括取得
     - _Requirements: 5.2, 5.3_
-  - [ ] 5.3 CookHistoryRepository.getStats を実装
+  - [x] 5.3 CookHistoryRepository.getStats を実装
     - getStats: {recipeId: {count, lastCookedAt}} 一括取得
     - _Requirements: 5.6_
-  - [ ] 5.4 レシピカード描画（renderRecipeCard）を実装（js/recipe-ui.js）
+  - [x] 5.4 レシピカード描画（renderRecipeCard）を実装（js/recipe-ui.js）
     - DocumentFragment返却（XSS安全）
     - title, thumbnail(sort_order=0), author, cook_time, servings, ⭐, category表示
     - _Requirements: 2.2, 4.13_
-  - [ ] 5.5 レシピ一覧ロード（loadRecipeList, loadTopSections）を実装
+  - [x] 5.5 レシピ一覧ロード（loadRecipeList, loadTopSections）を実装
     - よく作る/お気に入り/最近作ったセクション描画
     - カード一覧描画（updated_at DESC）
     - _Requirements: 2.1, 5.7, 9.5, 9.6, 9.7_
 
-- [ ] 6. レシピ詳細画面の実装
-  - [ ] 6.1 CookHistoryRepository.getByRecipeId, CookHistoryRepository.add を実装
+- [x] 6. レシピ詳細画面の実装
+  - [x] 6.1 CookHistoryRepository.getByRecipeId, CookHistoryRepository.add を実装
     - getByRecipeId: 指定レシピの調理履歴一覧
     - add: 調理記録追加（user_name + timestamp）
     - _Requirements: 5.5, 5.8_
-  - [ ] 6.2 FavoriteRepository.toggle を実装
+  - [x] 6.2 FavoriteRepository.toggle を実装
     - upsert / delete パターン
     - _Requirements: 5.2_
-  - [ ] 6.3 レシピ詳細表示（loadRecipeDetail, renderIngredients, renderSteps）を実装
+  - [x] 6.3 レシピ詳細表示（loadRecipeDetail, renderIngredients, renderSteps）を実装
     - 材料リスト・手順リスト（sort_order昇順で番号付与）・写真ギャラリー
     - タグ表示＋タップでフィルタ遷移
     - アレルギー⚠️表示（詳細上部サマリ）
     - _Requirements: 2.4, 4.7, 4.8, 6.2, 6.3, 13.2, 13.5_
-  - [ ] 6.4 アクションバー実装（⭐トグル / 作った！ / 編集 / 削除）
+  - [x] 6.4 アクションバー実装（⭐トグル / 作った！ / 編集 / 削除）
     - ⭐: 楽観的更新＋ロールバック
     - 作った！: cook_history INSERT
     - 削除: 確認ダイアログ＋CASCADE削除
     - 調理履歴表示（誰がいつ作ったか）
     - _Requirements: 5.1, 5.4, 5.6, 5.8, 1.12, 1.15, 1.16_
-  - [ ] 6.5 プロパティテスト: お気に入りトグル冪等性
+  - [x] 6.5 プロパティテスト: お気に入りトグル冪等性
     - **Property 11: お気に入りトグル冪等性**
     - **Validates: Requirements 5.2**
-  - [ ] 6.6 プロパティテスト: ユーザー別お気に入り独立性
+  - [x] 6.6 プロパティテスト: ユーザー別お気に入り独立性
     - **Property 12: ユーザー別お気に入り独立性**
     - **Validates: Requirements 5.3**
 
 - [ ] 7. レシピ登録/編集画面の実装
-  - [ ] 7.1 validateRecipeForm, validateImageFile を実装（js/recipe-utils.js）
+  - [-] 7.1 validateRecipeForm, validateImageFile を実装（js/recipe-utils.js）
     - validateRecipeForm: published時はtitle必須＋材料1件以上、draft時はtitle不要
     - validateImageFile: MIME type（jpeg/png/webp）＋サイズ3MBチェック
     - resizeImage(file): Promise<Blob> — Canvas API使用、max 1200px、アスペクト比保持

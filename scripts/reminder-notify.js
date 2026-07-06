@@ -127,6 +127,9 @@ function filterDueReminders(reminders, now) {
     } else if (r.type === 'repeat') {
       // repeat型は別関数で処理するのでここではスキップ
       return false;
+    } else if (r.type === 'yearly') {
+      // yearly型は別関数で処理するのでここではスキップ
+      return false;
     }
     // memo type: always in notification window (no date filter)
 
@@ -179,12 +182,11 @@ function filterDueRepeatReminders(reminders, now) {
  * yearly型（記念日）リマインダーの通知対象をフィルタ
  * 7日前から当日まで通知。通知時間はデフォルト07:50, 17:30。
  * event_dateの月日のみ使用（年は無視）。
+ * 年末年始を跨ぐケースにも対応（今年と来年の両方をチェック）。
  */
 function filterDueYearlyReminders(reminders, now) {
   const { dateStr, timeStr } = now;
   const todayDate = new Date(dateStr + 'T00:00:00+09:00');
-  const todayMonth = todayDate.getMonth() + 1;
-  const todayDay = todayDate.getDate();
 
   return reminders.filter(r => {
     if (r.deleted_at != null) return false;
@@ -197,14 +199,19 @@ function filterDueYearlyReminders(reminders, now) {
     const eventMonth = parseInt(parts[1], 10);
     const eventDay = parseInt(parts[2], 10);
 
-    // 今年のイベント日を作成
-    const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
-    const sevenBefore = new Date(thisYearEvent);
-    sevenBefore.setDate(sevenBefore.getDate() - 7);
+    // 今年と来年の両方をチェック（年末年始境界対応）
+    const thisYear = todayDate.getFullYear();
+    const candidates = [
+      new Date(thisYear, eventMonth - 1, eventDay),
+      new Date(thisYear + 1, eventMonth - 1, eventDay)
+    ];
 
-    // 今日が7日前〜当日の範囲内か
-    const todayTime = todayDate.getTime();
-    if (todayTime < sevenBefore.getTime() || todayTime > thisYearEvent.getTime()) return false;
+    const inRange = candidates.some(eventDate => {
+      const sevenBefore = new Date(eventDate);
+      sevenBefore.setDate(sevenBefore.getDate() - 7);
+      return todayDate >= sevenBefore && todayDate <= eventDate;
+    });
+    if (!inRange) return false;
 
     // 時間ウィンドウ判定
     const schedules = (r.custom_schedule && Array.isArray(r.custom_schedule) && r.custom_schedule.length > 0)
@@ -298,7 +305,8 @@ function formatYearlyMessage(yearlys, todayStr) {
     const parts = r.event_date.split('-');
     const eventMonth = parseInt(parts[1], 10);
     const eventDay = parseInt(parts[2], 10);
-    const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+    let thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+    if (thisYearEvent < todayDate) thisYearEvent = new Date(todayDate.getFullYear() + 1, eventMonth - 1, eventDay);
     const diffDays = Math.round((thisYearEvent - todayDate) / (1000 * 60 * 60 * 24));
     const label = diffDays === 0 ? '🎉 今日！' : `あと${diffDays}日（${eventMonth}/${eventDay}）`;
     msg += `• [${r.child_name}] ${r.message} ${label}\n`;
@@ -508,7 +516,8 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
       const parts = r.event_date.split('-');
       const eventMonth = parseInt(parts[1], 10);
       const eventDay = parseInt(parts[2], 10);
-      const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+      let thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+      if (thisYearEvent < todayDate) thisYearEvent = new Date(todayDate.getFullYear() + 1, eventMonth - 1, eventDay);
       const diffDays = Math.round((thisYearEvent - todayDate) / (1000 * 60 * 60 * 24));
       const label = diffDays === 0 ? '🎉今日！' : `あと${diffDays}日`;
       bodyLines.push(`[${r.child_name}] ${r.message} ${label}`);
