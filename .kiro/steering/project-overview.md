@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/03 v2.18.0
+最終更新: 2026/07/06 v2.18.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -25,6 +25,7 @@ inclusion: auto
 | ナースコール、nurse、通話、体温 | `.kiro/steering/nurse-call.md` |
 | お手伝いリスト、chore_tasks | `.kiro/steering/chores.md` |
 | メモ帳、family-notes、ドキュメント | `.kiro/steering/family-notes.md` |
+| テキサスホールデム、ポーカー、texas | `.kiro/steering/texas-holdem.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -293,3 +294,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `today-scp.md` — 今日のSCP
 - `family-notes.md` — 家族メモ帳
 - `chores.md` — お手伝いリスト
+- `texas-holdem.md` — テキサスホールデム ルールガイド
