@@ -1,0 +1,160 @@
+/* texas-holdem.css */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0d4d1a 50%, #1a1a2e 100%);
+  min-height: 100vh; padding: 16px;
+  color: #eee; user-select: none;
+}
+.header {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 600px; margin: 0 auto 16px;
+}
+.back { color: #eee; text-decoration: none; font-size: 1.6em; line-height: 1; cursor: pointer; }
+.home { color: #eee; text-decoration: none; font-size: 1.4em; line-height: 1; margin-left: auto; }
+h1 { font-size: 1.3em; font-weight: 700; }
+.container { max-width: 600px; margin: 0 auto; }
+
+/* タブナビゲーション */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 10px 16px; border-radius: 8px 8px 0 0;
+  background: rgba(255,255,255,0.08); color: #aaa;
+  font-size: 0.85em; font-weight: 600; cursor: pointer;
+  white-space: nowrap; border: none; transition: all 0.2s;
+}
+.tab.active {
+  background: rgba(255,255,255,0.15); color: #4caf50;
+  border-bottom: 2px solid #4caf50;
+}
+
+/* コンテンツエリア */
+.content-section {
+  display: none; background: rgba(255,255,255,0.05);
+  border-radius: 0 12px 12px 12px; padding: 20px;
+  line-height: 1.8; font-size: 0.9em;
+}
+.content-section.active { display: block; }
+.content-section h2 {
+  color: #4caf50; font-size: 1.2em; margin-bottom: 12px;
+  border-bottom: 1px solid rgba(76,175,80,0.3); padding-bottom: 8px;
+}
+.content-section h3 {
+  color: #81c784; font-size: 1em; margin: 16px 0 8px;
+}
+
+/* テーブル共通 */
+.hand-table {
+  width: 100%; border-collapse: collapse; margin: 12px 0;
+  font-size: 0.85em;
+}
+.hand-table th {
+  background: rgba(76,175,80,0.2); color: #4caf50;
+  padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.hand-table td {
+  padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  vertical-align: top;
+}
+.hand-table tr:hover { background: rgba(255,255,255,0.03); }
+.rank-num { color: #ffd700; font-weight: 700; text-align: center; width: 30px; }
+.hand-name { color: #fff; font-weight: 600; white-space: nowrap; }
+.hand-desc { color: #ccc; }
+
+/* カード表現 */
+.card-red { color: #ff6b6b; }
+.card-black { color: #eee; }
+
+/* トランプカード風 */
+.card-visual {
+  display: inline-flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  width: 38px; height: 54px; border-radius: 6px;
+  background: #fff; color: #333; font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin: 2px; font-size: 0.75em; line-height: 1.1;
+}
+.card-visual.red { color: #d32f2f; }
+.card-visual.black { color: #222; }
+.card-visual .card-rank { font-size: 1.1em; }
+.card-visual .card-suit { font-size: 1.0em; }
+.cards-row { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0; }
+
+/* 進行フロー */
+.flow-step {
+  display: flex; gap: 12px; margin: 12px 0;
+  padding: 12px; background: rgba(255,255,255,0.03);
+  border-radius: 8px; border-left: 3px solid #4caf50;
+}
+.flow-num {
+  background: #4caf50; color: #fff; font-weight: 700;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 0.85em;
+}
+.flow-content { flex: 1; }
+.flow-content strong { color: #81c784; }
+
+/* 用語リスト */
+.term-list { list-style: none; padding: 0; }
+.term-list li {
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.term-list li strong { color: #ffd700; }
+
+/* Tips */
+.tip-box {
+  background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 8px; padding: 12px; margin: 12px 0;
+  font-size: 0.85em;
+}
+.tip-box::before { content: "💡 "; }
+
+/* プリフロップ表 */
+.preflop-table {
+  border-collapse: collapse; font-size: 0.65em; text-align: center;
+  margin: 0 auto;
+}
+.preflop-table th {
+  background: rgba(255,255,255,0.1); color: #ccc;
+  padding: 4px 2px; min-width: 32px; font-weight: 700;
+}
+.preflop-table td {
+  padding: 3px 2px; border: 1px solid rgba(255,255,255,0.08);
+  font-weight: 600; min-width: 32px;
+}
+.preflop-table .tier1 { background: rgba(76,175,80,0.4); color: #fff; }
+.preflop-table .tier2 { background: rgba(100,181,246,0.35); color: #e3f2fd; }
+.preflop-table .tier3 { background: rgba(255,213,79,0.3); color: #fff8e1; }
+.preflop-table .tier4 { background: rgba(255,255,255,0.04); color: #888; }
+
+/* 役一覧ビジュアル */
+.hand-visual-list { display: flex; flex-direction: column; gap: 12px; }
+.hand-visual-item {
+  display: flex; gap: 12px; padding: 12px;
+  background: rgba(255,255,255,0.04); border-radius: 10px;
+  align-items: center;
+}
+.hand-visual-rank {
+  color: #ffd700; font-weight: 700; font-size: 1.2em;
+  min-width: 28px; text-align: center;
+}
+.hand-visual-info { flex: 1; min-width: 0; }
+.hand-visual-name { color: #fff; font-weight: 700; font-size: 1em; margin-bottom: 2px; }
+.hand-visual-desc { color: #aaa; font-size: 0.8em; margin-bottom: 4px; }
+
+/* ハンド表セレクター */
+.preflop-selector {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0;
+}
+.preflop-selector button {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #aaa;
+  font-size: 0.8em; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.preflop-selector button.active {
+  background: rgba(76,175,80,0.3); color: #4caf50; border-color: #4caf50;
+}
