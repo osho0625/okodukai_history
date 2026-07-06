@@ -125,14 +125,8 @@ function filterDueReminders(reminders, now) {
       const sevenDaysBeforeStr = formatDateStr(sevenDaysBefore);
       if (dateStr < sevenDaysBeforeStr || dateStr > r.event_date) return false;
     } else if (r.type === 'repeat') {
-      // repeat型: 今日の曜日がrepeat_daysに含まれるか（当日通知）、
-      // または明日の曜日がrepeat_daysに含まれるか（前日通知）
-      const todayDate = new Date(dateStr + 'T00:00:00+09:00');
-      const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
-      const tomorrowDow = (dayOfWeek + 1) % 7; // 明日の曜日
-      if (!Array.isArray(r.repeat_days)) return false;
-      const days = r.repeat_days.map(Number);
-      if (!days.includes(dayOfWeek) && !days.includes(tomorrowDow)) return false;
+      // repeat型は別関数で処理するのでここではスキップ
+      return false;
     }
     // memo type: always in notification window (no date filter)
 
@@ -145,6 +139,39 @@ function filterDueReminders(reminders, now) {
     if (!inTimeWindow) return false;
 
     return true;
+  });
+}
+
+/**
+ * repeat型リマインダーの通知対象をフィルタ
+ * 前日17:30 + 当日08:00 の固定スケジュール
+ */
+function filterDueRepeatReminders(reminders, now) {
+  const { dateStr, timeStr } = now;
+  const todayDate = new Date(dateStr + 'T00:00:00+09:00');
+  const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
+  const tomorrowDow = (dayOfWeek + 1) % 7;
+
+  return reminders.filter(r => {
+    if (r.deleted_at != null) return false;
+    if (r.type !== 'repeat') return false;
+    if (r.snooze_until && dateStr < r.snooze_until) return false;
+    if (!Array.isArray(r.repeat_days)) return false;
+
+    const days = r.repeat_days.map(Number);
+    const isToday = days.includes(dayOfWeek);    // 当日通知: 08:00
+    const isTomorrow = days.includes(tomorrowDow); // 前日通知: 17:30
+
+    // 時間ウィンドウ判定（custom_scheduleがあればそちらを優先）
+    if (r.custom_schedule && Array.isArray(r.custom_schedule) && r.custom_schedule.length > 0) {
+      const inTimeWindow = r.custom_schedule.some(s => isInWindow(s, timeStr));
+      return (isToday || isTomorrow) && inTimeWindow;
+    }
+
+    // デフォルト: 前日17:30 or 当日08:00
+    if (isToday && isInWindow('08:00', timeStr)) return true;
+    if (isTomorrow && isInWindow('17:30', timeStr)) return true;
+    return false;
   });
 }
 
@@ -171,20 +198,12 @@ function formatMessage(reminders, todayStr) {
 
   const memos = reminders.filter(r => r.type === 'memo');
   const events = reminders.filter(r => r.type === 'event');
-  const repeats = reminders.filter(r => r.type === 'repeat');
 
   let msg = '🔔 リマインダー通知\n';
 
   if (memos.length > 0) {
     msg += '\n📝 メモ:\n';
     memos.forEach(r => {
-      msg += `• [${r.child_name}] ${r.message}\n`;
-    });
-  }
-
-  if (repeats.length > 0) {
-    msg += '\n🔁 くりかえし:\n';
-    repeats.forEach(r => {
       msg += `• [${r.child_name}] ${r.message}\n`;
     });
   }
@@ -199,6 +218,29 @@ function formatMessage(reminders, todayStr) {
     });
   }
 
+  return msg.trim();
+}
+
+/**
+ * repeat型リマインダーのDiscordメッセージをフォーマット
+ * @param {Array} repeats - repeat型通知対象リマインダー
+ * @param {{dateStr: string, timeStr: string}} now - 現在のJST日時
+ * @returns {string}
+ */
+function formatRepeatMessage(repeats, now) {
+  if (!repeats || repeats.length === 0) return '';
+  const { dateStr, timeStr } = now;
+  const todayDate = new Date(dateStr + 'T00:00:00+09:00');
+  const dayOfWeek = todayDate.getDay();
+  const tomorrowDow = (dayOfWeek + 1) % 7;
+
+  let msg = '🔁 くりかえしリマインダー\n\n';
+  repeats.forEach(r => {
+    const days = r.repeat_days.map(Number);
+    const isToday = days.includes(dayOfWeek);
+    const label = isToday ? '📌 今日' : '📌 明日';
+    msg += `${label} • ${r.message}\n`;
+  });
   return msg.trim();
 }
 
@@ -242,23 +284,35 @@ async function main() {
 
   // 通知対象をフィルタ
   const due = filterDueReminders(reminders, now);
-  console.log(`Due reminders: ${due.length}`);
+  const dueRepeats = filterDueRepeatReminders(reminders, now);
+  console.log(`Due reminders (memo/event): ${due.length}, (repeat): ${dueRepeats.length}`);
 
-  if (due.length === 0) {
-    console.log('No reminders due at this time.');
-  } else {
-    // メッセージをフォーマット
+  // メモ/行事型の通知
+  if (due.length > 0) {
     const message = formatMessage(due, now.dateStr);
-
-    // Discord通知
-    console.log('Sending Discord notification...');
+    console.log('Sending Discord notification (memo/event)...');
     await sendDiscord(DISCORD_WEBHOOK, message);
 
-    // Web Push通知（リマインダー → admin端末のみ）
     if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-      console.log('Sending Web Push notifications to admin...');
-      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr);
+      console.log('Sending Web Push (memo/event) to admin...');
+      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr, 'reminder');
     }
+  }
+
+  // repeat型の通知（別のDiscordメッセージ＋別のPush通知）
+  if (dueRepeats.length > 0) {
+    const repeatMsg = formatRepeatMessage(dueRepeats, now);
+    console.log('Sending Discord notification (repeat)...');
+    await sendDiscord(DISCORD_WEBHOOK, repeatMsg);
+
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      console.log('Sending Web Push (repeat) to admin...');
+      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueRepeats, now.dateStr, 'repeat');
+    }
+  }
+
+  if (due.length === 0 && dueRepeats.length === 0) {
+    console.log('No reminders due at this time.');
   }
 
   // push_messages キュー処理（admin→user通知）
@@ -332,8 +386,9 @@ async function sendDiscord(webhookUrl, content) {
  * @param {string} vapidEmail
  * @param {Array} reminders - 通知対象リマインダー
  * @param {string} todayStr - 'YYYY-MM-DD'
+ * @param {string} tagPrefix - 通知タグのプレフィックス ('reminder' or 'repeat')
  */
-async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivateKey, vapidEmail, reminders, todayStr) {
+async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivateKey, vapidEmail, reminders, todayStr, tagPrefix) {
   let webpush;
   try {
     webpush = require('web-push');
@@ -359,21 +414,33 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
   if (subscriptions.length === 0) return;
 
   // 通知ペイロード作成
-  const memos = reminders.filter(r => r.type === 'memo');
-  const events = reminders.filter(r => r.type === 'event');
-  const repeats = reminders.filter(r => r.type === 'repeat');
-  let bodyLines = [];
-  memos.forEach(r => bodyLines.push(`📝 [${r.child_name}] ${r.message}`));
-  repeats.forEach(r => bodyLines.push(`🔁 [${r.child_name}] ${r.message}`));
-  events.forEach(r => {
-    const days = calcDaysRemaining(r.event_date, todayStr);
-    bodyLines.push(`📅 [${r.child_name}] ${r.message}（あと${days}日）`);
-  });
+  let title, bodyLines = [];
+  if (tagPrefix === 'repeat') {
+    title = '🔁 くりかえしリマインダー';
+    const now = getCurrentJST();
+    const todayDate = new Date(todayStr + 'T00:00:00+09:00');
+    const dayOfWeek = todayDate.getDay();
+    reminders.forEach(r => {
+      const days = r.repeat_days.map(Number);
+      const isToday = days.includes(dayOfWeek);
+      const label = isToday ? '今日' : '明日';
+      bodyLines.push(`${label}: ${r.message}`);
+    });
+  } else {
+    title = '🔔 リマインダー通知';
+    const memos = reminders.filter(r => r.type === 'memo');
+    const events = reminders.filter(r => r.type === 'event');
+    memos.forEach(r => bodyLines.push(`📝 [${r.child_name}] ${r.message}`));
+    events.forEach(r => {
+      const days = calcDaysRemaining(r.event_date, todayStr);
+      bodyLines.push(`📅 [${r.child_name}] ${r.message}（あと${days}日）`);
+    });
+  }
 
   const payload = JSON.stringify({
-    title: '🔔 リマインダー通知',
+    title,
     body: bodyLines.join('\n'),
-    tag: 'reminder-' + todayStr,
+    tag: tagPrefix + '-' + todayStr + '-' + parseMinutes(getCurrentJST().timeStr),
     url: '/okodukai_history/index.html'
   });
 
