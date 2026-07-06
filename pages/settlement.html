@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1565c0">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>精算 - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; padding: 20px; padding-bottom: 80px; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+.home-btn { color: #333; text-decoration: none; font-size: 1.4em; position: absolute; top: 20px; right: 20px; }
+
+h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
+
+/* タブバー */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar button {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.tab-bar button.active {
+  color: #1565c0;
+  border-bottom-color: #1565c0;
+}
+.tab-bar button:hover {
+  color: #1565c0;
+}
+
+/* タブコンテナ共通 */
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+
+/* カード */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+
+/* ローディング */
+.loading {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-size: 1.1em;
+}
+
+/* 空状態 */
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 60px 20px;
+  font-size: 1.1em;
+}
+.empty-state .emoji {
+  font-size: 3em;
+  margin-bottom: 12px;
+}
+
+/* ボタン共通 */
+.btn-primary {
+  display: inline-block;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-secondary {
+  display: inline-block;
+  padding: 10px 20px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.btn-secondary:hover { border-color: #1565c0; color: #1565c0; }
+
+/* Toast */
+.toast {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast.show {
+  display: block;
+  animation: fadeInUp 0.3s ease;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* レスポンシブ */
+@media (max-width: 480px) {
+  body { padding: 12px; padding-bottom: 80px; }
+  h1 { font-size: 1.2em; }
+  .tab-bar button { font-size: 0.8em; padding: 10px 4px; }
+}
+</style>
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" class="home-btn">🏠</a>
+<h1>💰 家庭内精算</h1>
+
+<!-- タブバー -->
+<div class="tab-bar">
+  <button class="active" data-tab="dashboard">📊ダッシュボード</button>
+  <button data-tab="master">📋固定費管理</button>
+  <button data-tab="monthly">💴今月の精算</button>
+  <button data-tab="difference">📈差額管理</button>
+  <button data-tab="diff-settlement">🔄差額精算</button>
+</div>
+
+<!-- ダッシュボード -->
+<div id="tab-dashboard" class="tab-content active">
+  <div class="empty-state">
+    <div class="emoji">📊</div>
+    <div>ダッシュボードを読み込み中...</div>
+  </div>
+</div>
+
+<!-- 固定費管理 -->
+<div id="tab-master" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">📋</div>
+    <div>固定費マスタを読み込み中...</div>
+  </div>
+</div>
+
+<!-- 今月の精算 -->
+<div id="tab-monthly" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">💴</div>
+    <div>今月の精算データを読み込み中...</div>
+  </div>
+</div>
+
+<!-- 差額管理 -->
+<div id="tab-difference" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">📈</div>
+    <div>差額データを読み込み中...</div>
+  </div>
+</div>
+
+<!-- 差額精算 -->
+<div id="tab-diff-settlement" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">🔄</div>
+    <div>差額精算データを読み込み中...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="../js/settlement-utils.js"></script>
+<script src="../js/settlement-app.js"></script>
+<script>
+// タブ切り替え
+document.querySelectorAll('.tab-bar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
