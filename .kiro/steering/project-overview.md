@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/03 v2.17.0
+最終更新: 2026/07/03 v2.18.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -120,9 +120,9 @@ inclusion: auto
 - 全Discord通知トリガー（バックアップ除く）から投入 → GitHub Actions cron（5分毎）で配信
 
 ### reminders（リマインダー）
-- id: UUID (PK), type: TEXT ('memo'|'event'|'repeat')
+- id: UUID (PK), type: TEXT ('memo'|'event'|'repeat'|'yearly')
 - child_id: UUID (FK→children), child_name: TEXT (非正規化、通知用)
-- message: TEXT (1-200文字), event_date: DATE (nullable、event型のみ)
+- message: TEXT (1-200文字), event_date: DATE (nullable、event/yearly型で使用)
 - repeat_days: JSONB (nullable、repeat型のみ。曜日配列 [0-6], 0=日, 1=月, ..., 6=土)
 - creator_user_id: TEXT NOT NULL (端末識別子), creator_role: TEXT ('admin'|'user')
 - custom_schedule: JSONB (nullable、例: ["06:00","21:00"])
@@ -132,6 +132,7 @@ inclusion: auto
 - INDEX: idx_reminders_child_id, idx_reminders_type_event_date, idx_reminders_snooze (全てWHERE deleted_at IS NULL)
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
+- 通知タイミング: memo/event=07:50,17:30、repeat=前日17:30+当日08:00、yearly=7日前から07:50,17:30
 
 ## 主要機能
 
@@ -232,7 +233,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.17.0
+- 現在: v2.18.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

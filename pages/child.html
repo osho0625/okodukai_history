@@ -328,10 +328,17 @@ h2 { margin-bottom: 12px; color: #333; }
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#555;">
           <input type="radio" name="reminderType" value="repeat" onchange="toggleReminderType()"> 🔁 くりかえし
         </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#555;">
+          <input type="radio" name="reminderType" value="yearly" onchange="toggleReminderType()"> 🎂 記念日
+        </label>
       </div>
       <div id="reminderDateWrapper" style="position:relative;margin-bottom:10px;">
         <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:1.2em;pointer-events:none;">📅</span>
         <input type="date" id="reminderDate" style="width:100%;padding:10px 10px 10px 36px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
+      </div>
+      <div id="reminderYearlyWrapper" style="display:none;margin-bottom:10px;">
+        <div style="font-size:0.85em;color:#555;margin-bottom:4px;">毎年の月日を指定（年は無視されます）:</div>
+        <input type="date" id="reminderYearlyDate" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;">
       </div>
       <div id="reminderRepeatWrapper" style="display:none;margin-bottom:10px;">
         <div style="font-size:0.85em;color:#555;margin-bottom:6px;">通知する曜日を選択:</div>
@@ -1402,20 +1409,30 @@ function toggleReminderType() {
   const selected = document.querySelector('input[name="reminderType"]:checked').value;
   const dateWrapper = document.getElementById('reminderDateWrapper');
   const repeatWrapper = document.getElementById('reminderRepeatWrapper');
+  const yearlyWrapper = document.getElementById('reminderYearlyWrapper');
   const dateInput = document.getElementById('reminderDate');
 
   if (selected === 'event') {
     dateWrapper.style.display = 'block';
     repeatWrapper.style.display = 'none';
+    yearlyWrapper.style.display = 'none';
     dateInput.disabled = false;
   } else if (selected === 'memo') {
     dateWrapper.style.display = 'none';
     repeatWrapper.style.display = 'none';
+    yearlyWrapper.style.display = 'none';
     dateInput.disabled = true;
     dateInput.value = '';
   } else if (selected === 'repeat') {
     dateWrapper.style.display = 'none';
     repeatWrapper.style.display = 'block';
+    yearlyWrapper.style.display = 'none';
+    dateInput.disabled = true;
+    dateInput.value = '';
+  } else if (selected === 'yearly') {
+    dateWrapper.style.display = 'none';
+    repeatWrapper.style.display = 'none';
+    yearlyWrapper.style.display = 'block';
     dateInput.disabled = true;
     dateInput.value = '';
   }
@@ -1476,6 +1493,20 @@ async function submitReminder() {
     repeatDays = checked;
   }
 
+  // バリデーション: 記念日の日付
+  let yearlyDate = null;
+  if (selectedType === 'yearly') {
+    const yearlyInput = document.getElementById('reminderYearlyDate');
+    if (!yearlyInput.value) {
+      resultMsg.textContent = '⚠️ 記念日の日付を入力してください';
+      resultMsg.style.color = '#e53935';
+      resultMsg.style.display = 'block';
+      setTimeout(() => resultMsg.style.display = 'none', 3000);
+      return;
+    }
+    yearlyDate = yearlyInput.value;
+  }
+
   lastSubmitAt = now;
 
   const deviceId = getReminderDeviceId();
@@ -1491,6 +1522,7 @@ async function submitReminder() {
     creator_role: creatorRole
   };
   if (eventDate) insertData.event_date = eventDate;
+  if (yearlyDate) insertData.event_date = yearlyDate;
   if (repeatDays) insertData.repeat_days = repeatDays;
 
   const { error } = await client.from('reminders').insert(insertData);
@@ -1512,6 +1544,8 @@ async function submitReminder() {
   msgInput.value = '';
   dateInput.value = '';
   document.querySelectorAll('.repeat-dow').forEach(el => el.checked = false);
+  const yearlyInput = document.getElementById('reminderYearlyDate');
+  if (yearlyInput) yearlyInput.value = '';
 
   // Discord通知（3秒タイムアウト、失敗してもUXブロックしない）
   const dayNames = ['日','月','火','水','木','金','土'];
@@ -1521,6 +1555,9 @@ async function submitReminder() {
   } else if (type === 'repeat') {
     const daysStr = repeatDays.map(d => dayNames[d]).join('・');
     discordMsg = '🔔 リマインダー登録\n🔁 [' + child.name + '] ' + message + '（毎週 ' + daysStr + '）';
+  } else if (type === 'yearly') {
+    const yParts = yearlyDate.split('-');
+    discordMsg = '🔔 リマインダー登録\n🎂 [' + child.name + '] ' + message + '（毎年 ' + parseInt(yParts[1]) + '/' + parseInt(yParts[2]) + '）';
   } else {
     discordMsg = '🔔 リマインダー登録\n📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
   }
@@ -1543,6 +1580,9 @@ async function submitReminder() {
   } else if (type === 'repeat') {
     const daysStr2 = repeatDays.map(d => dayNames[d]).join('・');
     pushBody = '🔁 [' + child.name + '] ' + message + '（毎週 ' + daysStr2 + '）';
+  } else if (type === 'yearly') {
+    const yParts2 = yearlyDate.split('-');
+    pushBody = '🎂 [' + child.name + '] ' + message + '（毎年 ' + parseInt(yParts2[1]) + '/' + parseInt(yParts2[2]) + '）';
   } else {
     pushBody = '📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
   }
@@ -1603,6 +1643,12 @@ async function loadReminders() {
       const daysStr = (r.repeat_days || []).map(d => dayNames[d]).join('・');
       info = '<div style="flex:1;"><div style="font-size:0.9em;">🔁 ' + escHtml(r.message) + '</div>'
         + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">毎週 ' + daysStr + '</div></div>';
+    } else if (r.type === 'yearly') {
+      const yParts = r.event_date.split('-');
+      const yMonth = parseInt(yParts[1], 10);
+      const yDay = parseInt(yParts[2], 10);
+      info = '<div style="flex:1;"><div style="font-size:0.9em;">🎂 ' + escHtml(r.message) + '</div>'
+        + '<div style="font-size:0.75em;color:#aaa;margin-top:2px;">毎年 ' + yMonth + '/' + yDay + '</div></div>';
     } else {
       const daysLeft = Math.ceil((new Date(r.event_date + 'T00:00:00+09:00') - new Date()) / 86400000);
       const daysText = daysLeft === 0 ? '今日' : daysLeft > 0 ? 'あと' + daysLeft + '日' : daysLeft + '日前';

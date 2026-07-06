@@ -176,6 +176,48 @@ function filterDueRepeatReminders(reminders, now) {
 }
 
 /**
+ * yearly型（記念日）リマインダーの通知対象をフィルタ
+ * 7日前から当日まで通知。通知時間はデフォルト07:50, 17:30。
+ * event_dateの月日のみ使用（年は無視）。
+ */
+function filterDueYearlyReminders(reminders, now) {
+  const { dateStr, timeStr } = now;
+  const todayDate = new Date(dateStr + 'T00:00:00+09:00');
+  const todayMonth = todayDate.getMonth() + 1;
+  const todayDay = todayDate.getDate();
+
+  return reminders.filter(r => {
+    if (r.deleted_at != null) return false;
+    if (r.type !== 'yearly') return false;
+    if (r.snooze_until && dateStr < r.snooze_until) return false;
+    if (!r.event_date) return false;
+
+    // event_dateから月日を取得
+    const parts = r.event_date.split('-');
+    const eventMonth = parseInt(parts[1], 10);
+    const eventDay = parseInt(parts[2], 10);
+
+    // 今年のイベント日を作成
+    const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+    const sevenBefore = new Date(thisYearEvent);
+    sevenBefore.setDate(sevenBefore.getDate() - 7);
+
+    // 今日が7日前〜当日の範囲内か
+    const todayTime = todayDate.getTime();
+    if (todayTime < sevenBefore.getTime() || todayTime > thisYearEvent.getTime()) return false;
+
+    // 時間ウィンドウ判定
+    const schedules = (r.custom_schedule && Array.isArray(r.custom_schedule) && r.custom_schedule.length > 0)
+      ? r.custom_schedule
+      : ['07:50', '17:30'];
+    const inTimeWindow = schedules.some(s => isInWindow(s, timeStr));
+    if (!inTimeWindow) return false;
+
+    return true;
+  });
+}
+
+/**
  * Date オブジェクトを 'YYYY-MM-DD' に変換
  * @param {Date} date
  * @returns {string}
@@ -240,6 +282,26 @@ function formatRepeatMessage(repeats, now) {
     const isToday = days.includes(dayOfWeek);
     const label = isToday ? '📌 今日' : '📌 明日';
     msg += `${label} • ${r.message}\n`;
+  });
+  return msg.trim();
+}
+
+/**
+ * yearly型（記念日）リマインダーのDiscordメッセージをフォーマット
+ */
+function formatYearlyMessage(yearlys, todayStr) {
+  if (!yearlys || yearlys.length === 0) return '';
+  const todayDate = new Date(todayStr + 'T00:00:00+09:00');
+
+  let msg = '🎂 記念日リマインダー\n\n';
+  yearlys.forEach(r => {
+    const parts = r.event_date.split('-');
+    const eventMonth = parseInt(parts[1], 10);
+    const eventDay = parseInt(parts[2], 10);
+    const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+    const diffDays = Math.round((thisYearEvent - todayDate) / (1000 * 60 * 60 * 24));
+    const label = diffDays === 0 ? '🎉 今日！' : `あと${diffDays}日（${eventMonth}/${eventDay}）`;
+    msg += `• [${r.child_name}] ${r.message} ${label}\n`;
   });
   return msg.trim();
 }
@@ -311,7 +373,21 @@ async function main() {
     }
   }
 
-  if (due.length === 0 && dueRepeats.length === 0) {
+  // yearly型（記念日）の通知（別のDiscordメッセージ＋別のPush通知）
+  const dueYearly = filterDueYearlyReminders(reminders, now);
+  console.log(`Due reminders (yearly): ${dueYearly.length}`);
+  if (dueYearly.length > 0) {
+    const yearlyMsg = formatYearlyMessage(dueYearly, now.dateStr);
+    console.log('Sending Discord notification (yearly)...');
+    await sendDiscord(DISCORD_WEBHOOK, yearlyMsg);
+
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      console.log('Sending Web Push (yearly) to admin...');
+      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueYearly, now.dateStr, 'yearly');
+    }
+  }
+
+  if (due.length === 0 && dueRepeats.length === 0 && dueYearly.length === 0) {
     console.log('No reminders due at this time.');
   }
 
@@ -417,7 +493,6 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
   let title, bodyLines = [];
   if (tagPrefix === 'repeat') {
     title = '🔁 くりかえしリマインダー';
-    const now = getCurrentJST();
     const todayDate = new Date(todayStr + 'T00:00:00+09:00');
     const dayOfWeek = todayDate.getDay();
     reminders.forEach(r => {
@@ -425,6 +500,18 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
       const isToday = days.includes(dayOfWeek);
       const label = isToday ? '今日' : '明日';
       bodyLines.push(`${label}: ${r.message}`);
+    });
+  } else if (tagPrefix === 'yearly') {
+    title = '🎂 記念日リマインダー';
+    const todayDate = new Date(todayStr + 'T00:00:00+09:00');
+    reminders.forEach(r => {
+      const parts = r.event_date.split('-');
+      const eventMonth = parseInt(parts[1], 10);
+      const eventDay = parseInt(parts[2], 10);
+      const thisYearEvent = new Date(todayDate.getFullYear(), eventMonth - 1, eventDay);
+      const diffDays = Math.round((thisYearEvent - todayDate) / (1000 * 60 * 60 * 24));
+      const label = diffDays === 0 ? '🎉今日！' : `あと${diffDays}日`;
+      bodyLines.push(`[${r.child_name}] ${r.message} ${label}`);
     });
   } else {
     title = '🔔 リマインダー通知';

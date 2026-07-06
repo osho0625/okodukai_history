@@ -1286,12 +1286,29 @@ async function loadReminders() {
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
+    // Yearly reminders (記念日): month/day within 7 days
+    const { data: yearlys } = await client.from('reminders')
+      .select('*')
+      .eq('type', 'yearly')
+      .is('deleted_at', null)
+      .order('event_date', { ascending: true });
+
     const todayDow = today.getDay(); // 0=日, 1=月, ..., 6=土
     const tomorrowDow = (todayDow + 1) % 7;
     const filteredRepeats = (repeats || []).filter(r => {
       if (!Array.isArray(r.repeat_days)) return false;
       const days = r.repeat_days.map(Number);
       return days.includes(todayDow) || days.includes(tomorrowDow);
+    });
+
+    // Filter yearly: 今年のevent_dateの月日が今日から7日以内
+    const filteredYearly = (yearlys || []).filter(r => {
+      if (!r.event_date) return false;
+      const parts = r.event_date.split('-');
+      const eventMonth = parseInt(parts[1], 10) - 1;
+      const eventDay = parseInt(parts[2], 10);
+      const thisYearEvent = new Date(today.getFullYear(), eventMonth, eventDay);
+      return thisYearEvent >= today && thisYearEvent <= sevenDaysLater;
     });
 
     // Filter events: event_date between today and today+7 days (inclusive)
@@ -1301,13 +1318,20 @@ async function loadReminders() {
     });
 
     const memoList = memos || [];
-    if (memoList.length === 0 && filteredEvents.length === 0 && filteredRepeats.length === 0) {
+    if (memoList.length === 0 && filteredEvents.length === 0 && filteredRepeats.length === 0 && filteredYearly.length === 0) {
       banner.style.display = 'none';
       return;
     }
 
     banner.style.display = 'block';
     let html = '';
+
+    if (filteredYearly.length > 0) {
+      html += '<div class="reminder-section-label">🎂 記念日</div>';
+      filteredYearly.forEach(r => {
+        html += renderReminderItem(r, 'yearly', today);
+      });
+    }
 
     if (filteredRepeats.length > 0) {
       html += '<div class="reminder-section-label">🔁 くりかえし</div>';
@@ -1349,6 +1373,13 @@ function renderReminderItem(r, type, today) {
     const dayNames = ['日','月','火','水','木','金','土'];
     const days = (r.repeat_days || []).map(d => dayNames[d]).join('・');
     meta = '毎週 ' + days;
+  } else if (type === 'yearly') {
+    const parts = r.event_date.split('-');
+    const eventMonth = parseInt(parts[1], 10);
+    const eventDay = parseInt(parts[2], 10);
+    const thisYearEvent = new Date(today.getFullYear(), eventMonth - 1, eventDay);
+    const diffDays = Math.round((thisYearEvent - today) / (1000 * 60 * 60 * 24));
+    meta = diffDays === 0 ? '🎉 今日！' : eventMonth + '/' + eventDay + ' あと' + diffDays + '日';
   }
 
   if (r.snooze_until) {
@@ -1504,7 +1535,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.17.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.18.0</a></div>
 
 </body>
 </html>
