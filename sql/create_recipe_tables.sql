@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   author TEXT NOT NULL,
-  category TEXT DEFAULT '' CHECK (category IN ('主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子', '')),
+  category TEXT DEFAULT '',
   cook_time_minutes INT,
   servings TEXT DEFAULT '',
   status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft', 'private')),

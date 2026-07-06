@@ -736,7 +736,59 @@ const MealPlanRepository = {
   }
 };
 
+// === RecipeCategoryRepository ===
+const RecipeCategoryRepository = {
+  /**
+   * カテゴリ一覧を取得（game_settings.recipe_categories）
+   * @returns {Promise<string[]>}
+   */
+  async getAll() {
+    const { data, error } = await client
+      .from('game_settings')
+      .select('recipe_categories')
+      .eq('id', 1)
+      .maybeSingle();
+    if (error || !data || !data.recipe_categories) {
+      return ['主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+    }
+    return data.recipe_categories;
+  },
+
+  /**
+   * カテゴリを追加
+   * @param {string} category - 追加するカテゴリ名
+   * @returns {Promise<{error: object|null}>}
+   */
+  async add(category) {
+    var current = await this.getAll();
+    if (current.indexOf(category) !== -1) return { error: null };
+    current.push(category);
+    const { error } = await client
+      .from('game_settings')
+      .update({ recipe_categories: current })
+      .eq('id', 1);
+    return { error: error || null };
+  },
+
+  /**
+   * カテゴリを削除
+   * @param {string} category - 削除するカテゴリ名
+   * @returns {Promise<{error: object|null}>}
+   */
+  async remove(category) {
+    var current = await this.getAll();
+    var idx = current.indexOf(category);
+    if (idx === -1) return { error: null };
+    current.splice(idx, 1);
+    const { error } = await client
+      .from('game_settings')
+      .update({ recipe_categories: current })
+      .eq('id', 1);
+    return { error: error || null };
+  }
+};
+
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, StepRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository };
+  module.exports = { RecipeRepository, FavoriteRepository, CookHistoryRepository, IngredientRepository, StepRepository, TagRepository, PhotoRepository, ShoppingListRepository, MealPlanRepository, RecipeCategoryRepository };
 }

@@ -235,23 +235,31 @@ function addSeasoningRow(data) {
   var modeRow = document.createElement('div');
   modeRow.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;';
 
-  var textModeBtn = document.createElement('button');
-  textModeBtn.type = 'button';
-  textModeBtn.textContent = 'テキスト入力';
-  textModeBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;cursor:pointer;border:1px solid #ddd;background:#e65100;color:#fff;';
-
   var btnModeBtn = document.createElement('button');
   btnModeBtn.type = 'button';
   btnModeBtn.textContent = 'ボタン入力';
-  btnModeBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;cursor:pointer;border:1px solid #ddd;background:#fff;color:#333;';
+  btnModeBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;cursor:pointer;border:1px solid #ddd;background:#e65100;color:#fff;';
 
-  modeRow.appendChild(textModeBtn);
+  var textModeBtn = document.createElement('button');
+  textModeBtn.type = 'button';
+  textModeBtn.textContent = 'テキスト入力';
+  textModeBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;cursor:pointer;border:1px solid #ddd;background:#fff;color:#333;';
+
   modeRow.appendChild(btnModeBtn);
+  modeRow.appendChild(textModeBtn);
   row.appendChild(modeRow);
 
-  // Text mode input
+  // Button mode UI (default visible)
+  var btnInputDiv = document.createElement('div');
+  btnInputDiv.className = 'sea-btn-mode';
+  var qtyUI = createSeasoningQuantityUI();
+  btnInputDiv.appendChild(qtyUI);
+  row.appendChild(btnInputDiv);
+
+  // Text mode input (hidden by default)
   var textInputDiv = document.createElement('div');
   textInputDiv.className = 'sea-text-mode';
+  textInputDiv.style.display = 'none';
   var qtyTextInput = document.createElement('input');
   qtyTextInput.type = 'text';
   qtyTextInput.placeholder = '分量（例: 大さじ2）';
@@ -261,16 +269,8 @@ function addSeasoningRow(data) {
   textInputDiv.appendChild(qtyTextInput);
   row.appendChild(textInputDiv);
 
-  // Button mode UI
-  var btnInputDiv = document.createElement('div');
-  btnInputDiv.className = 'sea-btn-mode';
-  btnInputDiv.style.display = 'none';
-  var qtyUI = createSeasoningQuantityUI();
-  btnInputDiv.appendChild(qtyUI);
-  row.appendChild(btnInputDiv);
-
-  // Current mode state
-  var currentMode = 'text';
+  // Current mode state (default: button)
+  var currentMode = 'button';
 
   function setMode(mode) {
     currentMode = mode;
@@ -470,6 +470,73 @@ function renderRecipeCard(cardData) {
 }
 
 /**
+ * カテゴリ管理モーダルを表示（admin専用）
+ */
+async function showCategorySettingsModal() {
+  var existing = document.getElementById('category-settings-overlay');
+  if (existing) existing.parentNode.removeChild(existing);
+
+  var overlay = document.createElement('div');
+  overlay.id = 'category-settings-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;';
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:90%;width:360px;';
+
+  var title = document.createElement('h3');
+  title.style.cssText = 'margin-bottom:16px;font-size:1.1em;';
+  title.textContent = '⚙️ カテゴリ管理';
+  modal.appendChild(title);
+
+  var categories = await RecipeCategoryRepository.getAll();
+  var listDiv = document.createElement('div');
+  listDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
+
+  for (var i = 0; i < categories.length; i++) {
+    (function(cat) {
+      var pill = document.createElement('span');
+      pill.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:16px;background:#f0f0f0;font-size:0.95em;';
+      var pillText = document.createElement('span');
+      pillText.textContent = cat;
+      pill.appendChild(pillText);
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '✕';
+      removeBtn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:0.9em;color:#e53935;padding:0 2px;';
+      removeBtn.addEventListener('click', async function() {
+        if (confirm('カテゴリ「' + cat + '」を削除しますか？\n※既存レシピのカテゴリは変更されません')) {
+          var result = await RecipeCategoryRepository.remove(cat);
+          if (!result.error) {
+            pill.parentNode.removeChild(pill);
+            showToast('カテゴリを削除しました', 'success');
+          } else {
+            showToast('削除に失敗しました', 'error');
+          }
+        }
+      });
+      pill.appendChild(removeBtn);
+      listDiv.appendChild(pill);
+    })(categories[i]);
+  }
+  modal.appendChild(listDiv);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'btn-secondary';
+  closeBtn.textContent = '閉じる';
+  closeBtn.style.cssText = 'width:100%;padding:12px;';
+  closeBtn.addEventListener('click', function() {
+    overlay.parentNode.removeChild(overlay);
+  });
+  modal.appendChild(closeBtn);
+
+  overlay.appendChild(modal);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.parentNode.removeChild(overlay);
+  });
+  document.body.appendChild(overlay);
+}
+
+/**
  * レシピ一覧をロードして描画
  */
 async function loadRecipeList() {
@@ -503,6 +570,18 @@ async function loadRecipeList() {
 
     // コンテナをクリア
     container.innerHTML = '';
+
+    // --- Admin カテゴリ管理ボタン ---
+    if (localStorage.getItem('deviceRole') === 'admin') {
+      var catSettingsBtn = document.createElement('button');
+      catSettingsBtn.type = 'button';
+      catSettingsBtn.textContent = '⚙️ カテゴリ管理';
+      catSettingsBtn.style.cssText = 'float:right;border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px 12px;font-size:0.85em;cursor:pointer;color:#666;margin-bottom:8px;';
+      catSettingsBtn.addEventListener('click', function() {
+        showCategorySettingsModal();
+      });
+      container.appendChild(catSettingsBtn);
+    }
 
     if (recipes.length === 0) {
       var emptyEl = document.createElement('div');
@@ -623,10 +702,14 @@ async function loadRecipeList() {
     var randomCatSelect = document.createElement('select');
     randomCatSelect.id = 'random-category-select';
     randomCatSelect.style.cssText = 'padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;background:#fff;';
-    var randomCats = ['全て', '主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+    var randomCats = await RecipeCategoryRepository.getAll();
+    var rcOptAll = document.createElement('option');
+    rcOptAll.value = '';
+    rcOptAll.textContent = '全て';
+    randomCatSelect.appendChild(rcOptAll);
     for (var rci = 0; rci < randomCats.length; rci++) {
       var rcOpt = document.createElement('option');
-      rcOpt.value = randomCats[rci] === '全て' ? '' : randomCats[rci];
+      rcOpt.value = randomCats[rci];
       rcOpt.textContent = randomCats[rci];
       randomCatSelect.appendChild(rcOpt);
     }
@@ -1728,7 +1811,7 @@ async function loadEditForm(id) {
   var catBtnRow = document.createElement('div');
   catBtnRow.id = 'edit-category-buttons';
   catBtnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
-  var categories = ['主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+  var categories = await RecipeCategoryRepository.getAll();
   var catButtons = [];
 
   for (var ci = 0; ci < categories.length; ci++) {
@@ -1759,6 +1842,45 @@ async function loadEditForm(id) {
       catBtnRow.appendChild(btn);
     })(categories[ci]);
   }
+
+  // Add new category button
+  var addCatBtn = document.createElement('button');
+  addCatBtn.type = 'button';
+  addCatBtn.textContent = '＋';
+  addCatBtn.style.cssText = 'min-height:40px;width:40px;border:2px dashed #ddd;border-radius:8px;background:#fafafa;font-size:1.2em;cursor:pointer;color:#e65100;';
+  addCatBtn.addEventListener('click', async function() {
+    var newCat = prompt('新しいカテゴリ名を入力:');
+    if (newCat && newCat.trim()) {
+      newCat = newCat.trim();
+      var result = await RecipeCategoryRepository.add(newCat);
+      if (!result.error) {
+        var newBtn = document.createElement('button');
+        newBtn.type = 'button';
+        newBtn.textContent = newCat;
+        newBtn.setAttribute('data-category', newCat);
+        newBtn.style.cssText = 'min-height:40px;padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:1em;cursor:pointer;font-weight:600;';
+        newBtn.addEventListener('click', function() {
+          for (var k = 0; k < catButtons.length; k++) {
+            catButtons[k].style.background = '#fff';
+            catButtons[k].style.color = '#333';
+            catButtons[k].style.borderColor = '#ddd';
+          }
+          if (hiddenCat.value === newCat) {
+            hiddenCat.value = '';
+          } else {
+            newBtn.style.background = '#e65100';
+            newBtn.style.color = '#fff';
+            newBtn.style.borderColor = '#e65100';
+            hiddenCat.value = newCat;
+          }
+        });
+        catButtons.push(newBtn);
+        catBtnRow.insertBefore(newBtn, addCatBtn);
+        showToast('カテゴリ「' + newCat + '」を追加しました', 'success');
+      }
+    }
+  });
+  catBtnRow.appendChild(addCatBtn);
   fragment.appendChild(catBtnRow);
 
   // Cook time + Servings row

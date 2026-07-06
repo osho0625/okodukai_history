@@ -22,6 +22,7 @@
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
 | `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 | `family-settlement.md` | `*settlement*` ファイルを開いた時 | 家庭内精算機能 |
+| `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ機能 |
 
 ## CSS構成
 
