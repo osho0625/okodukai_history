@@ -385,6 +385,39 @@ async function toggleExpenseMasterEnabled(id, enabled) {
 }
 
 // ========== Monthly Settlement ==========
+async function generateMonthlyData(yearMonth) {
+  try {
+    const { data: masters, error: masterErr } = await client
+      .from('expense_master')
+      .select('*')
+      .eq('enabled', true);
+    if (masterErr) throw masterErr;
+
+    const { data: existing, error: existErr } = await client
+      .from('monthly_expenses')
+      .select('expense_master_id')
+      .eq('year_month', yearMonth);
+    if (existErr) throw existErr;
+
+    const newRecords = generateMonthlyExpenses(masters || [], existing || [], yearMonth);
+    if (newRecords.length === 0) {
+      showToast('作成対象の有効な固定費がありません');
+      return;
+    }
+
+    const { error: insertErr } = await client
+      .from('monthly_expenses')
+      .upsert(newRecords, { onConflict: 'year_month,expense_master_id', ignoreDuplicates: true });
+    if (insertErr) throw insertErr;
+
+    showToast(`${yearMonth} の精算データを作成しました（${newRecords.length}件）`);
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Generate monthly data error:', err);
+    showToast('精算データの作成に失敗しました');
+  }
+}
+
 async function loadMonthlySettlement(yearMonth) {
   // 開始月より前には遡らせない
   if (yearMonth < SETTLEMENT_START_MONTH) yearMonth = SETTLEMENT_START_MONTH;
@@ -401,22 +434,6 @@ async function loadMonthlySettlement(yearMonth) {
     if (masterErr) throw masterErr;
 
     // 2. Get existing monthly expenses
-    const { data: existing, error: existErr } = await client
-      .from('monthly_expenses')
-      .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled')
-      .eq('year_month', yearMonth);
-    if (existErr) throw existErr;
-
-    // 3. Generate missing monthly expenses (INSERT ON CONFLICT DO NOTHING)
-    const newRecords = generateMonthlyExpenses(masters || [], existing || [], yearMonth);
-    if (newRecords.length > 0) {
-      const { error: insertErr } = await client
-        .from('monthly_expenses')
-        .upsert(newRecords, { onConflict: 'year_month,expense_master_id', ignoreDuplicates: true });
-      if (insertErr) throw insertErr;
-    }
-
-    // 4. Re-fetch monthly expenses after generation
     const { data: monthlyExpenses, error: meErr } = await client
       .from('monthly_expenses')
       .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, expense_master:expense_master_id(name, settlement_cycle)')
@@ -424,7 +441,7 @@ async function loadMonthlySettlement(yearMonth) {
       .order('created_at', { ascending: true });
     if (meErr) throw meErr;
 
-    // 5. Get temporary expenses for this month
+    // 3. Get temporary expenses for this month
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
       .select('id, title, payer, amount, beneficiaries, note, settled')
@@ -432,7 +449,7 @@ async function loadMonthlySettlement(yearMonth) {
       .order('created_at', { ascending: true });
     if (teErr) throw teErr;
 
-    // 6. Check if this month is already settled
+    // 4. Check if this month is already settled
     const { data: settlementRecord } = await client
       .from('settlement_history')
       .select('id, status, payer_from, payer_to, amount, memo, paid_at, created_at')
@@ -456,6 +473,27 @@ async function loadMonthlySettlement(yearMonth) {
     html += `<h3 style="margin:0;">💴 ${yearMonth} の精算</h3>`;
     html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadMonthlySettlement(nextMonth('${yearMonth}'))">▶</button>`;
     html += '</div>';
+
+    // 月次データが未作成の場合、作成ボタンを表示
+    if ((!monthlyExpenses || monthlyExpenses.length === 0) && !isSettled) {
+      html += '<div class="card" style="text-align:center;">';
+      html += '<div style="font-size:2em;margin-bottom:12px;">📋</div>';
+      html += `<div style="color:#888;margin-bottom:16px;">${yearMonth} の精算データはまだ作成されていません</div>`;
+      html += `<button class="btn-primary" onclick="generateMonthlyData('${yearMonth}')">この月の精算データを作成する</button>`;
+      html += '</div>';
+
+      // 立替金セクションは月次データなくても表示
+      html += '<div class="card">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+      html += '<h4>🧾 一時立替金</h4>';
+      html += `<button class="btn-secondary" style="padding:6px 12px;font-size:0.85em;" onclick="showTemporaryExpenseModal(null, '${yearMonth}')">＋追加</button>`;
+      html += '</div>';
+      html += renderTemporaryExpensesList(tempExpenses || [], false);
+      html += '</div>';
+
+      container.innerHTML = html;
+      return;
+    }
 
     // Settled badge
     if (isSettled) {
