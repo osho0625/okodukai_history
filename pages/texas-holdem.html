@@ -488,7 +488,8 @@ h1 { font-size: 1.3em; font-weight: 700; }
     </div>
 
     <div class="tip-box">
-      🟢 緑 = レイズ/3ベット ｜ 🔵 青 = レイズ ｜ 🟡 黄 = コール可 ｜ ⬜ 白 = フォールド
+      🟢 緑 = レイズ/3ベット ｜ 🔵 青 = オープンレイズ ｜ 🟡 黄 = 相手のレイズにコール可 ｜ ⬜ 白 = フォールド<br>
+      <span style="font-size:0.85em; color:#ccc;">※ 黄色はリンプ（BBと同額で入る）ではなく、誰かがレイズした後にコールで参加する意味。</span>
     </div>
 
     <div style="overflow-x:auto; margin:12px 0;" id="preflopGrid"></div>
@@ -695,23 +696,73 @@ h1 { font-size: 1.3em; font-weight: 700; }
   <!-- 用語集 -->
   <div class="content-section" id="tab-terms">
     <h2>📖 用語集</h2>
+
+    <h3>🎮 基本アクション</h3>
+    <ul class="term-list">
+      <li><strong>チェック</strong> — ベットせずに次の人に回す（誰もベットしてない時のみ可）</li>
+      <li><strong>ベット</strong> — そのラウンドで最初にチップを賭ける</li>
+      <li><strong>コール</strong> — 前の人と同額をベット</li>
+      <li><strong>レイズ</strong> — 前の人より多くベット（最低額 = 前のレイズ幅と同額以上）</li>
+      <li><strong>リレイズ（3ベット）</strong> — レイズに対してさらにレイズすること</li>
+      <li><strong>4ベット / 5ベット</strong> — 3ベットに対するレイズ / さらにその上</li>
+      <li><strong>オールイン</strong> — 持ちチップ全額をベット</li>
+      <li><strong>フォールド</strong> — 手札を捨てて降りる（そのハンドは終了）</li>
+      <li><strong>リンプ</strong> — プリフロップでレイズせずBBと同額だけ入れること（一般に弱いプレイとされる）</li>
+    </ul>
+
+    <h3>🃏 カード・役関連</h3>
     <ul class="term-list">
       <li><strong>ホールカード</strong> — 各プレイヤーに配られる裏向きの手札2枚</li>
-      <li><strong>コミュニティカード</strong> — テーブル中央に表向きで出る共有カード（最大5枚）</li>
+      <li><strong>コミュニティカード（ボード）</strong> — テーブル中央に表向きで出る共有カード（最大5枚）</li>
+      <li><strong>スート</strong> — カードのマーク（♠♥♦♣）。ポーカーでは強さに差はない</li>
+      <li><strong>スーテッド（s）</strong> — 手札2枚が同じスート（例: A♥K♥）。フラッシュを狙える</li>
+      <li><strong>オフスート（o）</strong> — 手札2枚が違うスート（例: A♥K♠）</li>
+      <li><strong>ポケットペア</strong> — 手札2枚が同じ数字（例: QQ、77）</li>
+      <li><strong>コネクター</strong> — 連続した数字の手札（例: 98, JT）。ストレートを狙える</li>
+      <li><strong>ナッツ</strong> — その場面で最強の手（ボードを見てこれ以上の役がない）</li>
+      <li><strong>セット</strong> — ポケットペア + ボードの1枚でスリーカード</li>
+      <li><strong>トリップス</strong> — ボードのペア + 手札の1枚でスリーカード</li>
+      <li><strong>キッカー</strong> — 同じ役同士の比較で使われる、役に含まれない最高カード</li>
+      <li><strong>バーンカード</strong> — コミュニティカード配布前に1枚捨てるカード（イカサマ防止）</li>
+    </ul>
+
+    <h3>💰 ベッティング構造</h3>
+    <ul class="term-list">
       <li><strong>ポット</strong> — 全員のベットが集まった賞金プール</li>
       <li><strong>ブラインド</strong> — ゲーム開始時の強制ベット（SBとBB）</li>
       <li><strong>アンティ</strong> — 全員が出す参加費（トーナメントで使用）</li>
-      <li><strong>チェック</strong> — ベットせずに次の人に回す（誰もベットしてない時のみ可）</li>
-      <li><strong>コール</strong> — 前の人と同額をベット</li>
-      <li><strong>レイズ</strong> — 前の人より多くベット（最低額 = 前のレイズ幅と同額以上）</li>
-      <li><strong>オールイン</strong> — 持ちチップ全額をベット</li>
-      <li><strong>フォールド</strong> — 手札を捨てて降りる（そのハンドは終了）</li>
-      <li><strong>バーンカード</strong> — コミュニティカード配布前に1枚捨てるカード</li>
-      <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
-      <li><strong>ナッツ</strong> — その場面で最強の手（例: ボードを見てこれ以上の役がない）</li>
+      <li><strong>ポットリミット</strong> — ベット/レイズの上限がポットサイズまでのルール</li>
+      <li><strong>ノーリミット</strong> — ベット額に上限なし（テキサスホールデムの標準）</li>
+      <li><strong>サイドポット</strong> — オールインした人が参加できるポットと、それ以降のベットで作られるポットが分かれる</li>
+      <li><strong>レーキ</strong> — カジノが徴収する手数料（ポットの一部）</li>
+    </ul>
+
+    <h3>📐 戦略用語</h3>
+    <ul class="term-list">
+      <li><strong>レンジ</strong> — あるポジション/状況で参加するハンドの範囲</li>
+      <li><strong>オープンレイズ</strong> — プリフロップで最初にレイズすること（推奨される入り方）</li>
+      <li><strong>Cベット（コンティニュエーションベット）</strong> — プリフロップのレイザーがフロップでもベットすること</li>
+      <li><strong>ドンクベット</strong> — 前のラウンドのレイザーより先にベットすること（通常は非推奨）</li>
+      <li><strong>バリューベット</strong> — 強い手で相手にコールしてもらうためのベット</li>
+      <li><strong>ブラフ</strong> — 弱い手で強気にベットして相手を降ろすテクニック</li>
+      <li><strong>セミブラフ</strong> — 今は弱いが改善の可能性がある手（ドロー）でのブラフ</li>
       <li><strong>アウツ</strong> — 自分の手を改善してくれる残りカードの枚数</li>
-      <li><strong>ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>オッズ / ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>エクイティ</strong> — 現在の手がショーダウンまで行った場合に勝つ確率</li>
+      <li><strong>EV（期待値）</strong> — ある行動の平均的な利益/損失</li>
+      <li><strong>ドロー</strong> — あと1枚来れば役が完成する状態（例: フラッシュドロー = あと1枚で同スート5枚）</li>
+      <li><strong>テル</strong> — 相手の手の強さを示す無意識のサイン（表情、仕草など）</li>
       <li><strong>ティルト</strong> — 感情的になってプレイが雑になること（気をつけよう！）</li>
+      <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
+    </ul>
+
+    <h3>🎯 ゲーム形式</h3>
+    <ul class="term-list">
+      <li><strong>キャッシュゲーム（リングゲーム）</strong> — いつでも参加/退席可。チップ = リアルマネー</li>
+      <li><strong>トーナメント</strong> — 全員同額でスタート。チップが無くなったら脱落。最後の1人が優勝</li>
+      <li><strong>シットアンドゴー（SNG）</strong> — 人数が揃ったら始まるミニトーナメント</li>
+      <li><strong>フリーロール</strong> — 参加費無料のトーナメント</li>
+      <li><strong>ヘッズアップ</strong> — 1対1の対戦</li>
     </ul>
   </div>
 </div>
