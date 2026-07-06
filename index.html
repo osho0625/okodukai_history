@@ -1301,14 +1301,18 @@ async function loadReminders() {
       return days.includes(todayDow) || days.includes(tomorrowDow);
     });
 
-    // Filter yearly: 今年のevent_dateの月日が今日から7日以内
+    // Filter yearly: 今年or来年のevent_dateの月日が今日から7日以内
     const filteredYearly = (yearlys || []).filter(r => {
       if (!r.event_date) return false;
       const parts = r.event_date.split('-');
       const eventMonth = parseInt(parts[1], 10) - 1;
       const eventDay = parseInt(parts[2], 10);
-      const thisYearEvent = new Date(today.getFullYear(), eventMonth, eventDay);
-      return thisYearEvent >= today && thisYearEvent <= sevenDaysLater;
+      const thisYear = today.getFullYear();
+      const candidates = [
+        new Date(thisYear, eventMonth, eventDay),
+        new Date(thisYear + 1, eventMonth, eventDay)
+      ];
+      return candidates.some(d => d >= today && d <= sevenDaysLater);
     });
 
     // Filter events: event_date between today and today+7 days (inclusive)
@@ -1377,7 +1381,9 @@ function renderReminderItem(r, type, today) {
     const parts = r.event_date.split('-');
     const eventMonth = parseInt(parts[1], 10);
     const eventDay = parseInt(parts[2], 10);
-    const thisYearEvent = new Date(today.getFullYear(), eventMonth - 1, eventDay);
+    const thisYear = today.getFullYear();
+    let thisYearEvent = new Date(thisYear, eventMonth - 1, eventDay);
+    if (thisYearEvent < today) thisYearEvent = new Date(thisYear + 1, eventMonth - 1, eventDay);
     const diffDays = Math.round((thisYearEvent - today) / (1000 * 60 * 60 * 24));
     meta = diffDays === 0 ? '🎉 今日！' : eventMonth + '/' + eventDay + ' あと' + diffDays + '日';
   }

@@ -95,6 +95,17 @@ function handleRoute() {
 
   // タブバーのアクティブ状態更新
   updateActiveTab(view);
+
+  // ビュー固有のロード処理
+  if (view === 'list') {
+    if (typeof loadRecipeList === 'function') {
+      loadRecipeList();
+    }
+  } else if (view === 'detail' && id) {
+    if (typeof loadRecipeDetail === 'function') {
+      loadRecipeDetail(id);
+    }
+  }
 }
 
 /**
