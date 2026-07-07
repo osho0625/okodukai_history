@@ -54,10 +54,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
   <a class="home" href="../index.html">&#x1F3E0;</a>
 </div>
 
-<div id="readonlyNotice" class="readonly-notice" style="display:none;">
-  &#x1F512; 閲覧専用（チップ操作はadmin端末から）
-</div>
-
 <div id="players"><div class="loading">読み込み中...</div></div>
 
 <!-- カスタム増減モーダル -->
@@ -81,9 +77,6 @@ let chipData = {};
 let customTarget = null;
 
 async function init() {
-  if (!isChipAdmin) {
-    document.getElementById('readonlyNotice').style.display = 'block';
-  }
   await loadChips();
 }
 
