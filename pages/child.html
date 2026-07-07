@@ -282,34 +282,29 @@ h2 { margin-bottom: 12px; color: #333; }
 </div>
 
 <div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-  <div onclick="toggleAccordion('balanceChartBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
-    <span class="acc-arrow">▶</span> 💰 おこづかい残高グラフ
-  </div>
-  <div id="balanceChartBody" style="display:none; padding:0 16px 16px;">
-    <div id="balancePlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
-    <canvas id="balanceChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
-    <div id="balanceLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
-    <div id="balanceChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
-  </div>
-</div>
-
-<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-  <div onclick="toggleAccordion('pointsChartBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
-    <span class="acc-arrow">▶</span> ⭐ ポイント推移グラフ
-  </div>
-  <div id="pointsChartBody" style="display:none; padding:0 16px 16px;">
-    <div id="pointsPlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
-    <canvas id="pointsChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
-    <div id="pointsLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
-    <div id="pointsChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
-  </div>
-</div>
-
-<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
   <div onclick="toggleAccordion('historyBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
     <span class="acc-arrow">▶</span> 📋 履歴
   </div>
   <div id="historyBody" style="display:none; padding:0 16px 16px;">
+    <!-- グラフ表示ボタン -->
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <button onclick="toggleInlineChart('balanceChartBody', this)" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; cursor:pointer; font-size:0.85em; font-weight:600; color:#555;">💰 残高グラフ</button>
+      <button onclick="toggleInlineChart('pointsChartBody', this)" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; cursor:pointer; font-size:0.85em; font-weight:600; color:#555;">⭐ ポイントグラフ</button>
+    </div>
+    <!-- 残高グラフ（インライン） -->
+    <div id="balanceChartBody" style="display:none; margin-bottom:12px; background:#f9f9f9; border-radius:8px; padding:12px;">
+      <div id="balancePlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
+      <canvas id="balanceChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
+      <div id="balanceLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
+      <div id="balanceChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
+    </div>
+    <!-- ポイントグラフ（インライン） -->
+    <div id="pointsChartBody" style="display:none; margin-bottom:12px; background:#f9f9f9; border-radius:8px; padding:12px;">
+      <div id="pointsPlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
+      <canvas id="pointsChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
+      <div id="pointsLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
+      <div id="pointsChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
+    </div>
     <div class="history-list" id="history">
       <div class="loading">読み込み中...</div>
     </div>
@@ -439,6 +434,28 @@ function toggleAccordion(bodyId, headerEl) {
   } else {
     body.style.display = 'none';
     if (arrow) arrow.classList.remove('open');
+  }
+}
+
+function toggleInlineChart(bodyId, btn) {
+  const body = document.getElementById(bodyId);
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    btn.style.background = '#e3f2fd';
+    btn.style.borderColor = '#2196f3';
+    // グラフ初回描画トリガー（child-charts.jsのオーバーライドと同じロジック）
+    if (bodyId === 'balanceChartBody' && !balanceChartInitialized) {
+      balanceChartInitialized = true;
+      initBalanceChart();
+    }
+    if (bodyId === 'pointsChartBody' && !pointsChartInitialized) {
+      pointsChartInitialized = true;
+      initPointsChart();
+    }
+  } else {
+    body.style.display = 'none';
+    btn.style.background = '#f9f9f9';
+    btn.style.borderColor = '#ddd';
   }
 }
 
