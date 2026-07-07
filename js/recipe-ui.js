@@ -1784,6 +1784,7 @@ function addStepRow(data) {
  * @param {string} status - 'published' | 'draft' | 'private'
  */
 async function saveRecipe(status) {
+  try {
   clearFieldErrors();
 
   // Collect form data
@@ -1950,6 +1951,9 @@ async function saveRecipe(status) {
 
   showToast('保存しました', 'success');
   navigateTo('#detail/' + savedId);
+  } catch (e) {
+    showToast('保存中にエラーが発生しました: ' + (e.message || ''), 'error');
+  }
 }
 
 /**
