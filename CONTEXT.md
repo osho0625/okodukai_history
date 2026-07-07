@@ -22,7 +22,24 @@
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
 | `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 | `family-settlement.md` | `*settlement*` ファイルを開いた時 | 家庭内精算機能 |
-| `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ機能 |
+| `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ管理 |
+
+## 機能一覧
+
+| 機能 | ページ | 概要 |
+|------|--------|------|
+| お小遣い管理 | index.html, child.html | アカウント管理・ポイント・入出金・演出 |
+| 漢字50問テスト | pages/kanji-test.html | 学年別漢字テスト・手書き認識 |
+| ぴくぴく対戦 | pages/puyo-battle.html | ぷよぷよ風リアルタイム対戦 |
+| 算数オリンピック | pages/math-olympiad.html | 学年別算数問題 |
+| レシピ | pages/recipe.html | 家族レシピ管理（6タブ: レシピ/素材検索/献立/買い物/設定） |
+| 家庭内精算 | pages/settlement.html | 固定費折半・立替精算（5タブ） |
+| お手伝いリスト | pages/chores.html | 家事タスク管理・ポイント連携 |
+| 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント |
+| ナースコール | pages/nurse-call.html | 体温記録・通話 |
+| ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
+| テキサスホールデム | pages/texas-holdem.html | ルールガイド |
+| あそびチケット | pages/tickets.html | チケット発行・消費 |
 
 ## CSS構成
 
