@@ -17,11 +17,11 @@ h1 { font-size: 1.15em; color: #ffd700; }
 .my-chips { text-align: center; background: #16213e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
 .my-chips .label { font-size: 0.85em; color: #aaa; }
 .my-chips .value { font-size: 1.5em; font-weight: 700; color: #ffd700; margin-top: 4px; }
-.prize-card { background: #16213e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-.prize-info { flex: 1; }
-.prize-name { font-weight: 600; font-size: 1em; }
-.prize-cost { font-size: 0.85em; color: #ffc107; margin-top: 2px; }
-.prize-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.85em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; }
+.prize-card { background: #16213e; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.prize-info { flex: 1; display: flex; align-items: center; gap: 8px; }
+.prize-name { font-weight: 600; font-size: 0.85em; }
+.prize-cost { font-size: 0.75em; color: #ffc107; white-space: nowrap; }
+.prize-btn { border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; }
 .prize-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 .prize-btn:active:not(:disabled) { transform: scale(0.95); }
 .recovery-section { text-align: center; background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
@@ -65,7 +65,9 @@ h1 { font-size: 1.15em; color: #ffd700; }
 
 <script>
 const PRIZES = [
-  { name: '&#x1F3AB; あそびチケット 1枚（30分）', cost: 3000, type: 'ticket' },
+  { name: '&#x1F3AB; チケット30分', cost: 2000, type: 'ticket', minutes: 30 },
+  { name: '&#x1F3AB; チケット60分', cost: 3000, type: 'ticket', minutes: 60 },
+  { name: '&#x1F3AB; チケット120分', cost: 4000, type: 'ticket', minutes: 120 },
   { name: '&#x1F36C; おやつ（50円まで）', cost: 3000, type: 'snack' },
   { name: '&#x1F36B; おやつ（100円まで）', cost: 3500, type: 'snack' },
   { name: '&#x1F370; おやつ（150円まで）', cost: 4000, type: 'snack' },
@@ -119,8 +121,8 @@ function renderPrizes() {
     const canAfford = currentChips >= p.cost;
     return `<div class="prize-card">
       <div class="prize-info">
-        <div class="prize-name">${p.name}</div>
-        <div class="prize-cost">${p.cost.toLocaleString()} チップ</div>
+        <span class="prize-name">${p.name}</span>
+        <span class="prize-cost">${p.cost.toLocaleString()}</span>
       </div>
       <button class="prize-btn" ${canAfford ? '' : 'disabled'} onclick="exchange(${i})">交換</button>
     </div>`;
@@ -153,7 +155,7 @@ async function exchange(idx) {
   if (prize.type === 'ticket' && TICKET_OWNERS.includes(currentPlayer)) {
     await client.from('tickets').insert({
       owner: currentPlayer,
-      duration_minutes: 30,
+      duration_minutes: prize.minutes || 30,
       status: 'unused',
       memo: 'チップ交換所で獲得'
     });
