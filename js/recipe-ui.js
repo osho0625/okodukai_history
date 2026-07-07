@@ -1852,14 +1852,12 @@ async function saveRecipe(status) {
     return;
   }
 
-  // Get author
-  var author = await getCurrentUserName();
+  // Get author from form selection
+  var authorInput = document.getElementById('edit-author');
+  var author = authorInput ? authorInput.value : '';
   if (!author) {
-    author = await promptUserName();
-    if (!author) {
-      showToast('ユーザー名が取得できません', 'error');
-      return;
-    }
+    showToast('レシピの作者を選んでください', 'error');
+    return;
   }
 
   // Save recipe
@@ -1950,6 +1948,7 @@ async function saveRecipe(status) {
   }
 
   showToast('保存しました', 'success');
+  localStorage.removeItem('recipe_draft_form');
   navigateTo('#detail/' + savedId);
   } catch (e) {
     showToast('保存中にエラーが発生しました: ' + (e.message || ''), 'error');
@@ -1983,6 +1982,56 @@ async function loadEditForm(id) {
   hiddenCat.id = 'edit-category';
   hiddenCat.value = '';
   fragment.appendChild(hiddenCat);
+
+  // Hidden input for author
+  var hiddenAuthor = document.createElement('input');
+  hiddenAuthor.type = 'hidden';
+  hiddenAuthor.id = 'edit-author';
+  hiddenAuthor.value = '';
+  fragment.appendChild(hiddenAuthor);
+
+  // --- 誰のレシピ？ セクション（一番上） ---
+  var authorSection = document.createElement('div');
+  authorSection.style.cssText = 'margin-bottom:20px;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);';
+
+  var authorLabel = document.createElement('div');
+  authorLabel.style.cssText = 'font-weight:700;font-size:1.1em;margin-bottom:12px;color:#333;';
+  authorLabel.textContent = '👨‍🍳 だれのレシピ？';
+  authorSection.appendChild(authorLabel);
+
+  var authorBtnRow = document.createElement('div');
+  authorBtnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  authorBtnRow.id = 'edit-author-buttons';
+
+  var members = await getRecipeMembers();
+  for (var mi = 0; mi < members.length; mi++) {
+    (function(name) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = name;
+      btn.className = 'author-select-btn';
+      btn.style.cssText = 'flex:1;min-width:80px;padding:12px 16px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.05em;font-weight:600;cursor:pointer;transition:all 0.2s;color:#333;';
+      btn.addEventListener('click', function() {
+        hiddenAuthor.value = name;
+        // Update button styles
+        var allBtns = authorBtnRow.querySelectorAll('.author-select-btn');
+        for (var ab = 0; ab < allBtns.length; ab++) {
+          allBtns[ab].style.background = '#fff';
+          allBtns[ab].style.color = '#333';
+          allBtns[ab].style.borderColor = '#ddd';
+        }
+        btn.style.background = '#e65100';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#e65100';
+        // Trigger change event for auto-save
+        hiddenAuthor.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      authorBtnRow.appendChild(btn);
+    })(members[mi]);
+  }
+
+  authorSection.appendChild(authorBtnRow);
+  fragment.appendChild(authorSection);
 
   // Title
   var titleLabel = document.createElement('label');
@@ -2330,8 +2379,8 @@ async function loadEditForm(id) {
   var publishBtn = document.createElement('button');
   publishBtn.type = 'button';
   publishBtn.className = 'btn-primary';
-  publishBtn.textContent = '公開保存';
-  publishBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:none;border-radius:10px;background:#e65100;color:#fff;font-size:1.1em;font-weight:600;cursor:pointer;';
+  publishBtn.textContent = '保存';
+  publishBtn.style.cssText = 'flex:2;min-height:48px;padding:12px 24px;border:none;border-radius:10px;background:#e65100;color:#fff;font-size:1.1em;font-weight:600;cursor:pointer;';
   publishBtn.addEventListener('click', function() { saveRecipe('published'); });
   btnRow.appendChild(publishBtn);
 
@@ -2342,14 +2391,6 @@ async function loadEditForm(id) {
   draftBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.1em;font-weight:600;cursor:pointer;color:#333;';
   draftBtn.addEventListener('click', function() { saveRecipe('draft'); });
   btnRow.appendChild(draftBtn);
-
-  var privateBtn = document.createElement('button');
-  privateBtn.type = 'button';
-  privateBtn.className = 'btn-secondary';
-  privateBtn.textContent = '非公開保存';
-  privateBtn.style.cssText = 'flex:1;min-height:48px;padding:12px 24px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.1em;font-weight:600;cursor:pointer;color:#333;';
-  privateBtn.addEventListener('click', function() { saveRecipe('private'); });
-  btnRow.appendChild(privateBtn);
 
   fragment.appendChild(btnRow);
   container.appendChild(fragment);
@@ -2408,6 +2449,19 @@ async function loadEditForm(id) {
       timeInput.value = recipe.cook_time_minutes || '';
       servInput.value = recipe.servings || '';
 
+      // Set author button selection
+      if (recipe.author) {
+        hiddenAuthor.value = recipe.author;
+        var authorBtns = document.querySelectorAll('#edit-author-buttons .author-select-btn');
+        for (var abi = 0; abi < authorBtns.length; abi++) {
+          if (authorBtns[abi].textContent === recipe.author) {
+            authorBtns[abi].style.background = '#e65100';
+            authorBtns[abi].style.color = '#fff';
+            authorBtns[abi].style.borderColor = '#e65100';
+          }
+        }
+      }
+
       // Set category button selection
       if (recipe.category) {
         hiddenCat.value = recipe.category;
@@ -2464,9 +2518,148 @@ async function loadEditForm(id) {
     }
   } else {
     // New recipe: add one empty ingredient row, one empty seasoning row, and one empty step row
-    addIngredientRow();
-    addSeasoningRow();
-    addStepRow();
+    // まずlocalStorageから下書きデータを復元
+    var savedDraft = null;
+    try {
+      var draftStr = localStorage.getItem('recipe_draft_form');
+      if (draftStr) savedDraft = JSON.parse(draftStr);
+    } catch(e) {}
+
+    if (savedDraft) {
+      titleInput.value = savedDraft.title || '';
+      descInput.value = savedDraft.description || '';
+      timeInput.value = savedDraft.cookTime || '';
+      servInput.value = savedDraft.servings || '';
+      if (savedDraft.author) {
+        hiddenAuthor.value = savedDraft.author;
+        var draftAuthorBtns = document.querySelectorAll('#edit-author-buttons .author-select-btn');
+        for (var dabi = 0; dabi < draftAuthorBtns.length; dabi++) {
+          if (draftAuthorBtns[dabi].textContent === savedDraft.author) {
+            draftAuthorBtns[dabi].style.background = '#e65100';
+            draftAuthorBtns[dabi].style.color = '#fff';
+            draftAuthorBtns[dabi].style.borderColor = '#e65100';
+          }
+        }
+      }
+      if (savedDraft.category) {
+        hiddenCat.value = savedDraft.category;
+        for (var cbi2 = 0; cbi2 < catButtons.length; cbi2++) {
+          if (catButtons[cbi2].getAttribute('data-category') === savedDraft.category) {
+            catButtons[cbi2].style.background = '#e65100';
+            catButtons[cbi2].style.color = '#fff';
+            catButtons[cbi2].style.borderColor = '#e65100';
+          }
+        }
+      }
+      var draftIngs = savedDraft.ingredients || [];
+      for (var dii = 0; dii < draftIngs.length; dii++) {
+        addIngredientRow(draftIngs[dii]);
+      }
+      var draftSeas = savedDraft.seasonings || [];
+      for (var dsi = 0; dsi < draftSeas.length; dsi++) {
+        addSeasoningRow(draftSeas[dsi]);
+      }
+      var draftSteps = savedDraft.steps || [];
+      for (var dst = 0; dst < draftSteps.length; dst++) {
+        addStepRow(draftSteps[dst]);
+      }
+      var draftTags = savedDraft.tags || [];
+      for (var dti = 0; dti < draftTags.length; dti++) {
+        editTagsList.push(draftTags[dti]);
+      }
+      renderEditTagPills(tagPills);
+      updateTagSuggestions();
+      if (savedDraft.allergies) {
+        for (var dai = 0; dai < savedDraft.allergies.length; dai++) {
+          var alCb = allergyGrid.querySelector('input[value="' + savedDraft.allergies[dai] + '"]');
+          if (alCb) alCb.checked = true;
+        }
+      }
+      showToast('前回の入力を復元しました', 'info');
+    } else {
+      addIngredientRow();
+      addSeasoningRow();
+      addStepRow();
+    }
+  }
+
+  // --- 自動保存: 新規作成時のみ、フォーム変更をlocalStorageに保存 ---
+  if (!id) {
+    var autoSaveTimer = null;
+    function autoSaveDraft() {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(function() {
+        var draft = collectFormDraft();
+        if (draft) {
+          localStorage.setItem('recipe_draft_form', JSON.stringify(draft));
+        }
+      }, 1000);
+    }
+
+    function collectFormDraft() {
+      var t = titleInput ? titleInput.value : '';
+      var d = descInput ? descInput.value : '';
+      var ct = timeInput ? timeInput.value : '';
+      var sv = servInput ? servInput.value : '';
+      var cat = hiddenCat ? hiddenCat.value : '';
+
+      var ings = [];
+      var ingRows = document.querySelectorAll('#edit-ingredients-list .ingredient-row');
+      for (var i = 0; i < ingRows.length; i++) {
+        var n = ingRows[i].querySelector('.ing-name');
+        var q = ingRows[i].querySelector('.ing-quantity');
+        var m = ingRows[i].querySelector('.ing-memo');
+        if (n && n.value.trim()) {
+          ings.push({ name: n.value, quantity: q ? q.value : '', memo: m ? m.value : '' });
+        }
+      }
+
+      var seas = [];
+      var seaRows = document.querySelectorAll('#edit-seasonings-list .seasoning-row');
+      for (var s = 0; s < seaRows.length; s++) {
+        var sn = seaRows[s].querySelector('.sea-name');
+        if (sn && sn.value.trim()) {
+          var sq = seaRows[s].getQuantity ? seaRows[s].getQuantity() : '';
+          seas.push({ name: sn.value, quantity: sq });
+        }
+      }
+
+      var stps = [];
+      var stpRows = document.querySelectorAll('#edit-steps-list .step-row');
+      for (var st = 0; st < stpRows.length; st++) {
+        var sd = stpRows[st].querySelector('.step-description');
+        if (sd && sd.value.trim()) {
+          stps.push({ description: sd.value });
+        }
+      }
+
+      var als = [];
+      var alChecks = document.querySelectorAll('.allergy-check:checked');
+      for (var a = 0; a < alChecks.length; a++) {
+        als.push(alChecks[a].value);
+      }
+
+      // 何も入力が無ければ保存しない
+      if (!t && !d && ings.length === 0 && seas.length === 0 && stps.length === 0) return null;
+
+      return {
+        title: t,
+        description: d,
+        cookTime: ct,
+        servings: sv,
+        category: cat,
+        author: hiddenAuthor ? hiddenAuthor.value : '',
+        ingredients: ings,
+        seasonings: seas,
+        steps: stps,
+        tags: editTagsList.slice(),
+        allergies: als
+      };
+    }
+
+    // フォーム内のinput/textarea/select変更を監視
+    container.addEventListener('input', autoSaveDraft);
+    container.addEventListener('change', autoSaveDraft);
   }
 }
 
