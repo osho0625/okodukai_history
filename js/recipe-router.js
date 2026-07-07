@@ -51,7 +51,8 @@ function handleRoute() {
     'view-ingredient-search',
     'view-meal-plan',
     'view-shopping',
-    'view-print'
+    'view-print',
+    'view-settings'
   ];
 
   // 対象ビューのIDを決定
@@ -160,7 +161,8 @@ function switchTab(tabName) {
     'view-ingredient-search',
     'view-meal-plan',
     'view-shopping',
-    'view-print'
+    'view-print',
+    'view-settings'
   ];
 
   const activeViewId = 'view-' + viewName;
@@ -206,6 +208,10 @@ function switchTab(tabName) {
   } else if (viewName === 'meal-plan') {
     if (typeof loadMealPlanView === 'function') {
       loadMealPlanView();
+    }
+  } else if (viewName === 'settings') {
+    if (typeof loadSettingsView === 'function') {
+      loadSettingsView();
     }
   }
 }
