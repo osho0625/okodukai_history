@@ -158,6 +158,14 @@ function render() {
 }
 
 init();
+
+// bfcache対策: ページに戻ったときにデータ再取得
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) loadChips();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') loadChips();
+});
 </script>
 </body>
 </html>

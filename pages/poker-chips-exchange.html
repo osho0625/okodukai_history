@@ -247,6 +247,14 @@ function showResult(msg, type) {
 }
 
 init();
+
+// bfcache対策: ページに戻ったときにデータ再取得
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && currentPlayer) loadPlayerData();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentPlayer) loadPlayerData();
+});
 </script>
 </body>
 </html>

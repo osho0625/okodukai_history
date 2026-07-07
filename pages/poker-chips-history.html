@@ -361,6 +361,14 @@ function drawChart() {
 }
 
 init();
+
+// bfcache対策: ページに戻ったときにデータ再取得
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) loadAll();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') loadAll();
+});
 </script>
 </body>
 </html>
