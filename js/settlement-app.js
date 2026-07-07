@@ -735,6 +735,12 @@ async function executeMonthlySettlement(yearMonth) {
     if (error) throw error;
 
     showToast('精算を確定しました');
+
+    // Discord通知
+    notifyDiscord(`✅ **月次精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
+    // Push通知
+    queuePushNotification('✅ 月次精算確定', `${yearMonth} の精算が確定しました。${transfer.from}→${transfer.to} ${transfer.amount.toLocaleString()}円`, 'all');
+
     loadMonthlySettlement(yearMonth);
   } catch (err) {
     console.error('Execute monthly settlement error:', err);
@@ -782,6 +788,12 @@ async function executeAdditionalSettlement(yearMonth) {
     if (error) throw error;
 
     showToast('追加精算を確定しました');
+
+    // Discord通知
+    notifyDiscord(`✅ **追加精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
+    // Push通知
+    queuePushNotification('✅ 追加精算確定', `${yearMonth} の追加精算が確定しました。${transfer.from}→${transfer.to} ${transfer.amount.toLocaleString()}円`, 'all');
+
     loadMonthlySettlement(yearMonth);
   } catch (err) {
     console.error('Execute additional settlement error:', err);
@@ -1359,6 +1371,13 @@ async function executeDifferenceSettlement(year, period) {
     if (error) throw error;
 
     showToast('差額精算を確定しました');
+
+    // Discord通知
+    const periodLabel = period === 'first_half' ? '上半期' : '下半期';
+    notifyDiscord(`✅ **差額精算確定** (${year}年${periodLabel})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
+    // Push通知
+    queuePushNotification('✅ 差額精算確定', `${year}年${periodLabel}の差額精算が確定しました。${transfer.from}→${transfer.to} ${transfer.amount.toLocaleString()}円`, 'all');
+
     loadDifferenceSettlement(year, period);
   } catch (err) {
     console.error('Execute difference settlement error:', err);
