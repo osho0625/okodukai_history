@@ -92,21 +92,25 @@ function getTopRecipes(recipes, statsMap, mode, limit) {
  * @returns {Promise<string|null>}
  */
 async function getCurrentUserName() {
-  // client はグローバル（common.jsで定義）
-  const deviceId = localStorage.getItem('push_device_id');
-  if (deviceId) {
-    const { data: sub } = await client.from('push_subscriptions')
-      .select('child_name')
-      .eq('device_id', deviceId)
-      .maybeSingle();
-    if (sub && sub.child_name) return sub.child_name;
+  try {
+    // client はグローバル（common.jsで定義）
+    const deviceId = localStorage.getItem('push_device_id');
+    if (deviceId) {
+      const { data: sub } = await client.from('push_subscriptions')
+        .select('child_name')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+      if (sub && sub.child_name) return sub.child_name;
+    }
+
+    // フォールバック: 子供が1人ならその名前
+    const { data: children } = await client.from('children').select('name');
+    if (children && children.length === 1) return children[0].name;
+  } catch(e) {
+    // DB接続エラー時はnullを返してプロンプトに委ねる
   }
 
-  // フォールバック: 子供が1人ならその名前
-  const { data: children } = await client.from('children').select('name');
-  if (children && children.length === 1) return children[0].name;
-
-  // 複数 or 0人 → null（UIで選択させる）
+  // 複数 or 0人 or エラー → null（UIで選択させる）
   return null;
 }
 
