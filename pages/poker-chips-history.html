@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<title>&#x1F4CB; チップ履歴</title>
+<title>&#x1F4C8; チップ履歴</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <style>
@@ -14,11 +14,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; pa
 .header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
 h1 { font-size: 1.2em; color: #ffd700; }
 .player-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
-.player-tab { border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.9em; font-weight: 600; cursor: pointer; background: #16213e; color: #aaa; transition: all 0.15s; }
-.player-tab.active { background: #ffd700; color: #1a1a2e; }
+.player-tab { border: 2px solid #333; border-radius: 8px; padding: 8px 14px; font-size: 0.9em; font-weight: 600; cursor: pointer; background: #16213e; color: #aaa; transition: all 0.15s; }
+.player-tab.active { color: #fff; }
 .graph-section { background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-.graph-section canvas { width: 100%; height: 180px; display: block; }
+.graph-section canvas { width: 100%; height: 200px; display: block; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; justify-content: center; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.8em; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
 .history-section { background: #16213e; border-radius: 12px; padding: 16px; }
+.history-section h3 { font-size: 0.9em; color: #ffd700; margin-bottom: 10px; }
 .history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9em; color: #ccc; display: flex; justify-content: space-between; }
 .history-item:last-child { border-bottom: none; }
 .history-time { color: #888; font-size: 0.8em; }
@@ -32,104 +36,124 @@ h1 { font-size: 1.2em; color: #ffd700; }
 <body>
 <div class="header">
   <a class="back" onclick="history.back()">&#x2190;</a>
-  <h1>&#x1F4CB; チップ履歴</h1>
+  <h1>&#x1F4C8; チップ履歴</h1>
   <a class="home" href="poker-chips.html">&#x1F3B0;</a>
 </div>
 
 <div class="player-tabs" id="tabs"></div>
 
 <div class="graph-section">
-  <canvas id="historyChart" height="180"></canvas>
+  <canvas id="historyChart" height="200"></canvas>
+  <div class="legend" id="legend"></div>
 </div>
 
-<div class="history-section" id="historyList">
-  <div class="empty-msg">読み込み中...</div>
-</div>
+<div class="history-section" id="historyList"></div>
 
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
+const COLORS = ['#ffd700', '#4caf50', '#2196f3', '#e91e63', '#ff9800'];
 const START_CHIPS = 2000;
-let currentPlayer = '';
+let selectedPlayers = [];
+let playerData = {};
 
 function init() {
-  // URLパラメータから初期表示プレイヤーを取得
   const params = new URLSearchParams(location.search);
   const playerParam = params.get('player');
-  currentPlayer = PLAYERS.includes(playerParam) ? playerParam : PLAYERS[0];
-
+  selectedPlayers = PLAYERS.includes(playerParam) ? [playerParam] : [PLAYERS[0]];
   renderTabs();
-  loadPlayer(currentPlayer);
+  loadAll();
 }
 
 function renderTabs() {
   const container = document.getElementById('tabs');
-  container.innerHTML = PLAYERS.map(name => {
-    const cls = name === currentPlayer ? ' active' : '';
-    return `<button class="player-tab${cls}" onclick="selectPlayer('${name}')">${name}</button>`;
+  container.innerHTML = PLAYERS.map((name, i) => {
+    const isActive = selectedPlayers.includes(name);
+    const cls = isActive ? ' active' : '';
+    const borderColor = isActive ? COLORS[i] : '#333';
+    return `<button class="player-tab${cls}" style="border-color:${borderColor};" onclick="togglePlayer('${name}')">${name}</button>`;
   }).join('');
 }
 
-function selectPlayer(name) {
-  currentPlayer = name;
+function togglePlayer(name) {
+  const idx = selectedPlayers.indexOf(name);
+  if (idx >= 0) {
+    if (selectedPlayers.length === 1) return; // 最低1人は選択
+    selectedPlayers.splice(idx, 1);
+  } else {
+    selectedPlayers.push(name);
+  }
   renderTabs();
-  loadPlayer(name);
+  drawChart();
+  renderHistory();
 }
 
-async function loadPlayer(name) {
-  const { data } = await client.from('poker_chips_history')
-    .select('*')
-    .eq('player_name', name)
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  renderHistory(data || []);
-  drawChart(data || []);
+async function loadAll() {
+  // 全員のデータを一括取得
+  for (const name of PLAYERS) {
+    const { data } = await client.from('poker_chips_history')
+      .select('*')
+      .eq('player_name', name)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    playerData[name] = data || [];
+  }
+  drawChart();
+  renderHistory();
 }
 
-function renderHistory(data) {
+function renderHistory() {
   const container = document.getElementById('historyList');
-  if (data.length === 0) {
+  // 選択中のプレイヤーの履歴を統合して新しい順に表示
+  let allItems = [];
+  selectedPlayers.forEach(name => {
+    (playerData[name] || []).forEach(item => allItems.push({ ...item, _name: name }));
+  });
+  allItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  allItems = allItems.slice(0, 50);
+
+  if (allItems.length === 0) {
     container.innerHTML = '<div class="empty-msg">履歴がありません</div>';
     return;
   }
-  container.innerHTML = data.map(item => {
+
+  const showName = selectedPlayers.length > 1;
+  container.innerHTML = allItems.map(item => {
     const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const sign = item.amount > 0 ? '+' : '';
     const cls = item.amount > 0 ? 'plus' : 'minus';
+    const nameLabel = showName ? `<span style="color:${COLORS[PLAYERS.indexOf(item._name)]};font-weight:600;">${item._name}</span> ` : '';
     return `<div class="history-item">
-      <div>
-        <span class="history-time">${t}</span>
-      </div>
-      <div>
-        <span class="history-amount ${cls}">${sign}${item.amount}</span>
-        <span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>
-      </div>
+      <div>${nameLabel}<span class="history-time">${t}</span></div>
+      <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span></div>
     </div>`;
   }).join('');
 }
 
-function drawChart(data) {
+function drawChart() {
   const canvas = document.getElementById('historyChart');
   const ctx = canvas.getContext('2d');
   canvas.width = canvas.offsetWidth * 2;
-  canvas.height = 360;
-
-  // 古い順に並び替え
-  const sorted = [...data].reverse();
-
-  const points = [START_CHIPS];
-  const labels = ['開始'];
-  sorted.forEach(r => {
-    points.push(r.chips_after);
-    labels.push(new Date(r.created_at).toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }));
-  });
-
+  canvas.height = 400;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (points.length < 2) {
-    ctx.fillStyle = '#888';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
+  const legendEl = document.getElementById('legend');
+
+  // 選択中プレイヤーのデータを整理
+  const series = selectedPlayers.map(name => {
+    const data = playerData[name] || [];
+    const points = [START_CHIPS, ...data.map(r => r.chips_after)];
+    return { name, points, color: COLORS[PLAYERS.indexOf(name)] };
+  });
+
+  // 凡例
+  legendEl.innerHTML = series.map(s => {
+    const last = s.points[s.points.length - 1];
+    return `<div class="legend-item"><div class="legend-dot" style="background:${s.color};"></div>${s.name} (${last.toLocaleString()})</div>`;
+  }).join('');
+
+  const hasData = series.some(s => s.points.length >= 2);
+  if (!hasData) {
+    ctx.fillStyle = '#888'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('まだデータがありません', canvas.width / 2, canvas.height / 2);
     return;
   }
@@ -137,53 +161,54 @@ function drawChart(data) {
   const pad = { top: 30, bottom: 30, left: 55, right: 20 };
   const w = canvas.width - pad.left - pad.right;
   const h = canvas.height - pad.top - pad.bottom;
-  const maxVal = Math.max(...points, START_CHIPS + 100);
-  const minVal = Math.min(...points, 0);
-  const range = maxVal - minVal || 1;
 
-  const getX = i => pad.left + (w / (points.length - 1)) * i;
-  const getY = v => pad.top + h - ((v - minVal) / range) * h;
+  // 全系列からmin/max算出
+  let gMin = Infinity, gMax = -Infinity;
+  let maxLen = 0;
+  series.forEach(s => {
+    s.points.forEach(v => { if (v < gMin) gMin = v; if (v > gMax) gMax = v; });
+    if (s.points.length > maxLen) maxLen = s.points.length;
+  });
+  if (gMin === Infinity) gMin = 0;
+  if (gMax === -Infinity) gMax = START_CHIPS + 100;
+  if (gMin === gMax) { gMin -= 100; gMax += 100; }
+  const range = gMax - gMin;
+
+  const getY = v => pad.top + h - ((v - gMin) / range) * h;
 
   // グリッド
   ctx.strokeStyle = '#334'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (h / 4) * i;
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
-    const val = Math.round(maxVal - (range / 4) * i);
+    const val = Math.round(gMax - (range / 4) * i);
     ctx.fillStyle = '#888'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(val.toLocaleString(), pad.left - 8, y + 6);
   }
 
   // 基準線（2000）
   const baseY = getY(START_CHIPS);
-  ctx.strokeStyle = '#ffd70055'; ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = '#ffffff22'; ctx.setLineDash([6, 4]);
   ctx.beginPath(); ctx.moveTo(pad.left, baseY); ctx.lineTo(pad.left + w, baseY); ctx.stroke();
   ctx.setLineDash([]);
 
-  // 折れ線
-  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
-  ctx.beginPath();
-  points.forEach((v, i) => {
-    const x = getX(i), y = getY(v);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.stroke();
+  // 各プレイヤーの折れ線を描画
+  series.forEach(s => {
+    if (s.points.length < 2) return;
+    const xStep = w / (s.points.length - 1);
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.points.forEach((v, i) => {
+      const x = pad.left + i * xStep, y = getY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
 
-  // ドット
-  points.forEach((v, i) => {
-    const x = getX(i), y = getY(v);
-    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = v >= START_CHIPS ? '#4caf50' : '#ff4444';
-    ctx.fill();
-  });
-
-  // X軸ラベル（間引き）
-  ctx.fillStyle = '#888'; ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
-  const maxLabels = 6; const step = Math.max(1, Math.floor(labels.length / maxLabels));
-  labels.forEach((label, i) => {
-    if (i % step === 0 || i === labels.length - 1) {
-      ctx.fillText(label, getX(i), canvas.height - 6);
-    }
+    // ドット（最後のポイントのみ）
+    const lastIdx = s.points.length - 1;
+    const lx = pad.left + lastIdx * xStep, ly = getY(s.points[lastIdx]);
+    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
   });
 }
 
