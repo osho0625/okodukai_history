@@ -137,6 +137,7 @@
     }
 
     broadcastVoiceState('ringing');
+    await acquireWakeLock();
     // 相手が接続するまで3秒間隔でringingをリトライ（最大1分）
     let ringingRetry = 0;
     const ringingInterval = setInterval(() => {
@@ -188,6 +189,7 @@
       return false;
     }
     broadcastVoiceState('connected');
+    await acquireWakeLock();
     showVoiceStatus('つなげているよ...', 'info');
     updateVoiceUI();
     startCallTimer();
@@ -261,9 +263,14 @@
       if (pc.connectionState === 'connected') {
         showVoiceStatus('つながったよ！', 'success');
       }
-      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      // disconnectedは一時的なので即切断しない（バックグラウンド復帰で再接続する）
+      if (pc.connectionState === 'failed') {
         showVoiceStatus('きれちゃったよ', 'error');
         endCall();
+      }
+      if (pc.connectionState === 'disconnected') {
+        showVoiceStatus('接続が不安定...', 'info');
+        // 15秒待ってもfailedにならなければそのまま維持
       }
     };
 
@@ -422,10 +429,59 @@
   }
 
   // ============================================================
+  // バックグラウンド維持（Wake Lock + 無音オーディオ）
+  // ============================================================
+
+  let wakeLock = null;
+  let keepAliveAudio = null;
+
+  async function acquireWakeLock() {
+    // Screen Wake Lock API（画面スリープ防止）
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch(e) {}
+
+    // 無音オーディオループ（ブラウザのタブサスペンド防止）
+    if (!keepAliveAudio) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      gain.gain.value = 0.001; // ほぼ無音
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      keepAliveAudio = { ctx, oscillator, gain };
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
+    }
+    if (keepAliveAudio) {
+      keepAliveAudio.oscillator.stop();
+      keepAliveAudio.ctx.close().catch(() => {});
+      keepAliveAudio = null;
+    }
+  }
+
+  // visibilitychange: Wake Lockはページが再表示されたら再取得が必要
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && voiceState.stateMachine.getState() === 'connected') {
+      await acquireWakeLock();
+    }
+  });
+
+  // ============================================================
   // ヘルパー
   // ============================================================
 
   function cleanup() {
+    releaseWakeLock();
     if (voiceState.peerConnection) {
       voiceState.peerConnection.close();
       voiceState.peerConnection = null;
