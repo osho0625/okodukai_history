@@ -13,8 +13,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; pa
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
 h1 { font-size: 1.2em; color: #ffd700; }
-.total-info { text-align: center; background: #16213e; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
-.total-info span { font-size: 0.9em; color: #aaa; }
 .player-card { background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
 .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .player-name { font-size: 1.1em; font-weight: 600; flex: 1; }
@@ -54,10 +52,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
   <a class="back" onclick="history.back()">&#x2190;</a>
   <h1>&#x1FA99; チップ預りカウンター</h1>
   <a class="home" href="../index.html">&#x1F3E0;</a>
-</div>
-
-<div class="total-info">
-  <span>チップ合計: <strong id="totalChips">-</strong> / 開始時: <strong id="startTotal">10,000</strong></span>
 </div>
 
 <div id="readonlyNotice" class="readonly-notice" style="display:none;">
@@ -143,10 +137,8 @@ function goHistory(name) {
 
 function render() {
   const container = document.getElementById('players');
-  let total = 0;
   container.innerHTML = PLAYERS.map(name => {
     const chips = chipData[name] ?? START_CHIPS;
-    total += chips;
     const negCls = chips < 0 ? ' negative' : '';
     const controls = isAdmin ? `
       <div class="chip-controls">
@@ -168,8 +160,6 @@ function render() {
         ${controls}
       </div>`;
   }).join('');
-  document.getElementById('totalChips').textContent = total.toLocaleString();
-  document.getElementById('startTotal').textContent = (START_CHIPS * PLAYERS.length).toLocaleString();
 }
 
 init();
