@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v290';
+const CACHE_NAME = 'okozukai-v291';
 const ASSETS = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const ASSETS = [
   './pages/trpg-cthulhu.html',
   './pages/recipe.html',
   './pages/settlement.html',
+  './pages/poker-chips-exchange.html',
   './js/recipe-router.js',
   './js/recipe-api.js',
   './js/recipe-ui.js',

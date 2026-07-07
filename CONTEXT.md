@@ -39,6 +39,7 @@
 | ナースコール | pages/nurse-call.html | 体温記録・通話 |
 | ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
+| チップ預りカウンター | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |
 
 ## CSS構成

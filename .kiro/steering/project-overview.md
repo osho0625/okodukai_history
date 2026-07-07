@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/07 v2.28.6
+最終更新: 2026/07/07 v2.29.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -137,6 +137,11 @@ inclusion: auto
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
 - 通知タイミング: memo/event=07:50,17:30、repeat=前日17:30+当日08:00、yearly=7日前から07:50,17:30
+
+### poker_chips_exchanges（チップ交換履歴）
+- id: UUID (PK), player_name: TEXT, prize_name: TEXT, cost: INT, created_at: TIMESTAMPTZ
+- INDEX: idx_poker_chips_exchanges_player (player_name, created_at DESC)
+- RLS無効
 
 ## 主要機能
 
