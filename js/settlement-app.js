@@ -418,6 +418,57 @@ async function generateMonthlyData(yearMonth) {
   }
 }
 
+async function regenerateMonthlyData(yearMonth) {
+  if (!confirm('精算データを再生成しますか？\n現在のデータを削除して、最新のマスタから再作成します。')) return;
+
+  try {
+    // 精算確定済みチェック
+    const { data: settled } = await client
+      .from('settlement_history')
+      .select('id')
+      .eq('target_period', yearMonth)
+      .eq('settlement_type', 'monthly')
+      .maybeSingle();
+
+    if (settled) {
+      showToast('精算確定済みのため再生成できません。先に精算を取り消してください。');
+      return;
+    }
+
+    // 既存の monthly_expenses を削除
+    const { error: delErr } = await client
+      .from('monthly_expenses')
+      .delete()
+      .eq('year_month', yearMonth);
+    if (delErr) throw delErr;
+
+    // 最新のマスタから再生成
+    const { data: masters, error: masterErr } = await client
+      .from('expense_master')
+      .select('*')
+      .eq('enabled', true);
+    if (masterErr) throw masterErr;
+
+    const newRecords = generateMonthlyExpenses(masters || [], [], yearMonth);
+    if (newRecords.length === 0) {
+      showToast('有効な固定費がないため再生成データがありません');
+      loadMonthlySettlement(yearMonth);
+      return;
+    }
+
+    const { error: insertErr } = await client
+      .from('monthly_expenses')
+      .insert(newRecords);
+    if (insertErr) throw insertErr;
+
+    showToast(`${yearMonth} の精算データを再生成しました（${newRecords.length}件）`);
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Regenerate monthly data error:', err);
+    showToast('精算データの再生成に失敗しました');
+  }
+}
+
 async function loadMonthlySettlement(yearMonth) {
   // 開始月より前には遡らせない
   if (yearMonth < SETTLEMENT_START_MONTH) yearMonth = SETTLEMENT_START_MONTH;
@@ -569,12 +620,13 @@ async function loadMonthlySettlement(yearMonth) {
     // Execute button
     if (!isSettled) {
       const canSettle = result.transfers.length > 0 && result.transfers[0].amount > 0;
-      html += '<div style="text-align:center;margin:16px 0;">';
+      html += '<div style="text-align:center;margin:16px 0;display:flex;flex-direction:column;gap:8px;align-items:center;">';
       if (canSettle) {
         html += `<button class="btn-primary" id="btn-execute-monthly" onclick="executeMonthlySettlement('${yearMonth}')">精算を確定する</button>`;
       } else {
         html += `<button class="btn-primary" disabled style="opacity:0.5;cursor:not-allowed;">精算額が0円のため精算不要です</button>`;
       }
+      html += `<button class="btn-secondary" style="padding:6px 14px;font-size:0.85em;" onclick="regenerateMonthlyData('${yearMonth}')">🔄 精算データを再生成</button>`;
       html += '</div>';
     } else if (unsettledTemp.length > 0) {
       // 精算確定後に追加された未精算立替がある
