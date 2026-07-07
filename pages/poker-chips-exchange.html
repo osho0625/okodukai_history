@@ -17,13 +17,13 @@ h1 { font-size: 1.15em; color: #ffd700; }
 .my-chips { text-align: center; background: #16213e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
 .my-chips .label { font-size: 0.85em; color: #aaa; }
 .my-chips .value { font-size: 1.5em; font-weight: 700; color: #ffd700; margin-top: 4px; }
-.prize-card { background: #16213e; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
-.prize-info { flex: 1; display: flex; align-items: center; gap: 8px; }
-.prize-name { font-weight: 600; font-size: 0.85em; }
-.prize-cost { font-size: 0.75em; color: #ffc107; white-space: nowrap; }
-.prize-btn { border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; }
+.prize-card { background: #16213e; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.prize-name { font-weight: 600; font-size: 0.85em; line-height: 1.3; }
+.prize-cost { font-size: 0.8em; color: #ffc107; }
+.prize-btn { border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; width: 100%; }
 .prize-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 .prize-btn:active:not(:disabled) { transform: scale(0.95); }
+#prizeList { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .recovery-section { text-align: center; background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 .recovery-btn { border: none; border-radius: 8px; padding: 12px 24px; font-size: 1em; font-weight: 600; cursor: pointer; background: #2196f3; color: #fff; }
 .recovery-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
@@ -120,10 +120,8 @@ function renderPrizes() {
   container.innerHTML = prizes.map((p, i) => {
     const canAfford = currentChips >= p.cost;
     return `<div class="prize-card">
-      <div class="prize-info">
-        <span class="prize-name">${p.name}</span>
-        <span class="prize-cost">${p.cost.toLocaleString()}</span>
-      </div>
+      <div class="prize-name">${p.name}</div>
+      <div class="prize-cost">${p.cost.toLocaleString()}</div>
       <button class="prize-btn" ${canAfford ? '' : 'disabled'} onclick="exchange(${i})">交換</button>
     </div>`;
   }).join('');
