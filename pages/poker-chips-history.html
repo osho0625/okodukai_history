@@ -78,7 +78,8 @@ h1 { font-size: 1.2em; color: #ffd700; }
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const COLORS = ['#ffd700', '#4caf50', '#2196f3', '#e91e63', '#ff9800'];
-const START_CHIPS = 2000;
+const START_CHIPS = 500;
+const isChipAdmin = localStorage.getItem('chipAdmin') === 'true';
 let selectedPlayers = [];
 let playerData = {};
 
@@ -147,7 +148,7 @@ function renderHistory() {
     const sign = item.amount > 0 ? '+' : '';
     const cls = item.amount > 0 ? 'plus' : 'minus';
     const nameLabel = showName ? `<span style="color:${COLORS[PLAYERS.indexOf(item._name)]};font-weight:600;">${item._name}</span> ` : '';
-    const editBtn = isAdmin ? `<button class="edit-btn" onclick="openEdit('${item.id}', '${item._name}', ${item.amount}, ${item.chips_after})">✏️</button>` : '';
+    const editBtn = isChipAdmin ? `<button class="edit-btn" onclick="openEdit('${item.id}', '${item._name}', ${item.amount}, ${item.chips_after})">✏️</button>` : '';
     return `<div class="history-item">
       <div>${nameLabel}<span class="history-time">${t}</span></div>
       <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>${editBtn}</div>
@@ -159,7 +160,7 @@ let editingId = null;
 let editingName = null;
 
 function openEdit(id, name, amount, chipsAfter) {
-  if (!isAdmin) return;
+  if (!isChipAdmin) return;
   editingId = id;
   editingName = name;
   document.getElementById('editTitle').textContent = name + ' の履歴編集';
