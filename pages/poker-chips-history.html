@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>&#x1F4CB; チップ履歴</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 16px; min-height: 100vh; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
+h1 { font-size: 1.2em; color: #ffd700; }
+.player-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
+.player-tab { border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.9em; font-weight: 600; cursor: pointer; background: #16213e; color: #aaa; transition: all 0.15s; }
+.player-tab.active { background: #ffd700; color: #1a1a2e; }
+.graph-section { background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.graph-section canvas { width: 100%; height: 180px; display: block; }
+.history-section { background: #16213e; border-radius: 12px; padding: 16px; }
+.history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9em; color: #ccc; display: flex; justify-content: space-between; }
+.history-item:last-child { border-bottom: none; }
+.history-time { color: #888; font-size: 0.8em; }
+.history-amount { font-weight: 700; }
+.history-amount.plus { color: #4caf50; }
+.history-amount.minus { color: #ff4444; }
+.chips-after { color: #ffd700; font-size: 0.85em; margin-left: 8px; }
+.empty-msg { text-align: center; color: #888; padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">&#x2190;</a>
+  <h1>&#x1F4CB; チップ履歴</h1>
+  <a class="home" href="poker-chips.html">&#x1F3B0;</a>
+</div>
+
+<div class="player-tabs" id="tabs"></div>
+
+<div class="graph-section">
+  <canvas id="historyChart" height="180"></canvas>
+</div>
+
+<div class="history-section" id="historyList">
+  <div class="empty-msg">読み込み中...</div>
+</div>
+
+<script>
+const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
+const START_CHIPS = 2000;
+let currentPlayer = '';
+
+function init() {
+  // URLパラメータから初期表示プレイヤーを取得
+  const params = new URLSearchParams(location.search);
+  const playerParam = params.get('player');
+  currentPlayer = PLAYERS.includes(playerParam) ? playerParam : PLAYERS[0];
+
+  renderTabs();
+  loadPlayer(currentPlayer);
+}
+
+function renderTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = PLAYERS.map(name => {
+    const cls = name === currentPlayer ? ' active' : '';
+    return `<button class="player-tab${cls}" onclick="selectPlayer('${name}')">${name}</button>`;
+  }).join('');
+}
+
+function selectPlayer(name) {
+  currentPlayer = name;
+  renderTabs();
+  loadPlayer(name);
+}
+
+async function loadPlayer(name) {
+  const { data } = await client.from('poker_chips_history')
+    .select('*')
+    .eq('player_name', name)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  renderHistory(data || []);
+  drawChart(data || []);
+}
+
+function renderHistory(data) {
+  const container = document.getElementById('historyList');
+  if (data.length === 0) {
+    container.innerHTML = '<div class="empty-msg">履歴がありません</div>';
+    return;
+  }
+  container.innerHTML = data.map(item => {
+    const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const sign = item.amount > 0 ? '+' : '';
+    const cls = item.amount > 0 ? 'plus' : 'minus';
+    return `<div class="history-item">
+      <div>
+        <span class="history-time">${t}</span>
+      </div>
+      <div>
+        <span class="history-amount ${cls}">${sign}${item.amount}</span>
+        <span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function drawChart(data) {
+  const canvas = document.getElementById('historyChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 360;
+
+  // 古い順に並び替え
+  const sorted = [...data].reverse();
+
+  const points = [START_CHIPS];
+  const labels = ['開始'];
+  sorted.forEach(r => {
+    points.push(r.chips_after);
+    labels.push(new Date(r.created_at).toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }));
+  });
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (points.length < 2) {
+    ctx.fillStyle = '#888';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('まだデータがありません', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const pad = { top: 30, bottom: 30, left: 55, right: 20 };
+  const w = canvas.width - pad.left - pad.right;
+  const h = canvas.height - pad.top - pad.bottom;
+  const maxVal = Math.max(...points, START_CHIPS + 100);
+  const minVal = Math.min(...points, 0);
+  const range = maxVal - minVal || 1;
+
+  const getX = i => pad.left + (w / (points.length - 1)) * i;
+  const getY = v => pad.top + h - ((v - minVal) / range) * h;
+
+  // グリッド
+  ctx.strokeStyle = '#334'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    const val = Math.round(maxVal - (range / 4) * i);
+    ctx.fillStyle = '#888'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val.toLocaleString(), pad.left - 8, y + 6);
+  }
+
+  // 基準線（2000）
+  const baseY = getY(START_CHIPS);
+  ctx.strokeStyle = '#ffd70055'; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, baseY); ctx.lineTo(pad.left + w, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 折れ線
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  points.forEach((v, i) => {
+    const x = getX(i), y = getY(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // ドット
+  points.forEach((v, i) => {
+    const x = getX(i), y = getY(v);
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = v >= START_CHIPS ? '#4caf50' : '#ff4444';
+    ctx.fill();
+  });
+
+  // X軸ラベル（間引き）
+  ctx.fillStyle = '#888'; ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+  const maxLabels = 6; const step = Math.max(1, Math.floor(labels.length / maxLabels));
+  labels.forEach((label, i) => {
+    if (i % step === 0 || i === labels.length - 1) {
+      ctx.fillText(label, getX(i), canvas.height - 6);
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>

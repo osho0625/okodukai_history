@@ -17,9 +17,11 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .total-info span { font-size: 0.9em; color: #aaa; }
 .player-card { background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
 .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.player-name { font-size: 1.1em; font-weight: 600; }
+.player-name { font-size: 1.1em; font-weight: 600; flex: 1; }
 .player-chips { font-size: 1.3em; font-weight: 700; color: #ffd700; }
 .player-chips.negative { color: #ff4444; }
+.player-icons { display: flex; gap: 4px; margin-left: 8px; }
+.player-icons button { background: none; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 4px; }
 .chip-controls { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip-btn { border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.85em; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
 .chip-btn:active { transform: scale(0.95); }
@@ -30,7 +32,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .actions { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
 .action-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.9em; font-weight: 600; cursor: pointer; }
 .action-btn.reset { background: #ff9800; color: #fff; }
-.action-btn.history { background: #9c27b0; color: #fff; }
 .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
 .overlay.active { display: flex; }
 .modal { background: #16213e; border-radius: 16px; padding: 24px; width: 90%; max-width: 340px; }
@@ -41,13 +42,8 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .btn-ok { background: #4caf50; color: #fff; }
 .btn-cancel { background: #555; color: #eee; }
 .btn-danger { background: #ff4444; color: #fff; }
-.history-list { max-height: 300px; overflow-y: auto; }
-.history-item { padding: 6px 0; border-bottom: 1px solid #333; font-size: 0.85em; color: #ccc; }
-.history-item .plus-text { color: #4caf50; }
-.history-item .minus-text { color: #ff4444; }
 .readonly-notice { text-align: center; background: #333; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.85em; color: #ffab40; }
 .loading { text-align: center; color: #888; margin-top: 40px; }
-.graph-btn { background: none; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 6px; }
 .graph-wrap { display: none; margin-top: 10px; background: #0f3460; border-radius: 8px; padding: 10px; }
 .graph-wrap.open { display: block; }
 .graph-wrap canvas { width: 100%; height: 140px; display: block; }
@@ -70,10 +66,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
 
 <div id="adminActions" class="actions" style="display:none;">
   <button class="action-btn reset" onclick="resetAll()">全員リセット (2000)</button>
-  <button class="action-btn history" onclick="showHistory()">履歴</button>
-</div>
-<div id="userActions" class="actions" style="display:none;">
-  <button class="action-btn history" onclick="showHistory()">履歴</button>
 </div>
 
 <div id="players"><div class="loading">読み込み中...</div></div>
@@ -91,29 +83,16 @@ h1 { font-size: 1.2em; color: #ffd700; }
   </div>
 </div>
 
-<!-- 履歴モーダル -->
-<div class="overlay" id="historyModal">
-  <div class="modal">
-    <h2>操作履歴</h2>
-    <div class="history-list" id="historyList"></div>
-    <div class="modal-btns" style="margin-top:12px;">
-      <button class="btn-cancel" onclick="closeHistory()">閉じる</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const START_CHIPS = 2000;
 let chipData = {};
 let customTarget = null;
 
-// 初期化
 async function init() {
   if (isAdmin) {
     document.getElementById('adminActions').style.display = 'flex';
   } else {
-    document.getElementById('userActions').style.display = 'flex';
     document.getElementById('readonlyNotice').style.display = 'block';
   }
   await loadChips();
@@ -136,7 +115,6 @@ async function changeChips(name, amount) {
     .update({ chips: newChips, updated_at: new Date().toISOString() })
     .eq('player_name', name);
   if (error) { alert('エラー: ' + error.message); return; }
-  // 履歴保存
   await client.from('poker_chips_history').insert({
     player_name: name, amount, chips_after: newChips
   });
@@ -179,28 +157,8 @@ async function applyCustom(sign) {
   closeCustom();
 }
 
-async function showHistory() {
-  const { data, error } = await client.from('poker_chips_history')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50);
-  const list = document.getElementById('historyList');
-  if (!data || data.length === 0) {
-    list.innerHTML = '<p style="text-align:center;color:#888;">履歴なし</p>';
-  } else {
-    list.innerHTML = data.map(item => {
-      const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-      if (item.amount === 0) return `<div class="history-item">${t} ― ${item.player_name}</div>`;
-      const cls = item.amount > 0 ? 'plus-text' : 'minus-text';
-      const sign = item.amount > 0 ? '+' : '';
-      return `<div class="history-item">${t} ― ${item.player_name} <span class="${cls}">${sign}${item.amount}</span> → ${item.chips_after}</div>`;
-    }).join('');
-  }
-  document.getElementById('historyModal').classList.add('active');
-}
-
-function closeHistory() {
-  document.getElementById('historyModal').classList.remove('active');
+function goHistory(name) {
+  location.href = 'poker-chips-history.html?player=' + encodeURIComponent(name);
 }
 
 function render() {
@@ -223,105 +181,15 @@ function render() {
         <div class="player-header">
           <span class="player-name">${name}</span>
           <span class="player-chips${negCls}">${chips.toLocaleString()}</span>
-          <button class="graph-btn" onclick="toggleGraph('${name}', this)">&#x1F4C8;</button>
+          <div class="player-icons">
+            <button onclick="goHistory('${name}')">&#x1F4CB;</button>
+          </div>
         </div>
         ${controls}
-        <div class="graph-wrap" id="graph-${name}">
-          <canvas id="canvas-${name}" height="140"></canvas>
-        </div>
       </div>`;
   }).join('');
   document.getElementById('totalChips').textContent = total.toLocaleString();
   document.getElementById('startTotal').textContent = (START_CHIPS * PLAYERS.length).toLocaleString();
-}
-
-async function toggleGraph(name, btn) {
-  const wrap = document.getElementById('graph-' + name);
-  if (wrap.classList.contains('open')) {
-    wrap.classList.remove('open');
-    return;
-  }
-  wrap.classList.add('open');
-  await drawGraph(name);
-}
-
-async function drawGraph(name) {
-  const canvas = document.getElementById('canvas-' + name);
-  const ctx = canvas.getContext('2d');
-  canvas.width = canvas.offsetWidth * 2;
-  canvas.height = 280;
-
-  // 履歴取得（古い順）
-  const { data } = await client.from('poker_chips_history')
-    .select('chips_after, created_at')
-    .eq('player_name', name)
-    .order('created_at', { ascending: true });
-
-  // スタート地点 + 履歴データ
-  const points = [START_CHIPS];
-  const labels = ['開始'];
-  if (data && data.length > 0) {
-    data.forEach(r => {
-      points.push(r.chips_after);
-      labels.push(new Date(r.created_at).toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }));
-    });
-  }
-
-  if (points.length < 2) {
-    ctx.fillStyle = '#888';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('まだデータがありません', canvas.width / 2, canvas.height / 2);
-    return;
-  }
-
-  const pad = { top: 30, bottom: 30, left: 50, right: 20 };
-  const w = canvas.width - pad.left - pad.right;
-  const h = canvas.height - pad.top - pad.bottom;
-  const maxVal = Math.max(...points, START_CHIPS + 100);
-  const minVal = Math.min(...points, 0);
-  const range = maxVal - minVal || 1;
-
-  const xStep = w / (points.length - 1);
-  const getX = i => pad.left + i * xStep;
-  const getY = v => pad.top + h - ((v - minVal) / range) * h;
-
-  // グリッド
-  ctx.strokeStyle = '#334';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (h / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
-    const val = Math.round(maxVal - (range / 4) * i);
-    ctx.fillStyle = '#888'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(val.toLocaleString(), pad.left - 8, y + 6);
-  }
-
-  // 基準線（2000）
-  const baseY = getY(START_CHIPS);
-  ctx.strokeStyle = '#ffd70055';
-  ctx.setLineDash([6, 4]);
-  ctx.beginPath(); ctx.moveTo(pad.left, baseY); ctx.lineTo(pad.left + w, baseY); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // 折れ線
-  ctx.strokeStyle = '#ffd700';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  points.forEach((v, i) => {
-    const x = getX(i), y = getY(v);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // ドット
-  points.forEach((v, i) => {
-    const x = getX(i), y = getY(v);
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = v >= START_CHIPS ? '#4caf50' : '#ff4444';
-    ctx.fill();
-  });
 }
 
 init();
