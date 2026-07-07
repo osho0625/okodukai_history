@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<title>🎰 ポーカーチップ管理</title>
+<title>&#x1F3B0; ポーカーチップ管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 16px; min-height: 100vh; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.header a { text-decoration: none; font-size: 1.4em; cursor: pointer; }
-.back { color: #eee; }
-.home { color: #eee; }
+.header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
 h1 { font-size: 1.2em; color: #ffd700; }
 .total-info { text-align: center; background: #16213e; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
 .total-info span { font-size: 0.9em; color: #aaa; }
@@ -40,10 +40,13 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 1em; font-weight: 600; cursor: pointer; }
 .btn-ok { background: #4caf50; color: #fff; }
 .btn-cancel { background: #555; color: #eee; }
+.btn-danger { background: #ff4444; color: #fff; }
 .history-list { max-height: 300px; overflow-y: auto; }
 .history-item { padding: 6px 0; border-bottom: 1px solid #333; font-size: 0.85em; color: #ccc; }
 .history-item .plus-text { color: #4caf50; }
 .history-item .minus-text { color: #ff4444; }
+.readonly-notice { text-align: center; background: #333; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.85em; color: #ffab40; }
+.loading { text-align: center; color: #888; margin-top: 40px; }
 </style>
 </head>
 <body>
@@ -54,15 +57,22 @@ h1 { font-size: 1.2em; color: #ffd700; }
 </div>
 
 <div class="total-info">
-  <span>チップ合計: <strong id="totalChips">10000</strong> / 開始時: <strong id="startTotal">10000</strong></span>
+  <span>チップ合計: <strong id="totalChips">-</strong> / 開始時: <strong id="startTotal">10,000</strong></span>
 </div>
 
-<div class="actions">
+<div id="readonlyNotice" class="readonly-notice" style="display:none;">
+  &#x1F512; 閲覧専用（チップ操作はadmin端末から）
+</div>
+
+<div id="adminActions" class="actions" style="display:none;">
   <button class="action-btn reset" onclick="resetAll()">全員リセット (2000)</button>
   <button class="action-btn history" onclick="showHistory()">履歴</button>
 </div>
+<div id="userActions" class="actions" style="display:none;">
+  <button class="action-btn history" onclick="showHistory()">履歴</button>
+</div>
 
-<div id="players"></div>
+<div id="players"><div class="loading">読み込み中...</div></div>
 
 <!-- カスタム増減モーダル -->
 <div class="overlay" id="customModal">
@@ -71,7 +81,7 @@ h1 { font-size: 1.2em; color: #ffd700; }
     <input type="number" id="customAmount" placeholder="チップ数" inputmode="numeric">
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeCustom()">キャンセル</button>
-      <button class="btn-ok" id="customMinusBtn" onclick="applyCustom(-1)">減らす</button>
+      <button class="btn-danger" onclick="applyCustom(-1)">減らす</button>
       <button class="btn-ok" onclick="applyCustom(1)">増やす</button>
     </div>
   </div>
@@ -84,7 +94,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
     <div class="history-list" id="historyList"></div>
     <div class="modal-btns" style="margin-top:12px;">
       <button class="btn-cancel" onclick="closeHistory()">閉じる</button>
-      <button class="btn-ok" style="background:#ff4444;" onclick="clearHistory()">履歴クリア</button>
     </div>
   </div>
 </div>
@@ -92,51 +101,61 @@ h1 { font-size: 1.2em; color: #ffd700; }
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const START_CHIPS = 2000;
-const STORAGE_KEY = 'poker_chips_data';
-const HISTORY_KEY = 'poker_chips_history';
-
-let data = loadData();
+let chipData = {};
 let customTarget = null;
 
-function loadData() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return JSON.parse(saved);
-  const d = {};
-  PLAYERS.forEach(p => d[p] = START_CHIPS);
-  return d;
+// 初期化
+async function init() {
+  if (isAdmin) {
+    document.getElementById('adminActions').style.display = 'flex';
+  } else {
+    document.getElementById('userActions').style.display = 'flex';
+    document.getElementById('readonlyNotice').style.display = 'block';
+  }
+  await loadChips();
 }
 
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+async function loadChips() {
+  const { data, error } = await client.from('poker_chips')
+    .select('player_name, chips')
+    .order('id');
+  if (error) { console.error(error); return; }
+  chipData = {};
+  data.forEach(r => chipData[r.player_name] = r.chips);
   render();
 }
 
-function loadHistory() {
-  const h = localStorage.getItem(HISTORY_KEY);
-  return h ? JSON.parse(h) : [];
+async function changeChips(name, amount) {
+  if (!isAdmin) return;
+  const newChips = (chipData[name] || 0) + amount;
+  const { error } = await client.from('poker_chips')
+    .update({ chips: newChips, updated_at: new Date().toISOString() })
+    .eq('player_name', name);
+  if (error) { alert('エラー: ' + error.message); return; }
+  // 履歴保存
+  await client.from('poker_chips_history').insert({
+    player_name: name, amount, chips_after: newChips
+  });
+  chipData[name] = newChips;
+  render();
 }
 
-function addHistory(name, amount) {
-  const h = loadHistory();
-  h.unshift({ name, amount, time: new Date().toLocaleString('ja-JP') });
-  if (h.length > 100) h.length = 100;
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
-}
-
-function changeChips(name, amount) {
-  data[name] += amount;
-  addHistory(name, amount);
-  saveData();
-}
-
-function resetAll() {
+async function resetAll() {
+  if (!isAdmin) return;
   if (!confirm('全員を2000チップにリセットしますか？')) return;
-  PLAYERS.forEach(p => data[p] = START_CHIPS);
-  addHistory('全員', 0);
-  saveData();
+  for (const name of PLAYERS) {
+    await client.from('poker_chips')
+      .update({ chips: START_CHIPS, updated_at: new Date().toISOString() })
+      .eq('player_name', name);
+  }
+  await client.from('poker_chips_history').insert({
+    player_name: '全員リセット', amount: 0, chips_after: START_CHIPS
+  });
+  await loadChips();
 }
 
 function openCustom(name) {
+  if (!isAdmin) return;
   customTarget = name;
   document.getElementById('customTitle').textContent = name + ' のチップ増減';
   document.getElementById('customAmount').value = '';
@@ -149,24 +168,28 @@ function closeCustom() {
   customTarget = null;
 }
 
-function applyCustom(sign) {
+async function applyCustom(sign) {
   const val = parseInt(document.getElementById('customAmount').value);
   if (!val || val <= 0) return;
-  changeChips(customTarget, val * sign);
+  await changeChips(customTarget, val * sign);
   closeCustom();
 }
 
-function showHistory() {
-  const h = loadHistory();
+async function showHistory() {
+  const { data, error } = await client.from('poker_chips_history')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
   const list = document.getElementById('historyList');
-  if (h.length === 0) {
+  if (!data || data.length === 0) {
     list.innerHTML = '<p style="text-align:center;color:#888;">履歴なし</p>';
   } else {
-    list.innerHTML = h.map(item => {
-      if (item.amount === 0) return `<div class="history-item">${item.time} — ${item.name} リセット</div>`;
+    list.innerHTML = data.map(item => {
+      const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      if (item.amount === 0) return `<div class="history-item">${t} ― ${item.player_name}</div>`;
       const cls = item.amount > 0 ? 'plus-text' : 'minus-text';
       const sign = item.amount > 0 ? '+' : '';
-      return `<div class="history-item">${item.time} — ${item.name} <span class="${cls}">${sign}${item.amount}</span></div>`;
+      return `<div class="history-item">${t} ― ${item.player_name} <span class="${cls}">${sign}${item.amount}</span> → ${item.chips_after}</div>`;
     }).join('');
   }
   document.getElementById('historyModal').classList.add('active');
@@ -176,39 +199,35 @@ function closeHistory() {
   document.getElementById('historyModal').classList.remove('active');
 }
 
-function clearHistory() {
-  if (!confirm('履歴をクリアしますか？')) return;
-  localStorage.removeItem(HISTORY_KEY);
-  closeHistory();
-}
-
 function render() {
   const container = document.getElementById('players');
   let total = 0;
   container.innerHTML = PLAYERS.map(name => {
-    const chips = data[name];
+    const chips = chipData[name] ?? START_CHIPS;
     total += chips;
     const negCls = chips < 0 ? ' negative' : '';
+    const controls = isAdmin ? `
+      <div class="chip-controls">
+        <button class="chip-btn minus500" onclick="changeChips('${name}', -500)">-500</button>
+        <button class="chip-btn minus" onclick="changeChips('${name}', -100)">-100</button>
+        <button class="chip-btn plus" onclick="changeChips('${name}', +100)">+100</button>
+        <button class="chip-btn plus" onclick="changeChips('${name}', +500)">+500</button>
+        <button class="chip-btn custom" onclick="openCustom('${name}')">自由入力</button>
+      </div>` : '';
     return `
       <div class="player-card">
         <div class="player-header">
           <span class="player-name">${name}</span>
           <span class="player-chips${negCls}">${chips.toLocaleString()}</span>
         </div>
-        <div class="chip-controls">
-          <button class="chip-btn minus500" onclick="changeChips('${name}', -500)">-500</button>
-          <button class="chip-btn minus" onclick="changeChips('${name}', -100)">-100</button>
-          <button class="chip-btn plus" onclick="changeChips('${name}', +100)">+100</button>
-          <button class="chip-btn plus" onclick="changeChips('${name}', +500)">+500</button>
-          <button class="chip-btn custom" onclick="openCustom('${name}')">自由入力</button>
-        </div>
+        ${controls}
       </div>`;
   }).join('');
   document.getElementById('totalChips').textContent = total.toLocaleString();
   document.getElementById('startTotal').textContent = (START_CHIPS * PLAYERS.length).toLocaleString();
 }
 
-render();
+init();
 </script>
 </body>
 </html>
