@@ -128,6 +128,8 @@ async function loadAll() {
   renderHistory();
 }
 
+let checkedIds = new Set();
+
 function renderHistory() {
   const container = document.getElementById('historyList');
   let allItems = [];
@@ -143,17 +145,74 @@ function renderHistory() {
   }
 
   const showName = selectedPlayers.length > 1;
-  container.innerHTML = allItems.map(item => {
+  const bulkBar = isChipAdmin ? `<div id="bulkBar" style="display:none; position:sticky; top:0; background:#1a1a2e; padding:8px 0; margin-bottom:8px; display:flex; align-items:center; gap:8px; z-index:10;">
+    <label style="display:flex;align-items:center;gap:4px;font-size:0.8em;color:#aaa;cursor:pointer;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"> 全選択</label>
+    <button onclick="bulkDelete()" style="border:none;border-radius:6px;padding:6px 12px;background:#ff4444;color:#fff;font-size:0.8em;font-weight:600;cursor:pointer;">選択を削除</button>
+    <span id="checkedCount" style="font-size:0.75em;color:#888;"></span>
+  </div>` : '';
+
+  container.innerHTML = bulkBar + allItems.map(item => {
     const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const sign = item.amount > 0 ? '+' : '';
     const cls = item.amount > 0 ? 'plus' : 'minus';
     const nameLabel = showName ? `<span style="color:${COLORS[PLAYERS.indexOf(item._name)]};font-weight:600;">${item._name}</span> ` : '';
+    const checkbox = isChipAdmin ? `<input type="checkbox" class="hist-cb" data-id="${item.id}" data-name="${item._name}" onchange="onCheckChange()" style="width:16px;height:16px;margin-right:6px;">` : '';
     const editBtn = isChipAdmin ? `<button class="edit-btn" onclick="openEdit('${item.id}', '${item._name}', ${item.amount}, ${item.chips_after})">✏️</button>` : '';
-    return `<div class="history-item">
-      <div>${nameLabel}<span class="history-time">${t}</span></div>
-      <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>${editBtn}</div>
+    return `<div class="history-item" style="display:flex;align-items:center;">
+      ${checkbox}
+      <div style="flex:1;display:flex;justify-content:space-between;align-items:center;">
+        <div>${nameLabel}<span class="history-time">${t}</span></div>
+        <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>${editBtn}</div>
+      </div>
     </div>`;
   }).join('');
+
+  updateBulkBar();
+}
+
+function onCheckChange() {
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (!bar) return;
+  const checked = document.querySelectorAll('.hist-cb:checked');
+  const countEl = document.getElementById('checkedCount');
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    countEl.textContent = `${checked.length}件選択中`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.hist-cb').forEach(cb => cb.checked = checked);
+  updateBulkBar();
+}
+
+async function bulkDelete() {
+  const checked = document.querySelectorAll('.hist-cb:checked');
+  if (checked.length === 0) return;
+  if (!confirm(`${checked.length}件の履歴を削除しますか？`)) return;
+
+  const ids = [];
+  const names = new Set();
+  checked.forEach(cb => {
+    ids.push(cb.dataset.id);
+    names.add(cb.dataset.name);
+  });
+
+  const { error } = await client.from('poker_chips_history')
+    .delete().in('id', ids);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  // 各プレイヤーの現在チップを最新履歴に同期
+  for (const name of names) {
+    await syncCurrentChips(name);
+  }
+  await loadAll();
 }
 
 let editingId = null;
