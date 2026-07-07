@@ -2030,6 +2030,42 @@ async function loadEditForm(id) {
     })(members[mi]);
   }
 
+  // ＋ボタン（新メンバー追加）
+  var addMemberBtn = document.createElement('button');
+  addMemberBtn.type = 'button';
+  addMemberBtn.textContent = '＋';
+  addMemberBtn.style.cssText = 'min-width:48px;padding:12px 14px;border:2px dashed #ccc;border-radius:10px;background:#fafafa;font-size:1.2em;font-weight:600;cursor:pointer;color:#999;';
+  addMemberBtn.addEventListener('click', function() {
+    var newName = prompt('追加する名前を入力');
+    if (newName && newName.trim()) {
+      newName = newName.trim();
+      addRecipeMember(newName);
+      // ボタンを追加
+      var newBtn = document.createElement('button');
+      newBtn.type = 'button';
+      newBtn.textContent = newName;
+      newBtn.className = 'author-select-btn';
+      newBtn.style.cssText = 'flex:1;min-width:80px;padding:12px 16px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:1.05em;font-weight:600;cursor:pointer;transition:all 0.2s;color:#333;';
+      newBtn.addEventListener('click', function() {
+        hiddenAuthor.value = newName;
+        var allBtns = authorBtnRow.querySelectorAll('.author-select-btn');
+        for (var ab = 0; ab < allBtns.length; ab++) {
+          allBtns[ab].style.background = '#fff';
+          allBtns[ab].style.color = '#333';
+          allBtns[ab].style.borderColor = '#ddd';
+        }
+        newBtn.style.background = '#e65100';
+        newBtn.style.color = '#fff';
+        newBtn.style.borderColor = '#e65100';
+        hiddenAuthor.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      authorBtnRow.insertBefore(newBtn, addMemberBtn);
+      // 自動選択
+      newBtn.click();
+    }
+  });
+  authorBtnRow.appendChild(addMemberBtn);
+
   authorSection.appendChild(authorBtnRow);
   fragment.appendChild(authorSection);
 
