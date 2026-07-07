@@ -61,6 +61,10 @@
 - 詳細な仕様・テーブル構成・機能説明は `.kiro/steering/` 内の該当mdファイルを編集すること
 - この CONTEXT.md はインデックスのみ。詳細情報はここに書かず、steeringファイルに記載する
 - steeringファイルの追加・変更時はこの表も更新すること
+- push時は必ず以下を更新すること:
+  - `pages/release-notes.html` — バージョン番号を上げてリリース内容を追記
+  - `.kiro/steering/` — 該当機能のsteeringファイルに仕様変更を反映
+  - `CONTEXT.md` — steeringファイルや機能の追加・変更があればインデックスを更新
 
 ## 関連プロジェクト
 
