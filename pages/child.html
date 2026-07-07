@@ -292,10 +292,23 @@ h2 { margin-bottom: 12px; color: #333; }
 </div>
 
 <div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+  <div onclick="toggleAccordion('pointsChartBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+    <span class="acc-arrow">▶</span> ⭐ ポイント推移グラフ
+  </div>
+  <div id="pointsChartBody" style="display:none; padding:0 16px 16px;">
+    <canvas id="pointsChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
+    <div id="pointsChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
+  </div>
+</div>
+
+<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
   <div onclick="toggleAccordion('historyBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
     <span class="acc-arrow">▶</span> 📋 履歴
   </div>
   <div id="historyBody" style="display:none; padding:0 16px 16px;">
+    <div style="text-align:right; margin-bottom:8px;">
+      <button onclick="showAllCompare()" style="padding:6px 12px; border:none; border-radius:6px; background:#1976d2; color:#fff; font-size:0.8em; font-weight:600; cursor:pointer;">👥 全員比較</button>
+    </div>
     <div class="history-list" id="history">
       <div class="loading">読み込み中...</div>
     </div>
@@ -1685,6 +1698,227 @@ function escHtml(str) {
  * 残高推移グラフを描画（Canvas）
  * transactionsから日別の残高推移を計算して折れ線グラフ表示
  */
+function drawPointsChart() {
+  const canvas = document.getElementById('pointsChart');
+  const emptyMsg = document.getElementById('pointsChartEmpty');
+  if (!canvas || !childId) return;
+
+  client.from('chore_points').select('points, created_at')
+    .eq('child_id', childId).eq('status', 'approved')
+    .order('created_at', { ascending: true })
+    .then(({ data }) => {
+      if (!data || data.length === 0) { if (emptyMsg) emptyMsg.style.display = 'block'; return; }
+
+      // 累積ポイントを日付ごとに計算
+      const dayMap = new Map();
+      let cumulative = 0;
+      dayMap.set('開始', 0);
+      data.forEach(r => {
+        cumulative += r.points;
+        const dateStr = new Date(r.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        dayMap.set(dateStr, cumulative);
+      });
+
+      const labels = [...dayMap.keys()];
+      const values = [...dayMap.values()];
+      if (values.length < 2) { if (emptyMsg) emptyMsg.style.display = 'block'; return; }
+
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const W = rect.width, H = rect.height;
+      const padL = 50, padR = 16, padT = 20, padB = 40;
+      const chartW = W - padL - padR, chartH = H - padT - padB;
+      const minVal = 0, maxVal = Math.max(...values);
+      const range = maxVal - minVal || 1;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // グリッド
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + (chartH / 4) * i;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+      }
+      // Y軸ラベル
+      ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + (chartH / 4) * i;
+        ctx.fillText(Math.round(maxVal - (range / 4) * i).toLocaleString(), padL - 6, y + 3);
+      }
+      // 折れ線
+      ctx.strokeStyle = '#ff9800'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      values.forEach((v, i) => {
+        const x = padL + (chartW / (values.length - 1)) * i;
+        const y = padT + chartH - ((v - minVal) / range) * chartH;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      // 塗りつぶし
+      ctx.lineTo(padL + chartW, padT + chartH); ctx.lineTo(padL, padT + chartH); ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 152, 0, 0.1)'; ctx.fill();
+      // ドット
+      ctx.fillStyle = '#ff9800';
+      values.forEach((v, i) => {
+        const x = padL + (chartW / (values.length - 1)) * i;
+        const y = padT + chartH - ((v - minVal) / range) * chartH;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      });
+      // X軸ラベル
+      ctx.fillStyle = '#999'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+      const maxLabels = 6; const step = Math.max(1, Math.floor(labels.length / maxLabels));
+      labels.forEach((label, i) => {
+        if (i % step === 0 || i === labels.length - 1) {
+          const x = padL + (chartW / (labels.length - 1)) * i;
+          const parts = label.split('/');
+          const shortLabel = parts.length >= 2 ? parts[parts.length - 2] + '/' + parts[parts.length - 1] : label;
+          ctx.fillText(shortLabel, x, H - padB + 14);
+        }
+      });
+    });
+}
+
+// --- 全員比較グラフ ---
+const COMPARE_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0'];
+let compareMode = 'balance';
+
+async function showAllCompare() {
+  document.getElementById('compareOverlay').style.display = 'flex';
+  compareMode = 'balance';
+  document.getElementById('cmpTabBalance').style.background = '#4caf50';
+  document.getElementById('cmpTabBalance').style.color = '#fff';
+  document.getElementById('cmpTabPoints').style.background = '#ddd';
+  document.getElementById('cmpTabPoints').style.color = '#333';
+  await drawCompareChart('balance');
+}
+
+function closeCompare() {
+  document.getElementById('compareOverlay').style.display = 'none';
+}
+
+async function showCompareTab(mode) {
+  compareMode = mode;
+  const bBtn = document.getElementById('cmpTabBalance');
+  const pBtn = document.getElementById('cmpTabPoints');
+  if (mode === 'balance') {
+    bBtn.style.background = '#4caf50'; bBtn.style.color = '#fff';
+    pBtn.style.background = '#ddd'; pBtn.style.color = '#333';
+  } else {
+    pBtn.style.background = '#ff9800'; pBtn.style.color = '#fff';
+    bBtn.style.background = '#ddd'; bBtn.style.color = '#333';
+  }
+  await drawCompareChart(mode);
+}
+
+async function drawCompareChart(mode) {
+  const canvas = document.getElementById('compareChart');
+  const emptyMsg = document.getElementById('compareEmpty');
+  const legend = document.getElementById('compareLegend');
+  emptyMsg.style.display = 'none';
+
+  // 全子供を取得
+  const { data: children } = await client.from('children').select('id, name').order('sort_order');
+  if (!children || children.length === 0) { emptyMsg.style.display = 'block'; return; }
+
+  // 返済用アカウントを除外
+  const targets = children.filter(c => !c.name.endsWith('が返すお金'));
+
+  const allSeries = [];
+  for (let ci = 0; ci < targets.length; ci++) {
+    const c = targets[ci];
+    if (mode === 'balance') {
+      const { data: txs } = await client.from('transactions').select('type, amount, created_at')
+        .eq('child_id', c.id).order('created_at', { ascending: true });
+      if (!txs || txs.length === 0) { allSeries.push({ name: c.name, values: [], labels: [] }); continue; }
+      // 残高推移を計算（0スタートの累積）
+      let bal = 0;
+      const dayMap = new Map();
+      dayMap.set('開始', 0);
+      txs.forEach(t => {
+        bal += t.type === 'add' ? t.amount : -t.amount;
+        const d = new Date(t.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        dayMap.set(d, bal);
+      });
+      allSeries.push({ name: c.name, values: [...dayMap.values()], labels: [...dayMap.keys()] });
+    } else {
+      const { data: pts } = await client.from('chore_points').select('points, created_at')
+        .eq('child_id', c.id).eq('status', 'approved').order('created_at', { ascending: true });
+      if (!pts || pts.length === 0) { allSeries.push({ name: c.name, values: [], labels: [] }); continue; }
+      let cum = 0;
+      const dayMap = new Map();
+      dayMap.set('開始', 0);
+      pts.forEach(r => { cum += r.points; const d = new Date(r.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }); dayMap.set(d, cum); });
+      allSeries.push({ name: c.name, values: [...dayMap.values()], labels: [...dayMap.keys()] });
+    }
+  }
+
+  // データがあるか確認
+  const hasData = allSeries.some(s => s.values.length >= 2);
+  if (!hasData) { emptyMsg.style.display = 'block'; legend.innerHTML = ''; return; }
+
+  // 全系列を統一した日付軸に揃える
+  const allDates = new Set();
+  allSeries.forEach(s => s.labels.forEach(l => allDates.add(l)));
+  const dateArr = [...allDates];
+
+  // Canvas描画
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const padL = 50, padR = 16, padT = 20, padB = 40;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+
+  // 全体のmin/max
+  let gMin = Infinity, gMax = -Infinity;
+  allSeries.forEach(s => { s.values.forEach(v => { if (v < gMin) gMin = v; if (v > gMax) gMax = v; }); });
+  if (gMin === Infinity) gMin = 0;
+  if (gMax === -Infinity) gMax = 100;
+  const range = gMax - gMin || 1;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // グリッド
+  ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+  }
+  ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (chartH / 4) * i;
+    ctx.fillText(Math.round(gMax - (range / 4) * i).toLocaleString(), padL - 6, y + 3);
+  }
+
+  // 各人の折れ線
+  allSeries.forEach((s, ci) => {
+    if (s.values.length < 2) return;
+    const color = COMPARE_COLORS[ci % COMPARE_COLORS.length];
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.values.forEach((v, i) => {
+      const x = padL + (chartW / (s.values.length - 1)) * i;
+      const y = padT + chartH - ((v - gMin) / range) * chartH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+
+  // 凡例
+  legend.innerHTML = allSeries.map((s, ci) => {
+    const color = COMPARE_COLORS[ci % COMPARE_COLORS.length];
+    const lastVal = s.values.length > 0 ? s.values[s.values.length - 1].toLocaleString() : '-';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:${color};border-radius:2px;display:inline-block;"></span>${s.name} (${lastVal})</span>`;
+  }).join('');
+}
+
 function drawBalanceChart(transactions, currentBalance) {
   const canvas = document.getElementById('balanceChart');
   const emptyMsg = document.getElementById('balanceChartEmpty');
@@ -1836,6 +2070,7 @@ function drawBalanceChart(transactions, currentBalance) {
 load().then(() => {
   loadPointsGrid();
   loadReminders();
+  drawPointsChart();
   // ナースコールリンク表示
   (async function() {
     try {
@@ -1858,5 +2093,22 @@ load().then(() => {
 
 <!-- ねこです認識汚染（SCP-040-JP既読時） -->
 <script src="../js/neko-infection.js"></script>
+
+<!-- 全員比較モーダル -->
+<div id="compareOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:16px; padding:20px; width:94%; max-width:500px; max-height:85vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:1em; color:#333; margin:0;">👥 全員比較</h3>
+      <button onclick="closeCompare()" style="background:none; border:none; font-size:1.4em; cursor:pointer;">✕</button>
+    </div>
+    <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button onclick="showCompareTab('balance')" id="cmpTabBalance" style="padding:6px 12px; border:none; border-radius:6px; background:#4caf50; color:#fff; font-size:0.85em; font-weight:600; cursor:pointer;">残高推移</button>
+      <button onclick="showCompareTab('points')" id="cmpTabPoints" style="padding:6px 12px; border:none; border-radius:6px; background:#ddd; color:#333; font-size:0.85em; font-weight:600; cursor:pointer;">ポイント推移</button>
+    </div>
+    <canvas id="compareChart" width="460" height="260" style="width:100%; height:auto;"></canvas>
+    <div id="compareLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.8em;"></div>
+    <div id="compareEmpty" style="display:none; text-align:center; color:#999; padding:16px 0;">データがありません</div>
+  </div>
+</div>
 
 </body>
