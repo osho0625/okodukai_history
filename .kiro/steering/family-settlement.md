@@ -17,6 +17,7 @@ fileMatchPattern: "*settlement*"
 - `sql/create_settlement_tables.sql` — テーブル定義
 - `sql/create_settlement_rpc.sql` — Postgres Functions（Transaction）
 - `sql/create_settlement_revert_rpc.sql` — 精算取消 Postgres Functions
+- `sql/alter_monthly_expenses_manual.sql` — 手動追加対応（expense_master_id NULLable + name追加）
 - `sql/alter_settlement_rls.sql` — RLS無効化（再実行用）
 - `sql/alter_settlement_allow_multiple.sql` — 同月複数精算対応ALTER
 - `sql/alter_temporary_expenses_beneficiaries.sql` — beneficiaries列追加
@@ -31,10 +32,11 @@ fileMatchPattern: "*settlement*"
 - RLS無効
 
 ### monthly_expenses（毎月の精算データ）
-- id, year_month, expense_master_id (FK), payer, planned_amount, actual_amount
+- id, year_month, expense_master_id (FK, NULL許可), payer, planned_amount, actual_amount
+- name: 手動追加項目の項目名（expense_master_idがNULLの場合に使用）
 - difference: Generated Column (`CASE WHEN actual_amount IS NULL THEN 0 ELSE actual_amount - planned_amount END`)
 - difference_settled, created_at
-- UNIQUE (year_month, expense_master_id)
+- UNIQUE (year_month, expense_master_id) — NULLは重複判定対象外
 - RLS無効
 
 ### settlement_history（精算履歴）
