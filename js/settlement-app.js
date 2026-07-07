@@ -572,9 +572,15 @@ async function loadMonthlySettlement(yearMonth) {
         html += '<div style="margin-bottom:8px;">';
         for (const exp of payerMonthly) {
           const name = exp.expense_master ? exp.expense_master.name : '(不明)';
-          html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">`;
-          html += `<span>${escapeHtml(name)}</span><span>${formatAmount(exp.planned_amount)}</span>`;
-          html += `</div>`;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">`;
+          html += `<span>${escapeHtml(name)}</span>`;
+          html += `<div style="display:flex;align-items:center;gap:6px;">`;
+          html += `<span>${formatAmount(exp.planned_amount)}</span>`;
+          if (!isSettled) {
+            html += `<button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;" onclick="showMonthlyExpenseEditModal('${exp.id}')">✏️</button>`;
+            html += `<button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;color:#d32f2f;border-color:#d32f2f;" onclick="deleteMonthlyExpense('${exp.id}', '${yearMonth}')">🗑</button>`;
+          }
+          html += `</div></div>`;
         }
         html += '</div>';
       }
@@ -593,6 +599,13 @@ async function loadMonthlySettlement(yearMonth) {
       html += `<div style="border-top:1px solid #ddd;padding-top:8px;margin-top:8px;font-weight:600;display:flex;justify-content:space-between;">`;
       html += `<span>小計</span><span>${formatAmount(result.payerTotals[payer])}</span>`;
       html += `</div>`;
+      html += `</div>`;
+    }
+
+    // 固定費行の追加ボタン（未確定時のみ）
+    if (!isSettled) {
+      html += `<div style="text-align:center;margin-bottom:12px;">`;
+      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;" onclick="showMonthlyExpenseAddModal('${yearMonth}')">＋ 固定費項目を追加</button>`;
       html += `</div>`;
     }
 
@@ -1370,6 +1383,170 @@ async function markSettlementPaidDiff(id) {
   } catch (err) {
     console.error('Mark paid error:', err);
     showToast('更新に失敗しました');
+  }
+}
+
+// ========== Monthly Expense CRUD (個別編集) ==========
+async function showMonthlyExpenseEditModal(id) {
+  const { data: exp, error } = await client
+    .from('monthly_expenses')
+    .select('id, year_month, expense_master_id, payer, planned_amount, expense_master:expense_master_id(name)')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !exp) { showToast('データ取得に失敗しました'); return; }
+
+  const name = exp.expense_master ? exp.expense_master.name : '(手動追加)';
+
+  const modal = document.createElement('div');
+  modal.id = 'me-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;">
+      <h3 style="margin-bottom:16px;">固定費項目を編集</h3>
+      <div style="margin-bottom:12px;color:#666;font-size:0.9em;">${escapeHtml(name)} (${exp.year_month})</div>
+      <div style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">支払担当者</span>
+        <input id="me-payer" type="hidden" value="${escapeHtml(exp.payer)}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="payer-btn" data-target="me-payer" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid ${exp.payer === 'めぐみ' ? '#1565c0' : '#ddd'};border-radius:8px;background:${exp.payer === 'めぐみ' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
+          <button type="button" class="payer-btn" data-target="me-payer" data-value="涼介" style="flex:1;padding:10px;border:2px solid ${exp.payer === '涼介' ? '#1565c0' : '#ddd'};border-radius:8px;background:${exp.payer === '涼介' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">涼介</button>
+        </div>
+      </div>
+      <label style="display:block;margin-bottom:16px;">
+        <span style="font-weight:600;">金額（円）</span>
+        <input id="me-amount" type="number" min="0" value="${exp.planned_amount}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
+      </label>
+      <div style="display:flex;gap:12px;">
+        <button class="btn-primary" style="flex:1;" onclick="saveMonthlyExpenseEdit('${exp.id}')">更新</button>
+        <button class="btn-secondary" style="flex:1;" onclick="closeMonthlyExpenseModal()">キャンセル</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeMonthlyExpenseModal(); });
+  modal.querySelectorAll('.payer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      target.value = btn.dataset.value;
+      btn.parentElement.querySelectorAll('.payer-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
+}
+
+async function showMonthlyExpenseAddModal(yearMonth) {
+  const modal = document.createElement('div');
+  modal.id = 'me-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;">
+      <h3 style="margin-bottom:16px;">固定費項目を追加 (${yearMonth})</h3>
+      <div id="me-errors" style="color:#d32f2f;margin-bottom:12px;font-size:0.9em;"></div>
+      <div style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">支払担当者</span>
+        <input id="me-payer" type="hidden" value="">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="payer-btn" data-target="me-payer" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid #ddd;border-radius:8px;background:#fff;font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
+          <button type="button" class="payer-btn" data-target="me-payer" data-value="涼介" style="flex:1;padding:10px;border:2px solid #ddd;border-radius:8px;background:#fff;font-size:1em;font-weight:600;cursor:pointer;">涼介</button>
+        </div>
+      </div>
+      <label style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">金額（円）</span>
+        <input id="me-amount" type="number" min="0" value="" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
+      </label>
+      <div style="display:flex;gap:12px;">
+        <button class="btn-primary" style="flex:1;" onclick="saveMonthlyExpenseAdd('${yearMonth}')">追加</button>
+        <button class="btn-secondary" style="flex:1;" onclick="closeMonthlyExpenseModal()">キャンセル</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeMonthlyExpenseModal(); });
+  modal.querySelectorAll('.payer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      target.value = btn.dataset.value;
+      btn.parentElement.querySelectorAll('.payer-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
+}
+
+function closeMonthlyExpenseModal() {
+  const modal = document.getElementById('me-modal');
+  if (modal) modal.remove();
+}
+
+async function saveMonthlyExpenseEdit(id) {
+  const payer = document.getElementById('me-payer').value;
+  const amount = parseInt(document.getElementById('me-amount').value, 10);
+
+  if (!payer) { showToast('支払担当者を選択してください'); return; }
+  if (isNaN(amount) || amount < 0) { showToast('有効な金額を入力してください'); return; }
+
+  try {
+    const { error } = await client
+      .from('monthly_expenses')
+      .update({ payer, planned_amount: amount })
+      .eq('id', id);
+    if (error) throw error;
+    showToast('更新しました');
+    closeMonthlyExpenseModal();
+    loadMonthlySettlement(currentMonthlyYearMonth);
+  } catch (err) {
+    console.error('Save monthly expense edit error:', err);
+    showToast('更新に失敗しました');
+  }
+}
+
+async function saveMonthlyExpenseAdd(yearMonth) {
+  const payer = document.getElementById('me-payer').value;
+  const amount = parseInt(document.getElementById('me-amount').value, 10);
+  const errEl = document.getElementById('me-errors');
+
+  const errors = [];
+  if (!payer) errors.push('支払担当者を選択してください');
+  if (isNaN(amount) || amount < 0) errors.push('有効な金額を入力してください');
+  if (errors.length > 0) {
+    errEl.innerHTML = errors.map(e => '<div>' + escapeHtml(e) + '</div>').join('');
+    return;
+  }
+
+  try {
+    const { error } = await client
+      .from('monthly_expenses')
+      .insert({ year_month: yearMonth, payer, planned_amount: amount });
+    if (error) throw error;
+    showToast('固定費項目を追加しました');
+    closeMonthlyExpenseModal();
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Save monthly expense add error:', err);
+    showToast('追加に失敗しました');
+  }
+}
+
+async function deleteMonthlyExpense(id, yearMonth) {
+  if (!confirm('この固定費項目を削除しますか？')) return;
+  try {
+    const { error } = await client
+      .from('monthly_expenses')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    showToast('項目を削除しました');
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Delete monthly expense error:', err);
+    showToast('削除に失敗しました');
   }
 }
 
