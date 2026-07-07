@@ -501,12 +501,13 @@ async function loadMonthlySettlement(yearMonth) {
       html += `<div style="color:#2e7d32;font-weight:600;">✅ 精算確定済み (${settlementRecord.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
       html += `<div style="margin-top:4px;">${escapeHtml(settlementRecord.payer_from)} → ${escapeHtml(settlementRecord.payer_to)}: ${formatAmount(settlementRecord.amount)}</div>`;
       if (settlementRecord.memo) html += `<div style="margin-top:4px;color:#666;">メモ: ${escapeHtml(settlementRecord.memo)}</div>`;
+      html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
       if (settlementRecord.status === 'pending') {
-        html += `<div style="margin-top:12px;display:flex;gap:8px;">`;
         html += `<button class="btn-primary" style="padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaid('${settlementRecord.id}')">支払い完了にする</button>`;
         html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;" onclick="editSettlementMemo('${settlementRecord.id}')">メモ編集</button>`;
-        html += `</div>`;
       }
+      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertMonthlySettlement('${settlementRecord.id}', '${yearMonth}')">⏪ 精算取消</button>`;
+      html += `</div>`;
       html += '</div>';
     }
 
@@ -629,7 +630,7 @@ async function loadMonthlySettlement(yearMonth) {
 }
 
 async function executeMonthlySettlement(yearMonth) {
-  if (!confirm('精算を確定しますか？確定後は取り消しできません。')) return;
+  if (!confirm('精算を確定しますか？')) return;
 
   const btn = document.getElementById('btn-execute-monthly');
   if (btn) btn.disabled = true;
@@ -1165,9 +1166,12 @@ async function loadDifferenceSettlement(year, period) {
       html += `<div class="card" style="background:#e8f5e9;border:1px solid #a5d6a7;">`;
       html += `<div style="color:#2e7d32;font-weight:600;">✅ 差額精算済み (${existingSettlement.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
       html += `<div style="margin-top:4px;">${escapeHtml(existingSettlement.payer_from)} → ${escapeHtml(existingSettlement.payer_to)}: ${formatAmount(existingSettlement.amount)}</div>`;
+      html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
       if (existingSettlement.status === 'pending') {
-        html += `<button class="btn-primary" style="margin-top:8px;padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaidDiff('${existingSettlement.id}')">支払い完了にする</button>`;
+        html += `<button class="btn-primary" style="padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaidDiff('${existingSettlement.id}')">支払い完了にする</button>`;
       }
+      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertDifferenceSettlement('${existingSettlement.id}', ${year}, '${period}')">⏪ 精算取消</button>`;
+      html += `</div>`;
       html += '</div>';
     }
 
@@ -1250,7 +1254,7 @@ async function loadDifferenceSettlement(year, period) {
 }
 
 async function executeDifferenceSettlement(year, period) {
-  if (!confirm('差額精算を確定しますか？確定後は取り消しできません。')) return;
+  if (!confirm('差額精算を確定しますか？')) return;
 
   const btn = document.getElementById('btn-execute-diff');
   if (btn) btn.disabled = true;
@@ -1314,6 +1318,90 @@ async function markSettlementPaidDiff(id) {
   } catch (err) {
     console.error('Mark paid error:', err);
     showToast('更新に失敗しました');
+  }
+}
+
+// ========== Settlement Revert (精算取消) ==========
+async function revertMonthlySettlement(settlementId, yearMonth) {
+  if (!confirm('精算を取り消して処理前の状態に戻しますか？\n立替金の精算済みフラグも元に戻ります。')) return;
+
+  try {
+    // 取消前に情報を取得（通知用）
+    const { data: record } = await client
+      .from('settlement_history')
+      .select('payer_from, payer_to, amount')
+      .eq('id', settlementId)
+      .maybeSingle();
+
+    const { error } = await client.rpc('revert_monthly_settlement', {
+      p_settlement_id: settlementId
+    });
+
+    if (error) throw error;
+
+    showToast('精算を取り消しました');
+
+    // Discord通知
+    const content = `⏪ **月次精算取消** (${yearMonth})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の精算を取り消しました`;
+    notifyDiscord(content);
+
+    // Push通知（両方に通知）
+    queuePushNotification(
+      '⏪ 精算取消',
+      `${yearMonth} の月次精算（${record.payer_from}→${record.payer_to} ${record.amount.toLocaleString()}円）が取り消されました`,
+      'all'
+    );
+
+    loadMonthlySettlement(yearMonth);
+  } catch (err) {
+    console.error('Revert monthly settlement error:', err);
+    if (err.message && err.message.includes('not found')) {
+      showToast('対象の精算が見つかりません');
+    } else {
+      showToast('精算取消に失敗しました');
+    }
+  }
+}
+
+async function revertDifferenceSettlement(settlementId, year, period) {
+  if (!confirm('差額精算を取り消して処理前の状態に戻しますか？\n差額精算済みフラグも元に戻ります。')) return;
+
+  try {
+    // 取消前に情報を取得（通知用）
+    const { data: record } = await client
+      .from('settlement_history')
+      .select('payer_from, payer_to, amount, target_period')
+      .eq('id', settlementId)
+      .maybeSingle();
+
+    const { error } = await client.rpc('revert_difference_settlement', {
+      p_settlement_id: settlementId
+    });
+
+    if (error) throw error;
+
+    showToast('差額精算を取り消しました');
+
+    // Discord通知
+    const periodLabel = period === 'first_half' ? '上半期' : '下半期';
+    const content = `⏪ **差額精算取消** (${year}年${periodLabel})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の差額精算を取り消しました`;
+    notifyDiscord(content);
+
+    // Push通知（両方に通知）
+    queuePushNotification(
+      '⏪ 差額精算取消',
+      `${year}年${periodLabel}の差額精算（${record.payer_from}→${record.payer_to} ${record.amount.toLocaleString()}円）が取り消されました`,
+      'all'
+    );
+
+    loadDifferenceSettlement(year, period);
+  } catch (err) {
+    console.error('Revert difference settlement error:', err);
+    if (err.message && err.message.includes('not found')) {
+      showToast('対象の精算が見つかりません');
+    } else {
+      showToast('差額精算取消に失敗しました');
+    }
   }
 }
 

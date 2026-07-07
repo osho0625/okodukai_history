@@ -16,6 +16,7 @@ fileMatchPattern: "*settlement*"
 - `js/settlement-app.js` — UI・Supabase操作
 - `sql/create_settlement_tables.sql` — テーブル定義
 - `sql/create_settlement_rpc.sql` — Postgres Functions（Transaction）
+- `sql/create_settlement_revert_rpc.sql` — 精算取消 Postgres Functions
 - `sql/alter_settlement_rls.sql` — RLS無効化（再実行用）
 - `tests/property-settlement.test.js` — プロパティベーステスト（17 Properties）
 - `tests/settlement-integration.test.js` — 統合テスト
@@ -71,6 +72,8 @@ fileMatchPattern: "*settlement*"
 
 - `execute_monthly_settlement` — 月次精算確定（重複チェック + history INSERT + temp UPDATE）
 - `execute_difference_settlement` — 差額精算確定（重複チェック + history INSERT + monthly UPDATE）
+- `revert_monthly_settlement` — 月次精算取消（temp settled→false + history DELETE + Discord/Push通知）
+- `revert_difference_settlement` — 差額精算取消（monthly difference_settled→false + history DELETE + Discord/Push通知）
 
 ## テスト
 
