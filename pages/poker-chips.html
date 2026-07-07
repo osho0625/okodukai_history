@@ -76,11 +76,12 @@ h1 { font-size: 1.2em; color: #ffd700; }
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const START_CHIPS = 500;
+const isChipAdmin = localStorage.getItem('chipAdmin') === 'true';
 let chipData = {};
 let customTarget = null;
 
 async function init() {
-  if (!isAdmin) {
+  if (!isChipAdmin) {
     document.getElementById('readonlyNotice').style.display = 'block';
   }
   await loadChips();
@@ -97,7 +98,7 @@ async function loadChips() {
 }
 
 async function changeChips(name, amount) {
-  if (!isAdmin) return;
+  if (!isChipAdmin) return;
   const newChips = (chipData[name] || 0) + amount;
   const { error } = await client.from('poker_chips')
     .update({ chips: newChips, updated_at: new Date().toISOString() })
@@ -111,7 +112,7 @@ async function changeChips(name, amount) {
 }
 
 function openCustom(name) {
-  if (!isAdmin) return;
+  if (!isChipAdmin) return;
   customTarget = name;
   document.getElementById('customTitle').textContent = name + ' のチップ増減';
   document.getElementById('customAmount').value = '';
@@ -172,7 +173,7 @@ function render() {
     const recoveryBtn = recoverable
       ? `<button onclick="recoverChips('${name}')" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:2px 4px;" title="500に回復">&#x1F504;</button>`
       : '';
-    const controls = isAdmin ? `
+    const controls = isChipAdmin ? `
       <div class="chip-controls">
         <button class="chip-btn minus500" onclick="changeChips('${name}', -500)">-500</button>
         <button class="chip-btn minus" onclick="changeChips('${name}', -100)">-100</button>
