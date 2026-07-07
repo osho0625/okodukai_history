@@ -487,7 +487,7 @@ async function loadMonthlySettlement(yearMonth) {
     // 2. Get existing monthly expenses
     const { data: monthlyExpenses, error: meErr } = await client
       .from('monthly_expenses')
-      .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, expense_master:expense_master_id(name, settlement_cycle)')
+      .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, name, expense_master:expense_master_id(name, settlement_cycle)')
       .eq('year_month', yearMonth)
       .order('created_at', { ascending: true });
     if (meErr) throw meErr;
@@ -571,7 +571,7 @@ async function loadMonthlySettlement(yearMonth) {
       if (payerMonthly.length > 0) {
         html += '<div style="margin-bottom:8px;">';
         for (const exp of payerMonthly) {
-          const name = exp.expense_master ? exp.expense_master.name : '(不明)';
+          const name = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
           html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">`;
           html += `<span>${escapeHtml(name)}</span>`;
           html += `<div style="display:flex;align-items:center;gap:6px;">`;
@@ -1096,7 +1096,7 @@ async function loadDifferenceManagement() {
     for (const exp of halfYearExpenses) {
       const key = exp.expense_master_id;
       if (!grouped[key]) {
-        grouped[key] = { name: exp.expense_master ? exp.expense_master.name : '(不明)', payer: exp.payer, records: [] };
+        grouped[key] = { name: exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)'), payer: exp.payer, records: [] };
       }
       grouped[key].records.push(exp);
     }
@@ -1262,7 +1262,7 @@ async function loadDifferenceSettlement(year, period) {
       html += '<thead><tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:4px;">年月</th><th style="text-align:left;padding:4px;">項目</th><th style="text-align:right;padding:4px;">基準額</th><th style="text-align:right;padding:4px;">実費</th><th style="text-align:right;padding:4px;">差額</th></tr></thead>';
       html += '<tbody>';
       for (const exp of halfYearExpenses) {
-        const name = exp.expense_master ? exp.expense_master.name : '(不明)';
+        const name = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
         const diff = calculateDifference(exp.actual_amount, exp.planned_amount);
         const diffColor = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#888';
         html += `<tr style="border-bottom:1px solid #f0f0f0;">`;
@@ -1409,12 +1409,13 @@ async function markSettlementPaidDiff(id) {
 async function showMonthlyExpenseEditModal(id) {
   const { data: exp, error } = await client
     .from('monthly_expenses')
-    .select('id, year_month, expense_master_id, payer, planned_amount, expense_master:expense_master_id(name)')
+    .select('id, year_month, expense_master_id, payer, planned_amount, name, expense_master:expense_master_id(name)')
     .eq('id', id)
     .maybeSingle();
   if (error || !exp) { showToast('データ取得に失敗しました'); return; }
 
-  const name = exp.expense_master ? exp.expense_master.name : '(手動追加)';
+  const displayName = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
+  const isManual = !exp.expense_master_id;
 
   const modal = document.createElement('div');
   modal.id = 'me-modal';
@@ -1422,7 +1423,12 @@ async function showMonthlyExpenseEditModal(id) {
   modal.innerHTML = `
     <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;">
       <h3 style="margin-bottom:16px;">固定費項目を編集</h3>
-      <div style="margin-bottom:12px;color:#666;font-size:0.9em;">${escapeHtml(name)} (${exp.year_month})</div>
+      ${isManual ? `
+      <label style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">項目名</span>
+        <input id="me-name" type="text" value="${escapeHtml(exp.name || '')}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
+      </label>` : `
+      <div style="margin-bottom:12px;color:#666;font-size:0.9em;">${escapeHtml(displayName)} (${exp.year_month})</div>`}
       <div style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">支払担当者</span>
         <input id="me-payer" type="hidden" value="${escapeHtml(exp.payer)}">
@@ -1436,7 +1442,7 @@ async function showMonthlyExpenseEditModal(id) {
         <input id="me-amount" type="number" min="0" value="${exp.planned_amount}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <div style="display:flex;gap:12px;">
-        <button class="btn-primary" style="flex:1;" onclick="saveMonthlyExpenseEdit('${exp.id}')">更新</button>
+        <button class="btn-primary" style="flex:1;" onclick="saveMonthlyExpenseEdit('${exp.id}', ${isManual})">${isManual ? '更新' : '更新'}</button>
         <button class="btn-secondary" style="flex:1;" onclick="closeMonthlyExpenseModal()">キャンセル</button>
       </div>
     </div>
@@ -1458,43 +1464,16 @@ async function showMonthlyExpenseEditModal(id) {
 }
 
 async function showMonthlyExpenseAddModal(yearMonth) {
-  // マスタ一覧を取得（選択肢として表示）
-  const { data: masters, error: masterErr } = await client
-    .from('expense_master')
-    .select('id, name, payer, base_amount, settlement_cycle')
-    .eq('enabled', true)
-    .order('created_at', { ascending: true });
-  if (masterErr) { showToast('マスタ取得に失敗しました'); return; }
-
-  // 既にこの月に存在するmaster_idを取得
-  const { data: existing } = await client
-    .from('monthly_expenses')
-    .select('expense_master_id')
-    .eq('year_month', yearMonth);
-  const existingIds = new Set((existing || []).map(e => e.expense_master_id));
-
-  // まだ追加されてないマスタのみ候補にする
-  const available = (masters || []).filter(m => !existingIds.has(m.id));
-
   const modal = document.createElement('div');
   modal.id = 'me-modal';
   modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;';
-
-  let optionsHtml = '<option value="">-- 選択してください --</option>';
-  for (const m of available) {
-    optionsHtml += `<option value="${m.id}" data-payer="${escapeHtml(m.payer)}" data-amount="${m.base_amount}">${escapeHtml(m.name)} (${escapeHtml(m.payer)} / ${m.base_amount.toLocaleString()}円)</option>`;
-  }
-
   modal.innerHTML = `
     <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;">
       <h3 style="margin-bottom:16px;">固定費項目を追加 (${yearMonth})</h3>
       <div id="me-errors" style="color:#d32f2f;margin-bottom:12px;font-size:0.9em;"></div>
-      ${available.length === 0 ? '<div style="color:#888;margin-bottom:12px;">追加可能なマスタ項目がありません（すべて登録済み）</div>' : ''}
       <label style="display:block;margin-bottom:12px;">
-        <span style="font-weight:600;">項目</span>
-        <select id="me-master-select" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;" onchange="onMonthlyExpenseMasterSelect(this)">
-          ${optionsHtml}
-        </select>
+        <span style="font-weight:600;">項目名</span>
+        <input id="me-name" type="text" placeholder="例: 臨時の修繕費" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <div style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">支払担当者</span>
@@ -1531,24 +1510,7 @@ async function showMonthlyExpenseAddModal(yearMonth) {
 }
 
 function onMonthlyExpenseMasterSelect(select) {
-  const option = select.selectedOptions[0];
-  if (!option || !option.value) return;
-  const payer = option.dataset.payer;
-  const amount = option.dataset.amount;
-  // 担当者を自動セット
-  document.getElementById('me-payer').value = payer;
-  const modal = document.getElementById('me-modal');
-  modal.querySelectorAll('.payer-btn[data-target="me-payer"]').forEach(btn => {
-    if (btn.dataset.value === payer) {
-      btn.style.borderColor = '#1565c0';
-      btn.style.background = '#e3f2fd';
-    } else {
-      btn.style.borderColor = '#ddd';
-      btn.style.background = '#fff';
-    }
-  });
-  // 金額を自動セット
-  document.getElementById('me-amount').value = amount;
+  // no longer used
 }
 
 function closeMonthlyExpenseModal() {
@@ -1556,17 +1518,26 @@ function closeMonthlyExpenseModal() {
   if (modal) modal.remove();
 }
 
-async function saveMonthlyExpenseEdit(id) {
+async function saveMonthlyExpenseEdit(id, isManual) {
   const payer = document.getElementById('me-payer').value;
   const amount = parseInt(document.getElementById('me-amount').value, 10);
 
   if (!payer) { showToast('支払担当者を選択してください'); return; }
   if (isNaN(amount) || amount < 0) { showToast('有効な金額を入力してください'); return; }
 
+  const updateData = { payer, planned_amount: amount };
+
+  if (isManual) {
+    const nameEl = document.getElementById('me-name');
+    const name = nameEl ? nameEl.value : '';
+    if (!name || name.trim() === '') { showToast('項目名を入力してください'); return; }
+    updateData.name = name.trim();
+  }
+
   try {
     const { error } = await client
       .from('monthly_expenses')
-      .update({ payer, planned_amount: amount })
+      .update(updateData)
       .eq('id', id);
     if (error) throw error;
     showToast('更新しました');
@@ -1579,13 +1550,13 @@ async function saveMonthlyExpenseEdit(id) {
 }
 
 async function saveMonthlyExpenseAdd(yearMonth) {
-  const masterId = document.getElementById('me-master-select').value;
+  const name = document.getElementById('me-name').value;
   const payer = document.getElementById('me-payer').value;
   const amount = parseInt(document.getElementById('me-amount').value, 10);
   const errEl = document.getElementById('me-errors');
 
   const errors = [];
-  if (!masterId) errors.push('項目を選択してください');
+  if (!name || name.trim() === '') errors.push('項目名を入力してください');
   if (!payer) errors.push('支払担当者を選択してください');
   if (isNaN(amount) || amount < 0) errors.push('有効な金額を入力してください');
   if (errors.length > 0) {
@@ -1596,7 +1567,7 @@ async function saveMonthlyExpenseAdd(yearMonth) {
   try {
     const { error } = await client
       .from('monthly_expenses')
-      .insert({ year_month: yearMonth, expense_master_id: masterId, payer, planned_amount: amount });
+      .insert({ year_month: yearMonth, payer, planned_amount: amount, name: name.trim() });
     if (error) throw error;
     showToast('固定費項目を追加しました');
     closeMonthlyExpenseModal();

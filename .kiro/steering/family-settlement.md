@@ -18,6 +18,8 @@ fileMatchPattern: "*settlement*"
 - `sql/create_settlement_rpc.sql` — Postgres Functions（Transaction）
 - `sql/create_settlement_revert_rpc.sql` — 精算取消 Postgres Functions
 - `sql/alter_settlement_rls.sql` — RLS無効化（再実行用）
+- `sql/alter_settlement_allow_multiple.sql` — 同月複数精算対応ALTER
+- `sql/alter_temporary_expenses_beneficiaries.sql` — beneficiaries列追加
 - `tests/property-settlement.test.js` — プロパティベーステスト（17 Properties）
 - `tests/settlement-integration.test.js` — 統合テスト
 - `tests/settlement-deep-check.test.js` — 深層バグチェック
@@ -46,13 +48,13 @@ fileMatchPattern: "*settlement*"
 - beneficiaries: 受益者（誰の分を立て替えたか）。両方=折半、片方のみ=全額その人が返す
 - RLS無効
 
-## 画面構成（タブ）
+## 画面構成（5タブ）
 
 1. 📊 ダッシュボード — 今月の精算結果、未払い件数、差額精算待ち、立替金一覧
 2. 📋 固定費管理 — マスタCRUD、有効/無効切替
-3. 💴 今月の精算 — 月次精算計算・確定・履歴、年月ナビ
+3. 💴 今月の精算 — 月次精算計算・確定・取消・履歴、年月ナビ
 4. 📈 差額管理 — 半年項目の実費入力、即時差額表示
-5. 🔄 差額精算 — 期間別累積差額一覧、精算確定、基準額調整提案
+5. 🔄 差額精算 — 期間別累積差額一覧、精算確定・取消、基準額調整提案
 
 ## 設計上の制約
 

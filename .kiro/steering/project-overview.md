@@ -306,3 +306,5 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `family-notes.md` — 家族メモ帳
 - `chores.md` — お手伝いリスト
 - `texas-holdem.md` — テキサスホールデム ルールガイド
+- `family-settlement.md` — 家庭内精算機能
+- `recipe.md` — 家族レシピ管理
