@@ -329,37 +329,231 @@ function addSeasoningRow(data) {
 }
 
 /**
+ * レシピメンバー一覧を取得（localStorage優先、フォールバック: children テーブル → デフォルト）
+ * @returns {Promise<string[]>}
+ */
+async function getRecipeMembers() {
+  // localStorage に保存済みのメンバーがあればそれを使う
+  var stored = localStorage.getItem('recipe_members');
+  if (stored) {
+    try {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch(e) {}
+  }
+
+  // children テーブルから取得を試みる
+  try {
+    var { data } = await client.from('children').select('name');
+    if (data && data.length > 0) {
+      var names = data.map(function(c) { return c.name; });
+      localStorage.setItem('recipe_members', JSON.stringify(names));
+      return names;
+    }
+  } catch(e) {}
+
+  // デフォルト
+  var defaults = ['りょうすけ', 'めぐみ', 'いろは'];
+  localStorage.setItem('recipe_members', JSON.stringify(defaults));
+  return defaults;
+}
+
+/**
+ * メンバーを追加
+ * @param {string} name
+ */
+function addRecipeMember(name) {
+  var stored = localStorage.getItem('recipe_members');
+  var members = [];
+  try { members = JSON.parse(stored) || []; } catch(e) {}
+  if (!members.includes(name)) {
+    members.push(name);
+    localStorage.setItem('recipe_members', JSON.stringify(members));
+  }
+}
+
+/**
+ * メンバーを削除
+ * @param {string} name
+ */
+function removeRecipeMember(name) {
+  var stored = localStorage.getItem('recipe_members');
+  var members = [];
+  try { members = JSON.parse(stored) || []; } catch(e) {}
+  members = members.filter(function(m) { return m !== name; });
+  localStorage.setItem('recipe_members', JSON.stringify(members));
+}
+
+/**
+ * メンバー管理モーダルを表示
+ */
+async function showMemberSettingsModal() {
+  var existing = document.getElementById('member-settings-modal-overlay');
+  if (existing) existing.parentNode.removeChild(existing);
+
+  var members = await getRecipeMembers();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'member-settings-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;';
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:90%;width:320px;max-height:80vh;overflow-y:auto;';
+
+  var title = document.createElement('h3');
+  title.style.cssText = 'margin-bottom:16px;font-size:1.1em;color:#333;text-align:center;';
+  title.textContent = '👨‍👩‍👧 メンバー管理';
+  modal.appendChild(title);
+
+  var listContainer = document.createElement('div');
+  listContainer.id = 'member-settings-list';
+
+  function renderList() {
+    listContainer.innerHTML = '';
+    var current = [];
+    try { current = JSON.parse(localStorage.getItem('recipe_members')) || []; } catch(e) {}
+
+    for (var i = 0; i < current.length; i++) {
+      (function(name, idx) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;';
+
+        var nameEl = document.createElement('span');
+        nameEl.style.cssText = 'font-size:1em;color:#333;';
+        nameEl.textContent = name;
+        row.appendChild(nameEl);
+
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = 'width:32px;height:32px;border:none;background:#fee;border-radius:50%;cursor:pointer;font-size:1em;color:#e53935;';
+        delBtn.addEventListener('click', function() {
+          if (confirm(name + ' を削除しますか？')) {
+            removeRecipeMember(name);
+            renderList();
+          }
+        });
+        row.appendChild(delBtn);
+
+        listContainer.appendChild(row);
+      })(current[i], i);
+    }
+  }
+
+  renderList();
+  modal.appendChild(listContainer);
+
+  // 追加UI
+  var addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:8px;margin-top:16px;';
+
+  var addInput = document.createElement('input');
+  addInput.type = 'text';
+  addInput.placeholder = '名前を入力';
+  addInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+  addRow.appendChild(addInput);
+
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn-primary';
+  addBtn.textContent = '＋';
+  addBtn.style.cssText = 'padding:10px 16px;font-size:1.1em;';
+  addBtn.addEventListener('click', function() {
+    var name = addInput.value.trim();
+    if (!name) return;
+    addRecipeMember(name);
+    addInput.value = '';
+    renderList();
+  });
+  addRow.appendChild(addBtn);
+  modal.appendChild(addRow);
+
+  // 閉じるボタン
+  var closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'btn-secondary';
+  closeBtn.textContent = '閉じる';
+  closeBtn.style.cssText = 'width:100%;padding:12px;margin-top:16px;';
+  closeBtn.addEventListener('click', function() {
+    overlay.parentNode.removeChild(overlay);
+  });
+  modal.appendChild(closeBtn);
+
+  overlay.appendChild(modal);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+/**
  * ユーザー名選択モーダルを表示
  * @returns {Promise<string|null>}
  */
 async function promptUserName() {
-  // Try to get from children table
-  var children = [];
-  try {
-    var { data } = await client.from('children').select('name');
-    children = data || [];
-  } catch(e) {}
+  var names = await getRecipeMembers();
 
-  if (children.length === 0) {
-    // Manual input
-    var name = prompt('お名前を入力してください');
-    return name && name.trim() ? name.trim() : null;
+  if (names.length === 1) {
+    return names[0];
   }
 
-  if (children.length === 1) {
-    return children[0].name;
-  }
+  // Multiple members: show selection modal
+  return new Promise(function(resolve) {
+    // Remove existing modal if any
+    var existing = document.getElementById('user-select-modal-overlay');
+    if (existing) existing.parentNode.removeChild(existing);
 
-  // Multiple children: show selection prompt
-  var names = children.map(function(c) { return c.name; });
-  var choice = prompt('誰ですか？\n' + names.map(function(n, i) { return (i+1) + '. ' + n; }).join('\n') + '\n\n番号を入力:');
-  if (choice) {
-    var idx = parseInt(choice, 10) - 1;
-    if (idx >= 0 && idx < names.length) {
-      return names[idx];
+    var overlay = document.createElement('div');
+    overlay.id = 'user-select-modal-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;';
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:90%;width:320px;';
+
+    var title = document.createElement('h3');
+    title.style.cssText = 'margin-bottom:16px;font-size:1.1em;color:#333;text-align:center;';
+    title.textContent = '誰がレシピを書きましたか？';
+    modal.appendChild(title);
+
+    for (var i = 0; i < names.length; i++) {
+      (function(name) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-primary';
+        btn.textContent = name;
+        btn.style.cssText = 'width:100%;padding:14px;margin-bottom:10px;font-size:1.1em;border-radius:10px;';
+        btn.addEventListener('click', function() {
+          overlay.parentNode.removeChild(overlay);
+          resolve(name);
+        });
+        modal.appendChild(btn);
+      })(names[i]);
     }
-  }
-  return null;
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-secondary';
+    cancelBtn.textContent = 'キャンセル';
+    cancelBtn.style.cssText = 'width:100%;padding:12px;margin-top:4px;';
+    cancelBtn.addEventListener('click', function() {
+      overlay.parentNode.removeChild(overlay);
+      resolve(null);
+    });
+    modal.appendChild(cancelBtn);
+
+    overlay.appendChild(modal);
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        overlay.parentNode.removeChild(overlay);
+        resolve(null);
+      }
+    });
+
+    document.body.appendChild(overlay);
+  });
 }
 
 /**
@@ -582,6 +776,16 @@ async function loadRecipeList() {
       });
       container.appendChild(catSettingsBtn);
     }
+
+    // メンバー管理ボタン
+    var memberSettingsBtn = document.createElement('button');
+    memberSettingsBtn.type = 'button';
+    memberSettingsBtn.textContent = '👨‍👩‍👧 メンバー';
+    memberSettingsBtn.style.cssText = 'float:right;border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px 12px;font-size:0.85em;cursor:pointer;color:#666;margin-bottom:8px;margin-right:8px;';
+    memberSettingsBtn.addEventListener('click', function() {
+      showMemberSettingsModal();
+    });
+    container.appendChild(memberSettingsBtn);
 
     if (recipes.length === 0) {
       var emptyEl = document.createElement('div');
@@ -3067,5 +3271,5 @@ async function showPrintView(id) {
 
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI };
+  module.exports = { getRecipeMembers, addRecipeMember, removeRecipeMember, showMemberSettingsModal, promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI };
 }
