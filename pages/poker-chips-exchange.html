@@ -189,22 +189,23 @@ async function exchange(idx) {
 
   // あそびチケットの場合、ticketsテーブルに追加
   if (prize.type === 'ticket' && TICKET_OWNERS.includes(currentPlayer)) {
-    await client.from('tickets').insert({
+    const { error: ticketErr } = await client.from('tickets').insert({
       owner: currentPlayer,
       duration_minutes: prize.minutes || 30,
-      status: 'unused',
-      memo: 'チップ交換所で獲得'
+      status: 'unused'
     });
+    if (ticketErr) console.error('ticket insert error:', ticketErr.message);
   }
 
   // おやつ・お茶チケットの場合、reward_ticketsテーブルに追加
   if (prize.type === 'snack' || prize.type === 'tea') {
-    await client.from('reward_tickets').insert({
+    const { error: rewardErr } = await client.from('reward_tickets').insert({
       owner: currentPlayer,
       type: prize.type,
       label: decodeHtml(prize.name),
       status: 'unused'
     });
+    if (rewardErr) console.error('reward_ticket insert error:', rewardErr.message);
   }
 
   currentChips = newChips;
