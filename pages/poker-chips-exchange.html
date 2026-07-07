@@ -13,11 +13,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; pa
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
 h1 { font-size: 1.15em; color: #ffd700; }
+.player-label { text-align: center; font-size: 1.1em; font-weight: 600; margin-bottom: 8px; }
 .my-chips { text-align: center; background: #16213e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
 .my-chips .label { font-size: 0.85em; color: #aaa; }
 .my-chips .value { font-size: 1.5em; font-weight: 700; color: #ffd700; margin-top: 4px; }
-.name-select { text-align: center; margin-bottom: 16px; }
-.name-select select { background: #0f3460; color: #eee; border: 1px solid #333; border-radius: 8px; padding: 10px 16px; font-size: 1em; }
 .prize-card { background: #16213e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
 .prize-info { flex: 1; }
 .prize-name { font-weight: 600; font-size: 1em; }
@@ -44,11 +43,7 @@ h1 { font-size: 1.15em; color: #ffd700; }
   <a class="home" href="../index.html">&#x1F3E0;</a>
 </div>
 
-<div class="name-select">
-  <select id="playerSelect" onchange="onPlayerChange()">
-    <option value="">なまえを選んでね</option>
-  </select>
-</div>
+<div class="player-label" id="playerLabel"></div>
 
 <div class="my-chips">
   <div class="label">いまのチップ</div>
@@ -69,19 +64,15 @@ h1 { font-size: 1.15em; color: #ffd700; }
 </div>
 
 <script>
-const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const PRIZES = [
-  { name: '&#x1F3AB; あそびチケット 1枚', cost: 3000 },
-  { name: '&#x1F36C; おやつ（50円まで）', cost: 2000 },
-  { name: '&#x1F36B; おやつ（100円まで）', cost: 3000 },
-  { name: '&#x1F370; おやつ（150円まで）', cost: 4000 },
-  { name: '&#x1F369; おやつ（200円まで）', cost: 5000 },
-  { name: '&#x1F366; おやつ（250円まで）', cost: 6000 },
-  { name: '&#x1F382; おやつ（300円まで）', cost: 7000 },
+  { name: '&#x1F3AB; あそびチケット 1枚（30分）', cost: 3000, type: 'ticket' },
+  { name: '&#x1F36C; おやつ（50円まで）', cost: 3000, type: 'snack' },
 ];
 const MEGUMI_PRIZES = [
-  { name: '&#x1F375; お茶一回分無料券（5000円まで）', cost: 5000 },
+  { name: '&#x1F375; お茶一回分無料券（5000円まで）', cost: 5000, type: 'tea' },
 ];
+// チケット対象の子供名（ticketsテーブルのowner制約に合わせる）
+const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
 
 function getPrizes() {
   const base = [...PRIZES];
@@ -91,18 +82,18 @@ function getPrizes() {
   return base;
 }
 
-let currentPlayer = '';
+// URLパラメータからプレイヤー名を取得
+const params = new URLSearchParams(location.search);
+let currentPlayer = params.get('player') || '';
 let currentChips = 0;
 
-function onPlayerChange() {
-  currentPlayer = document.getElementById('playerSelect').value;
-  if (currentPlayer) {
-    loadPlayerData();
-  } else {
-    document.getElementById('myChips').textContent = '-';
-    renderPrizes();
-    updateRecoveryBtn();
+async function init() {
+  if (!currentPlayer) {
+    document.body.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#999;">プレイヤーが指定されていません</div>';
+    return;
   }
+  document.getElementById('playerLabel').textContent = currentPlayer;
+  await loadPlayerData();
 }
 
 async function loadPlayerData() {
@@ -121,7 +112,7 @@ function renderPrizes() {
   const container = document.getElementById('prizeList');
   const prizes = getPrizes();
   container.innerHTML = prizes.map((p, i) => {
-    const canAfford = currentPlayer && currentChips >= p.cost;
+    const canAfford = currentChips >= p.cost;
     return `<div class="prize-card">
       <div class="prize-info">
         <div class="prize-name">${p.name}</div>
@@ -145,14 +136,24 @@ async function exchange(idx) {
     .eq('player_name', currentPlayer);
   if (error) { showResult('エラー: ' + error.message, 'error'); return; }
 
-  // 履歴に記録
+  // チップ履歴
   await client.from('poker_chips_history').insert({
     player_name: currentPlayer, amount: -prize.cost, chips_after: newChips
   });
-  // 交換履歴に記録
+  // 交換履歴
   await client.from('poker_chips_exchanges').insert({
     player_name: currentPlayer, prize_name: prize.name, cost: prize.cost
   });
+
+  // あそびチケットの場合、ticketsテーブルに追加
+  if (prize.type === 'ticket' && TICKET_OWNERS.includes(currentPlayer)) {
+    await client.from('tickets').insert({
+      owner: currentPlayer,
+      duration_minutes: 30,
+      status: 'unused',
+      memo: 'チップ交換所で獲得'
+    });
+  }
 
   currentChips = newChips;
   document.getElementById('myChips').textContent = currentChips.toLocaleString();
@@ -192,7 +193,6 @@ async function recoverChips() {
 
 function updateRecoveryBtn() {
   const btn = document.getElementById('recoveryBtn');
-  if (!currentPlayer) { btn.disabled = true; return; }
   const todayKey = 'chip_recovery_' + currentPlayer;
   const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
   const usedToday = localStorage.getItem(todayKey) === today;
@@ -226,15 +226,7 @@ function showResult(msg, type) {
   setTimeout(() => { el.textContent = ''; el.className = 'result-msg'; }, 3000);
 }
 
-// 初期化
-(function() {
-  const select = document.getElementById('playerSelect');
-  PLAYERS.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p; opt.textContent = p;
-    select.appendChild(opt);
-  });
-})();
+init();
 </script>
 </body>
 </html>
