@@ -132,7 +132,7 @@ async function exchange(idx) {
   const prizes = getPrizes();
   const prize = prizes[idx];
   if (currentChips < prize.cost) return;
-  if (!confirm(`${prize.name} と交換する？\n（${prize.cost.toLocaleString()} チップ消費）`)) return;
+  if (!confirm(`${decodeHtml(prize.name)} と交換する？\n（${prize.cost.toLocaleString()} チップ消費）`)) return;
 
   const newChips = currentChips - prize.cost;
   const { error } = await client.from('poker_chips')
@@ -164,7 +164,7 @@ async function exchange(idx) {
     await client.from('reward_tickets').insert({
       owner: currentPlayer,
       type: prize.type,
-      label: prize.name.replace(/&#x[0-9A-Fa-f]+;\s?/g, '').trim(),
+      label: decodeHtml(prize.name),
       status: 'unused'
     });
   }
@@ -173,7 +173,7 @@ async function exchange(idx) {
   document.getElementById('myChips').textContent = currentChips.toLocaleString();
   renderPrizes();
   updateRecoveryBtn();
-  showResult(`${prize.name} と交換したよ！`, 'success');
+  showResult(`${decodeHtml(prize.name)} と交換したよ！`, 'success');
   loadHistory();
 }
 
@@ -231,6 +231,12 @@ async function loadHistory() {
     const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     return `<div class="history-item">${dateStr} — ${r.prize_name}（${r.cost.toLocaleString()}チップ）</div>`;
   }).join('');
+}
+
+function decodeHtml(html) {
+  const el = document.createElement('span');
+  el.innerHTML = html;
+  return el.textContent;
 }
 
 function showResult(msg, type) {
