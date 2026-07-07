@@ -23,7 +23,7 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
 .history-section { background: #16213e; border-radius: 12px; padding: 16px; }
 .history-section h3 { font-size: 0.9em; color: #ffd700; margin-bottom: 10px; }
-.history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9em; color: #ccc; display: flex; justify-content: space-between; }
+.history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9em; color: #ccc; display: flex; justify-content: space-between; align-items: center; }
 .history-item:last-child { border-bottom: none; }
 .history-time { color: #888; font-size: 0.8em; }
 .history-amount { font-weight: 700; }
@@ -31,6 +31,18 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .history-amount.minus { color: #ff4444; }
 .chips-after { color: #ffd700; font-size: 0.85em; margin-left: 8px; }
 .empty-msg { text-align: center; color: #888; padding: 20px 0; }
+.edit-btn { background: none; border: none; font-size: 1em; cursor: pointer; padding: 2px 4px; opacity: 0.6; }
+.edit-btn:hover { opacity: 1; }
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+.overlay.active { display: flex; }
+.modal { background: #16213e; border-radius: 16px; padding: 24px; width: 90%; max-width: 340px; }
+.modal h2 { margin-bottom: 16px; font-size: 1.1em; color: #ffd700; text-align: center; }
+.modal input { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; font-size: 1.1em; text-align: center; background: #0f3460; color: #eee; margin-bottom: 12px; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.9em; font-weight: 600; cursor: pointer; }
+.btn-ok { background: #4caf50; color: #fff; }
+.btn-cancel { background: #555; color: #eee; }
+.btn-danger { background: #ff4444; color: #fff; }
 </style>
 </head>
 <body>
@@ -48,6 +60,20 @@ h1 { font-size: 1.2em; color: #ffd700; }
 </div>
 
 <div class="history-section" id="historyList"></div>
+
+<!-- 履歴編集モーダル (admin only) -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <h2 id="editTitle">履歴編集</h2>
+    <input type="number" id="editAmount" placeholder="増減チップ数" inputmode="numeric">
+    <input type="number" id="editChipsAfter" placeholder="操作後チップ" inputmode="numeric">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="btn-danger" onclick="deleteHistoryItem()">削除</button>
+      <button class="btn-ok" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
@@ -103,7 +129,6 @@ async function loadAll() {
 
 function renderHistory() {
   const container = document.getElementById('historyList');
-  // 選択中のプレイヤーの履歴を統合して新しい順に表示
   let allItems = [];
   selectedPlayers.forEach(name => {
     (playerData[name] || []).forEach(item => allItems.push({ ...item, _name: name }));
@@ -122,11 +147,74 @@ function renderHistory() {
     const sign = item.amount > 0 ? '+' : '';
     const cls = item.amount > 0 ? 'plus' : 'minus';
     const nameLabel = showName ? `<span style="color:${COLORS[PLAYERS.indexOf(item._name)]};font-weight:600;">${item._name}</span> ` : '';
+    const editBtn = isAdmin ? `<button class="edit-btn" onclick="openEdit('${item.id}', '${item._name}', ${item.amount}, ${item.chips_after})">✏️</button>` : '';
     return `<div class="history-item">
       <div>${nameLabel}<span class="history-time">${t}</span></div>
-      <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span></div>
+      <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>${editBtn}</div>
     </div>`;
   }).join('');
+}
+
+let editingId = null;
+let editingName = null;
+
+function openEdit(id, name, amount, chipsAfter) {
+  if (!isAdmin) return;
+  editingId = id;
+  editingName = name;
+  document.getElementById('editTitle').textContent = name + ' の履歴編集';
+  document.getElementById('editAmount').value = amount;
+  document.getElementById('editChipsAfter').value = chipsAfter;
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('active');
+  editingId = null;
+  editingName = null;
+}
+
+async function saveEdit() {
+  if (!editingId) return;
+  const newAmount = parseInt(document.getElementById('editAmount').value);
+  const newChipsAfter = parseInt(document.getElementById('editChipsAfter').value);
+  if (isNaN(newAmount) || isNaN(newChipsAfter)) { alert('数値を入力してください'); return; }
+
+  const { error } = await client.from('poker_chips_history')
+    .update({ amount: newAmount, chips_after: newChipsAfter })
+    .eq('id', editingId);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  // poker_chipsテーブルの現在値も更新（最新履歴のchips_afterに合わせる）
+  await syncCurrentChips(editingName);
+  closeEdit();
+  await loadAll();
+}
+
+async function deleteHistoryItem() {
+  if (!editingId) return;
+  if (!confirm('この履歴を削除しますか？')) return;
+
+  const { error } = await client.from('poker_chips_history')
+    .delete().eq('id', editingId);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  await syncCurrentChips(editingName);
+  closeEdit();
+  await loadAll();
+}
+
+async function syncCurrentChips(name) {
+  // 最新の履歴からchips_afterを取得してpoker_chipsに反映
+  const { data } = await client.from('poker_chips_history')
+    .select('chips_after')
+    .eq('player_name', name)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const currentChips = (data && data.length > 0) ? data[0].chips_after : START_CHIPS;
+  await client.from('poker_chips')
+    .update({ chips: currentChips, updated_at: new Date().toISOString() })
+    .eq('player_name', name);
 }
 
 function drawChart() {

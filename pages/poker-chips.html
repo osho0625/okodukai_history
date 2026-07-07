@@ -64,10 +64,6 @@ h1 { font-size: 1.2em; color: #ffd700; }
   &#x1F512; 閲覧専用（チップ操作はadmin端末から）
 </div>
 
-<div id="adminActions" class="actions" style="display:none;">
-  <button class="action-btn reset" onclick="resetAll()">全員リセット (2000)</button>
-</div>
-
 <div id="players"><div class="loading">読み込み中...</div></div>
 
 <!-- カスタム増減モーダル -->
@@ -90,9 +86,7 @@ let chipData = {};
 let customTarget = null;
 
 async function init() {
-  if (isAdmin) {
-    document.getElementById('adminActions').style.display = 'flex';
-  } else {
+  if (!isAdmin) {
     document.getElementById('readonlyNotice').style.display = 'block';
   }
   await loadChips();
@@ -120,20 +114,6 @@ async function changeChips(name, amount) {
   });
   chipData[name] = newChips;
   render();
-}
-
-async function resetAll() {
-  if (!isAdmin) return;
-  if (!confirm('全員を2000チップにリセットしますか？')) return;
-  for (const name of PLAYERS) {
-    await client.from('poker_chips')
-      .update({ chips: START_CHIPS, updated_at: new Date().toISOString() })
-      .eq('player_name', name);
-  }
-  await client.from('poker_chips_history').insert({
-    player_name: '全員リセット', amount: 0, chips_after: START_CHIPS
-  });
-  await loadChips();
 }
 
 function openCustom(name) {
