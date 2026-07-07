@@ -23,7 +23,7 @@ h1 { font-size: 1.15em; color: #ffd700; }
 .prize-btn { border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; width: 100%; }
 .prize-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 .prize-btn:active:not(:disabled) { transform: scale(0.95); }
-#prizeList { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+#prizeList { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .recovery-section { text-align: center; background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 .recovery-btn { border: none; border-radius: 8px; padding: 12px 24px; font-size: 1em; font-weight: 600; cursor: pointer; background: #2196f3; color: #fff; }
 .recovery-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
