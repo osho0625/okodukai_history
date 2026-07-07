@@ -69,7 +69,7 @@ h1 { font-size: 1.15em; color: #ffd700; }
 </div>
 
 <script>
-const PLAYERS = ['はるちか', 'いろは', 'かいせい'];
+const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
 const PRIZES = [
   { name: '&#x1F3AB; あそびチケット 1枚', cost: 3000 },
   { name: '&#x1F36C; おやつ（50円まで）', cost: 2000 },
@@ -79,6 +79,17 @@ const PRIZES = [
   { name: '&#x1F366; おやつ（250円まで）', cost: 6000 },
   { name: '&#x1F382; おやつ（300円まで）', cost: 7000 },
 ];
+const MEGUMI_PRIZES = [
+  { name: '&#x1F375; お茶一回分無料券（5000円まで）', cost: 5000 },
+];
+
+function getPrizes() {
+  const base = [...PRIZES];
+  if (currentPlayer === 'めぐみ') {
+    base.push(...MEGUMI_PRIZES);
+  }
+  return base;
+}
 
 let currentPlayer = '';
 let currentChips = 0;
@@ -108,7 +119,8 @@ async function loadPlayerData() {
 
 function renderPrizes() {
   const container = document.getElementById('prizeList');
-  container.innerHTML = PRIZES.map((p, i) => {
+  const prizes = getPrizes();
+  container.innerHTML = prizes.map((p, i) => {
     const canAfford = currentPlayer && currentChips >= p.cost;
     return `<div class="prize-card">
       <div class="prize-info">
@@ -122,7 +134,8 @@ function renderPrizes() {
 
 async function exchange(idx) {
   if (!currentPlayer) return;
-  const prize = PRIZES[idx];
+  const prizes = getPrizes();
+  const prize = prizes[idx];
   if (currentChips < prize.cost) return;
   if (!confirm(`${prize.name} と交換する？\n（${prize.cost.toLocaleString()} チップ消費）`)) return;
 
