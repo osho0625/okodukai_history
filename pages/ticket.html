@@ -137,7 +137,7 @@ h1 { margin-bottom: 16px; color: #333; }
 
 <script>
 // --- 定数・状態 ---
-const VALID_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+const VALID_OWNERS = ['かいせい', 'はるちか', 'いろは', 'めぐみ', 'りょうすけ'];
 let currentOwner = null;
 let currentTab = 'unused';
 let unusedTickets = [];
@@ -179,6 +179,9 @@ async function initTicketPage() {
   }
 
   if (!resolveOwner()) return;
+
+  // メインタブの表示制御
+  updateMainTabLabel();
 
   // 予約日時が過ぎたapprovedチケットを自動消化
   await autoConsumeApproved();
@@ -225,11 +228,13 @@ async function autoConsumeApproved() {
 // --- チケット取得 ---
 async function loadTickets() {
   shownLoadError = false;
-  await Promise.all([loadUnusedTickets(), loadReservedTickets(), loadUsedTickets()]);
-  if (unusedTickets.length > 0 || usedTickets.length > 0 || reservedTickets.length > 0) {
-    localStorage.setItem('ticketCache_unused', JSON.stringify(unusedTickets));
-    localStorage.setItem('ticketCache_used', JSON.stringify(usedTickets));
-    localStorage.setItem('ticketCache_reserved', JSON.stringify(reservedTickets));
+  if (PLAY_TICKET_OWNERS.includes(currentOwner) || !currentOwner) {
+    await Promise.all([loadUnusedTickets(), loadReservedTickets(), loadUsedTickets()]);
+    if (unusedTickets.length > 0 || usedTickets.length > 0 || reservedTickets.length > 0) {
+      localStorage.setItem('ticketCache_unused', JSON.stringify(unusedTickets));
+      localStorage.setItem('ticketCache_used', JSON.stringify(usedTickets));
+      localStorage.setItem('ticketCache_reserved', JSON.stringify(reservedTickets));
+    }
   }
 }
 
@@ -274,6 +279,31 @@ function loadCachedTickets() {
 
 // --- タブ切り替え ---
 let currentMainTab = 'play';
+const PLAY_TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+
+function updateMainTabLabel() {
+  const rewardBtn = document.getElementById('mainTabReward');
+  const playBtn = document.getElementById('mainTabPlay');
+  if (currentOwner === 'めぐみ') {
+    rewardBtn.textContent = '🍵 お茶チケット';
+    // めぐみは遊びチケットを持てないのでplayタブを非表示
+    playBtn.style.display = 'none';
+    document.getElementById('playSubTabs').style.display = 'none';
+    currentMainTab = 'reward';
+    rewardBtn.classList.add('active');
+    renderRewardTickets();
+  } else if (currentOwner === 'りょうすけ') {
+    // りょうすけも遊びチケットを持てない
+    rewardBtn.textContent = '🍬 おやつチケット';
+    playBtn.style.display = 'none';
+    document.getElementById('playSubTabs').style.display = 'none';
+    currentMainTab = 'reward';
+    rewardBtn.classList.add('active');
+    renderRewardTickets();
+  } else {
+    rewardBtn.textContent = '🍬 おやつチケット';
+  }
+}
 
 function switchMainTab(tab) {
   currentMainTab = tab;
@@ -627,7 +657,8 @@ async function renderRewardTickets() {
   const used = rewardTickets.filter(t => t.status === 'used');
 
   if (unused.length === 0 && used.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 20px;">おやつ・お茶チケットはありません</div>';
+    const typeName = currentOwner === 'めぐみ' ? 'お茶チケット' : 'おやつチケット';
+    container.innerHTML = `<div style="text-align:center;color:#999;padding:40px 20px;">${typeName}はありません</div>`;
     return;
   }
 
