@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<title>&#x1FA99; チップ預りカウンター</title>
+<title>&#x1FA99; チップ預かり所</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <style>
@@ -50,7 +50,7 @@ h1 { font-size: 1.2em; color: #ffd700; }
 <body>
 <div class="header">
   <a class="back" onclick="history.back()">&#x2190;</a>
-  <h1>&#x1FA99; チップ預りカウンター</h1>
+  <h1>&#x1FA99; チップ預かり所</h1>
   <a class="home" href="../index.html">&#x1F3E0;</a>
 </div>
 
@@ -135,11 +135,43 @@ function goHistory(name) {
   location.href = 'poker-chips-history.html?player=' + encodeURIComponent(name);
 }
 
+function canRecover(name) {
+  const chips = chipData[name] ?? START_CHIPS;
+  if (chips >= 500) return false;
+  const todayKey = 'chip_recovery_' + name;
+  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  return localStorage.getItem(todayKey) !== today;
+}
+
+async function recoverChips(name) {
+  const chips = chipData[name] ?? START_CHIPS;
+  if (chips >= 500) return;
+  const todayKey = 'chip_recovery_' + name;
+  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  if (localStorage.getItem(todayKey) === today) return;
+
+  const amount = 500 - chips;
+  const { error } = await client.from('poker_chips')
+    .update({ chips: 500, updated_at: new Date().toISOString() })
+    .eq('player_name', name);
+  if (error) { alert('エラー: ' + error.message); return; }
+  await client.from('poker_chips_history').insert({
+    player_name: name, amount, chips_after: 500
+  });
+  localStorage.setItem(todayKey, today);
+  chipData[name] = 500;
+  render();
+}
+
 function render() {
   const container = document.getElementById('players');
   container.innerHTML = PLAYERS.map(name => {
     const chips = chipData[name] ?? START_CHIPS;
     const negCls = chips < 0 ? ' negative' : '';
+    const recoverable = canRecover(name);
+    const recoveryBtn = recoverable
+      ? `<button onclick="recoverChips('${name}')" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:2px 4px;" title="500に回復">&#x1F504;</button>`
+      : '';
     const controls = isAdmin ? `
       <div class="chip-controls">
         <button class="chip-btn minus500" onclick="changeChips('${name}', -500)">-500</button>
@@ -152,9 +184,10 @@ function render() {
       <div class="player-card">
         <div class="player-header">
           <span class="player-name">${name}</span>
+          <button onclick="location.href='poker-chips-exchange.html?player=${encodeURIComponent(name)}'" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:2px 4px;" title="交換所">&#x1F3AA;</button>
+          ${recoveryBtn}
           <span class="player-chips${negCls}">${chips.toLocaleString()}</span>
           <div class="player-icons">
-            <button onclick="location.href='poker-chips-exchange.html?player=${encodeURIComponent(name)}'">&#x1F3AA;</button>
             <button onclick="goHistory('${name}')">&#x1F4C8;</button>
           </div>
         </div>
