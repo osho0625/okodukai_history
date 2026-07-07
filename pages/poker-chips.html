@@ -47,6 +47,10 @@ h1 { font-size: 1.2em; color: #ffd700; }
 .history-item .minus-text { color: #ff4444; }
 .readonly-notice { text-align: center; background: #333; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.85em; color: #ffab40; }
 .loading { text-align: center; color: #888; margin-top: 40px; }
+.graph-btn { background: none; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 6px; }
+.graph-wrap { display: none; margin-top: 10px; background: #0f3460; border-radius: 8px; padding: 10px; }
+.graph-wrap.open { display: block; }
+.graph-wrap canvas { width: 100%; height: 140px; display: block; }
 </style>
 </head>
 <body>
@@ -219,12 +223,105 @@ function render() {
         <div class="player-header">
           <span class="player-name">${name}</span>
           <span class="player-chips${negCls}">${chips.toLocaleString()}</span>
+          <button class="graph-btn" onclick="toggleGraph('${name}', this)">&#x1F4C8;</button>
         </div>
         ${controls}
+        <div class="graph-wrap" id="graph-${name}">
+          <canvas id="canvas-${name}" height="140"></canvas>
+        </div>
       </div>`;
   }).join('');
   document.getElementById('totalChips').textContent = total.toLocaleString();
   document.getElementById('startTotal').textContent = (START_CHIPS * PLAYERS.length).toLocaleString();
+}
+
+async function toggleGraph(name, btn) {
+  const wrap = document.getElementById('graph-' + name);
+  if (wrap.classList.contains('open')) {
+    wrap.classList.remove('open');
+    return;
+  }
+  wrap.classList.add('open');
+  await drawGraph(name);
+}
+
+async function drawGraph(name) {
+  const canvas = document.getElementById('canvas-' + name);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 280;
+
+  // 履歴取得（古い順）
+  const { data } = await client.from('poker_chips_history')
+    .select('chips_after, created_at')
+    .eq('player_name', name)
+    .order('created_at', { ascending: true });
+
+  // スタート地点 + 履歴データ
+  const points = [START_CHIPS];
+  const labels = ['開始'];
+  if (data && data.length > 0) {
+    data.forEach(r => {
+      points.push(r.chips_after);
+      labels.push(new Date(r.created_at).toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }));
+    });
+  }
+
+  if (points.length < 2) {
+    ctx.fillStyle = '#888';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('まだデータがありません', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const pad = { top: 30, bottom: 30, left: 50, right: 20 };
+  const w = canvas.width - pad.left - pad.right;
+  const h = canvas.height - pad.top - pad.bottom;
+  const maxVal = Math.max(...points, START_CHIPS + 100);
+  const minVal = Math.min(...points, 0);
+  const range = maxVal - minVal || 1;
+
+  const xStep = w / (points.length - 1);
+  const getX = i => pad.left + i * xStep;
+  const getY = v => pad.top + h - ((v - minVal) / range) * h;
+
+  // グリッド
+  ctx.strokeStyle = '#334';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    const val = Math.round(maxVal - (range / 4) * i);
+    ctx.fillStyle = '#888'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val.toLocaleString(), pad.left - 8, y + 6);
+  }
+
+  // 基準線（2000）
+  const baseY = getY(START_CHIPS);
+  ctx.strokeStyle = '#ffd70055';
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, baseY); ctx.lineTo(pad.left + w, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 折れ線
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  points.forEach((v, i) => {
+    const x = getX(i), y = getY(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // ドット
+  points.forEach((v, i) => {
+    const x = getX(i), y = getY(v);
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = v >= START_CHIPS ? '#4caf50' : '#ff4444';
+    ctx.fill();
+  });
 }
 
 init();
