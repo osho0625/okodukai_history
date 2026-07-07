@@ -80,11 +80,10 @@ const MEGUMI_PRIZES = [
 const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
 
 function getPrizes() {
-  const base = [...PRIZES];
   if (currentPlayer === 'めぐみ') {
-    base.push(...MEGUMI_PRIZES);
+    return [...MEGUMI_PRIZES];
   }
-  return base;
+  return [...PRIZES];
 }
 
 // URLパラメータからプレイヤー名を取得
