@@ -111,6 +111,17 @@ h1 { margin-bottom: 16px; color: #333; }
 
 <div id="ticketList"></div>
 
+<!-- チケット使用確認モーダル -->
+<div id="rewardConfirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:16px; padding:24px; width:85%; max-width:320px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div id="rewardConfirmMsg" style="font-size:1em; line-height:1.5; margin-bottom:16px; color:#333;"></div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="rewardConfirmCancel()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#e0e0e0; color:#333; font-size:1em; font-weight:600; cursor:pointer;">やめる</button>
+      <button onclick="rewardConfirmOk()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-size:1em; font-weight:600; cursor:pointer;">使う</button>
+    </div>
+  </div>
+</div>
+
 <!-- 予約ダイアログ -->
 <div class="overlay" id="reserveOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; justify-content:center; align-items:center;">
   <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
@@ -680,7 +691,7 @@ function renderRewardCard(t) {
   const dateStr = new Date(t.created_at).toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
   let actionHtml = '';
   if (t.status === 'unused') {
-    actionHtml = `<button onclick="useRewardTicket('${t.id}')" style="border:none;border-radius:6px;padding:6px 12px;background:#4caf50;color:#fff;font-size:0.8em;font-weight:600;cursor:pointer;">使用する</button>`;
+    actionHtml = `<button onclick="useRewardTicket('${t.id}', '${esc(t.label)}')" style="border:none;border-radius:6px;padding:6px 12px;background:#4caf50;color:#fff;font-size:0.8em;font-weight:600;cursor:pointer;">使用する</button>`;
   } else {
     const usedDate = new Date(t.used_at).toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
     actionHtml = `<span style="font-size:0.75em;color:#999;">使用済(${usedDate})</span>`;
@@ -697,8 +708,29 @@ function renderRewardCard(t) {
   </div>`;
 }
 
-async function useRewardTicket(id) {
-  if (!confirm('このチケットを使用しますか？')) return;
+let rewardConfirmResolveFn = null;
+
+function showRewardConfirm(msg) {
+  return new Promise((resolve) => {
+    rewardConfirmResolveFn = resolve;
+    document.getElementById('rewardConfirmMsg').innerHTML = msg;
+    document.getElementById('rewardConfirmOverlay').style.display = 'flex';
+  });
+}
+function rewardConfirmOk() {
+  document.getElementById('rewardConfirmOverlay').style.display = 'none';
+  if (rewardConfirmResolveFn) rewardConfirmResolveFn(true);
+  rewardConfirmResolveFn = null;
+}
+function rewardConfirmCancel() {
+  document.getElementById('rewardConfirmOverlay').style.display = 'none';
+  if (rewardConfirmResolveFn) rewardConfirmResolveFn(false);
+  rewardConfirmResolveFn = null;
+}
+
+async function useRewardTicket(id, label) {
+  const ok = await showRewardConfirm(`<span style="font-size:1.2em;">${label}</span><br>このチケットを使いますか？`);
+  if (!ok) return;
   const { error } = await client.from('reward_tickets')
     .update({ status: 'used', used_at: new Date().toISOString() })
     .eq('id', id);
