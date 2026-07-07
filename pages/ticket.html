@@ -96,10 +96,16 @@ h1 { margin-bottom: 16px; color: #333; }
 
 <div id="errorMsg" style="display:none; background:#ffebee; color:#c62828; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:0.9em; text-align:center;"></div>
 
-<div class="tabs">
+<!-- メインタブ: あそびチケット / おやつ・お茶 -->
+<div style="display:flex; gap:0; margin-bottom:12px; border-bottom:3px solid #e0e0e0;">
+  <button class="tab-btn active" id="mainTabPlay" onclick="switchMainTab('play')" style="flex:1;">🎫 あそびチケット</button>
+  <button class="tab-btn" id="mainTabReward" onclick="switchMainTab('reward')" style="flex:1;">🍬 おやつ/お茶</button>
+</div>
+
+<!-- あそびチケットのサブタブ -->
+<div class="tabs" id="playSubTabs">
   <button class="tab-btn active" data-tab="unused" onclick="switchTab('unused')">未使用</button>
   <button class="tab-btn" data-tab="reserved" onclick="switchTab('reserved')">予約中</button>
-  <button class="tab-btn" data-tab="rewards" onclick="switchTab('rewards')">おやつ/お茶</button>
   <button class="tab-btn" data-tab="history" onclick="switchTab('history')">履歴</button>
 </div>
 
@@ -267,17 +273,30 @@ function loadCachedTickets() {
 }
 
 // --- タブ切り替え ---
+let currentMainTab = 'play';
+
+function switchMainTab(tab) {
+  currentMainTab = tab;
+  document.getElementById('mainTabPlay').classList.toggle('active', tab === 'play');
+  document.getElementById('mainTabReward').classList.toggle('active', tab === 'reward');
+  document.getElementById('playSubTabs').style.display = tab === 'play' ? 'flex' : 'none';
+  if (tab === 'play') {
+    renderCurrentTab();
+  } else {
+    renderRewardTickets();
+  }
+}
+
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('#playSubTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#playSubTabs [data-tab="${tab}"]`).classList.add('active');
   renderCurrentTab();
 }
 
 function renderCurrentTab() {
   if (currentTab === 'unused') renderUnusedTickets();
   else if (currentTab === 'reserved') renderReservedTickets();
-  else if (currentTab === 'rewards') renderRewardTickets();
   else renderHistory();
 }
 
