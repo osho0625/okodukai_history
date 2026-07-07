@@ -765,28 +765,6 @@ async function loadRecipeList() {
     // コンテナをクリア
     container.innerHTML = '';
 
-    // --- Admin カテゴリ管理ボタン ---
-    if (localStorage.getItem('deviceRole') === 'admin') {
-      var catSettingsBtn = document.createElement('button');
-      catSettingsBtn.type = 'button';
-      catSettingsBtn.textContent = '⚙️ カテゴリ管理';
-      catSettingsBtn.style.cssText = 'float:right;border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px 12px;font-size:0.85em;cursor:pointer;color:#666;margin-bottom:8px;';
-      catSettingsBtn.addEventListener('click', function() {
-        showCategorySettingsModal();
-      });
-      container.appendChild(catSettingsBtn);
-    }
-
-    // メンバー管理ボタン
-    var memberSettingsBtn = document.createElement('button');
-    memberSettingsBtn.type = 'button';
-    memberSettingsBtn.textContent = '👨‍👩‍👧 メンバー';
-    memberSettingsBtn.style.cssText = 'float:right;border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px 12px;font-size:0.85em;cursor:pointer;color:#666;margin-bottom:8px;margin-right:8px;';
-    memberSettingsBtn.addEventListener('click', function() {
-      showMemberSettingsModal();
-    });
-    container.appendChild(memberSettingsBtn);
-
     if (recipes.length === 0) {
       var emptyEl = document.createElement('div');
       emptyEl.className = 'empty-state';
@@ -3227,6 +3205,225 @@ async function loadMealPlanView() {
 }
 
 /**
+ * 設定タブUIをロード
+ */
+async function loadSettingsView() {
+  var container = document.getElementById('view-settings');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Header
+  var header = document.createElement('h2');
+  header.style.cssText = 'font-size:1.2em;margin-bottom:20px;color:#333;';
+  header.textContent = '⚙️ 設定';
+  container.appendChild(header);
+
+  // === メンバー管理セクション ===
+  var memberCard = document.createElement('div');
+  memberCard.className = 'card';
+  memberCard.style.cssText = 'margin-bottom:16px;padding:20px;';
+
+  var memberTitle = document.createElement('h3');
+  memberTitle.style.cssText = 'font-size:1.05em;margin-bottom:12px;color:#333;';
+  memberTitle.textContent = '👨‍👩‍👧 メンバー管理';
+  memberCard.appendChild(memberTitle);
+
+  var memberDesc = document.createElement('p');
+  memberDesc.style.cssText = 'font-size:0.85em;color:#666;margin-bottom:12px;';
+  memberDesc.textContent = 'レシピの作者として選択できるメンバーを管理します';
+  memberCard.appendChild(memberDesc);
+
+  var memberListEl = document.createElement('div');
+  memberListEl.id = 'settings-member-list';
+  memberCard.appendChild(memberListEl);
+
+  function renderMemberList() {
+    memberListEl.innerHTML = '';
+    var members = [];
+    try { members = JSON.parse(localStorage.getItem('recipe_members')) || []; } catch(e) {}
+
+    for (var i = 0; i < members.length; i++) {
+      (function(name) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f0f0f0;';
+
+        var nameEl = document.createElement('span');
+        nameEl.style.cssText = 'font-size:1em;color:#333;';
+        nameEl.textContent = name;
+        row.appendChild(nameEl);
+
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = 'width:32px;height:32px;border:none;background:#fee;border-radius:50%;cursor:pointer;font-size:1em;color:#e53935;';
+        delBtn.addEventListener('click', function() {
+          if (confirm(name + ' を削除しますか？')) {
+            removeRecipeMember(name);
+            renderMemberList();
+          }
+        });
+        row.appendChild(delBtn);
+        memberListEl.appendChild(row);
+      })(members[i]);
+    }
+  }
+
+  renderMemberList();
+
+  // 追加UI
+  var memberAddRow = document.createElement('div');
+  memberAddRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+
+  var memberInput = document.createElement('input');
+  memberInput.type = 'text';
+  memberInput.placeholder = '名前を入力';
+  memberInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+  memberAddRow.appendChild(memberInput);
+
+  var memberAddBtn = document.createElement('button');
+  memberAddBtn.type = 'button';
+  memberAddBtn.className = 'btn-primary';
+  memberAddBtn.textContent = '＋ 追加';
+  memberAddBtn.style.cssText = 'padding:10px 16px;font-size:1em;';
+  memberAddBtn.addEventListener('click', function() {
+    var name = memberInput.value.trim();
+    if (!name) return;
+    addRecipeMember(name);
+    memberInput.value = '';
+    renderMemberList();
+    showToast(name + ' を追加しました', 'success');
+  });
+  memberAddRow.appendChild(memberAddBtn);
+  memberCard.appendChild(memberAddRow);
+
+  container.appendChild(memberCard);
+
+  // === カテゴリ管理セクション ===
+  var catCard = document.createElement('div');
+  catCard.className = 'card';
+  catCard.style.cssText = 'margin-bottom:16px;padding:20px;';
+
+  var catTitle = document.createElement('h3');
+  catTitle.style.cssText = 'font-size:1.05em;margin-bottom:12px;color:#333;';
+  catTitle.textContent = '🏷️ カテゴリ管理';
+  catCard.appendChild(catTitle);
+
+  var catDesc = document.createElement('p');
+  catDesc.style.cssText = 'font-size:0.85em;color:#666;margin-bottom:12px;';
+  catDesc.textContent = 'レシピのカテゴリを管理します';
+  catCard.appendChild(catDesc);
+
+  var catListEl = document.createElement('div');
+  catListEl.id = 'settings-category-list';
+  catCard.appendChild(catListEl);
+
+  function getCategories() {
+    var stored = localStorage.getItem('recipe_categories');
+    if (stored) {
+      try { return JSON.parse(stored); } catch(e) {}
+    }
+    return ['主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+  }
+
+  function saveCategories(cats) {
+    localStorage.setItem('recipe_categories', JSON.stringify(cats));
+  }
+
+  function renderCategoryList() {
+    catListEl.innerHTML = '';
+    var cats = getCategories();
+
+    for (var i = 0; i < cats.length; i++) {
+      (function(cat) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f0f0f0;';
+
+        var catEl = document.createElement('span');
+        catEl.style.cssText = 'font-size:1em;color:#333;';
+        catEl.textContent = cat;
+        row.appendChild(catEl);
+
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = 'width:32px;height:32px;border:none;background:#fee;border-radius:50%;cursor:pointer;font-size:1em;color:#e53935;';
+        delBtn.addEventListener('click', function() {
+          if (confirm(cat + ' を削除しますか？')) {
+            var cats = getCategories();
+            cats = cats.filter(function(c) { return c !== cat; });
+            saveCategories(cats);
+            renderCategoryList();
+          }
+        });
+        row.appendChild(delBtn);
+        catListEl.appendChild(row);
+      })(cats[i]);
+    }
+  }
+
+  renderCategoryList();
+
+  // カテゴリ追加UI
+  var catAddRow = document.createElement('div');
+  catAddRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+
+  var catInput = document.createElement('input');
+  catInput.type = 'text';
+  catInput.placeholder = 'カテゴリ名を入力';
+  catInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;';
+  catAddRow.appendChild(catInput);
+
+  var catAddBtn = document.createElement('button');
+  catAddBtn.type = 'button';
+  catAddBtn.className = 'btn-primary';
+  catAddBtn.textContent = '＋ 追加';
+  catAddBtn.style.cssText = 'padding:10px 16px;font-size:1em;';
+  catAddBtn.addEventListener('click', function() {
+    var cat = catInput.value.trim();
+    if (!cat) return;
+    var cats = getCategories();
+    if (cats.includes(cat)) {
+      showToast('既に存在します', 'info');
+      return;
+    }
+    cats.push(cat);
+    saveCategories(cats);
+    catInput.value = '';
+    renderCategoryList();
+    showToast(cat + ' を追加しました', 'success');
+  });
+  catAddRow.appendChild(catAddBtn);
+  catCard.appendChild(catAddRow);
+
+  container.appendChild(catCard);
+
+  // === 下書きデータクリアセクション ===
+  var draftCard = document.createElement('div');
+  draftCard.className = 'card';
+  draftCard.style.cssText = 'margin-bottom:16px;padding:20px;';
+
+  var draftTitle = document.createElement('h3');
+  draftTitle.style.cssText = 'font-size:1.05em;margin-bottom:12px;color:#333;';
+  draftTitle.textContent = '📝 一時保存データ';
+  draftCard.appendChild(draftTitle);
+
+  var clearDraftBtn = document.createElement('button');
+  clearDraftBtn.type = 'button';
+  clearDraftBtn.className = 'btn-secondary';
+  clearDraftBtn.textContent = '🗑️ 入力途中のデータを削除';
+  clearDraftBtn.style.cssText = 'width:100%;padding:12px;';
+  clearDraftBtn.addEventListener('click', function() {
+    if (confirm('入力途中のレシピデータを削除しますか？')) {
+      localStorage.removeItem('recipe_draft_form');
+      showToast('削除しました', 'success');
+    }
+  });
+  draftCard.appendChild(clearDraftBtn);
+
+  container.appendChild(draftCard);
+}
+
+/**
  * 買い物リストに追加モーダルを表示
  * @param {string} recipeId - レシピID
  * @param {Array<{name: string, quantity: string}>} ingredients - 材料リスト
@@ -3504,5 +3701,5 @@ async function showPrintView(id) {
 
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getRecipeMembers, addRecipeMember, removeRecipeMember, showMemberSettingsModal, promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI };
+  module.exports = { getRecipeMembers, addRecipeMember, removeRecipeMember, showMemberSettingsModal, promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, loadSettingsView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI };
 }
