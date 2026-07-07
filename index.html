@@ -1335,9 +1335,19 @@ loadTodayScp();
 // ナースコールリンク表示
 (async function() {
   try {
-    const { data } = await client.from('game_settings').select('nurse_call_enabled').eq('id', 1).single();
+    const { data } = await client.from('game_settings').select('nurse_call_enabled, nurse_call_visible_to_user').eq('id', 1).single();
     if (data && data.nurse_call_enabled) {
-      document.getElementById('nurseCallLink').style.display = 'block';
+      const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+      const visibleToUser = data.nurse_call_visible_to_user !== false;
+      if (isAdmin || visibleToUser) {
+        document.getElementById('nurseCallLink').style.display = 'block';
+      }
+    }
+    // user端末でvisible=falseならアイコンも非表示
+    if (!data || data.nurse_call_visible_to_user === false) {
+      if (localStorage.getItem('deviceRole') !== 'admin') {
+        document.getElementById('userNurseCallIcon').style.display = 'none';
+      }
     }
   } catch(e) {}
 })();
@@ -1366,7 +1376,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.28.5</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.28.6</a></div>
 
 </body>
 </html>

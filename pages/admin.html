@@ -510,6 +510,13 @@ h2 .toggle.open { transform: rotate(90deg); }
         <span style="font-weight:600;">ナースコール機能を有効にする</span>
       </label>
     </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="nurseCallVisibleToUser" style="width:20px; height:20px;">
+        <span style="font-weight:600;">user端末に表示する</span>
+      </label>
+      <div style="font-size:0.75em; color:#999; margin-top:4px; margin-left:28px;">OFFにするとuser端末からナースコールが見えなくなります</div>
+    </div>
     <div id="nurseCallDevices">
       <div style="font-weight:600; margin-bottom:8px;">デバイスロック（おやすみモード）</div>
       <div id="nurseCallDeviceList" style="color:#999;">読み込み中...</div>
@@ -2001,7 +2008,7 @@ loadScpOverride();
 // --- ナースコール管理 ---
 async function loadNurseCallAdmin() {
   const { data: settings } = await client.from('game_settings')
-    .select('nurse_call_enabled')
+    .select('nurse_call_enabled, nurse_call_visible_to_user')
     .eq('id', 1).single();
 
   const enabledCb = document.getElementById('nurseCallEnabled');
@@ -2009,6 +2016,14 @@ async function loadNurseCallAdmin() {
   enabledCb.addEventListener('change', async () => {
     await client.from('game_settings')
       .update({ nurse_call_enabled: enabledCb.checked })
+      .eq('id', 1);
+  });
+
+  const visibleCb = document.getElementById('nurseCallVisibleToUser');
+  visibleCb.checked = settings?.nurse_call_visible_to_user !== false;
+  visibleCb.addEventListener('change', async () => {
+    await client.from('game_settings')
+      .update({ nurse_call_visible_to_user: visibleCb.checked })
       .eq('id', 1);
   });
 
