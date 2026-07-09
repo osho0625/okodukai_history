@@ -5,11 +5,11 @@ const GTO_SUITS = ['♠','♥','♦','♣'];
 const GTO_SUIT_COLORS = {'♠':'black','♣':'black','♥':'red','♦':'red'};
 
 const POSITIONS_BY_PLAYERS = {
-  4: ['co','btn','sb'],
-  5: ['ep','co','btn','sb']
+  4: ['co','btn','sb','bb'],
+  5: ['ep','co','btn','sb','bb']
 };
 const POSITION_LABELS = {
-  ep:'EP', co:'CO', btn:'BTN', sb:'SB'
+  ep:'EP', co:'CO', btn:'BTN', sb:'SB', bb:'BB'
 };
 
 let gtoData = {};
