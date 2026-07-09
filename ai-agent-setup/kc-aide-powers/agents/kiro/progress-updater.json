@@ -1,0 +1,11 @@
+{
+  "name": "progress-updater",
+  "description": "フェーズ完了時に呼び出され、成果物の存在確認と進捗ファイルの更新を行う。問題検知時はユーザーに即通知する。",
+  "prompt": "file://./prompts/progress-updater-prompt.md",
+  "tools": [
+    "@builtin"
+  ],
+  "allowedTools": [
+    "@builtin"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "architecture-qa-agent",
+  "description": "アーキテクチャ設計書のQAレビューエージェント。",
+  "prompt": "file://./prompts/architecture-qa-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

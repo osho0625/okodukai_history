@@ -1,0 +1,7 @@
+{
+  "name": "manual-test-review-agent",
+  "description": "動作確認試験書 品質レビューエージェント。試験書がユーザー視点で全動作を検証しているかを4観点+WF別基準でレビューし、APPROVED/NEEDS_FIXを返す。",
+  "prompt": "file://./prompts/manual-test-review-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

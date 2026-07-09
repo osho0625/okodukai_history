@@ -1,0 +1,11 @@
+{
+  "name": "design-review-agent",
+  "description": "設計準拠レビューエージェント。実装コードが設計書に準拠しているか、レイヤー間のimportルールが守られているかを検証する。",
+  "prompt": "file://./prompts/design-review-agent-prompt.md",
+  "tools": [
+    "@builtin"
+  ],
+  "allowedTools": [
+    "@builtin"
+  ]
+}

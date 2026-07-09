@@ -1,0 +1,11 @@
+{
+  "name": "final-design-qa-agent",
+  "description": "最終設計QAレビューエージェント。インフラIF設計書とプログラム構成書の品質を検証し、基準を満たさない設計の承認を拒否する。",
+  "prompt": "file://./prompts/final-design-qa-agent-prompt.md",
+  "tools": [
+    "@builtin"
+  ],
+  "allowedTools": [
+    "@builtin"
+  ]
+}
