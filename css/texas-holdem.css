@@ -217,3 +217,29 @@ h1 { font-size: 1.3em; font-weight: 700; }
   font-size: 1.1em; font-weight: 700; cursor: pointer;
 }
 .gto-start-btn:active { transform: scale(0.95); }
+
+/* GTO Matrix */
+.gto-matrix-wrap {
+  margin-top: 12px; overflow-x: auto; padding-bottom: 8px;
+}
+.gto-matrix-table {
+  border-collapse: collapse; font-size: 0.55em; width: 100%; min-width: 320px;
+}
+.gto-matrix-table th, .gto-matrix-table td {
+  padding: 2px 1px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+.gto-matrix-table th {
+  background: rgba(255,255,255,0.1); color: #ccc; font-weight: 600;
+}
+.gto-matrix-table td {
+  font-weight: 500; border-radius: 2px;
+}
+.gto-matrix-legend {
+  font-size: 0.7em; color: #aaa; margin-top: 6px; text-align: center;
+}
+.gto-next-btn {
+  margin-top: 12px; padding: 12px 28px; border: none; border-radius: 10px;
+  background: #ff9800; color: #fff; font-size: 1em; font-weight: 700; cursor: pointer;
+}
+.gto-next-btn:active { transform: scale(0.95); }

@@ -88,6 +88,8 @@ function gtoNextQuestion() {
 
   gtoState.currentAnswer = correctAction;
   gtoState.currentTier = tier;
+  gtoState.currentRow = row;
+  gtoState.currentCol = col;
 
   const rankHigh = GTO_RANKS[row];
   const rankLow = GTO_RANKS[col];
@@ -128,6 +130,8 @@ function gtoNextQuestion() {
   document.getElementById('gtoHandLabel').textContent = handLabel;
   document.getElementById('gtoResult').textContent = '';
   document.getElementById('gtoResult').className = 'gto-result';
+  document.getElementById('gtoMatrix').style.display = 'none';
+  document.getElementById('gtoNextBtn').style.display = 'none';
   document.querySelectorAll('.gto-action-btn').forEach(b => b.disabled = false);
 }
 
@@ -151,8 +155,52 @@ window.gtoAnswer = function(action) {
 
   document.getElementById('gtoScore').textContent = `正解: ${gtoState.correct} / ${gtoState.total}`;
   document.querySelectorAll('.gto-action-btn').forEach(b => b.disabled = true);
-  setTimeout(() => gtoNextQuestion(), correct ? 800 : 1800);
+
+  if (correct) {
+    setTimeout(() => gtoNextQuestion(), 800);
+  } else {
+    showGtoMatrix();
+    document.getElementById('gtoNextBtn').style.display = 'inline-block';
+  }
 };
+
+window.gtoNext = function() {
+  document.getElementById('gtoMatrix').style.display = 'none';
+  document.getElementById('gtoNextBtn').style.display = 'none';
+  gtoNextQuestion();
+};
+
+function showGtoMatrix() {
+  const data = gtoData[gtoState.players];
+  const matrix = data[gtoState.position];
+  const tierColors = { 1: '#4caf50', 2: '#2196f3', 3: '#ffc107', 4: 'rgba(255,255,255,0.08)' };
+  const tierText = { 1: '#fff', 2: '#fff', 3: '#222', 4: '#666' };
+
+  let html = '<table class="gto-matrix-table"><tr><th></th>';
+  for (let c = 0; c < 13; c++) html += `<th>${GTO_RANKS[c]}</th>`;
+  html += '</tr>';
+
+  for (let r = 0; r < 13; r++) {
+    html += `<tr><th>${GTO_RANKS[r]}</th>`;
+    for (let c = 0; c < 13; c++) {
+      const t = matrix[r][c];
+      const isHighlight = (r === gtoState.currentRow && c === gtoState.currentCol);
+      const border = isHighlight ? 'border:2px solid #ff5252;' : '';
+      html += `<td style="background:${tierColors[t]};color:${tierText[t]};${border}">`;
+      if (r === c) html += GTO_RANKS[r] + GTO_RANKS[c];
+      else if (r < c) html += GTO_RANKS[r] + GTO_RANKS[c] + 's';
+      else html += GTO_RANKS[c] + GTO_RANKS[r] + 'o';
+      html += '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  html += '<div class="gto-matrix-legend">🟢プレミアム/レイズ 🔵レイズ 🟡コール/ミックス ⬜フォールド　<span style="color:#ff5252;">■</span> = 出題ハンド</div>';
+
+  const container = document.getElementById('gtoMatrix');
+  container.innerHTML = html;
+  container.style.display = 'block';
+}
 
 function rndSuit() {
   return GTO_SUITS[Math.floor(Math.random() * 4)];
