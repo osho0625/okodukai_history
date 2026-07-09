@@ -133,6 +133,10 @@ function gtoNextQuestion() {
   document.getElementById('gtoMatrix').style.display = 'none';
   document.getElementById('gtoNextBtn').style.display = 'none';
   document.querySelectorAll('.gto-action-btn').forEach(b => b.disabled = false);
+
+  // BB時はレイズボタンを「3ベット」表記に
+  const raiseBtn = document.querySelector('.gto-action-btn.raise');
+  raiseBtn.textContent = gtoState.position === 'bb' ? '3ベット' : 'レイズ';
 }
 
 window.gtoAnswer = function(action) {
@@ -142,7 +146,7 @@ window.gtoAnswer = function(action) {
   if (correct) gtoState.correct++;
 
   const resultEl = document.getElementById('gtoResult');
-  const actionLabels = { raise: 'レイズ', call: 'コール', fold: 'フォールド' };
+  const actionLabels = { raise: gtoState.position === 'bb' ? '3ベット' : 'レイズ', call: 'コール', fold: 'フォールド' };
   const tierLabels = { 1: 'プレミアム', 2: 'レイズ', 3: 'コール/ミックス', 4: 'フォールド' };
 
   if (correct) {
