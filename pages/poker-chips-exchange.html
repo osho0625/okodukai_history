@@ -52,7 +52,7 @@ h1 { font-size: 1.15em; color: #ffd700; }
 
 <div class="recovery-section">
   <button class="recovery-btn" id="recoveryBtn" onclick="recoverChips()" disabled>&#x1F504; 500チップに回復する</button>
-  <div class="recovery-note">1日1回まで。500チップ以上あるときは使えません。</div>
+  <div class="recovery-note">1日3回まで。500チップ以上あるときは使えません。<span id="recoveryCount"></span></div>
 </div>
 
 <div id="prizeList"></div>
@@ -216,12 +216,34 @@ async function exchange(idx) {
   loadHistory();
 }
 
-async function recoverChips() {
-  if (!currentPlayer || currentChips >= 500) return;
+const MAX_RECOVERY_PER_DAY = 3;
+
+function getRecoveryCount() {
   const todayKey = 'chip_recovery_' + currentPlayer;
   const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
-  if (localStorage.getItem(todayKey) === today) {
-    showResult('今日はもう回復したよ', 'error');
+  const stored = localStorage.getItem(todayKey);
+  if (!stored) return 0;
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed.date === today) return parsed.count;
+  } catch(e) {
+    // 旧形式（日付文字列のみ）の場合は1回使用済みとみなす
+    if (stored === today) return 1;
+  }
+  return 0;
+}
+
+function setRecoveryCount(count) {
+  const todayKey = 'chip_recovery_' + currentPlayer;
+  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  localStorage.setItem(todayKey, JSON.stringify({ date: today, count }));
+}
+
+async function recoverChips() {
+  if (!currentPlayer || currentChips >= 500) return;
+  const usedCount = getRecoveryCount();
+  if (usedCount >= MAX_RECOVERY_PER_DAY) {
+    showResult('今日はもう3回回復したよ', 'error');
     return;
   }
 
@@ -236,20 +258,21 @@ async function recoverChips() {
     player_name: currentPlayer, amount: amount, chips_after: newChips
   });
 
-  localStorage.setItem(todayKey, today);
+  setRecoveryCount(usedCount + 1);
   currentChips = newChips;
   document.getElementById('myChips').textContent = currentChips.toLocaleString();
   renderPrizes();
   updateRecoveryBtn();
-  showResult('500チップに回復したよ！', 'success');
+  showResult(`500チップに回復したよ！（今日あと${MAX_RECOVERY_PER_DAY - usedCount - 1}回）`, 'success');
 }
 
 function updateRecoveryBtn() {
   const btn = document.getElementById('recoveryBtn');
-  const todayKey = 'chip_recovery_' + currentPlayer;
-  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
-  const usedToday = localStorage.getItem(todayKey) === today;
-  btn.disabled = currentChips >= 500 || usedToday;
+  const usedCount = getRecoveryCount();
+  const remaining = MAX_RECOVERY_PER_DAY - usedCount;
+  btn.disabled = currentChips >= 500 || usedCount >= MAX_RECOVERY_PER_DAY;
+  const countEl = document.getElementById('recoveryCount');
+  if (countEl) countEl.textContent = `（今日あと${remaining}回）`;
 }
 
 async function loadHistory() {
