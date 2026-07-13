@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v297';
+const CACHE_NAME = 'okozukai-v298';
 const ASSETS = [
   './',
   './index.html',
@@ -74,9 +74,11 @@ self.addEventListener('push', e => {
       data = { title: '🔔 通知', body: e.data.text() };
     }
   }
+  // bodyが空なら通知を表示しない
+  if (!data.body || !data.body.trim()) return;
   const title = data.title || '🔔 リマインダー';
   const options = {
-    body: data.body || '',
+    body: data.body,
     icon: './images/2728.png',
     badge: './images/2728.png',
     tag: data.tag || 'reminder-' + Date.now(),

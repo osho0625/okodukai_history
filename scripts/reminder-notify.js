@@ -360,24 +360,32 @@ async function main() {
   // メモ/行事型の通知
   if (due.length > 0) {
     const message = formatMessage(due, now.dateStr);
-    console.log('Sending Discord notification (memo/event)...');
-    await sendDiscord(DISCORD_WEBHOOK, message);
+    if (message) {
+      console.log('Sending Discord notification (memo/event)...');
+      await sendDiscord(DISCORD_WEBHOOK, message);
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-      console.log('Sending Web Push (memo/event) to admin...');
-      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr, 'reminder');
+      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+        console.log('Sending Web Push (memo/event) to admin...');
+        await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, due, now.dateStr, 'reminder');
+      }
+    } else {
+      console.log('Memo/event message was empty, skipping notification.');
     }
   }
 
   // repeat型の通知（別のDiscordメッセージ＋別のPush通知）
   if (dueRepeats.length > 0) {
     const repeatMsg = formatRepeatMessage(dueRepeats, now);
-    console.log('Sending Discord notification (repeat)...');
-    await sendDiscord(DISCORD_WEBHOOK, repeatMsg);
+    if (repeatMsg) {
+      console.log('Sending Discord notification (repeat)...');
+      await sendDiscord(DISCORD_WEBHOOK, repeatMsg);
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-      console.log('Sending Web Push (repeat) to admin...');
-      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueRepeats, now.dateStr, 'repeat');
+      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+        console.log('Sending Web Push (repeat) to admin...');
+        await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueRepeats, now.dateStr, 'repeat');
+      }
+    } else {
+      console.log('Repeat message was empty, skipping notification.');
     }
   }
 
@@ -386,12 +394,16 @@ async function main() {
   console.log(`Due reminders (yearly): ${dueYearly.length}`);
   if (dueYearly.length > 0) {
     const yearlyMsg = formatYearlyMessage(dueYearly, now.dateStr);
-    console.log('Sending Discord notification (yearly)...');
-    await sendDiscord(DISCORD_WEBHOOK, yearlyMsg);
+    if (yearlyMsg) {
+      console.log('Sending Discord notification (yearly)...');
+      await sendDiscord(DISCORD_WEBHOOK, yearlyMsg);
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-      console.log('Sending Web Push (yearly) to admin...');
-      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueYearly, now.dateStr, 'yearly');
+      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+        console.log('Sending Web Push (yearly) to admin...');
+        await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueYearly, now.dateStr, 'yearly');
+      }
+    } else {
+      console.log('Yearly message was empty, skipping notification.');
     }
   }
 
@@ -533,9 +545,16 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
     });
   }
 
+  // bodyが空なら送信しない
+  const bodyStr = bodyLines.join('\n');
+  if (!bodyStr.trim()) {
+    console.log(`Web Push body is empty for ${tagPrefix}, skipping.`);
+    return;
+  }
+
   const payload = JSON.stringify({
     title,
-    body: bodyLines.join('\n'),
+    body: bodyStr,
     tag: tagPrefix + '-' + todayStr + '-' + parseMinutes(getCurrentJST().timeStr),
     url: '/okodukai_history/index.html'
   });
@@ -567,6 +586,22 @@ async function processPushMessages(supabaseUrl, supabaseKey, vapidPublicKey, vap
   console.log(`Processing ${messages.length} queued push messages`);
 
   for (const msg of messages) {
+    // body が空ならスキップ（sent=trueにして無視）
+    if (!msg.body || msg.body.trim() === '') {
+      console.log(`Skipping empty push message: ${msg.id}`);
+      await fetch(`${supabaseUrl}/rest/v1/push_messages?id=eq.${msg.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ sent: true })
+      });
+      continue;
+    }
+
     // 送信先サブスクリプションを取得
     let subEndpoint = `${supabaseUrl}/rest/v1/push_subscriptions?select=*`;
     if (msg.target_role === 'admin') {
