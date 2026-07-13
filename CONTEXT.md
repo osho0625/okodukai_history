@@ -72,3 +72,4 @@
 | プロジェクト | リポジトリ | 概要 |
 |-------------|-----------|------|
 | ピックルボール練習日管理 | [kc_pickleball_club_app](https://github.com/osho0625/kc_pickleball_club_app) | 京セラピックルボールクラブの練習日程・出欠管理アプリ（GAS + スプレッドシート連携） |
+| Cline Skills Template | ai-agent-setup/cline-skills-template/ | AIエージェント向けドキュメント駆動開発テンプレート v2.0 |
