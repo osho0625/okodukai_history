@@ -1,0 +1,22 @@
+name: aide-powers
+version: 1.0.0
+description: AI Agent document-driven development framework
+author: KC Developer Team
+repository: https://10.110.47.117/kc-apm/kc-aide-powers
+license: Kyocera-Internal-Only
+keywords:
+  - ai-agent
+  - document-driven-development
+  - aide
+  - kiro
+  - claude-code
+  - copilot
+  - codex
+  - gemini
+
+targets:
+  - kiro
+  - claude
+  - copilot
+  - codex
+  - gemini

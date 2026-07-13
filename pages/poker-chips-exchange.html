@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>&#x1F3AA; チップ交換所</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 16px; min-height: 100vh; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
+h1 { font-size: 1.15em; color: #ffd700; }
+.player-label { text-align: center; font-size: 1.1em; font-weight: 600; margin-bottom: 8px; }
+.my-chips { text-align: center; background: #16213e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+.my-chips .label { font-size: 0.85em; color: #aaa; }
+.my-chips .value { font-size: 1.5em; font-weight: 700; color: #ffd700; margin-top: 4px; }
+.prize-card { background: #16213e; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.prize-name { font-weight: 600; font-size: 0.85em; line-height: 1.3; }
+.prize-cost { font-size: 0.8em; color: #ffc107; }
+.prize-btn { border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8em; font-weight: 600; cursor: pointer; background: #4caf50; color: #fff; width: 100%; }
+.prize-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+.prize-btn:active:not(:disabled) { transform: scale(0.95); }
+#prizeList { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.recovery-section { text-align: center; background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.recovery-btn { border: none; border-radius: 8px; padding: 12px 24px; font-size: 1em; font-weight: 600; cursor: pointer; background: #2196f3; color: #fff; }
+.recovery-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+.recovery-note { font-size: 0.75em; color: #999; margin-top: 8px; }
+.result-msg { text-align: center; margin-top: 12px; font-size: 0.9em; min-height: 1.2em; }
+.result-msg.success { color: #4caf50; }
+.result-msg.error { color: #ff4444; }
+.history-section { margin-top: 20px; }
+.history-section h2 { font-size: 0.95em; color: #aaa; margin-bottom: 10px; }
+.history-item { font-size: 0.8em; color: #bbb; padding: 6px 0; border-bottom: 1px solid #222; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">&#x2190;</a>
+  <h1>&#x1F3AA; チップ交換所</h1>
+  <a class="home" href="../index.html">&#x1F3E0;</a>
+</div>
+
+<div class="player-label" id="playerLabel"></div>
+
+<div class="my-chips">
+  <div class="label">いまのチップ</div>
+  <div class="value" id="myChips">-</div>
+</div>
+
+<div class="recovery-section">
+  <button class="recovery-btn" id="recoveryBtn" onclick="recoverChips()" disabled>&#x1F504; 500チップに回復する</button>
+  <div class="recovery-note">1日3回まで。500チップ以上あるときは使えません。<span id="recoveryCount"></span></div>
+</div>
+
+<div id="prizeList"></div>
+<div class="result-msg" id="resultMsg"></div>
+
+<div class="history-section" id="historySection" style="display:none;">
+  <h2>&#x1F4DC; 交換りれき</h2>
+  <div id="exchangeHistory"></div>
+</div>
+
+<!-- 確認モーダル（admin用） -->
+<div id="confirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center;">
+  <div style="background:#16213e; border-radius:16px; padding:24px; width:85%; max-width:320px; text-align:center;">
+    <div id="confirmMsg" style="color:#eee; font-size:1em; line-height:1.5; margin-bottom:16px;"></div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="confirmCancel()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#555; color:#eee; font-size:1em; font-weight:600; cursor:pointer;">やめる</button>
+      <button onclick="confirmOk()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-size:1em; font-weight:600; cursor:pointer;">交換する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRIZES = [
+  { name: '&#x1F3AB; あそびチケット30分', cost: 2000, type: 'ticket', minutes: 30 },
+  { name: '&#x1F3AB; あそびチケット60分', cost: 3000, type: 'ticket', minutes: 60 },
+  { name: '&#x1F3AB; あそびチケット120分', cost: 4000, type: 'ticket', minutes: 120 },
+  { name: '&#x1F36C; おやつ（50円まで）', cost: 3000, type: 'snack' },
+  { name: '&#x1F36B; おやつ（100円まで）', cost: 3500, type: 'snack' },
+  { name: '&#x1F370; おやつ（150円まで）', cost: 4000, type: 'snack' },
+  { name: '&#x1F369; おやつ（200円まで）', cost: 4500, type: 'snack' },
+  { name: '&#x1F366; おやつ（250円まで）', cost: 5000, type: 'snack' },
+  { name: '&#x1F382; おやつ（300円まで）', cost: 5500, type: 'snack' },
+];
+const MEGUMI_PRIZES = [
+  { name: '&#x1F375; お茶一回分無料券（1会計5000円まで）', cost: 5000, type: 'tea' },
+];
+// チケット対象の子供名（ticketsテーブルのowner制約に合わせる）
+const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+
+function getPrizes() {
+  if (currentPlayer === 'めぐみ') {
+    return [...MEGUMI_PRIZES];
+  }
+  return [...PRIZES];
+}
+
+// URLパラメータからプレイヤー名を取得
+const params = new URLSearchParams(location.search);
+let currentPlayer = params.get('player') || '';
+let currentChips = 0;
+
+async function init() {
+  if (!currentPlayer) {
+    document.body.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#999;">プレイヤーが指定されていません</div>';
+    return;
+  }
+  document.getElementById('playerLabel').textContent = currentPlayer;
+  await loadPlayerData();
+}
+
+async function loadPlayerData() {
+  const { data } = await client.from('poker_chips')
+    .select('chips')
+    .eq('player_name', currentPlayer)
+    .maybeSingle();
+  currentChips = data ? data.chips : 500;
+  document.getElementById('myChips').textContent = currentChips.toLocaleString();
+  renderPrizes();
+  updateRecoveryBtn();
+  loadHistory();
+}
+
+function renderPrizes() {
+  const container = document.getElementById('prizeList');
+  const prizes = getPrizes();
+  container.innerHTML = prizes.map((p, i) => {
+    const canAfford = currentChips >= p.cost;
+    return `<div class="prize-card">
+      <div class="prize-name">${p.name}</div>
+      <div class="prize-cost">${p.cost.toLocaleString()}</div>
+      <button class="prize-btn" ${canAfford ? '' : 'disabled'} onclick="exchange(${i})">交換</button>
+    </div>`;
+  }).join('');
+}
+
+let pendingExchangeIdx = null;
+let confirmResolveFn = null;
+const isChipAdmin = localStorage.getItem('chipAdmin') === 'true';
+
+function showConfirmModal(msg) {
+  return new Promise((resolve) => {
+    confirmResolveFn = resolve;
+    document.getElementById('confirmMsg').innerHTML = msg;
+    document.getElementById('confirmOverlay').style.display = 'flex';
+  });
+}
+function confirmOk() {
+  document.getElementById('confirmOverlay').style.display = 'none';
+  if (confirmResolveFn) confirmResolveFn(true);
+  confirmResolveFn = null;
+}
+function confirmCancel() {
+  document.getElementById('confirmOverlay').style.display = 'none';
+  if (confirmResolveFn) confirmResolveFn(false);
+  confirmResolveFn = null;
+}
+
+async function exchange(idx) {
+  if (!currentPlayer) return;
+  const prizes = getPrizes();
+  const prize = prizes[idx];
+  if (currentChips < prize.cost) return;
+
+  // admin(chipAdmin)の場合のみ確認モーダル表示
+  if (isChipAdmin) {
+    const ok = await showConfirmModal(`${decodeHtml(prize.name)} と交換する？<br><span style="font-size:0.85em;color:#ffc107;">（${prize.cost.toLocaleString()} チップ消費）</span>`);
+    if (!ok) return;
+  }
+
+  const newChips = currentChips - prize.cost;
+  const { error } = await client.from('poker_chips')
+    .update({ chips: newChips, updated_at: new Date().toISOString() })
+    .eq('player_name', currentPlayer);
+  if (error) { showResult('エラー: ' + error.message, 'error'); return; }
+
+  // チップ履歴
+  await client.from('poker_chips_history').insert({
+    player_name: currentPlayer, amount: -prize.cost, chips_after: newChips
+  });
+  // 交換履歴
+  await client.from('poker_chips_exchanges').insert({
+    player_name: currentPlayer, prize_name: prize.name, cost: prize.cost
+  });
+
+  // あそびチケットの場合、ticketsテーブルに追加
+  if (prize.type === 'ticket' && TICKET_OWNERS.includes(currentPlayer)) {
+    const { error: ticketErr } = await client.from('tickets').insert({
+      owner: currentPlayer,
+      duration_minutes: prize.minutes || 30,
+      status: 'unused'
+    });
+    if (ticketErr) console.error('ticket insert error:', ticketErr.message);
+  }
+
+  // おやつ・お茶チケットの場合、reward_ticketsテーブルに追加
+  if (prize.type === 'snack' || prize.type === 'tea') {
+    const { error: rewardErr } = await client.from('reward_tickets').insert({
+      owner: currentPlayer,
+      type: prize.type,
+      label: decodeHtml(prize.name),
+      status: 'unused'
+    });
+    if (rewardErr) console.error('reward_ticket insert error:', rewardErr.message);
+  }
+
+  currentChips = newChips;
+  document.getElementById('myChips').textContent = currentChips.toLocaleString();
+  renderPrizes();
+  updateRecoveryBtn();
+  showResult(`${decodeHtml(prize.name)} と交換したよ！`, 'success');
+  loadHistory();
+}
+
+const MAX_RECOVERY_PER_DAY = 3;
+
+function getRecoveryCount() {
+  const todayKey = 'chip_recovery_' + currentPlayer;
+  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  const stored = localStorage.getItem(todayKey);
+  if (!stored) return 0;
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed.date === today) return parsed.count;
+  } catch(e) {
+    // 旧形式（日付文字列のみ）の場合は1回使用済みとみなす
+    if (stored === today) return 1;
+  }
+  return 0;
+}
+
+function setRecoveryCount(count) {
+  const todayKey = 'chip_recovery_' + currentPlayer;
+  const today = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  localStorage.setItem(todayKey, JSON.stringify({ date: today, count }));
+}
+
+async function recoverChips() {
+  if (!currentPlayer || currentChips >= 500) return;
+  const usedCount = getRecoveryCount();
+  if (usedCount >= MAX_RECOVERY_PER_DAY) {
+    showResult('今日はもう3回回復したよ', 'error');
+    return;
+  }
+
+  const newChips = 500;
+  const amount = newChips - currentChips;
+  const { error } = await client.from('poker_chips')
+    .update({ chips: newChips, updated_at: new Date().toISOString() })
+    .eq('player_name', currentPlayer);
+  if (error) { showResult('エラー: ' + error.message, 'error'); return; }
+
+  await client.from('poker_chips_history').insert({
+    player_name: currentPlayer, amount: amount, chips_after: newChips
+  });
+
+  setRecoveryCount(usedCount + 1);
+  currentChips = newChips;
+  document.getElementById('myChips').textContent = currentChips.toLocaleString();
+  renderPrizes();
+  updateRecoveryBtn();
+  showResult(`500チップに回復したよ！（今日あと${MAX_RECOVERY_PER_DAY - usedCount - 1}回）`, 'success');
+}
+
+function updateRecoveryBtn() {
+  const btn = document.getElementById('recoveryBtn');
+  const usedCount = getRecoveryCount();
+  const remaining = MAX_RECOVERY_PER_DAY - usedCount;
+  btn.disabled = currentChips >= 500 || usedCount >= MAX_RECOVERY_PER_DAY;
+  const countEl = document.getElementById('recoveryCount');
+  if (countEl) countEl.textContent = `（今日あと${remaining}回）`;
+}
+
+async function loadHistory() {
+  const section = document.getElementById('historySection');
+  const container = document.getElementById('exchangeHistory');
+  const { data } = await client.from('poker_chips_exchanges')
+    .select('prize_name, cost, created_at')
+    .eq('player_name', currentPlayer)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (!data || data.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  container.innerHTML = data.map(r => {
+    const d = new Date(r.created_at);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="history-item">${dateStr} — ${r.prize_name}（${r.cost.toLocaleString()}チップ）</div>`;
+  }).join('');
+}
+
+function decodeHtml(html) {
+  const el = document.createElement('span');
+  el.innerHTML = html;
+  return el.textContent;
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('resultMsg');
+  el.textContent = msg;
+  el.className = 'result-msg ' + type;
+  setTimeout(() => { el.textContent = ''; el.className = 'result-msg'; }, 3000);
+}
+
+init();
+
+// bfcache対策: ページに戻ったときにデータ再取得
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && currentPlayer) loadPlayerData();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentPlayer) loadPlayerData();
+});
+</script>
+</body>
+</html>

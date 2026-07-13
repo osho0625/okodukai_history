@@ -1,0 +1,100 @@
+# 参照用フォルダ（外部リポジトリのコピー）
+/references/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Personal files
+あとこれ.txt
+
+# Session handover files (local working files, not for repository)
+.aide/specs/**/session-handover*.md
+
+# User profile (local working file, not for repository)
+.aide/specs/**/user-profile.md
+
+# AI Agent / IDE generated files (not project files)
+# 各プラットフォームのローカル領域はスキルやIDEが生成するため追跡しない
+.kiro/
+.claude/
+.copilot/
+.gemini/
+.codex/
+.github/
+brainstorm-selection*.json
+
+# 例外: 配布物として手書きされているファイルは追跡する
+!.codex/INSTALL.md
+
+# aide-powers のスキルが生成する作業領域（プロジェクトファイルではない）
+# 設計書・企画書等の成果物（.aide/specs/）はリポジトリに入れる
+.aide/references/
+.aide/global-rules.md
+.aide/ai-agent-platform-targets.md
+.aide/brainstorm/
+.aide/brainstorm-server/
+
+# aide-powers task-orchestration working files
+.aide/task-plans/
+
+# aide-powers compliance secrets
+.aide/secrets/
+
+# aide-powers violation tracking (local working files, not for repository)
+.aide/violation-history.md
+.aide/violation-clear-counter.txt
+
+# aide-powers 一時作業領域（セッション履歴エクスポート等・プロジェクトファイルではない）
+.aide/tmp/
+temp/
+
+# aide-powers 署名スクリプト等の作業用ファイル（プロジェクトファイルではない）
+.aide/scripts/
+
+tmp/
+
+diff_result.txt
+
+# Session handover files (aide-powers: local working files, not for repository)
+**/session-handover*.md

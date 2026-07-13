@@ -22,7 +22,25 @@
 | `family-notes.md` | `*family-notes*,*family_notes*` を開いた時 | 家族メモ帳 |
 | `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 | `family-settlement.md` | `*settlement*` ファイルを開いた時 | 家庭内精算機能 |
-| `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ機能 |
+| `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ管理 |
+
+## 機能一覧
+
+| 機能 | ページ | 概要 |
+|------|--------|------|
+| お小遣い管理 | index.html, child.html | アカウント管理・ポイント・入出金・演出 |
+| 漢字50問テスト | pages/kanji-test.html | 学年別漢字テスト・手書き認識 |
+| ぴくぴく対戦 | pages/puyo-battle.html | ぷよぷよ風リアルタイム対戦 |
+| 算数オリンピック | pages/math-olympiad.html | 学年別算数問題 |
+| レシピ | pages/recipe.html | 家族レシピ管理（6タブ: レシピ/素材検索/献立/買い物/設定） |
+| 家庭内精算 | pages/settlement.html | 固定費折半・立替精算（5タブ） |
+| お手伝いリスト | pages/chores.html | 家事タスク管理・ポイント連携 |
+| 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント |
+| ナースコール | pages/nurse-call.html | 体温記録・通話 |
+| ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
+| テキサスホールデム | pages/texas-holdem.html | ルールガイド |
+| チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
+| あそびチケット | pages/tickets.html | チケット発行・消費 |
 
 ## CSS構成
 
@@ -44,9 +62,14 @@
 - 詳細な仕様・テーブル構成・機能説明は `.kiro/steering/` 内の該当mdファイルを編集すること
 - この CONTEXT.md はインデックスのみ。詳細情報はここに書かず、steeringファイルに記載する
 - steeringファイルの追加・変更時はこの表も更新すること
+- push時は必ず以下を更新すること:
+  - `pages/release-notes.html` — バージョン番号を上げてリリース内容を追記
+  - `.kiro/steering/` — 該当機能のsteeringファイルに仕様変更を反映
+  - `CONTEXT.md` — steeringファイルや機能の追加・変更があればインデックスを更新
 
 ## 関連プロジェクト
 
 | プロジェクト | リポジトリ | 概要 |
 |-------------|-----------|------|
 | ピックルボール練習日管理 | [kc_pickleball_club_app](https://github.com/osho0625/kc_pickleball_club_app) | 京セラピックルボールクラブの練習日程・出欠管理アプリ（GAS + スプレッドシート連携） |
+| Cline Skills Template | ai-agent-setup/cline-skills-template/ | AIエージェント向けドキュメント駆動開発テンプレート v2.0 |

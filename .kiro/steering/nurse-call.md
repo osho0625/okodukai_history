@@ -41,6 +41,7 @@ Supabase Edge Functionによる即時Push配信 + WebRTC音声通話 + Realtime 
 
 ### game_settings 拡張カラム
 - nurse_call_enabled BOOLEAN — 機能ON/OFF
+- nurse_call_visible_to_user BOOLEAN — user端末への表示ON/OFF（default true）
 - nurse_call_notify_targets JSONB — 通知先device_idリスト（null=admin全端末）
 - nurse_call_child_ids JSONB — 対象child_idリスト（未使用）
 - nurse_call_ice_servers JSONB — STUN/TURN設定

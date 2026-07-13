@@ -1,0 +1,3 @@
+# aide-powers: bat ファイルのエンコーディング保護
+# git による自動改行変換を防止し、CRLF を維持する
+*.bat -text diff

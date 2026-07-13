@@ -96,13 +96,31 @@ h1 { margin-bottom: 16px; color: #333; }
 
 <div id="errorMsg" style="display:none; background:#ffebee; color:#c62828; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:0.9em; text-align:center;"></div>
 
-<div class="tabs">
+<!-- メインタブ: あそびチケット / おやつ・お茶 -->
+<div style="display:flex; gap:0; margin-bottom:12px; border-bottom:3px solid #e0e0e0;">
+  <button class="tab-btn active" id="mainTabPlay" onclick="switchMainTab('play')" style="flex:1;">🎫 あそびチケット</button>
+  <button class="tab-btn" id="mainTabReward" onclick="switchMainTab('reward')" style="flex:1;">🍬 おやつ/お茶</button>
+</div>
+
+<!-- あそびチケットのサブタブ -->
+<div class="tabs" id="playSubTabs">
   <button class="tab-btn active" data-tab="unused" onclick="switchTab('unused')">未使用</button>
   <button class="tab-btn" data-tab="reserved" onclick="switchTab('reserved')">予約中</button>
   <button class="tab-btn" data-tab="history" onclick="switchTab('history')">履歴</button>
 </div>
 
 <div id="ticketList"></div>
+
+<!-- チケット使用確認モーダル -->
+<div id="rewardConfirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:16px; padding:24px; width:85%; max-width:320px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div id="rewardConfirmMsg" style="font-size:1em; line-height:1.5; margin-bottom:16px; color:#333;"></div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="rewardConfirmCancel()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#e0e0e0; color:#333; font-size:1em; font-weight:600; cursor:pointer;">やめる</button>
+      <button onclick="rewardConfirmOk()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#4caf50; color:#fff; font-size:1em; font-weight:600; cursor:pointer;">使う</button>
+    </div>
+  </div>
+</div>
 
 <!-- 予約ダイアログ -->
 <div class="overlay" id="reserveOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; justify-content:center; align-items:center;">
@@ -130,7 +148,7 @@ h1 { margin-bottom: 16px; color: #333; }
 
 <script>
 // --- 定数・状態 ---
-const VALID_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+const VALID_OWNERS = ['かいせい', 'はるちか', 'いろは', 'めぐみ', 'りょうすけ'];
 let currentOwner = null;
 let currentTab = 'unused';
 let unusedTickets = [];
@@ -172,6 +190,9 @@ async function initTicketPage() {
   }
 
   if (!resolveOwner()) return;
+
+  // メインタブの表示制御
+  updateMainTabLabel();
 
   // 予約日時が過ぎたapprovedチケットを自動消化
   await autoConsumeApproved();
@@ -218,11 +239,13 @@ async function autoConsumeApproved() {
 // --- チケット取得 ---
 async function loadTickets() {
   shownLoadError = false;
-  await Promise.all([loadUnusedTickets(), loadReservedTickets(), loadUsedTickets()]);
-  if (unusedTickets.length > 0 || usedTickets.length > 0 || reservedTickets.length > 0) {
-    localStorage.setItem('ticketCache_unused', JSON.stringify(unusedTickets));
-    localStorage.setItem('ticketCache_used', JSON.stringify(usedTickets));
-    localStorage.setItem('ticketCache_reserved', JSON.stringify(reservedTickets));
+  if (PLAY_TICKET_OWNERS.includes(currentOwner) || !currentOwner) {
+    await Promise.all([loadUnusedTickets(), loadReservedTickets(), loadUsedTickets()]);
+    if (unusedTickets.length > 0 || usedTickets.length > 0 || reservedTickets.length > 0) {
+      localStorage.setItem('ticketCache_unused', JSON.stringify(unusedTickets));
+      localStorage.setItem('ticketCache_used', JSON.stringify(usedTickets));
+      localStorage.setItem('ticketCache_reserved', JSON.stringify(reservedTickets));
+    }
   }
 }
 
@@ -266,10 +289,49 @@ function loadCachedTickets() {
 }
 
 // --- タブ切り替え ---
+let currentMainTab = 'play';
+const PLAY_TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+
+function updateMainTabLabel() {
+  const rewardBtn = document.getElementById('mainTabReward');
+  const playBtn = document.getElementById('mainTabPlay');
+  if (currentOwner === 'めぐみ') {
+    rewardBtn.textContent = '🍵 お茶チケット';
+    // めぐみは遊びチケットを持てないのでplayタブを非表示
+    playBtn.style.display = 'none';
+    document.getElementById('playSubTabs').style.display = 'none';
+    currentMainTab = 'reward';
+    rewardBtn.classList.add('active');
+    renderRewardTickets();
+  } else if (currentOwner === 'りょうすけ') {
+    // りょうすけも遊びチケットを持てない
+    rewardBtn.textContent = '🍬 おやつチケット';
+    playBtn.style.display = 'none';
+    document.getElementById('playSubTabs').style.display = 'none';
+    currentMainTab = 'reward';
+    rewardBtn.classList.add('active');
+    renderRewardTickets();
+  } else {
+    rewardBtn.textContent = '🍬 おやつチケット';
+  }
+}
+
+function switchMainTab(tab) {
+  currentMainTab = tab;
+  document.getElementById('mainTabPlay').classList.toggle('active', tab === 'play');
+  document.getElementById('mainTabReward').classList.toggle('active', tab === 'reward');
+  document.getElementById('playSubTabs').style.display = tab === 'play' ? 'flex' : 'none';
+  if (tab === 'play') {
+    renderCurrentTab();
+  } else {
+    renderRewardTickets();
+  }
+}
+
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('#playSubTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#playSubTabs [data-tab="${tab}"]`).classList.add('active');
   renderCurrentTab();
 }
 
@@ -586,6 +648,95 @@ window.addEventListener('offline', () => {
   disableAllTicketActions();
   showError('オフラインです');
 });
+
+// --- おやつ/お茶チケット ---
+let rewardTickets = [];
+
+async function loadRewardTickets() {
+  const query = client.from('reward_tickets')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (currentOwner) query.eq('owner', currentOwner);
+  const { data } = await query;
+  rewardTickets = data || [];
+}
+
+async function renderRewardTickets() {
+  await loadRewardTickets();
+  const container = document.getElementById('ticketList');
+  const unused = rewardTickets.filter(t => t.status === 'unused');
+  const used = rewardTickets.filter(t => t.status === 'used');
+
+  if (unused.length === 0 && used.length === 0) {
+    const typeName = currentOwner === 'めぐみ' ? 'お茶チケット' : 'おやつチケット';
+    container.innerHTML = `<div style="text-align:center;color:#999;padding:40px 20px;">${typeName}はありません</div>`;
+    return;
+  }
+
+  let html = '';
+  if (unused.length > 0) {
+    html += `<div style="font-size:0.9em;color:#555;font-weight:600;margin-bottom:8px;">未使用（${unused.length}枚）</div>`;
+    html += unused.map(t => renderRewardCard(t)).join('');
+  }
+  if (used.length > 0) {
+    html += `<div style="font-size:0.9em;color:#999;font-weight:600;margin-top:16px;margin-bottom:8px;">使用済み</div>`;
+    html += used.map(t => renderRewardCard(t)).join('');
+  }
+  container.innerHTML = html;
+}
+
+function renderRewardCard(t) {
+  const icon = t.type === 'tea' ? '🍵' : '🍬';
+  const usedCls = t.status === 'used' ? ' style="opacity:0.5;"' : '';
+  const dateStr = new Date(t.created_at).toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
+  let actionHtml = '';
+  if (t.status === 'unused') {
+    actionHtml = `<button onclick="useRewardTicket('${t.id}', '${esc(t.label)}')" style="border:none;border-radius:6px;padding:6px 12px;background:#4caf50;color:#fff;font-size:0.8em;font-weight:600;cursor:pointer;">使用する</button>`;
+  } else {
+    const usedDate = new Date(t.used_at).toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
+    actionHtml = `<span style="font-size:0.75em;color:#999;">使用済(${usedDate})</span>`;
+  }
+  return `<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06);"${usedCls}>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:1.2em;">${icon}</span>
+      <div>
+        <div style="font-size:0.85em;font-weight:600;color:#333;">${esc(t.label)}</div>
+        <div style="font-size:0.7em;color:#999;">${dateStr}取得</div>
+      </div>
+    </div>
+    ${actionHtml}
+  </div>`;
+}
+
+let rewardConfirmResolveFn = null;
+
+function showRewardConfirm(msg) {
+  return new Promise((resolve) => {
+    rewardConfirmResolveFn = resolve;
+    document.getElementById('rewardConfirmMsg').innerHTML = msg;
+    document.getElementById('rewardConfirmOverlay').style.display = 'flex';
+  });
+}
+function rewardConfirmOk() {
+  document.getElementById('rewardConfirmOverlay').style.display = 'none';
+  if (rewardConfirmResolveFn) rewardConfirmResolveFn(true);
+  rewardConfirmResolveFn = null;
+}
+function rewardConfirmCancel() {
+  document.getElementById('rewardConfirmOverlay').style.display = 'none';
+  if (rewardConfirmResolveFn) rewardConfirmResolveFn(false);
+  rewardConfirmResolveFn = null;
+}
+
+async function useRewardTicket(id, label) {
+  const ok = await showRewardConfirm(`<span style="font-size:1.2em;">${label}</span><br>このチケットを使いますか？`);
+  if (!ok) return;
+  const { error } = await client.from('reward_tickets')
+    .update({ status: 'used', used_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { alert('エラー: ' + error.message); return; }
+  renderRewardTickets();
+}
 
 // --- ページ読み込み ---
 document.addEventListener('DOMContentLoaded', initTicketPage);

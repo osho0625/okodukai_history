@@ -1,0 +1,7 @@
+{
+  "name": "aide-subagent",
+  "description": "aide-powers のオーケストレータから呼び出される汎用サブエージェント。プロンプトテンプレートを用いた作業など、aide-powers の様々な実務を対処する。",
+  "prompt": "file://./prompts/aide-subagent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

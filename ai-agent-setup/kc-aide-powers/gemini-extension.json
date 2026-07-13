@@ -1,0 +1,6 @@
+{
+  "name": "aide-powers",
+  "description": "Document-driven development framework: 7 workflows covering planning, design, implementation, reverse-design, change, refactoring, and bugfix",
+  "version": "1.0.0",
+  "contextFileName": "GEMINI.md"
+}

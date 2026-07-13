@@ -282,20 +282,29 @@ h2 { margin-bottom: 12px; color: #333; }
 </div>
 
 <div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-  <div onclick="toggleAccordion('balanceChartBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
-    <span class="acc-arrow">▶</span> 📈 残高グラフ
-  </div>
-  <div id="balanceChartBody" style="display:none; padding:0 16px 16px;">
-    <canvas id="balanceChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
-    <div id="balanceChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
-  </div>
-</div>
-
-<div style="max-width:480px; margin-bottom:20px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
   <div onclick="toggleAccordion('historyBody', this)" style="padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
     <span class="acc-arrow">▶</span> 📋 履歴
   </div>
   <div id="historyBody" style="display:none; padding:0 16px 16px;">
+    <!-- グラフ表示ボタン -->
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <button onclick="toggleInlineChart('balanceChartBody', this)" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; cursor:pointer; font-size:0.85em; font-weight:600; color:#555;">💰 残高グラフ</button>
+      <button onclick="toggleInlineChart('pointsChartBody', this)" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; cursor:pointer; font-size:0.85em; font-weight:600; color:#555;">⭐ ポイントグラフ</button>
+    </div>
+    <!-- 残高グラフ（インライン） -->
+    <div id="balanceChartBody" style="display:none; margin-bottom:12px; background:#f9f9f9; border-radius:8px; padding:12px;">
+      <div id="balancePlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
+      <canvas id="balanceChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
+      <div id="balanceLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
+      <div id="balanceChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
+    </div>
+    <!-- ポイントグラフ（インライン） -->
+    <div id="pointsChartBody" style="display:none; margin-bottom:12px; background:#f9f9f9; border-radius:8px; padding:12px;">
+      <div id="pointsPlayerTabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;"></div>
+      <canvas id="pointsChart" width="440" height="220" style="width:100%;height:auto;"></canvas>
+      <div id="pointsLegend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:0.75em;"></div>
+      <div id="pointsChartEmpty" style="display:none;text-align:center;color:#999;font-size:0.9em;padding:12px 0;">データがありません</div>
+    </div>
     <div class="history-list" id="history">
       <div class="loading">読み込み中...</div>
     </div>
@@ -425,6 +434,28 @@ function toggleAccordion(bodyId, headerEl) {
   } else {
     body.style.display = 'none';
     if (arrow) arrow.classList.remove('open');
+  }
+}
+
+function toggleInlineChart(bodyId, btn) {
+  const body = document.getElementById(bodyId);
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    btn.style.background = '#e3f2fd';
+    btn.style.borderColor = '#2196f3';
+    // グラフ初回描画トリガー（child-charts.jsのオーバーライドと同じロジック）
+    if (bodyId === 'balanceChartBody' && !balanceChartInitialized) {
+      balanceChartInitialized = true;
+      initBalanceChart();
+    }
+    if (bodyId === 'pointsChartBody' && !pointsChartInitialized) {
+      pointsChartInitialized = true;
+      initPointsChart();
+    }
+  } else {
+    body.style.display = 'none';
+    btn.style.background = '#f9f9f9';
+    btn.style.borderColor = '#ddd';
   }
 }
 
@@ -727,8 +758,6 @@ async function load() {
   (pData || []).forEach(p => allHistory.push({ ...p, histType: 'pt' }));
   allHistory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  // 残高グラフ描画
-  drawBalanceChart(tData || [], child.balance);
 
   const list = document.getElementById('history');
   if (allHistory.length === 0) {
@@ -1682,157 +1711,11 @@ function escHtml(str) {
 }
 
 /**
- * 残高推移グラフを描画（Canvas）
- * transactionsから日別の残高推移を計算して折れ線グラフ表示
+ * グラフ共通 - プレイヤー選択式の比較グラフ
+ * → js/child-charts.js に分離済み
  */
-function drawBalanceChart(transactions, currentBalance) {
-  const canvas = document.getElementById('balanceChart');
-  const emptyMsg = document.getElementById('balanceChartEmpty');
-  if (!canvas || !transactions || transactions.length === 0) {
-    if (emptyMsg) emptyMsg.style.display = 'block';
-    return;
-  }
 
-  // 時系列昇順にソート
-  const sorted = [...transactions].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-  // 現在残高から逆算して各取引時点の残高を計算
-  // 最新から遡って残高を計算
-  const points = [];
-  let bal = currentBalance;
-  // 降順で逆算
-  const desc = [...sorted].reverse();
-  const balances = [];
-  for (let i = 0; i < desc.length; i++) {
-    balances.unshift(bal);
-    const t = desc[i];
-    if (t.type === 'add') bal -= t.amount;
-    else bal += t.amount;
-  }
-  // 最初の取引前の残高
-  balances.unshift(bal);
-
-  // 日付ごとにまとめる（最後の残高を採用）
-  const dayMap = new Map();
-  // 取引前の初期状態
-  const firstDate = new Date(sorted[0].created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
-  dayMap.set(firstDate, balances[0]);
-  sorted.forEach((t, i) => {
-    const dateStr = new Date(t.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
-    dayMap.set(dateStr, balances[i + 1]);
-  });
-
-  const labels = [...dayMap.keys()];
-  const values = [...dayMap.values()];
-
-  if (values.length < 2) {
-    if (emptyMsg) emptyMsg.style.display = 'block';
-    return;
-  }
-
-  // Canvas描画
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
-  const W = rect.width;
-  const H = rect.height;
-
-  const padL = 50, padR = 16, padT = 20, padB = 40;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
-
-  // 背景クリア
-  ctx.clearRect(0, 0, W, H);
-
-  // グリッド線
-  ctx.strokeStyle = '#eee';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + (chartH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(W - padR, y);
-    ctx.stroke();
-  }
-
-  // Y軸ラベル
-  ctx.fillStyle = '#999';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + (chartH / 4) * i;
-    const val = maxVal - (range / 4) * i;
-    ctx.fillText(Math.round(val).toLocaleString(), padL - 6, y + 3);
-  }
-
-  // 折れ線
-  ctx.strokeStyle = '#4caf50';
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  values.forEach((v, i) => {
-    const x = padL + (chartW / (values.length - 1)) * i;
-    const y = padT + chartH - ((v - minVal) / range) * chartH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // 塗りつぶし
-  ctx.lineTo(padL + chartW, padT + chartH);
-  ctx.lineTo(padL, padT + chartH);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(76, 175, 80, 0.1)';
-  ctx.fill();
-
-  // ドット
-  ctx.fillStyle = '#4caf50';
-  values.forEach((v, i) => {
-    const x = padL + (chartW / (values.length - 1)) * i;
-    const y = padT + chartH - ((v - minVal) / range) * chartH;
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // マイナス領域の場合、0線を描画
-  if (minVal < 0 && maxVal > 0) {
-    const zeroY = padT + chartH - ((0 - minVal) / range) * chartH;
-    ctx.strokeStyle = '#e53935';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padL, zeroY);
-    ctx.lineTo(W - padR, zeroY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // X軸ラベル（間引き表示）
-  ctx.fillStyle = '#999';
-  ctx.font = '9px sans-serif';
-  ctx.textAlign = 'center';
-  const maxLabels = 6;
-  const step = Math.max(1, Math.floor(labels.length / maxLabels));
-  labels.forEach((label, i) => {
-    if (i % step === 0 || i === labels.length - 1) {
-      const x = padL + (chartW / (labels.length - 1)) * i;
-      // 短い日付表示
-      const parts = label.split('/');
-      const shortLabel = parts.length >= 2 ? parts[parts.length - 2] + '/' + parts[parts.length - 1] : label;
-      ctx.fillText(shortLabel, x, H - padB + 14);
-    }
-  });
-}
-
-// ページ読み込み時にリマインダー一覧を取得
+// ページ読み込み時
 load().then(() => {
   loadPointsGrid();
   loadReminders();
@@ -1855,6 +1738,7 @@ load().then(() => {
   })();
 });
 </script>
+<script src="../js/child-charts.js"></script>
 
 <!-- ねこです認識汚染（SCP-040-JP既読時） -->
 <script src="../js/neko-infection.js"></script>

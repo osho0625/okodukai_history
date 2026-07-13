@@ -1,0 +1,7 @@
+{
+  "name": "aide-agent",
+  "description": "aide-powers フレームワークで開発作業を行うオーケストレーターエージェント。企画・設計・実装・設計逆引き・変更・バグ修正・リファクタリングの7ワークフローをスキルとサブエージェントの連鎖で規律正しく実行する。",
+  "prompt": "file://./prompts/aide-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

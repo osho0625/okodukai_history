@@ -1,0 +1,7 @@
+{
+  "name": "object-design-qa-agent",
+  "description": "オブジェクト設計QAレビューエージェント。ドメイン層・アプリケーション層・インフラ層・プレゼンテーション層のオブジェクト設計書の品質を検証する。役割↔publicメソッド網羅性、技術情報記載有無を検証する。",
+  "prompt": "file://./prompts/object-design-qa-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

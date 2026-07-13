@@ -1,0 +1,7 @@
+{
+  "name": "progress-final-checker",
+  "description": "全前フェーズの完了状態を確認し、進捗ファイルの最終フェーズを完了に更新する。",
+  "prompt": "file://./prompts/progress-final-checker-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

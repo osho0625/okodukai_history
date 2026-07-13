@@ -500,6 +500,19 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- チップ預かり所管理 -->
+<h2 onclick="toggleSection('chipAdminSection', this)"><span class="toggle">▶</span> &#x1FA99; チップ預かり所管理</h2>
+<div class="section-body" id="chipAdminSection">
+  <div class="card">
+    <div style="font-weight:600; margin-bottom:8px;">管理者端末設定</div>
+    <div style="font-size:0.8em; color:#999; margin-bottom:12px;">ONにした端末からチップの増減操作ができます</div>
+    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+      <input type="checkbox" id="chipAdminToggle" style="width:20px; height:20px;" onchange="toggleChipAdmin(this.checked)">
+      <span>この端末をチップ預かり所の管理者にする</span>
+    </label>
+  </div>
+</div>
+
 <!-- ナースコール管理 -->
 <h2 onclick="toggleSection('nurseCallSection', this)"><span class="toggle">▶</span> 🏥 ナースコール管理</h2>
 <div class="section-body" id="nurseCallSection">
@@ -509,6 +522,13 @@ h2 .toggle.open { transform: rotate(90deg); }
         <input type="checkbox" id="nurseCallEnabled" style="width:20px; height:20px;">
         <span style="font-weight:600;">ナースコール機能を有効にする</span>
       </label>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="nurseCallVisibleToUser" style="width:20px; height:20px;">
+        <span style="font-weight:600;">user端末に表示する</span>
+      </label>
+      <div style="font-size:0.75em; color:#999; margin-top:4px; margin-left:28px;">OFFにするとuser端末からナースコールが見えなくなります</div>
     </div>
     <div id="nurseCallDevices">
       <div style="font-weight:600; margin-bottom:8px;">デバイスロック（おやすみモード）</div>
@@ -2001,7 +2021,7 @@ loadScpOverride();
 // --- ナースコール管理 ---
 async function loadNurseCallAdmin() {
   const { data: settings } = await client.from('game_settings')
-    .select('nurse_call_enabled')
+    .select('nurse_call_enabled, nurse_call_visible_to_user')
     .eq('id', 1).single();
 
   const enabledCb = document.getElementById('nurseCallEnabled');
@@ -2009,6 +2029,14 @@ async function loadNurseCallAdmin() {
   enabledCb.addEventListener('change', async () => {
     await client.from('game_settings')
       .update({ nurse_call_enabled: enabledCb.checked })
+      .eq('id', 1);
+  });
+
+  const visibleCb = document.getElementById('nurseCallVisibleToUser');
+  visibleCb.checked = settings?.nurse_call_visible_to_user !== false;
+  visibleCb.addEventListener('change', async () => {
+    await client.from('game_settings')
+      .update({ nurse_call_visible_to_user: visibleCb.checked })
       .eq('id', 1);
   });
 
@@ -2046,6 +2074,19 @@ async function toggleNurseCallMode(deviceId, newMode) {
 }
 
 loadNurseCallAdmin();
+
+// --- チップ預かり所管理 ---
+(function() {
+  const cb = document.getElementById('chipAdminToggle');
+  cb.checked = localStorage.getItem('chipAdmin') === 'true';
+})();
+function toggleChipAdmin(checked) {
+  if (checked) {
+    localStorage.setItem('chipAdmin', 'true');
+  } else {
+    localStorage.removeItem('chipAdmin');
+  }
+}
 </script>
 </body>
 </html>

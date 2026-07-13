@@ -1,0 +1,7 @@
+{
+  "name": "delta-design-qa-agent",
+  "description": "差分設計QAレビューエージェント。差分設計書の品質を検証し、基準を満たさない設計の承認を拒否する。",
+  "prompt": "file://./prompts/delta-design-qa-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

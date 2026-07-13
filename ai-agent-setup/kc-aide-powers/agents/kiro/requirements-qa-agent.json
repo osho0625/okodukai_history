@@ -1,0 +1,7 @@
+{
+  "name": "requirements-qa-agent",
+  "description": "要件定義QAレビューエージェント。要件定義書の品質を検証し、基準を満たさない設計の承認を拒否する。",
+  "prompt": "file://./prompts/requirements-qa-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

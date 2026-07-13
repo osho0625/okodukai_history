@@ -158,3 +158,88 @@ h1 { font-size: 1.3em; font-weight: 700; }
 .preflop-selector button.active {
   background: rgba(76,175,80,0.3); color: #4caf50; border-color: #4caf50;
 }
+
+/* GTO Trainer */
+.gto-setup { margin-bottom: 16px; }
+.gto-setting { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.gto-label { font-size: 0.9em; color: #aaa; min-width: 60px; }
+.gto-btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.gto-btn-group button {
+  padding: 8px 14px; border-radius: 8px; border: 1px solid #555;
+  background: rgba(255,255,255,0.06); color: #aaa;
+  font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.gto-btn-group button.active {
+  background: rgba(76,175,80,0.3); color: #4caf50; border-color: #4caf50;
+}
+.gto-score {
+  text-align: center; font-size: 1em; font-weight: 600; color: #ffd700;
+  margin-bottom: 16px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px;
+}
+.gto-quiz-area { text-align: center; }
+.gto-hand-display {
+  display: flex; justify-content: center; gap: 12px; margin-bottom: 8px;
+}
+.gto-card {
+  width: 70px; height: 100px; border-radius: 8px;
+  background: #fff; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.gto-card.red { color: #d32f2f; }
+.gto-card.black { color: #222; }
+.gto-card-rank { font-size: 1.6em; line-height: 1; }
+.gto-card-suit { font-size: 1.3em; line-height: 1; margin-top: 2px; }
+.gto-hand-label {
+  font-size: 0.9em; color: #aaa; margin-bottom: 16px;
+}
+.gto-actions {
+  display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap;
+}
+.gto-action-btn {
+  padding: 14px 24px; border-radius: 10px; border: none;
+  font-size: 1em; font-weight: 700; cursor: pointer; transition: transform 0.1s;
+  min-width: 90px;
+}
+.gto-action-btn:active:not(:disabled) { transform: scale(0.94); }
+.gto-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gto-action-btn.raise { background: #4caf50; color: #fff; }
+.gto-action-btn.call { background: #2196f3; color: #fff; }
+.gto-action-btn.fold { background: #757575; color: #fff; }
+.gto-result {
+  font-size: 1.1em; font-weight: 700; min-height: 1.5em; margin-bottom: 12px;
+}
+.gto-result.correct { color: #4caf50; }
+.gto-result.wrong { color: #ff5252; }
+.gto-start-btn {
+  display: block; margin: 20px auto; padding: 14px 32px;
+  border: none; border-radius: 10px; background: #4caf50; color: #fff;
+  font-size: 1.1em; font-weight: 700; cursor: pointer;
+}
+.gto-start-btn:active { transform: scale(0.95); }
+
+/* GTO Matrix */
+.gto-matrix-wrap {
+  margin-top: 12px; overflow-x: auto; padding-bottom: 8px;
+}
+.gto-matrix-table {
+  border-collapse: collapse; font-size: 0.55em; width: 100%; min-width: 320px;
+}
+.gto-matrix-table th, .gto-matrix-table td {
+  padding: 2px 1px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+.gto-matrix-table th {
+  background: rgba(255,255,255,0.1); color: #ccc; font-weight: 600;
+}
+.gto-matrix-table td {
+  font-weight: 500; border-radius: 2px;
+}
+.gto-matrix-legend {
+  font-size: 0.7em; color: #aaa; margin-top: 6px; text-align: center;
+}
+.gto-next-btn {
+  margin-top: 12px; padding: 12px 28px; border: none; border-radius: 10px;
+  background: #ff9800; color: #fff; font-size: 1em; font-weight: 700; cursor: pointer;
+}
+.gto-next-btn:active { transform: scale(0.95); }

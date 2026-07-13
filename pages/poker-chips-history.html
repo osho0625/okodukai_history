@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>&#x1F4C8; チップ履歴</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 16px; min-height: 100vh; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.header a { text-decoration: none; font-size: 1.4em; cursor: pointer; color: #eee; }
+h1 { font-size: 1.2em; color: #ffd700; }
+.player-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
+.player-tab { border: 2px solid #333; border-radius: 8px; padding: 8px 14px; font-size: 0.9em; font-weight: 600; cursor: pointer; background: #16213e; color: #aaa; transition: all 0.15s; }
+.player-tab.active { color: #fff; }
+.graph-section { background: #16213e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.graph-section canvas { width: 100%; height: 200px; display: block; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; justify-content: center; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.8em; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+.history-section { background: #16213e; border-radius: 12px; padding: 16px; }
+.history-section h3 { font-size: 0.9em; color: #ffd700; margin-bottom: 10px; }
+.history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9em; color: #ccc; display: flex; justify-content: space-between; align-items: center; }
+.history-item:last-child { border-bottom: none; }
+.history-time { color: #888; font-size: 0.8em; }
+.history-amount { font-weight: 700; }
+.history-amount.plus { color: #4caf50; }
+.history-amount.minus { color: #ff4444; }
+.chips-after { color: #ffd700; font-size: 0.85em; margin-left: 8px; }
+.empty-msg { text-align: center; color: #888; padding: 20px 0; }
+.edit-btn { background: none; border: none; font-size: 1em; cursor: pointer; padding: 2px 4px; opacity: 0.6; }
+.edit-btn:hover { opacity: 1; }
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+.overlay.active { display: flex; }
+.modal { background: #16213e; border-radius: 16px; padding: 24px; width: 90%; max-width: 340px; }
+.modal h2 { margin-bottom: 16px; font-size: 1.1em; color: #ffd700; text-align: center; }
+.modal input { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; font-size: 1.1em; text-align: center; background: #0f3460; color: #eee; margin-bottom: 12px; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.9em; font-weight: 600; cursor: pointer; }
+.btn-ok { background: #4caf50; color: #fff; }
+.btn-cancel { background: #555; color: #eee; }
+.btn-danger { background: #ff4444; color: #fff; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">&#x2190;</a>
+  <h1>&#x1F4C8; チップ履歴</h1>
+  <a class="home" href="poker-chips.html">&#x1FA99;</a>
+</div>
+
+<div class="player-tabs" id="tabs"></div>
+
+<div class="graph-section">
+  <canvas id="historyChart" height="200"></canvas>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="history-section" id="historyList"></div>
+
+<!-- 履歴編集モーダル (admin only) -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <h2 id="editTitle">履歴編集</h2>
+    <input type="number" id="editAmount" placeholder="増減チップ数" inputmode="numeric">
+    <input type="number" id="editChipsAfter" placeholder="操作後チップ" inputmode="numeric">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="btn-danger" onclick="deleteHistoryItem()">削除</button>
+      <button class="btn-ok" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PLAYERS = ['りょうすけ', 'めぐみ', 'はるちか', 'いろは', 'かいせい'];
+const COLORS = ['#ffd700', '#4caf50', '#2196f3', '#e91e63', '#ff9800'];
+const START_CHIPS = 500;
+const isChipAdmin = localStorage.getItem('chipAdmin') === 'true';
+let selectedPlayers = [];
+let playerData = {};
+
+function init() {
+  const params = new URLSearchParams(location.search);
+  const playerParam = params.get('player');
+  selectedPlayers = PLAYERS.includes(playerParam) ? [playerParam] : [PLAYERS[0]];
+  renderTabs();
+  loadAll();
+}
+
+function renderTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = PLAYERS.map((name, i) => {
+    const isActive = selectedPlayers.includes(name);
+    const cls = isActive ? ' active' : '';
+    const borderColor = isActive ? COLORS[i] : '#333';
+    return `<button class="player-tab${cls}" style="border-color:${borderColor};" onclick="togglePlayer('${name}')">${name}</button>`;
+  }).join('');
+}
+
+function togglePlayer(name) {
+  const idx = selectedPlayers.indexOf(name);
+  if (idx >= 0) {
+    if (selectedPlayers.length === 1) return; // 最低1人は選択
+    selectedPlayers.splice(idx, 1);
+  } else {
+    selectedPlayers.push(name);
+  }
+  renderTabs();
+  drawChart();
+  renderHistory();
+}
+
+async function loadAll() {
+  // 全員のデータを一括取得
+  for (const name of PLAYERS) {
+    const { data } = await client.from('poker_chips_history')
+      .select('*')
+      .eq('player_name', name)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    playerData[name] = data || [];
+  }
+  drawChart();
+  renderHistory();
+}
+
+let checkedIds = new Set();
+
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  let allItems = [];
+  selectedPlayers.forEach(name => {
+    (playerData[name] || []).forEach(item => allItems.push({ ...item, _name: name }));
+  });
+  allItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  allItems = allItems.slice(0, 50);
+
+  if (allItems.length === 0) {
+    container.innerHTML = '<div class="empty-msg">履歴がありません</div>';
+    return;
+  }
+
+  const showName = selectedPlayers.length > 1;
+  const bulkBar = isChipAdmin ? `<div id="bulkBar" style="display:none; position:sticky; top:0; background:#1a1a2e; padding:8px 0; margin-bottom:8px; display:flex; align-items:center; gap:8px; z-index:10;">
+    <label style="display:flex;align-items:center;gap:4px;font-size:0.8em;color:#aaa;cursor:pointer;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"> 全選択</label>
+    <button onclick="bulkDelete()" style="border:none;border-radius:6px;padding:6px 12px;background:#ff4444;color:#fff;font-size:0.8em;font-weight:600;cursor:pointer;">選択を削除</button>
+    <span id="checkedCount" style="font-size:0.75em;color:#888;"></span>
+  </div>` : '';
+
+  container.innerHTML = bulkBar + allItems.map(item => {
+    const t = new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const sign = item.amount > 0 ? '+' : '';
+    const cls = item.amount > 0 ? 'plus' : 'minus';
+    const nameLabel = showName ? `<span style="color:${COLORS[PLAYERS.indexOf(item._name)]};font-weight:600;">${item._name}</span> ` : '';
+    const checkbox = isChipAdmin ? `<input type="checkbox" class="hist-cb" data-id="${item.id}" data-name="${item._name}" onchange="onCheckChange()" style="width:16px;height:16px;margin-right:6px;">` : '';
+    const editBtn = isChipAdmin ? `<button class="edit-btn" onclick="openEdit('${item.id}', '${item._name}', ${item.amount}, ${item.chips_after})">✏️</button>` : '';
+    return `<div class="history-item" style="display:flex;align-items:center;">
+      ${checkbox}
+      <div style="flex:1;display:flex;justify-content:space-between;align-items:center;">
+        <div>${nameLabel}<span class="history-time">${t}</span></div>
+        <div><span class="history-amount ${cls}">${sign}${item.amount}</span><span class="chips-after">→ ${item.chips_after.toLocaleString()}</span>${editBtn}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateBulkBar();
+}
+
+function onCheckChange() {
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (!bar) return;
+  const checked = document.querySelectorAll('.hist-cb:checked');
+  const countEl = document.getElementById('checkedCount');
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    countEl.textContent = `${checked.length}件選択中`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.hist-cb').forEach(cb => cb.checked = checked);
+  updateBulkBar();
+}
+
+async function bulkDelete() {
+  const checked = document.querySelectorAll('.hist-cb:checked');
+  if (checked.length === 0) return;
+  if (!confirm(`${checked.length}件の履歴を削除しますか？`)) return;
+
+  const ids = [];
+  const names = new Set();
+  checked.forEach(cb => {
+    ids.push(cb.dataset.id);
+    names.add(cb.dataset.name);
+  });
+
+  const { error } = await client.from('poker_chips_history')
+    .delete().in('id', ids);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  // 各プレイヤーの現在チップを最新履歴に同期
+  for (const name of names) {
+    await syncCurrentChips(name);
+  }
+  await loadAll();
+}
+
+let editingId = null;
+let editingName = null;
+
+function openEdit(id, name, amount, chipsAfter) {
+  if (!isChipAdmin) return;
+  editingId = id;
+  editingName = name;
+  document.getElementById('editTitle').textContent = name + ' の履歴編集';
+  document.getElementById('editAmount').value = amount;
+  document.getElementById('editChipsAfter').value = chipsAfter;
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('active');
+  editingId = null;
+  editingName = null;
+}
+
+async function saveEdit() {
+  if (!editingId) return;
+  const newAmount = parseInt(document.getElementById('editAmount').value);
+  const newChipsAfter = parseInt(document.getElementById('editChipsAfter').value);
+  if (isNaN(newAmount) || isNaN(newChipsAfter)) { alert('数値を入力してください'); return; }
+
+  const { error } = await client.from('poker_chips_history')
+    .update({ amount: newAmount, chips_after: newChipsAfter })
+    .eq('id', editingId);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  // poker_chipsテーブルの現在値も更新（最新履歴のchips_afterに合わせる）
+  await syncCurrentChips(editingName);
+  closeEdit();
+  await loadAll();
+}
+
+async function deleteHistoryItem() {
+  if (!editingId) return;
+  if (!confirm('この履歴を削除しますか？')) return;
+
+  const { error } = await client.from('poker_chips_history')
+    .delete().eq('id', editingId);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  await syncCurrentChips(editingName);
+  closeEdit();
+  await loadAll();
+}
+
+async function syncCurrentChips(name) {
+  // 最新の履歴からchips_afterを取得してpoker_chipsに反映
+  const { data } = await client.from('poker_chips_history')
+    .select('chips_after')
+    .eq('player_name', name)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const currentChips = (data && data.length > 0) ? data[0].chips_after : START_CHIPS;
+  await client.from('poker_chips')
+    .update({ chips: currentChips, updated_at: new Date().toISOString() })
+    .eq('player_name', name);
+}
+
+function drawChart() {
+  const canvas = document.getElementById('historyChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 400;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const legendEl = document.getElementById('legend');
+
+  // 選択中プレイヤーのデータを整理
+  const series = selectedPlayers.map(name => {
+    const data = playerData[name] || [];
+    const points = [START_CHIPS, ...data.map(r => r.chips_after)];
+    return { name, points, color: COLORS[PLAYERS.indexOf(name)] };
+  });
+
+  // 凡例
+  legendEl.innerHTML = series.map(s => {
+    const last = s.points[s.points.length - 1];
+    return `<div class="legend-item"><div class="legend-dot" style="background:${s.color};"></div>${s.name} (${last.toLocaleString()})</div>`;
+  }).join('');
+
+  const hasData = series.some(s => s.points.length >= 2);
+  if (!hasData) {
+    ctx.fillStyle = '#888'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('まだデータがありません', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const pad = { top: 30, bottom: 30, left: 55, right: 20 };
+  const w = canvas.width - pad.left - pad.right;
+  const h = canvas.height - pad.top - pad.bottom;
+
+  // 全系列からmin/max算出
+  let gMin = Infinity, gMax = -Infinity;
+  let maxLen = 0;
+  series.forEach(s => {
+    s.points.forEach(v => { if (v < gMin) gMin = v; if (v > gMax) gMax = v; });
+    if (s.points.length > maxLen) maxLen = s.points.length;
+  });
+  if (gMin === Infinity) gMin = 0;
+  if (gMax === -Infinity) gMax = START_CHIPS + 100;
+  if (gMin === gMax) { gMin -= 100; gMax += 100; }
+  const range = gMax - gMin;
+
+  const getY = v => pad.top + h - ((v - gMin) / range) * h;
+
+  // グリッド
+  ctx.strokeStyle = '#334'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    const val = Math.round(gMax - (range / 4) * i);
+    ctx.fillStyle = '#888'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val.toLocaleString(), pad.left - 8, y + 6);
+  }
+
+  // 基準線（2000）
+  const baseY = getY(START_CHIPS);
+  ctx.strokeStyle = '#ffffff22'; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, baseY); ctx.lineTo(pad.left + w, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 各プレイヤーの折れ線を描画
+  series.forEach(s => {
+    if (s.points.length < 2) return;
+    const xStep = w / (s.points.length - 1);
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.points.forEach((v, i) => {
+      const x = pad.left + i * xStep, y = getY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // ドット（最後のポイントのみ）
+    const lastIdx = s.points.length - 1;
+    const lx = pad.left + lastIdx * xStep, ly = getY(s.points[lastIdx]);
+    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
+  });
+}
+
+init();
+
+// bfcache対策: ページに戻ったときにデータ再取得
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) loadAll();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') loadAll();
+});
+</script>
+</body>
+</html>

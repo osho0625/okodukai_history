@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/06 v2.24.0
+最終更新: 2026/07/09 v2.31.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -63,6 +63,7 @@ inclusion: auto
 ├── sql/                # DBマイグレーション
 ├── backups/            # 自動バックアップJSON
 ├── .kiro/specs/today-science/ # 今日のサイエンス機能データ
+├── docs/               # 開発者ドキュメント
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, push-notify)
 ```
 
@@ -137,6 +138,11 @@ inclusion: auto
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
 - 通知タイミング: memo/event=07:50,17:30、repeat=前日17:30+当日08:00、yearly=7日前から07:50,17:30
+
+### poker_chips_exchanges（チップ交換履歴）
+- id: UUID (PK), player_name: TEXT, prize_name: TEXT, cost: INT, created_at: TIMESTAMPTZ
+- INDEX: idx_poker_chips_exchanges_player (player_name, created_at DESC)
+- RLS無効
 
 ## 主要機能
 
@@ -244,7 +250,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.21.1
+- 現在: v2.31.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -258,7 +264,10 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 1. **`pages/release-notes.html`** — 変更内容をリリースノートの先頭に追記（バージョン番号を上げる）
 2. **`sw.js`** — `CACHE_NAME` のバージョン番号を +1 する（例: `okozukai-v7` → `okozukai-v8`）
 3. **`index.html`** — 末尾のバージョン表示テキストを新バージョンに更新
-4. **`git push`** — 作業ブランチにコミット＆プッシュ（ユーザーに確認不要、自動で行う）
+4. **`.kiro/steering/project-overview.md`** — 全体構成（テーブル・機能一覧・ファイル構成等）に変更があれば反映
+5. **`.kiro/steering/`** — 該当機能のsteeringファイルに仕様変更を反映
+6. **`CONTEXT.md`** — steeringファイルや機能の追加・変更があればインデックスを更新
+7. **`git push`** — 作業ブランチにコミット＆プッシュ（ユーザーに確認不要、自動で行う）
 
 **⚠️ これを省略・忘却してはならない。ユーザーに「プッシュして」と言われる前に自発的に実行すること。**
 **⚠️ キャッシュ更新されないとユーザーに変更が届かない。**
@@ -306,3 +315,5 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `family-notes.md` — 家族メモ帳
 - `chores.md` — お手伝いリスト
 - `texas-holdem.md` — テキサスホールデム ルールガイド
+- `family-settlement.md` — 家庭内精算機能
+- `recipe.md` — 家族レシピ管理

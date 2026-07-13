@@ -1,0 +1,7 @@
+{
+  "name": "code-review-agent",
+  "description": "コード品質レビューエージェント。命名、型ヒント、SOLID原則、エラーハンドリング等を検証する。",
+  "prompt": "file://./prompts/code-review-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

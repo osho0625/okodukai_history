@@ -11,6 +11,7 @@
 <div class="header">
   <a class="back" onclick="history.back()">←</a>
   <h1>🃏 テキサスホールデム</h1>
+  <a href="poker-chips.html" title="チップ預かり所" style="font-size:1.4em;text-decoration:none;">🪙</a>
   <a class="home" href="../index.html">🏠</a>
 </div>
 
@@ -22,6 +23,7 @@
     <button class="tab" data-tab="flow">ディーラーの進め方</button>
     <button class="tab" data-tab="positions">ポジション</button>
     <button class="tab" data-tab="terms">用語集</button>
+    <button class="tab" data-tab="gto">GTO練習</button>
   </div>
 
   <!-- 基本ルール（初心者向け） -->
@@ -573,9 +575,14 @@
       <li><strong>セミブラフ</strong> — 今は弱いが改善の可能性がある手（ドロー）でのブラフ</li>
       <li><strong>アウツ</strong> — 自分の手を改善してくれる残りカードの枚数</li>
       <li><strong>オッズ / ポットオッズ</strong> — コール額に対するポットの比率（コールの損得判断に使う）</li>
+      <li><strong>インプライドオッズ</strong> — 今のポットに加え、役が完成した後に相手から追加で取れるチップも含めた期待値。「今コールしても当たれば大きく回収できる」という考え方</li>
       <li><strong>エクイティ</strong> — 現在の手がショーダウンまで行った場合に勝つ確率</li>
       <li><strong>EV（期待値）</strong> — ある行動の平均的な利益/損失</li>
       <li><strong>ドロー</strong> — あと1枚来れば役が完成する状態（例: フラッシュドロー = あと1枚で同スート5枚）</li>
+      <li><strong>スペキュレーティブハンド</strong> — 今は弱いが大きな役に化ける可能性があるハンド（例: スーテッドコネクター76s、スモールペア22-55）。安く参加してビッグハンドを狙う</li>
+      <li><strong>ドローハンド</strong> — あと1枚来れば強い役が完成する状態のハンド（例: フラッシュドロー、ストレートドロー）。完成すれば大きく勝てる</li>
+      <li><strong>バリューハンド</strong> — 現時点で相手より強い可能性が高く、ベットして利益を取りに行ける手。相手にコールしてもらうほど得をする</li>
+      <li><strong>マージナルハンド</strong> — 強くも弱くもない微妙な手。大きくベットされると降りたいが、チェックで回れば勝てるかもしれない中途半端なハンド</li>
       <li><strong>テル</strong> — 相手の手の強さを示す無意識のサイン（表情、仕草など）</li>
       <li><strong>ティルト</strong> — 感情的になってプレイが雑になること（気をつけよう！）</li>
       <li><strong>ショーダウン</strong> — 最後に残ったプレイヤーが手札を見せ合うこと</li>
@@ -590,9 +597,47 @@
       <li><strong>ヘッズアップ</strong> — 1対1の対戦</li>
     </ul>
   </div>
+
+  <!-- GTO練習 -->
+  <div class="content-section" id="tab-gto">
+    <h2>🧠 プリフロップ GTO 練習</h2>
+    <p>ランダムに配られたハンドに対して、GTOに基づく正しいアクションを選ぼう！</p>
+
+    <div class="gto-setup">
+      <div class="gto-setting">
+        <span class="gto-label">人数:</span>
+        <div class="gto-btn-group" id="gtoPlayerCount">
+          <button class="active" data-val="4">4人</button>
+          <button data-val="5">5人</button>
+        </div>
+      </div>
+      <div class="gto-setting">
+        <span class="gto-label">ポジション:</span>
+        <div class="gto-btn-group" id="gtoPosition"></div>
+      </div>
+    </div>
+
+    <div class="gto-score" id="gtoScore">正解: 0 / 0</div>
+
+    <div class="gto-quiz-area" id="gtoQuizArea" style="display:none;">
+      <div class="gto-hand-display" id="gtoHandDisplay"></div>
+      <div class="gto-hand-label" id="gtoHandLabel"></div>
+      <div class="gto-actions">
+        <button class="gto-action-btn raise" onclick="gtoAnswer('raise')">レイズ</button>
+        <button class="gto-action-btn call" onclick="gtoAnswer('call')">コール</button>
+        <button class="gto-action-btn fold" onclick="gtoAnswer('fold')">フォールド</button>
+      </div>
+      <div class="gto-result" id="gtoResult"></div>
+      <div class="gto-matrix-wrap" id="gtoMatrix" style="display:none;"></div>
+      <button class="gto-next-btn" id="gtoNextBtn" style="display:none;" onclick="gtoNext()">次の問題へ ▶</button>
+    </div>
+
+    <button class="gto-start-btn" id="gtoStartBtn" onclick="gtoStart()">スタート</button>
+  </div>
 </div>
 
 <script src="../js/texas-holdem-charts.js"></script>
+<script src="../js/texas-holdem-gto.js"></script>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {

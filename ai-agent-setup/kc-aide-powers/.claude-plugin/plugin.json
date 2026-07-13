@@ -1,0 +1,17 @@
+{
+  "name": "aide-powers",
+  "description": "Document-driven development framework: 7 workflows covering planning, design, implementation, reverse-design, change, refactoring, and bugfix",
+  "version": "1.0.0",
+  "author": {
+    "name": "aide-powers contributors"
+  },
+  "license": "Kyocera-Internal-Only",
+  "keywords": [
+    "skills",
+    "document-driven-development",
+    "workflow",
+    "design",
+    "implementation",
+    "quality"
+  ]
+}

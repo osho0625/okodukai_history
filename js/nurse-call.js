@@ -90,6 +90,17 @@
   const NURSE_CALL_NAME_KEY = 'nurse_call_child_name';
 
   async function init() {
+    // user端末での表示制御チェック
+    if (!isAdmin) {
+      try {
+        const { data } = await client.from('game_settings').select('nurse_call_visible_to_user').eq('id', 1).single();
+        if (data && data.nurse_call_visible_to_user === false) {
+          document.body.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#999; font-size:1.1em;">この機能は現在使えません</div>';
+          return;
+        }
+      } catch(e) {}
+    }
+
     // URLパラメータ確認
     const params = new URLSearchParams(location.search);
     const childId = params.get('child_id');

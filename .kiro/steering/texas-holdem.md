@@ -11,9 +11,10 @@ fileMatchPattern: "*texas*,*holdem*,*poker-guide*"
 
 ## ファイル構成
 
-- `pages/texas-holdem.html` — ルールガイドページ（HTMLコンテンツのみ）
+- `pages/texas-holdem.html` — ルールガイド＋GTO練習ページ
 - `css/texas-holdem.css` — スタイルシート
 - `js/texas-holdem-charts.js` — 描画ロジック＋UI制御（JSONデータをfetchで読み込み）
+- `js/texas-holdem-gto.js` — GTO練習機能（プリフロップクイズ）
 - `data/preflop/9max.json` — 9人テーブル レンジデータ
 - `data/preflop/6max.json` — 6人テーブル レンジデータ
 - `data/preflop/5p.json` — 5人テーブル レンジデータ
@@ -21,7 +22,7 @@ fileMatchPattern: "*texas*,*holdem*,*poker-guide*"
 
 ## 機能
 
-- タブ切り替えUI（基本ルール / 役の強さ / ハンド表 / ゲームの進め方 / ポジション / 用語集）
+- タブ切り替えUI（基本ルール / 役の強さ / ハンド表 / ゲームの進め方 / ポジション / 用語集 / GTO練習）
 - 基本ルール（初心者向け: 目的・カードの使い方・ベットアクション・ゲームの流れ）
 - 役の強さ一覧（10役、強い順、例・確率付き）
 - プリフロップハンド強さ表（13×13マトリクス、人数ボタン[4/5/6/9人]＋ポジションボタン[EP/MP/CO/BTN/SB/BB]で22パターン切り替え）
@@ -32,6 +33,12 @@ fileMatchPattern: "*texas*,*holdem*,*poker-guide*"
 - ディーラーの進め方（プリフロップ→フロップ→ターン→リバー→ショーダウン）
 - ポジション解説（9人: BTN/SB/BB/UTG/UTG+1/UTG+2/LJ/HJ/CO、6人/5人/4人テーブル対応）
 - 用語集（5カテゴリ40語超: 基本アクション/カード・役/ベッティング構造/戦略用語/ゲーム形式）
+- GTO練習（プリフロップ判断クイズ）
+  - 4人/5人テーブル対応
+  - ポジション選択（EP/CO/BTN/SB）
+  - ランダムハンド出題 → レイズ/コール/フォールドを回答
+  - 既存preflopデータ（tier1-2=レイズ、tier3=コール、tier4=フォールド）で正誤判定
+  - スコア表示（正解数/出題数）
 
 ## 技術仕様
 

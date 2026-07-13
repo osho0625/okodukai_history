@@ -1,0 +1,7 @@
+{
+  "name": "test-coverage-audit-agent",
+  "description": "動作確認試験書 網羅性監査エージェント。user-requirements.md の全要件と manual-test-plan.md の全試験項目を照合し、未カバー要件を検出する。",
+  "prompt": "file://./prompts/test-coverage-audit-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

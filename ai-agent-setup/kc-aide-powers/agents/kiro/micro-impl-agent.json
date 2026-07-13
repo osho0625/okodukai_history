@@ -1,0 +1,7 @@
+{
+  "name": "micro-impl-agent",
+  "description": "マイクロ実装エージェント（実装専任）。1つの実装タスクを受け取り、実装コードとテストコードを書く。",
+  "prompt": "file://./prompts/micro-impl-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}

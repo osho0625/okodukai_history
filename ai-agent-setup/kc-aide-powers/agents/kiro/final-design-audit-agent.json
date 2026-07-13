@@ -1,0 +1,7 @@
+{
+  "name": "final-design-audit-agent",
+  "description": "最終設計準拠監査エージェント。全設計書を横断し、全クラス定義・全メソッドシグネチャ・全テスト観点が実装コードで対応されているかを照合する。",
+  "prompt": "file://./prompts/final-design-audit-agent-prompt.md",
+  "tools": ["@builtin"],
+  "allowedTools": ["@builtin"]
+}
