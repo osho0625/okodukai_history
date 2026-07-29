@@ -91,7 +91,7 @@
   }
 
   // =========================================================
-  // Storage Manager - localStorage永続化管理
+  // Storage Manager - Supabase永続化管理
   // =========================================================
 
   var STORAGE_KEYS = {
@@ -106,270 +106,277 @@
     group_cycles: {}
   };
 
-  /**
-   * localStorage書き込みのラッパー（QuotaExceededError対策）
-   * @param {string} key - localStorageキー
-   * @param {*} data - 保存するデータ
-   * @returns {{ success: boolean, error?: string }}
-   */
-  function safeSave(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-      return { success: true };
-    } catch (e) {
-      if (e.name === 'QuotaExceededError') {
-        return { success: false, error: 'ストレージ容量が不足しています' };
-      }
-      throw e;
-    }
+  /** 現在選択中の人物 */
+  var _currentPerson = 'りょうすけ';
+
+  /** メモリキャッシュ（人物ごと） */
+  var _recordsCache = null;
+  var _settingsCache = null;
+
+  function setCurrentPerson(person) {
+    _currentPerson = person;
+    _recordsCache = null;
+    _settingsCache = null;
+    invalidateStatsCache();
+  }
+
+  function getCurrentPerson() {
+    return _currentPerson;
   }
 
   var StorageManager = {
     /**
-     * 全レコードを取得する
-     * @returns {Array} TreatmentRecord配列
+     * 全レコードを取得する（キャッシュ付き）
      */
     getRecords: function() {
-      try {
-        var stored = localStorage.getItem(STORAGE_KEYS.RECORDS);
-        if (stored) {
-          return JSON.parse(stored);
-        }
-      } catch (e) {
-        // パースエラー時は空配列を返す
-      }
-      return [];
+      if (_recordsCache !== null) return _recordsCache;
+      // フォールバック: localStorageから（Supabase非同期のため同期呼び出し時はキャッシュを返す）
+      return _recordsCache || [];
     },
 
     /**
-     * レコードを保存する（既存レコード配列に追加）
-     * @param {Object} record - TreatmentRecordオブジェクト
-     * @returns {{ success: boolean, error?: string }}
+     * Supabaseからレコードを非同期ロードしてキャッシュする
      */
-    saveRecord: function(record) {
-      var records = this.getRecords();
-      records.push(record);
-      invalidateStatsCache();
-      return safeSave(STORAGE_KEYS.RECORDS, records);
+    loadRecords: async function() {
+      try {
+        var { data, error } = await client.from('hair_removal_records')
+          .select('*')
+          .eq('person', _currentPerson)
+          .order('date', { ascending: false });
+        if (error) throw error;
+        _recordsCache = (data || []).map(function(r) {
+          return {
+            id: r.id,
+            zone_id: r.zone_id,
+            date: r.date,
+            intensity: r.intensity,
+            memo: r.memo || null,
+            photo: r.photo || null,
+            created_at: r.created_at
+          };
+        });
+      } catch (e) {
+        console.error('loadRecords error:', e);
+        _recordsCache = [];
+      }
+      return _recordsCache;
+    },
+
+    /**
+     * レコードを保存する
+     */
+    saveRecord: async function(record) {
+      try {
+        var { error } = await client.from('hair_removal_records').insert({
+          id: record.id,
+          person: _currentPerson,
+          zone_id: record.zone_id,
+          date: record.date,
+          intensity: record.intensity,
+          memo: record.memo || null,
+          photo: record.photo || null,
+          created_at: record.created_at || new Date().toISOString()
+        });
+        if (error) throw error;
+        // キャッシュ更新
+        if (_recordsCache) _recordsCache.push(record);
+        invalidateStatsCache();
+        return { success: true };
+      } catch (e) {
+        console.error('saveRecord error:', e);
+        return { success: false, error: e.message || 'DB保存に失敗しました' };
+      }
     },
 
     /**
      * レコードをIDで削除する
-     * @param {string} id - レコードID
-     * @returns {{ success: boolean, error?: string }}
      */
-    deleteRecord: function(id) {
-      var records = this.getRecords();
-      var filtered = records.filter(function(r) { return r.id !== id; });
-      invalidateStatsCache();
-      return safeSave(STORAGE_KEYS.RECORDS, filtered);
+    deleteRecord: async function(id) {
+      try {
+        var { error } = await client.from('hair_removal_records')
+          .delete()
+          .eq('id', id)
+          .eq('person', _currentPerson);
+        if (error) throw error;
+        // キャッシュ更新
+        if (_recordsCache) {
+          _recordsCache = _recordsCache.filter(function(r) { return r.id !== id; });
+        }
+        invalidateStatsCache();
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e.message || '削除に失敗しました' };
+      }
     },
 
-    /**
-     * 指定ゾーンIDのレコードを取得する
-     * @param {string} zoneId - Body_ZoneのID
-     * @returns {Array} TreatmentRecord配列
-     */
     getRecordsByZone: function(zoneId) {
       var records = this.getRecords();
       return records.filter(function(r) { return r.zone_id === zoneId; });
     },
 
-    /**
-     * 指定日付範囲内のレコードを取得する（inclusive）
-     * @param {string} start - 開始日 "YYYY-MM-DD"
-     * @param {string} end - 終了日 "YYYY-MM-DD"
-     * @returns {Array} TreatmentRecord配列
-     */
     getRecordsByDateRange: function(start, end) {
       var records = this.getRecords();
-      return records.filter(function(r) {
-        return r.date >= start && r.date <= end;
-      });
+      return records.filter(function(r) { return r.date >= start && r.date <= end; });
     },
 
     /**
-     * 設定を取得する（未設定時はデフォルト値を返す）
-     * @returns {Object} Settingsオブジェクト
+     * 設定を取得する
      */
     getSettings: function() {
-      try {
-        var stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-        if (stored) {
-          var parsed = JSON.parse(stored);
-          // デフォルト値でマージ（欠損フィールド補完）
-          return {
-            default_cycle_days: parsed.default_cycle_days !== undefined ? parsed.default_cycle_days : DEFAULT_SETTINGS.default_cycle_days,
-            color_threshold_days: parsed.color_threshold_days !== undefined ? parsed.color_threshold_days : DEFAULT_SETTINGS.color_threshold_days,
-            zone_cycles: parsed.zone_cycles || DEFAULT_SETTINGS.zone_cycles,
-            group_cycles: parsed.group_cycles || DEFAULT_SETTINGS.group_cycles
-          };
-        }
-      } catch (e) {
-        // パースエラー時はデフォルトを返す
-      }
+      if (_settingsCache) return _settingsCache;
       return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     },
 
     /**
-     * 設定を保存する
-     * @param {Object} settings - Settingsオブジェクト
-     * @returns {{ success: boolean, error?: string }}
+     * Supabaseから設定を非同期ロード
      */
-    saveSettings: function(settings) {
-      return safeSave(STORAGE_KEYS.SETTINGS, settings);
+    loadSettings: async function() {
+      try {
+        var { data, error } = await client.from('hair_removal_settings')
+          .select('*')
+          .eq('person', _currentPerson)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          _settingsCache = {
+            default_cycle_days: data.default_cycle_days || 30,
+            color_threshold_days: data.color_threshold_days || 30,
+            zone_cycles: data.zone_cycles || {},
+            group_cycles: data.group_cycles || {}
+          };
+        } else {
+          _settingsCache = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        }
+      } catch (e) {
+        console.error('loadSettings error:', e);
+        _settingsCache = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      }
+      return _settingsCache;
     },
 
     /**
-     * 全データ（records + settings）をJSON文字列としてエクスポートする
-     * @returns {string} JSON文字列
+     * 設定を保存する
      */
+    saveSettings: async function(settings) {
+      try {
+        var { error } = await client.from('hair_removal_settings')
+          .upsert({
+            person: _currentPerson,
+            default_cycle_days: settings.default_cycle_days,
+            color_threshold_days: settings.color_threshold_days,
+            zone_cycles: settings.zone_cycles || {},
+            group_cycles: settings.group_cycles || {},
+            updated_at: new Date().toISOString()
+          });
+        if (error) throw error;
+        _settingsCache = settings;
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e.message || '設定保存に失敗しました' };
+      }
+    },
+
     exportAll: function() {
       var data = {
         version: "1.0",
         exported_at: new Date().toISOString(),
+        person: _currentPerson,
         records: this.getRecords(),
         settings: this.getSettings()
       };
       return JSON.stringify(data, null, 2);
     },
 
-    /**
-     * インポートデータのバリデーションを行う
-     * @param {string} json - JSON文字列
-     * @returns {{ valid: boolean, records?: Array, errors?: string[] }}
-     */
     validateImportData: function(json) {
       var parsed;
-      try {
-        parsed = JSON.parse(json);
-      } catch (e) {
+      try { parsed = JSON.parse(json); } catch (e) {
         return { valid: false, errors: ['JSONの形式が正しくありません'] };
       }
-
-      // レコード配列を抽出（エクスポート形式 or 生配列）
       var records;
-      if (parsed && Array.isArray(parsed.records)) {
-        records = parsed.records;
-      } else if (Array.isArray(parsed)) {
-        records = parsed;
-      } else {
-        return { valid: false, errors: ['データ形式が正しくありません。records配列またはレコード配列が必要です'] };
-      }
+      if (parsed && Array.isArray(parsed.records)) { records = parsed.records; }
+      else if (Array.isArray(parsed)) { records = parsed; }
+      else { return { valid: false, errors: ['データ形式が正しくありません'] }; }
 
       var errors = [];
       var datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
       for (var i = 0; i < records.length; i++) {
         var record = records[i];
         var prefix = 'レコード[' + i + ']: ';
-
-        if (!record || typeof record !== 'object') {
-          errors.push(prefix + 'オブジェクトではありません');
-          continue;
-        }
-
-        // id検証
-        if (typeof record.id !== 'string' || record.id === '') {
-          errors.push(prefix + 'idが不正です（文字列で必須）');
-        }
-
-        // zone_id検証
-        if (typeof record.zone_id !== 'string' || record.zone_id === '') {
-          errors.push(prefix + 'zone_idが不正です（文字列で必須）');
-        }
-
-        // date検証
-        if (typeof record.date !== 'string' || !datePattern.test(record.date)) {
-          errors.push(prefix + 'dateが不正です（YYYY-MM-DD形式で必須）');
-        }
-
-        // intensity検証
-        if (typeof record.intensity !== 'number' || record.intensity < 1 || record.intensity > 5 || Math.floor(record.intensity) !== record.intensity) {
-          errors.push(prefix + 'intensityが不正です（1-5の整数で必須）');
-        }
-
-        // created_at検証
-        if (typeof record.created_at !== 'string' || record.created_at === '') {
-          errors.push(prefix + 'created_atが不正です（文字列で必須）');
-        }
+        if (!record || typeof record !== 'object') { errors.push(prefix + 'オブジェクトではありません'); continue; }
+        if (typeof record.id !== 'string' || record.id === '') errors.push(prefix + 'idが不正です');
+        if (typeof record.zone_id !== 'string' || record.zone_id === '') errors.push(prefix + 'zone_idが不正です');
+        if (typeof record.date !== 'string' || !datePattern.test(record.date)) errors.push(prefix + 'dateが不正です');
+        if (typeof record.intensity !== 'number' || record.intensity < 1 || record.intensity > 5 || Math.floor(record.intensity) !== record.intensity) errors.push(prefix + 'intensityが不正です');
+        if (typeof record.created_at !== 'string' || record.created_at === '') errors.push(prefix + 'created_atが不正です');
       }
-
-      if (errors.length > 0) {
-        return { valid: false, errors: errors };
-      }
-
+      if (errors.length > 0) return { valid: false, errors: errors };
       return { valid: true, records: records };
     },
 
-    /**
-     * 既存レコードとインポートレコードをマージする（純粋関数）
-     * - Map<id>でO(n+m)マージ
-     * - 同一idはcreated_at比較で新しい方（後のISO文字列）を採用
-     * - ユニークidは全件残る
-     * @param {Array} existing - 既存TreatmentRecord配列
-     * @param {Array} imported - インポートTreatmentRecord配列
-     * @returns {Array} マージ済みTreatmentRecord配列（重複idなし）
-     */
     mergeRecords: function(existing, imported) {
       return mergeRecords(existing, imported);
     },
 
-    /**
-     * 全データをリセットする（records + settings を削除）
-     */
-    resetAll: function() {
-      localStorage.removeItem(STORAGE_KEYS.RECORDS);
-      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    resetAll: async function() {
+      try {
+        await client.from('hair_removal_records').delete().eq('person', _currentPerson);
+        await client.from('hair_removal_settings').upsert({
+          person: _currentPerson,
+          default_cycle_days: 30,
+          color_threshold_days: 30,
+          zone_cycles: {},
+          group_cycles: {},
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) { console.error('resetAll error:', e); }
+      _recordsCache = [];
+      _settingsCache = null;
+      invalidateStatsCache();
     },
 
-    /**
-     * データをインポートする
-     * @param {string} json - JSON文字列
-     * @param {'merge'|'replace'} mode - マージ or 置換
-     * @returns {{ success: boolean, error?: string, count?: number }}
-     */
-    importData: function(json, mode) {
+    importData: async function(json, mode) {
       var validation = this.validateImportData(json);
-      if (!validation.valid) {
-        return { success: false, error: validation.errors[0] };
-      }
-
+      if (!validation.valid) return { success: false, error: validation.errors[0] };
       var importedRecords = validation.records;
 
-      if (mode === 'merge') {
-        var existing = this.getRecords();
-        var merged = mergeRecords(existing, importedRecords);
-        var result = safeSave(STORAGE_KEYS.RECORDS, merged);
-        if (!result.success) {
-          return { success: false, error: result.error || 'ストレージ保存に失敗しました' };
+      if (mode === 'replace') {
+        await client.from('hair_removal_records').delete().eq('person', _currentPerson);
+        _recordsCache = [];
+      }
+
+      // Insert records
+      var insertRows = importedRecords.map(function(r) {
+        return {
+          id: r.id || crypto.randomUUID(),
+          person: _currentPerson,
+          zone_id: r.zone_id,
+          date: r.date,
+          intensity: r.intensity,
+          memo: r.memo || null,
+          photo: r.photo || null,
+          created_at: r.created_at || new Date().toISOString()
+        };
+      });
+
+      try {
+        if (insertRows.length > 0) {
+          var { error } = await client.from('hair_removal_records').upsert(insertRows);
+          if (error) throw error;
         }
+        // Reload cache
+        await this.loadRecords();
         invalidateStatsCache();
-        return { success: true, count: merged.length };
-      } else if (mode === 'replace') {
-        var result2 = safeSave(STORAGE_KEYS.RECORDS, importedRecords);
-        if (!result2.success) {
-          return { success: false, error: result2.error || 'ストレージ保存に失敗しました' };
-        }
-        invalidateStatsCache();
-        return { success: true, count: importedRecords.length };
-      } else {
-        return { success: false, error: '不正なモードです: ' + mode };
+        return { success: true, count: insertRows.length };
+      } catch (e) {
+        return { success: false, error: e.message || 'インポートに失敗しました' };
       }
     },
 
-    /**
-     * 写真ストレージの使用量（バイト数）を計算する
-     * 全レコードのphotoフィールドのbase64サイズ合計を返す
-     * @returns {number} バイト数
-     */
     getPhotoStorageUsage: function() {
       var records = this.getRecords();
       var totalBytes = 0;
       for (var i = 0; i < records.length; i++) {
-        if (records[i].photo) {
-          totalBytes += PhotoCompressor.getBase64Size(records[i].photo);
-        }
+        if (records[i].photo) totalBytes += PhotoCompressor.getBase64Size(records[i].photo);
       }
       return totalBytes;
     }
@@ -594,12 +601,12 @@
    * データリセットを実行する
    * 確認ダイアログ表示後、全データを削除してBody Mapをリフレッシュする
    */
-  function handleReset() {
+  async function handleReset() {
     var confirmed = confirm('本当にすべてのデータを削除しますか？\nこの操作は元に戻せません。');
     if (!confirmed) {
       return;
     }
-    StorageManager.resetAll();
+    await StorageManager.resetAll();
     invalidateStatsCache();
     refreshColors();
     showToast('すべてのデータを削除しました', 'success');
@@ -1554,7 +1561,7 @@
   /**
    * 設定UIの入力値からSettingsオブジェクトを構築して保存する
    */
-  function saveSettingsFromUI() {
+  async function saveSettingsFromUI() {
     var defaultCycleEl = document.getElementById('settings-default-cycle');
     var colorThresholdEl = document.getElementById('settings-color-threshold');
 
@@ -1582,7 +1589,7 @@
       group_cycles: groupCycles
     };
 
-    var result = StorageManager.saveSettings(newSettings);
+    var result = await StorageManager.saveSettings(newSettings);
     if (result.success) {
       showToast('設定を保存しました', 'success');
       refreshColors();
@@ -2878,7 +2885,7 @@
    * @param {string|null} memo - メモ
    * @returns {{ success: boolean, records: Array }}
    */
-  function batchSaveRecords(zoneIds, date, intensity, memo, photo) {
+  async function batchSaveRecords(zoneIds, date, intensity, memo, photo) {
     var records = [];
     for (var i = 0; i < zoneIds.length; i++) {
       var record = {
@@ -2893,17 +2900,41 @@
       records.push(record);
     }
 
-    // 既存レコードを取得して追加
-    var existing = StorageManager.getRecords();
-    var allRecords = existing.concat(records);
-    var result = safeSave(STORAGE_KEYS.RECORDS, allRecords);
+    // Supabaseに一括挿入
+    var insertRows = records.map(function(r) {
+      return {
+        id: r.id,
+        person: _currentPerson,
+        zone_id: r.zone_id,
+        date: r.date,
+        intensity: r.intensity,
+        memo: r.memo,
+        photo: r.photo,
+        created_at: r.created_at
+      };
+    });
 
-    if (result.success) {
+    try {
+      var { error } = await client.from('hair_removal_records').insert(insertRows);
+      if (error) throw error;
+      // キャッシュ更新
+      if (_recordsCache) {
+        _recordsCache = _recordsCache.concat(records);
+      }
       invalidateStatsCache();
       return { success: true, records: records };
-    } else {
+    } catch (e) {
+      console.error('batchSaveRecords error:', e);
       return { success: false, records: [] };
     }
+  }
+
+  /**
+   * Supabaseから現在の人物のデータをロードする
+   */
+  async function loadPersonData() {
+    await StorageManager.loadRecords();
+    await StorageManager.loadSettings();
   }
 
   // =========================================================
@@ -3029,7 +3060,7 @@
   /**
    * 初期化
    */
-  function init() {
+  async function init() {
     // タブバーのクリックイベント
     var tabBar = document.querySelector('.tab-bar');
     if (tabBar) {
@@ -3042,6 +3073,18 @@
       });
     }
 
+    // 人物セレクター
+    var personBtns = document.querySelectorAll('.person-btn');
+    personBtns.forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        personBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        setCurrentPerson(btn.dataset.person);
+        await loadPersonData();
+        refreshColors();
+      });
+    });
+
     // ハッシュ変更イベント
     window.addEventListener('hashchange', handleHashChange);
 
@@ -3050,6 +3093,9 @@
 
     // Body Map初期化 - 前面・背面同時表示
     initDualBodyMap();
+
+    // Supabaseからデータロード
+    await loadPersonData();
 
     // スワイプ選択の初期化
     initSwipeSelection();
@@ -3064,7 +3110,7 @@
     // BodyMapRendererの_bindEventsのclickはcallbackがnullなので発火しない
 
     // モーダル確定コールバック
-    TreatmentModal.onConfirm(function(data) {
+    TreatmentModal.onConfirm(async function(data) {
       if (data.isBatchMode) {
         // 一括保存 - スワイプ選択からゾーンIDを取得
         var zoneIds = _swipeSelectedZones.map(function(z) { return z.id; });
@@ -3072,7 +3118,7 @@
           var selectedZones = BodyMapRenderer.getSelectedZones();
           zoneIds = selectedZones.map(function(z) { return z.id; });
         }
-        var result = batchSaveRecords(zoneIds, data.date, data.intensity, data.memo, data.photo || null);
+        var result = await batchSaveRecords(zoneIds, data.date, data.intensity, data.memo, data.photo || null);
         if (result.success) {
           showToast(result.records.length + '件の施術記録を保存しました', 'success');
           clearSwipeSelection();
@@ -3092,7 +3138,7 @@
           photo: data.photo || null,
           created_at: new Date().toISOString()
         };
-        var saveResult = StorageManager.saveRecord(record);
+        var saveResult = await StorageManager.saveRecord(record);
         if (saveResult.success) {
           showToast('施術記録を保存しました', 'success');
           clearSwipeSelection();
