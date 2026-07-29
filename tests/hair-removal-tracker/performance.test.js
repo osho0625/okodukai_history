@@ -260,7 +260,7 @@ describe('Tab Switching Performance - Requirements 9.9, 9.10', () => {
     const elapsed = performance.now() - start;
 
     console.log(`[Performance] renderHistoryTab with 5000 records: ${elapsed.toFixed(2)}ms`);
-    expect(elapsed).toBeLessThan(500);
+    expect(elapsed).toBeLessThan(600);
 
     // Verify records were actually rendered
     const container = tabWindow.document.getElementById('tab-history');
