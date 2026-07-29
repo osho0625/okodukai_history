@@ -2061,13 +2061,26 @@
     if (typeof BODY_MAP_DATA !== 'undefined') {
       var frontZones = BODY_MAP_DATA.front || [];
       var frontColorMap = buildColorMap(frontZones, records, settings.color_threshold_days);
-      BodyMapRenderer.updateColors(frontColorMap);
+      // Front SVG のパスを直接更新
+      var frontContainer = document.getElementById('body-map-container-front');
+      if (frontContainer) {
+        var frontPaths = frontContainer.querySelectorAll('svg path[data-zone-id]');
+        frontPaths.forEach(function(path) {
+          var zoneId = path.getAttribute('data-zone-id');
+          if (frontColorMap[zoneId]) path.setAttribute('fill', frontColorMap[zoneId]);
+        });
+      }
 
       // 背面ゾーンの色適用
-      if (BodyMapRendererBack) {
-        var backZones = BODY_MAP_DATA.back || [];
-        var backColorMap = buildColorMap(backZones, records, settings.color_threshold_days);
-        BodyMapRendererBack.updateColors(backColorMap);
+      var backZones = BODY_MAP_DATA.back || [];
+      var backColorMap = buildColorMap(backZones, records, settings.color_threshold_days);
+      var backContainer = document.getElementById('body-map-container-back');
+      if (backContainer) {
+        var backPaths = backContainer.querySelectorAll('svg path[data-zone-id]');
+        backPaths.forEach(function(path) {
+          var zoneId = path.getAttribute('data-zone-id');
+          if (backColorMap[zoneId]) path.setAttribute('fill', backColorMap[zoneId]);
+        });
       }
     }
 
@@ -3012,25 +3025,8 @@
     // 複数選択マネージャ初期化
     MultiSelectManager.init();
 
-    // タップコールバック: 単一ゾーンタップ → モーダル表示 or 複数選択トグル
-    BodyMapRenderer.onZoneTap(function(zoneId, zoneName) {
-      if (MultiSelectManager.isActive()) {
-        // 複数選択モードならゾーンをトグル
-        MultiSelectManager.toggleZone(zoneId, zoneName);
-      } else {
-        // 単一ゾーンタップ → モーダル表示
-        TreatmentModal.open(zoneId, zoneName);
-      }
-    });
-
-    // 長押しコールバック: 複数選択モード開始
-    BodyMapRenderer.onZoneLongPress(function(zoneId, zoneName) {
-      if (!MultiSelectManager.isActive()) {
-        MultiSelectManager.activate();
-        // 長押しされたゾーンを最初の選択に追加
-        MultiSelectManager.toggleZone(zoneId, zoneName);
-      }
-    });
+    // タップ/長押しコールバックは不使用（なぞり選択に統一）
+    // BodyMapRendererの_bindEventsのclickはcallbackがnullなので発火しない
 
     // モーダル確定コールバック
     TreatmentModal.onConfirm(function(data) {
