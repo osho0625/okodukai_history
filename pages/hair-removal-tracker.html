@@ -27,11 +27,23 @@
 
 <!-- マップタブ -->
 <div id="tab-map" class="tab-content active">
-  <div class="body-map-toggle">
-    <button id="side-toggle-btn" class="side-toggle-btn" data-side="front">前面 / 背面</button>
+  <div id="body-map-dual" class="body-map-dual">
+    <div class="body-map-column">
+      <div class="body-map-side-label">前面</div>
+      <div id="body-map-container-front" class="body-map-container"></div>
+    </div>
+    <div class="body-map-column">
+      <div class="body-map-side-label">背面</div>
+      <div id="body-map-container-back" class="body-map-container"></div>
+    </div>
   </div>
-  <div id="body-map-container" class="body-map-container"></div>
   <div id="body-map-tooltip" class="body-map-tooltip"></div>
+  <!-- 選択バー（なぞり選択後に表示） -->
+  <div id="swipe-select-bar" class="swipe-select-bar" style="display:none;">
+    <span id="swipe-select-count">0</span>件選択中
+    <button id="swipe-select-clear" class="swipe-select-btn clear">解除</button>
+    <button id="swipe-select-record" class="swipe-select-btn record">記録する</button>
+  </div>
 </div>
 
 <!-- 履歴タブ -->
@@ -89,12 +101,6 @@
       <button id="modal-confirm">保存</button>
     </div>
   </div>
-</div>
-
-<!-- 複数選択モードUI -->
-<div id="multi-select-bar" class="multi-select-bar" style="display:none;">
-  <button id="multi-select-deselect" class="multi-select-btn deselect">選択解除</button>
-  <button id="multi-select-save" class="multi-select-btn save">記録する (<span id="multi-select-count">0</span>件)</button>
 </div>
 
 <!-- トースト通知 -->

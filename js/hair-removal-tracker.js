@@ -2029,6 +2029,8 @@
   /**
    * ヒートマップ色を再計算してBody Mapに適用する
    */
+  var BodyMapRendererBack = null;
+
   var refreshColors = function() {
     // レコードを取得
     var records = [];
@@ -2055,21 +2057,167 @@
       // デフォルト設定を使用
     }
 
-    // 現在表示中のゾーンを取得
-    var zones = [];
+    // 前面ゾーンの色適用
     if (typeof BODY_MAP_DATA !== 'undefined') {
-      var side = BodyMapRenderer._currentSide || 'front';
-      zones = BODY_MAP_DATA[side] || [];
-    }
+      var frontZones = BODY_MAP_DATA.front || [];
+      var frontColorMap = buildColorMap(frontZones, records, settings.color_threshold_days);
+      BodyMapRenderer.updateColors(frontColorMap);
 
-    // 色マップ生成・適用
-    var colorMap = buildColorMap(zones, records, settings.color_threshold_days);
-    BodyMapRenderer.updateColors(colorMap);
+      // 背面ゾーンの色適用
+      if (BodyMapRendererBack) {
+        var backZones = BODY_MAP_DATA.back || [];
+        var backColorMap = buildColorMap(backZones, records, settings.color_threshold_days);
+        BodyMapRendererBack.updateColors(backColorMap);
+      }
+    }
 
     // 要施術リスト・サマリー更新
     renderOverdueList();
     renderSummaryDashboard();
   };
+
+  // =========================================================
+  // Swipe Selection - なぞり選択
+  // =========================================================
+
+  var _swipeSelecting = false;
+  var _swipeSelectedZones = []; // [{id, name}]
+
+  function initSwipeSelection() {
+    var containers = [
+      document.getElementById('body-map-container-front'),
+      document.getElementById('body-map-container-back')
+    ];
+
+    containers.forEach(function(container) {
+      if (!container) return;
+      var svg = container.querySelector('svg');
+      if (!svg) return;
+
+      // Touch events for swipe selection
+      svg.addEventListener('touchstart', function(e) {
+        _swipeSelecting = true;
+        var path = getZonePathFromPoint(svg, e.touches[0]);
+        if (path) addToSwipeSelection(path);
+      }, { passive: false });
+
+      svg.addEventListener('touchmove', function(e) {
+        if (!_swipeSelecting) return;
+        e.preventDefault(); // スクロール防止
+        var path = getZonePathFromPoint(svg, e.touches[0]);
+        if (path) addToSwipeSelection(path);
+      }, { passive: false });
+
+      svg.addEventListener('touchend', function() {
+        _swipeSelecting = false;
+        updateSwipeSelectBar();
+      });
+
+      svg.addEventListener('touchcancel', function() {
+        _swipeSelecting = false;
+      });
+
+      // Mouse events for desktop
+      svg.addEventListener('mousedown', function(e) {
+        _swipeSelecting = true;
+        var path = getZonePathFromMouse(e);
+        if (path) addToSwipeSelection(path);
+      });
+
+      svg.addEventListener('mousemove', function(e) {
+        if (!_swipeSelecting) return;
+        var path = getZonePathFromMouse(e);
+        if (path) addToSwipeSelection(path);
+      });
+
+      svg.addEventListener('mouseup', function() {
+        _swipeSelecting = false;
+        updateSwipeSelectBar();
+      });
+
+      svg.addEventListener('mouseleave', function() {
+        if (_swipeSelecting) {
+          _swipeSelecting = false;
+          updateSwipeSelectBar();
+        }
+      });
+    });
+
+    // 選択バーのイベント
+    var clearBtn = document.getElementById('swipe-select-clear');
+    var recordBtn = document.getElementById('swipe-select-record');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() { clearSwipeSelection(); });
+    }
+    if (recordBtn) {
+      recordBtn.addEventListener('click', function() { openRecordFromSwipeSelection(); });
+    }
+  }
+
+  function getZonePathFromPoint(svg, touch) {
+    var rect = svg.getBoundingClientRect();
+    var x = touch.clientX - rect.left;
+    var y = touch.clientY - rect.top;
+    // SVG座標に変換
+    var svgX = x * (400 / rect.width);
+    var svgY = y * (800 / rect.height);
+    // elementsFromPoint を使用
+    var elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+    for (var i = 0; i < elements.length; i++) {
+      if (elements[i].tagName === 'path' && elements[i].hasAttribute('data-zone-id')) {
+        return elements[i];
+      }
+    }
+    return null;
+  }
+
+  function getZonePathFromMouse(e) {
+    if (e.target && e.target.tagName === 'path' && e.target.hasAttribute('data-zone-id')) {
+      return e.target;
+    }
+    return null;
+  }
+
+  function addToSwipeSelection(pathEl) {
+    var zoneId = pathEl.getAttribute('data-zone-id');
+    var zoneName = pathEl.getAttribute('data-zone-name');
+    // 既に選択済みならスキップ
+    for (var i = 0; i < _swipeSelectedZones.length; i++) {
+      if (_swipeSelectedZones[i].id === zoneId) return;
+    }
+    _swipeSelectedZones.push({ id: zoneId, name: zoneName });
+    pathEl.classList.add('body-zone-selected');
+    updateSwipeSelectBar();
+  }
+
+  function updateSwipeSelectBar() {
+    var bar = document.getElementById('swipe-select-bar');
+    var count = document.getElementById('swipe-select-count');
+    if (!bar) return;
+    if (_swipeSelectedZones.length > 0) {
+      bar.style.display = 'flex';
+      if (count) count.textContent = _swipeSelectedZones.length;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  function clearSwipeSelection() {
+    // 全SVGから選択ハイライトを除去
+    var paths = document.querySelectorAll('.body-map-container svg path.body-zone-selected');
+    paths.forEach(function(p) { p.classList.remove('body-zone-selected'); });
+    _swipeSelectedZones = [];
+    updateSwipeSelectBar();
+  }
+
+  function openRecordFromSwipeSelection() {
+    if (_swipeSelectedZones.length === 0) return;
+    if (_swipeSelectedZones.length === 1) {
+      TreatmentModal.open(_swipeSelectedZones[0].id, _swipeSelectedZones[0].name);
+    } else {
+      TreatmentModal.openBatch(_swipeSelectedZones);
+    }
+  }
 
   // =========================================================
   // Treatment Modal - 施術記録モーダル管理
@@ -2525,16 +2673,14 @@
    * @param {Array} overdueZones - getOverdueZones()の結果
    */
   function updateOverdueIndicators(overdueZones) {
-    if (!BodyMapRenderer._svgEl) return;
+    // 両方のSVGから既存のoverdue classを全て削除
+    var allPaths = document.querySelectorAll('.body-map-container svg path.body-zone-overdue');
+    allPaths.forEach(function(p) { p.classList.remove('body-zone-overdue'); });
 
-    // 既存のoverdue classを全て削除
-    var paths = BodyMapRenderer._svgEl.querySelectorAll('path.body-zone-overdue');
-    paths.forEach(function(p) { p.classList.remove('body-zone-overdue'); });
-
-    // overdueゾーンにclassを追加
+    // overdueゾーンにclassを追加（両方のSVGを検索）
     for (var i = 0; i < overdueZones.length; i++) {
       var zoneId = overdueZones[i].zone.id;
-      var path = BodyMapRenderer._svgEl.querySelector('path[data-zone-id="' + zoneId + '"]');
+      var path = document.querySelector('.body-map-container svg path[data-zone-id="' + zoneId + '"]');
       if (path) {
         path.classList.add('body-zone-overdue');
       }
@@ -2800,8 +2946,18 @@
     // 初期表示
     handleHashChange();
 
-    // Body Map初期化
-    BodyMapRenderer.init('body-map-container', 'front');
+    // Body Map初期化 - 前面・背面同時表示
+    BodyMapRenderer.init('body-map-container-front', 'front');
+    BodyMapRendererBack = Object.create(BodyMapRenderer);
+    BodyMapRendererBack._containerId = null;
+    BodyMapRendererBack._svgEl = null;
+    BodyMapRendererBack._zones = [];
+    BodyMapRendererBack._selectedZones = [];
+    BodyMapRendererBack._multiSelectMode = false;
+    BodyMapRendererBack.init('body-map-container-back', 'back');
+
+    // スワイプ選択の初期化
+    initSwipeSelection();
 
     // モーダル初期化
     TreatmentModal.init();
@@ -2832,12 +2988,16 @@
     // モーダル確定コールバック
     TreatmentModal.onConfirm(function(data) {
       if (data.isBatchMode) {
-        // 一括保存（バッチモードでは写真は各レコードに付与）
-        var selectedZones = BodyMapRenderer.getSelectedZones();
-        var zoneIds = selectedZones.map(function(z) { return z.id; });
+        // 一括保存 - スワイプ選択からゾーンIDを取得
+        var zoneIds = _swipeSelectedZones.map(function(z) { return z.id; });
+        if (zoneIds.length === 0) {
+          var selectedZones = BodyMapRenderer.getSelectedZones();
+          zoneIds = selectedZones.map(function(z) { return z.id; });
+        }
         var result = batchSaveRecords(zoneIds, data.date, data.intensity, data.memo, data.photo || null);
         if (result.success) {
           showToast(result.records.length + '件の施術記録を保存しました', 'success');
+          clearSwipeSelection();
           MultiSelectManager.deactivate();
           refreshColors();
         } else {
@@ -2857,6 +3017,7 @@
         var saveResult = StorageManager.saveRecord(record);
         if (saveResult.success) {
           showToast('施術記録を保存しました', 'success');
+          clearSwipeSelection();
           refreshColors();
         } else {
           showToast('保存に失敗しました: ' + (saveResult.error || ''), 'error');

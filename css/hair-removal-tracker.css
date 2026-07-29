@@ -76,7 +76,24 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 .toast.info { background: #1976d2; color: #fff; }
 .toast.show { display: block; }
 
-/* Body Map コンテナ */
+/* Body Map コンテナ - 前面/背面 縦並び同時表示 */
+.body-map-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0 4px;
+}
+.body-map-column {
+  width: 100%;
+}
+.body-map-side-label {
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #7b1fa2;
+  margin-bottom: 4px;
+}
 .body-map-container {
   display: flex;
   justify-content: center;
@@ -86,9 +103,10 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 }
 .body-map-container svg {
   width: 100%;
-  max-width: 400px;
+  max-width: 320px;
   height: auto;
   display: block;
+  touch-action: none; /* スワイプ選択のためスクロール無効化 */
 }
 .body-map-container svg path {
   fill: #ccc;
@@ -106,32 +124,48 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
   opacity: 0.6;
 }
 
-/* 前面/背面切替トグル */
-.body-map-toggle {
+/* なぞり選択バー */
+.swipe-select-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-}
-.side-toggle-btn {
-  padding: 10px 24px;
-  border: 2px solid #7b1fa2;
-  border-radius: 20px;
+  gap: 12px;
+  padding: 12px 20px;
   background: #fff;
-  color: #7b1fa2;
+  border-top: 2px solid #7b1fa2;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 250;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #333;
+}
+.swipe-select-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
   font-size: 0.95em;
   font-weight: 600;
   cursor: pointer;
-  min-width: 44px;
   min-height: 44px;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s;
 }
-.side-toggle-btn:hover {
+.swipe-select-btn.clear {
+  background: #f5f5f5;
+  color: #666;
+}
+.swipe-select-btn.clear:hover {
+  background: #eee;
+}
+.swipe-select-btn.record {
   background: #7b1fa2;
   color: #fff;
 }
-.side-toggle-btn:active {
+.swipe-select-btn.record:hover {
   background: #6a1b9a;
-  color: #fff;
 }
 
 /* ツールチップ */
@@ -174,12 +208,13 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
   .toast.error { background: #c62828; }
   .toast.success { background: #2e7d32; }
   .toast.info { background: #1565c0; }
-  .side-toggle-btn { background: #2a2a2a; border-color: #ce93d8; color: #ce93d8; }
-  .side-toggle-btn:hover { background: #ce93d8; color: #1a1a1a; }
-  .side-toggle-btn:active { background: #ab47bc; color: #fff; }
+  .body-map-side-label { color: #ce93d8; }
   .body-map-container svg path { fill: #555; stroke: #777; }
   .body-map-container svg path:hover { stroke: #aaa; }
   .body-map-tooltip { background: rgba(50, 50, 50, 0.95); }
+  .swipe-select-bar { background: #2a2a2a; border-top-color: #ce93d8; color: #e0e0e0; }
+  .swipe-select-btn.clear { background: #3a3a3a; color: #ccc; }
+  .swipe-select-btn.record { background: #ce93d8; color: #1a1a1a; }
 }
 
 /* =========================================================
