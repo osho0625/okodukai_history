@@ -2081,30 +2081,9 @@
   }
 
   var refreshColors = function() {
-    // レコードを取得
-    var records = [];
-    try {
-      var stored = localStorage.getItem('hair_removal_records');
-      if (stored) {
-        records = JSON.parse(stored);
-      }
-    } catch (e) {
-      records = [];
-    }
-
-    // 設定を取得
-    var settings = { color_threshold_days: 30 };
-    try {
-      var storedSettings = localStorage.getItem('hair_removal_settings');
-      if (storedSettings) {
-        var parsed = JSON.parse(storedSettings);
-        if (parsed.color_threshold_days) {
-          settings.color_threshold_days = parsed.color_threshold_days;
-        }
-      }
-    } catch (e) {
-      // デフォルト設定を使用
-    }
+    // キャッシュからレコードと設定を取得（Supabaseから既にロード済み）
+    var records = StorageManager.getRecords();
+    var settings = StorageManager.getSettings();
 
     // 前面ゾーンの色適用
     if (typeof BODY_MAP_DATA !== 'undefined') {
