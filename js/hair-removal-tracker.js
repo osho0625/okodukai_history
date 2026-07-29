@@ -2031,6 +2031,48 @@
    */
   var BodyMapRendererBack = null;
 
+  /**
+   * 前面・背面のBody MapをSVGとして描画する（シンプルDOM直接操作）
+   */
+  function initDualBodyMap() {
+    if (typeof BODY_MAP_DATA === 'undefined') return;
+
+    var frontContainer = document.getElementById('body-map-container-front');
+    var backContainer = document.getElementById('body-map-container-back');
+
+    if (frontContainer) {
+      renderBodyMapSVG(frontContainer, BODY_MAP_DATA.front || []);
+    }
+    if (backContainer) {
+      renderBodyMapSVG(backContainer, BODY_MAP_DATA.back || []);
+    }
+  }
+
+  /**
+   * 指定コンテナにSVG Body Mapを描画する
+   */
+  function renderBodyMapSVG(container, zones) {
+    container.innerHTML = '';
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 400 800');
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Body Map');
+
+    for (var i = 0; i < zones.length; i++) {
+      var zone = zones[i];
+      if (!zone.svgPath) continue;
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', zone.svgPath);
+      path.setAttribute('data-zone-id', zone.id);
+      path.setAttribute('data-zone-name', zone.name);
+      path.setAttribute('fill', '#ccc');
+      svg.appendChild(path);
+    }
+
+    container.appendChild(svg);
+  }
+
   var refreshColors = function() {
     // レコードを取得
     var records = [];
@@ -3007,14 +3049,7 @@
     handleHashChange();
 
     // Body Map初期化 - 前面・背面同時表示
-    BodyMapRenderer.init('body-map-container-front', 'front');
-    BodyMapRendererBack = Object.create(BodyMapRenderer);
-    BodyMapRendererBack._containerId = null;
-    BodyMapRendererBack._svgEl = null;
-    BodyMapRendererBack._zones = [];
-    BodyMapRendererBack._selectedZones = [];
-    BodyMapRendererBack._multiSelectMode = false;
-    BodyMapRendererBack.init('body-map-container-back', 'back');
+    initDualBodyMap();
 
     // スワイプ選択の初期化
     initSwipeSelection();
