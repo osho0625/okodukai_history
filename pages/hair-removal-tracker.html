@@ -33,14 +33,21 @@
 
 <!-- マップタブ -->
 <div id="tab-map" class="tab-content active">
-  <div id="body-map-dual" class="body-map-dual">
-    <div class="body-map-column">
-      <div class="body-map-side-label">前面</div>
-      <div id="body-map-container-front" class="body-map-container"></div>
+  <div class="map-layout">
+    <div class="map-body-area">
+      <div id="body-map-dual" class="body-map-dual">
+        <div class="body-map-column">
+          <div class="body-map-side-label">前面</div>
+          <div id="body-map-container-front" class="body-map-container"></div>
+        </div>
+        <div class="body-map-column">
+          <div class="body-map-side-label">背面</div>
+          <div id="body-map-container-back" class="body-map-container"></div>
+        </div>
+      </div>
     </div>
-    <div class="body-map-column">
-      <div class="body-map-side-label">背面</div>
-      <div id="body-map-container-back" class="body-map-container"></div>
+    <div class="map-info-panel" id="zone-info-panel">
+      <div class="zone-info-empty">ゾーンをタップすると情報を表示</div>
     </div>
   </div>
   <div id="body-map-tooltip" class="body-map-tooltip"></div>

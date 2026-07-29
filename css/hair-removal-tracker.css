@@ -101,6 +101,84 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 .toast.show { display: block; }
 
 /* Body Map コンテナ - 前面/背面 縦並び同時表示 */
+.map-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.map-body-area {
+  flex: 1;
+  min-width: 0;
+}
+.map-info-panel {
+  width: 200px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+.zone-info-empty {
+  color: #aaa;
+  font-size: 0.85em;
+  text-align: center;
+  padding: 20px 0;
+}
+.zone-info-name {
+  font-weight: 700;
+  font-size: 1em;
+  color: #7b1fa2;
+  margin-bottom: 8px;
+}
+.zone-info-date {
+  font-size: 0.85em;
+  color: #555;
+  margin-bottom: 4px;
+}
+.zone-info-elapsed {
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.zone-info-elapsed.green { color: #4caf50; }
+.zone-info-elapsed.yellow { color: #ff9800; }
+.zone-info-elapsed.red { color: #e53935; }
+.zone-info-no-record {
+  font-size: 0.85em;
+  color: #aaa;
+  font-style: italic;
+}
+.zone-info-history {
+  margin-top: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+.zone-info-history-title {
+  font-size: 0.8em;
+  color: #888;
+  margin-bottom: 4px;
+}
+.zone-info-history-item {
+  font-size: 0.8em;
+  color: #666;
+  padding: 2px 0;
+}
+
+@media (max-width: 700px) {
+  .map-layout {
+    flex-direction: column;
+  }
+  .map-info-panel {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+}
+
 .body-map-dual {
   display: flex;
   flex-direction: column;
@@ -239,6 +317,16 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
   .swipe-select-bar { background: #2a2a2a; border-top-color: #ce93d8; color: #e0e0e0; }
   .swipe-select-btn.clear { background: #3a3a3a; color: #ccc; }
   .swipe-select-btn.record { background: #ce93d8; color: #1a1a1a; }
+  .map-info-panel { background: #2a2a2a; }
+  .zone-info-empty { color: #777; }
+  .zone-info-name { color: #ce93d8; }
+  .zone-info-date { color: #bbb; }
+  .zone-info-no-record { color: #777; }
+  .zone-info-history { border-top-color: #444; }
+  .zone-info-history-title { color: #999; }
+  .zone-info-history-item { color: #aaa; }
+  .person-btn { border-color: #ce93d8; color: #ce93d8; }
+  .person-btn.active { background: #ce93d8; color: #1a1a1a; }
 }
 
 /* =========================================================

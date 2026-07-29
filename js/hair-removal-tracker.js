@@ -2276,6 +2276,60 @@
       if (path) path.classList.remove('body-zone-selected');
     }
     // 未選択の場合は addToSwipeSelection で既に追加済みなので何もしない
+
+    // タップされたゾーンの情報を表示
+    showZoneInfoPanel(zoneId);
+  }
+
+  /**
+   * ゾーン情報パネルに前回施術情報を表示する
+   */
+  function showZoneInfoPanel(zoneId) {
+    var panel = document.getElementById('zone-info-panel');
+    if (!panel) return;
+
+    var zoneName = getZoneNameById(zoneId);
+    var records = StorageManager.getRecords();
+    var zoneRecords = records.filter(function(r) { return r.zone_id === zoneId; });
+
+    // 日付降順ソート
+    zoneRecords.sort(function(a, b) { return b.date > a.date ? 1 : b.date < a.date ? -1 : 0; });
+
+    var html = '<div class="zone-info-name">' + zoneName + '</div>';
+
+    if (zoneRecords.length === 0) {
+      html += '<div class="zone-info-no-record">施術記録なし</div>';
+    } else {
+      var lastRecord = zoneRecords[0];
+      var now = Date.now();
+      var elapsed = Math.floor((now - Date.parse(lastRecord.date)) / 86400000);
+
+      html += '<div class="zone-info-date">前回: ' + lastRecord.date + '</div>';
+
+      var elapsedClass = elapsed <= 10 ? 'green' : elapsed <= 25 ? 'yellow' : 'red';
+      html += '<div class="zone-info-elapsed ' + elapsedClass + '">' + elapsed + '日前</div>';
+
+      if (lastRecord.intensity) {
+        html += '<div class="zone-info-date">強度: ' + lastRecord.intensity + '</div>';
+      }
+      if (lastRecord.memo) {
+        html += '<div class="zone-info-date">メモ: ' + lastRecord.memo + '</div>';
+      }
+
+      // 過去の施術履歴（最大5件）
+      if (zoneRecords.length > 1) {
+        html += '<div class="zone-info-history">';
+        html += '<div class="zone-info-history-title">履歴（直近' + Math.min(zoneRecords.length, 5) + '件）</div>';
+        for (var i = 0; i < Math.min(zoneRecords.length, 5); i++) {
+          var r = zoneRecords[i];
+          var daysAgo = Math.floor((now - Date.parse(r.date)) / 86400000);
+          html += '<div class="zone-info-history-item">' + r.date + ' (' + daysAgo + '日前) 強度' + r.intensity + '</div>';
+        }
+        html += '</div>';
+      }
+    }
+
+    panel.innerHTML = html;
   }
 
   function updateSwipeSelectBar() {
