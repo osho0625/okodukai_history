@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/07/09 v2.31.1
+最終更新: 2026/07/29 v2.33.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -28,6 +28,7 @@ inclusion: auto
 | テキサスホールデム、ポーカー、texas | `.kiro/steering/texas-holdem.md` |
 | 精算、settlement、精算機能 | `.kiro/steering/family-settlement.md` |
 | レシピ、recipe、料理 | `.kiro/steering/recipe.md` |
+| 脱毛、hair-removal、Body Map | `.kiro/steering/hair-removal-tracker.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -47,7 +48,7 @@ inclusion: auto
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
 ├── sw.js               # Service Worker (v272, Push通知対応)
-├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css）
+├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
 ├── images/             # アプリアイコン・ゲーム画像
@@ -63,6 +64,8 @@ inclusion: auto
 ├── sql/                # DBマイグレーション
 ├── backups/            # 自動バックアップJSON
 ├── .kiro/specs/today-science/ # 今日のサイエンス機能データ
+├── .kiro/specs/hair-removal-tracker/ # 脱毛周期管理アプリspec
+├── tests/hair-removal-tracker/  # 脱毛周期管理テスト（12ファイル/161テスト）
 ├── docs/               # 開発者ドキュメント
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, push-notify)
 ```
@@ -250,7 +253,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.31.1
+- 現在: v2.33.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -317,3 +320,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `texas-holdem.md` — テキサスホールデム ルールガイド
 - `family-settlement.md` — 家庭内精算機能
 - `recipe.md` — 家族レシピ管理
+- `hair-removal-tracker.md` — 脱毛周期管理アプリ

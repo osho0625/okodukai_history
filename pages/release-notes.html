@@ -36,6 +36,23 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.33.0</span><span class="date">2026/07/29</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 脱毛周期管理アプリ新規追加（Body Map・ヒートマップ・施術記録・履歴・統計・写真・データ管理）</li>
+    <li><span class="tag tag-feat">feat</span> SVG人体図（前面107/背面96ゾーン）でタップ/長押し施術記録</li>
+    <li><span class="tag tag-feat">feat</span> HSLヒートマップ色計算（経過日数で緑→赤グラデーション）</li>
+    <li><span class="tag tag-feat">feat</span> 統計タブ（月別チャート・強度分布・Top5ゾーン・カバー率）</li>
+    <li><span class="tag tag-feat">feat</span> データ管理（JSON エクスポート/インポート/マージ/リセット）</li>
+    <li><span class="tag tag-feat">feat</span> 写真記録（Canvas圧縮・4MB制限・サムネイル・拡大表示）</li>
+    <li><span class="tag tag-feat">feat</span> パフォーマンス最適化（履歴ページネーション・統計キャッシュ）</li>
+    <li><span class="tag tag-fix">fix</span> 写真サイズ計算のpadding考慮統一</li>
+    <li><span class="tag tag-fix">fix</span> インポート時の統計キャッシュ無効化漏れ修正</li>
+    <li><span class="tag tag-fix">fix</span> ヒートマップ色計算のゼロ除算ガード追加</li>
+    <li><span class="tag tag-fix">fix</span> 写真ビューアーのXSS対策（DOM API使用に変更）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.32.1</span><span class="date">2026/07/13</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> 空のリマインダー通知が届く問題を修正（body空チェック追加）</li>

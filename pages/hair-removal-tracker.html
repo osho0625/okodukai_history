@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7b1fa2">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>脱毛周期管理 - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<link rel="stylesheet" href="../css/hair-removal-tracker.css">
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" class="home-btn">🏠</a>
+<h1>✨ 脱毛周期管理</h1>
+
+<!-- タブバー -->
+<div class="tab-bar">
+  <button class="active" data-tab="map">マップ</button>
+  <button data-tab="history">履歴</button>
+  <button data-tab="stats">統計</button>
+  <button data-tab="settings">設定</button>
+</div>
+
+<!-- マップタブ -->
+<div id="tab-map" class="tab-content active">
+  <div class="body-map-toggle">
+    <button id="side-toggle-btn" class="side-toggle-btn" data-side="front">前面 / 背面</button>
+  </div>
+  <div id="body-map-container" class="body-map-container"></div>
+  <div id="body-map-tooltip" class="body-map-tooltip"></div>
+</div>
+
+<!-- 履歴タブ -->
+<div id="tab-history" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">📋</div>
+    <div>施術履歴はまだありません</div>
+  </div>
+</div>
+
+<!-- 統計タブ -->
+<div id="tab-stats" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">📊</div>
+    <div>統計データはまだありません</div>
+  </div>
+</div>
+
+<!-- 設定タブ -->
+<div id="tab-settings" class="tab-content">
+  <div class="empty-state">
+    <div class="emoji">⚙️</div>
+    <div>設定を読み込み中...</div>
+  </div>
+</div>
+
+<!-- 施術記録モーダル -->
+<div id="treatment-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header"><span id="modal-zone-name"></span></div>
+    <div class="modal-body">
+      <label for="modal-date">施術日</label>
+      <input type="date" id="modal-date">
+      <label>レーザー強さ</label>
+      <div class="intensity-selector" id="modal-intensity">
+        <label class="intensity-option"><input type="radio" name="intensity" value="1"><span class="intensity-label">1</span><span class="intensity-text">とても弱い</span></label>
+        <label class="intensity-option"><input type="radio" name="intensity" value="2"><span class="intensity-label">2</span><span class="intensity-text">弱い</span></label>
+        <label class="intensity-option"><input type="radio" name="intensity" value="3" checked><span class="intensity-label">3</span><span class="intensity-text">普通</span></label>
+        <label class="intensity-option"><input type="radio" name="intensity" value="4"><span class="intensity-label">4</span><span class="intensity-text">強い</span></label>
+        <label class="intensity-option"><input type="radio" name="intensity" value="5"><span class="intensity-label">5</span><span class="intensity-text">とても強い</span></label>
+      </div>
+      <label for="modal-memo">メモ（任意）</label>
+      <textarea id="modal-memo" placeholder="肌の状態など..."></textarea>
+      <div class="photo-attachment-section">
+        <input type="file" id="modal-photo-input" accept="image/*" capture="environment" style="display:none;">
+        <button type="button" id="modal-photo-btn" class="photo-attach-btn">📷 写真を添付</button>
+        <div id="modal-photo-preview" class="photo-preview" style="display:none;">
+          <img id="modal-photo-thumb" class="photo-thumbnail" alt="添付写真">
+          <button type="button" id="modal-photo-remove" class="photo-remove-btn">写真を削除</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="modal-cancel">キャンセル</button>
+      <button id="modal-confirm">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 複数選択モードUI -->
+<div id="multi-select-bar" class="multi-select-bar" style="display:none;">
+  <button id="multi-select-deselect" class="multi-select-btn deselect">選択解除</button>
+  <button id="multi-select-save" class="multi-select-btn save">記録する (<span id="multi-select-count">0</span>件)</button>
+</div>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+
+<script src="../js/body-map-data.js"></script>
+<script src="../js/hair-removal-tracker.js"></script>
+</body>
+</html>

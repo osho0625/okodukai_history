@@ -23,6 +23,7 @@
 | `texas-holdem.md` | `*texas*,*holdem*,*poker-guide*` を開いた時 | テキサスホールデム ルールガイド |
 | `family-settlement.md` | `*settlement*` ファイルを開いた時 | 家庭内精算機能 |
 | `recipe.md` | `*recipe*` ファイルを開いた時 | 家族レシピ管理 |
+| `hair-removal-tracker.md` | `*hair-removal*` ファイルを開いた時 | 脱毛周期管理アプリ |
 
 ## 機能一覧
 
@@ -41,6 +42,7 @@
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
 | チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |
+| 脱毛周期管理 | pages/hair-removal-tracker.html | Body Mapヒートマップ・施術記録・統計・写真管理 |
 
 ## CSS構成
 
@@ -50,6 +52,7 @@
 | `css/kanji-test.css` | 漢字テスト |
 | `css/puyo-escape.css` | ぷよ脱出演出 |
 | `css/texas-holdem.css` | テキサスホールデム ルールガイド |
+| `css/hair-removal-tracker.css` | 脱毛周期管理アプリ |
 
 ## 運用
 
