@@ -109,11 +109,11 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
   touch-action: none; /* スワイプ選択のためスクロール無効化 */
 }
 .body-map-container svg path {
-  fill: #ccc;
+  /* fill はJSで動的に設定（ヒートマップ色） */
   stroke: #999;
   stroke-width: 0.5;
   cursor: pointer;
-  transition: fill 0.2s, opacity 0.15s;
+  transition: opacity 0.15s;
 }
 .body-map-container svg path:hover {
   opacity: 0.8;
@@ -209,7 +209,7 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
   .toast.success { background: #2e7d32; }
   .toast.info { background: #1565c0; }
   .body-map-side-label { color: #ce93d8; }
-  .body-map-container svg path { fill: #555; stroke: #777; }
+  .body-map-container svg path { stroke: #777; }
   .body-map-container svg path:hover { stroke: #aaa; }
   .body-map-tooltip { background: rgba(50, 50, 50, 0.95); }
   .swipe-select-bar { background: #2a2a2a; border-top-color: #ce93d8; color: #e0e0e0; }
