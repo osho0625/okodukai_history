@@ -2599,7 +2599,7 @@
     activate: function() {
       this._active = true;
       BodyMapRenderer.setMultiSelectMode(true);
-      this._barEl.style.display = 'flex';
+      if (this._barEl) this._barEl.style.display = 'flex';
       this._updateCount();
     },
 
@@ -2609,7 +2609,7 @@
     deactivate: function() {
       this._active = false;
       BodyMapRenderer.setMultiSelectMode(false);
-      this._barEl.style.display = 'none';
+      if (this._barEl) this._barEl.style.display = 'none';
       this._updateCount();
     },
 
