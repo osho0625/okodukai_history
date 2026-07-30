@@ -17,7 +17,6 @@ export function getDefaultSettings() {
   return {
     proxies: [
       { name: "allorigins", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
-      { name: "everyorigin", urlPrefix: "https://everyorigin.jwvbremen.nl/api/get?url=", type: "query" },
     ],
     debugLog: false,
   };
