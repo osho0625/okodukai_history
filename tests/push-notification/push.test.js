@@ -45,7 +45,7 @@ describe('Push通知 - filterDueReminders (admin向けリマインダー)', () =
 
   it('デフォルトスケジュール 07:50 のウィンドウ外は除外', () => {
     const reminders = [baseReminder];
-    const result = filterDueReminders(reminders, { dateStr: '2026-05-26', timeStr: '07:55' });
+    const result = filterDueReminders(reminders, { dateStr: '2026-05-26', timeStr: '08:05' });
     expect(result).toHaveLength(0);
   });
 
@@ -86,7 +86,7 @@ describe('Push通知 - filterDueReminders (admin向けリマインダー)', () =
   });
 });
 
-describe('Push通知 - isInWindow (5分ウィンドウ)', () => {
+describe('Push通知 - isInWindow (15分ウィンドウ)', () => {
   it('ちょうどスケジュール時刻で true', () => {
     expect(isInWindow('07:50', '07:50')).toBe(true);
   });
@@ -95,8 +95,12 @@ describe('Push通知 - isInWindow (5分ウィンドウ)', () => {
     expect(isInWindow('07:50', '07:54')).toBe(true);
   });
 
-  it('スケジュール+5分で false', () => {
-    expect(isInWindow('07:50', '07:55')).toBe(false);
+  it('スケジュール+14分で true（15分ウィンドウ内）', () => {
+    expect(isInWindow('07:50', '08:04')).toBe(true);
+  });
+
+  it('スケジュール+15分で false', () => {
+    expect(isInWindow('07:50', '08:05')).toBe(false);
   });
 
   it('スケジュール前は false', () => {
