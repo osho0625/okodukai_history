@@ -373,21 +373,8 @@ async function main() {
     }
   }
 
-  // repeat型の通知（別のDiscordメッセージ＋別のPush通知）
-  if (dueRepeats.length > 0) {
-    const repeatMsg = formatRepeatMessage(dueRepeats, now);
-    if (repeatMsg) {
-      console.log('Sending Discord notification (repeat)...');
-      await sendDiscord(DISCORD_WEBHOOK, repeatMsg);
-
-      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-        console.log('Sending Web Push (repeat) to admin...');
-        await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueRepeats, now.dateStr, 'repeat');
-      }
-    } else {
-      console.log('Repeat message was empty, skipping notification.');
-    }
-  }
+  // repeat型の通知は無効化（TOPバナー表示のみ、Discord/Push通知は送らない）
+  // if (dueRepeats.length > 0) { ... }
 
   // yearly型（記念日）の通知（別のDiscordメッセージ＋別のPush通知）
   const dueYearly = filterDueYearlyReminders(reminders, now);
