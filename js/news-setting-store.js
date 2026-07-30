@@ -16,7 +16,7 @@ const FEEDS_KEY = "family-news-feeds";
 export function getDefaultSettings() {
   return {
     proxies: [
-      { name: "allorigins", urlPrefix: "https://api.allorigins.win/raw?url=", type: "raw" },
+      { name: "allorigins", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
       { name: "corsproxy", urlPrefix: "https://corsproxy.io/?", type: "raw" },
       { name: "codetabs", urlPrefix: "https://api.codetabs.com/v1/proxy?quest=", type: "raw" },
     ],

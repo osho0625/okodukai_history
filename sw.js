@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v307';
+const CACHE_NAME = 'okozukai-v308';
 const ASSETS = [
   './',
   './index.html',
@@ -131,13 +131,21 @@ self.addEventListener('notificationclick', e => {
 });
 
 // ネットワーク優先、失敗時にキャッシュ（GETのみキャッシュ）
+// 外部CORSプロキシへのリクエストはインターセプトしない（CORSエラー防止）
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  
+  // 外部APIへのリクエストはService Workerを通さない
+  const url = e.request.url;
+  if (!url.startsWith(self.location.origin)) return;
+
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))

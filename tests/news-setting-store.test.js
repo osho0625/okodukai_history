@@ -39,7 +39,7 @@ describe("getDefaultSettings", () => {
       expect(proxy).toHaveProperty("name");
       expect(proxy).toHaveProperty("urlPrefix");
       expect(proxy).toHaveProperty("type");
-      expect(proxy.type).toBe("raw");
+      expect(["raw", "query"]).toContain(proxy.type);
     }
   });
 });
