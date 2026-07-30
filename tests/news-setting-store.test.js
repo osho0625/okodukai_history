@@ -27,10 +27,11 @@ beforeEach(() => {
 });
 
 describe("getDefaultSettings", () => {
-  it("デフォルト設定にプロキシ1件とdebugLog=falseが含まれる", () => {
+  it("デフォルト設定にプロキシ2件とdebugLog=falseが含まれる", () => {
     const settings = getDefaultSettings();
-    expect(settings.proxies).toHaveLength(1);
-    expect(settings.proxies[0].name).toBe("allorigins");
+    expect(settings.proxies).toHaveLength(2);
+    expect(settings.proxies[0].name).toBe("allorigins-raw");
+    expect(settings.proxies[1].name).toBe("allorigins-json");
     expect(settings.debugLog).toBe(false);
   });
 

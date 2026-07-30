@@ -16,7 +16,8 @@ const FEEDS_KEY = "family-news-feeds";
 export function getDefaultSettings() {
   return {
     proxies: [
-      { name: "allorigins", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
+      { name: "allorigins-raw", urlPrefix: "https://api.allorigins.win/raw?url=", type: "raw" },
+      { name: "allorigins-json", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
     ],
     debugLog: false,
   };
@@ -112,7 +113,7 @@ export function getDefaultFeedSources() {
 }
 
 // プロキシ設定バージョン
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 const SETTINGS_VERSION_KEY = "family-news-settings-version";
 
 /**
