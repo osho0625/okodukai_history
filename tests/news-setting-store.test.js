@@ -24,12 +24,11 @@ beforeEach(() => {
 });
 
 describe("getDefaultSettings", () => {
-  it("デフォルト設定にプロキシ3件とdebugLog=falseが含まれる", () => {
+  it("デフォルト設定にプロキシ2件とdebugLog=falseが含まれる", () => {
     const settings = getDefaultSettings();
-    expect(settings.proxies).toHaveLength(3);
+    expect(settings.proxies).toHaveLength(2);
     expect(settings.proxies[0].name).toBe("allorigins");
     expect(settings.proxies[1].name).toBe("everyorigin");
-    expect(settings.proxies[2].name).toBe("corslol");
     expect(settings.debugLog).toBe(false);
   });
 

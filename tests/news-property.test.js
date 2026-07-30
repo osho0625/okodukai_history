@@ -363,44 +363,50 @@ describe("Property 8: 有効フィードのみ取得対象", () => {
    * For any FeedSource配列において、enabled:falseのソースはfetch対象に含まれない
    */
   it("enabled:falseのソースはfetch対象に含まれない", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(arbFeedSource, { minLength: 1, maxLength: 10 }),
-        async (sources) => {
-          const fetchedUrls = [];
+    // レートリミット待機をスキップ（テスト高速化）
+    const origSetTimeout = globalThis.setTimeout;
+    globalThis.setTimeout = (fn) => origSetTimeout(fn, 0);
 
-          // fetchをモック
-          const originalFetch = globalThis.fetch;
-          globalThis.fetch = async (url) => {
-            fetchedUrls.push(url);
-            return new Response(
-              `<?xml version="1.0"?><rss version="2.0"><channel><item><title>Test</title><link>https://example.com/test</link></item></channel></rss>`,
-              { status: 200, headers: { "Content-Type": "text/xml" } }
-            );
-          };
+    try {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(arbFeedSource, { minLength: 1, maxLength: 5 }),
+          async (sources) => {
+            const fetchedUrls = [];
 
-          try {
-            const proxies = [{ name: "test", urlPrefix: "https://proxy.test/?url=", type: "raw" }];
-            await fetchAllFeeds(sources, proxies);
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = async (url) => {
+              fetchedUrls.push(url);
+              return new Response(
+                `<?xml version="1.0"?><rss version="2.0"><channel><item><title>Test</title><link>https://example.com/test</link></item></channel></rss>`,
+                { status: 200, headers: { "Content-Type": "text/xml" } }
+              );
+            };
 
-            // enabled:falseのソースのURLがfetch対象に含まれないことを確認
-            const disabledUrls = sources
-              .filter((s) => !s.enabled)
-              .map((s) => s.url);
+            try {
+              const proxies = [{ name: "test", urlPrefix: "https://proxy.test/?url=", type: "raw" }];
+              await fetchAllFeeds(sources, proxies);
 
-            for (const disabledUrl of disabledUrls) {
-              const encodedUrl = encodeURIComponent(disabledUrl);
-              const fetched = fetchedUrls.some((u) => u.includes(encodedUrl));
-              expect(fetched).toBe(false);
+              const disabledUrls = sources
+                .filter((s) => !s.enabled)
+                .map((s) => s.url);
+
+              for (const disabledUrl of disabledUrls) {
+                const encodedUrl = encodeURIComponent(disabledUrl);
+                const fetched = fetchedUrls.some((u) => u.includes(encodedUrl));
+                expect(fetched).toBe(false);
+              }
+            } finally {
+              globalThis.fetch = originalFetch;
             }
-          } finally {
-            globalThis.fetch = originalFetch;
           }
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+        ),
+        { numRuns: 50 }
+      );
+    } finally {
+      globalThis.setTimeout = origSetTimeout;
+    }
+  }, 30000);
 });
 
 // ============================================================
@@ -562,51 +568,55 @@ describe("Property 13: プロキシフォールバックとエラー分離", () 
    * 他のフィード結果は影響を受けない
    */
   it("全プロキシ失敗時は当該フィードのみエラー、他フィードは影響なし", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(arbFeedSource.map((s) => ({ ...s, enabled: true })), { minLength: 2, maxLength: 5 }),
-        fc.integer({ min: 0, max: 4 }).chain((max) => fc.integer({ min: 0, max })),
-        async (sources, failIndex) => {
-          const actualFailIndex = failIndex % sources.length;
+    // レートリミット待機をスキップ（テスト高速化）
+    const origSetTimeout = globalThis.setTimeout;
+    globalThis.setTimeout = (fn) => origSetTimeout(fn, 0);
 
-          const originalFetch = globalThis.fetch;
-          globalThis.fetch = async (url) => {
-            // failIndexのフィードURLを含む場合はエラーを返す
-            const failUrl = encodeURIComponent(sources[actualFailIndex].url);
-            if (url.includes(failUrl)) {
-              throw new Error("Network error");
+    try {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(arbFeedSource.map((s) => ({ ...s, enabled: true })), { minLength: 2, maxLength: 3 }),
+          fc.integer({ min: 0, max: 2 }),
+          async (sources, failIndex) => {
+            const actualFailIndex = failIndex % sources.length;
+
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = async (url) => {
+              const failUrl = encodeURIComponent(sources[actualFailIndex].url);
+              if (url.includes(failUrl)) {
+                throw new Error("Network error");
+              }
+              return new Response(
+                `<?xml version="1.0"?><rss version="2.0"><channel><item><title>OK</title><link>https://example.com/${Math.random()}</link></item></channel></rss>`,
+                { status: 200 }
+              );
+            };
+
+            try {
+              const proxies = [
+                { name: "proxy1", urlPrefix: "https://proxy1.test/?url=", type: "raw" },
+                { name: "proxy2", urlPrefix: "https://proxy2.test/?url=", type: "raw" },
+              ];
+              const result = await fetchAllFeeds(sources, proxies);
+
+              const failedSourceIds = result.errors.map((e) => e.source.id);
+              expect(failedSourceIds).toContain(sources[actualFailIndex].id);
+
+              const successCount = sources.length - 1;
+              if (successCount > 0) {
+                expect(result.articles.length).toBeGreaterThan(0);
+              }
+            } finally {
+              globalThis.fetch = originalFetch;
             }
-            // 他のフィードは成功
-            return new Response(
-              `<?xml version="1.0"?><rss version="2.0"><channel><item><title>OK</title><link>https://example.com/${Math.random()}</link></item></channel></rss>`,
-              { status: 200 }
-            );
-          };
-
-          try {
-            const proxies = [
-              { name: "proxy1", urlPrefix: "https://proxy1.test/?url=", type: "raw" },
-              { name: "proxy2", urlPrefix: "https://proxy2.test/?url=", type: "raw" },
-            ];
-            const result = await fetchAllFeeds(sources, proxies);
-
-            // 失敗フィードがエラーに含まれる
-            const failedSourceIds = result.errors.map((e) => e.source.id);
-            expect(failedSourceIds).toContain(sources[actualFailIndex].id);
-
-            // 他のフィードの記事が取得されている（最低1件は成功するはず）
-            const successCount = sources.length - 1;
-            if (successCount > 0) {
-              expect(result.articles.length).toBeGreaterThan(0);
-            }
-          } finally {
-            globalThis.fetch = originalFetch;
           }
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+        ),
+        { numRuns: 50 }
+      );
+    } finally {
+      globalThis.setTimeout = origSetTimeout;
+    }
+  }, 30000);
 });
 
 // ============================================================

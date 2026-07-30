@@ -18,7 +18,6 @@ export function getDefaultSettings() {
     proxies: [
       { name: "allorigins", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
       { name: "everyorigin", urlPrefix: "https://everyorigin.jwvbremen.nl/api/get?url=", type: "query" },
-      { name: "corslol", urlPrefix: "https://api.cors.lol/?url=", type: "raw" },
     ],
     debugLog: false,
   };

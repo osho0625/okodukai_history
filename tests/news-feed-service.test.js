@@ -320,10 +320,8 @@ describe("fetchAllFeeds", () => {
     expect(result.articles).toHaveLength(2);
   });
 
-  it("並列取得される（全フィードが同時にfetchされる）", async () => {
-    const fetchTimes = [];
+  it("逐次取得される（全フィードがfetchされる）", async () => {
     global.fetch = vi.fn().mockImplementation(() => {
-      fetchTimes.push(Date.now());
       return Promise.resolve({
         ok: true,
         text: () => Promise.resolve(validRssXml),
@@ -337,11 +335,11 @@ describe("fetchAllFeeds", () => {
     ];
     const proxies = createProxies();
 
-    await fetchAllFeeds(sources, proxies);
+    const result = await fetchAllFeeds(sources, proxies);
 
-    // 全てほぼ同時にfetchが呼ばれるはず（並列実行）
-    // 最初のfetchと最後のfetchの時間差が極めて小さい
-    expect(fetchTimes.length).toBeGreaterThanOrEqual(3);
+    // 全フィードのfetchが呼ばれる
+    expect(global.fetch).toHaveBeenCalled();
+    expect(result.articles.length).toBeGreaterThanOrEqual(3 * 2); // 各フィード2記事
   });
 });
 

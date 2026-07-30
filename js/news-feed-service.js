@@ -124,7 +124,7 @@ export async function fetchFeed(source, proxies) {
 }
 
 /**
- * 全有効フィードソースから記事を並列取得
+ * 全有効フィードソースから記事を逐次取得（レートリミット回避のため直列実行）
  * @param {FeedSource[]} sources - フィードソース配列
  * @param {ProxyConfig[]} proxies - CORSプロキシ候補配列
  * @param {function} [onPartialResult] - 部分結果コールバック (source, articles) => void
@@ -141,8 +141,8 @@ export async function fetchAllFeeds(sources, proxies, onPartialResult) {
   const allArticles = [];
   const errors = [];
 
-  // 全フィードを並列取得
-  const promises = enabledSources.map(async (source) => {
+  // レートリミット回避のため逐次取得（各フィード間に少し間隔を空ける）
+  for (const source of enabledSources) {
     const result = await fetchFeed(source, proxies);
 
     if (result.error) {
@@ -155,10 +155,9 @@ export async function fetchAllFeeds(sources, proxies, onPartialResult) {
       }
     }
 
-    return result;
-  });
-
-  await Promise.all(promises);
+    // レートリミット回避: フィード間に300ms待機
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
 
   return { articles: allArticles, errors };
 }
