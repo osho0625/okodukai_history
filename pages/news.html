@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1976d2">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>ファミリーニュース</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<link rel="stylesheet" href="../css/news.css">
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="app-header">
+  <a class="back-btn" onclick="history.back()" aria-label="戻る">←</a>
+  <h1 class="app-title">📰 ファミリーニュース</h1>
+  <a href="../index.html" class="home-btn" aria-label="ホームに戻る">🏠</a>
+</header>
+
+<!-- タブ切替 -->
+<nav class="tab-bar" role="tablist" aria-label="メインナビゲーション">
+  <button class="tab active" role="tab" aria-selected="true" data-tab="latest" id="tab-btn-latest" aria-controls="tab-latest">最新</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="favorites" id="tab-btn-favorites" aria-controls="tab-favorites">お気に入り</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="settings" id="tab-btn-settings" aria-controls="tab-settings">設定</button>
+</nav>
+
+<!-- タブコンテンツ: 最新 -->
+<section id="tab-latest" class="tab-content active" role="tabpanel" aria-labelledby="tab-btn-latest">
+  <!-- カテゴリフィルター -->
+  <div class="category-filter" role="toolbar" aria-label="カテゴリフィルター">
+    <button class="filter-btn active" data-category="all">すべて</button>
+    <button class="filter-btn" data-category="テック"><span aria-label="テック">💻</span>テック</button>
+    <button class="filter-btn" data-category="ゲーム"><span aria-label="ゲーム">🎮</span>ゲーム</button>
+    <button class="filter-btn" data-category="おでかけ"><span aria-label="おでかけ">🏞️</span>おでかけ</button>
+  </div>
+
+  <!-- エラーバナー -->
+  <div id="error-banner" class="banner banner-error" style="display:none">
+    <span id="error-banner-text"></span>
+    <button class="banner-close" aria-label="閉じる">✕</button>
+  </div>
+
+  <!-- オフラインバナー -->
+  <div id="offline-banner" class="banner banner-offline" style="display:none">
+    オフラインモード：キャッシュを表示中
+  </div>
+
+  <!-- ローディングインジケーター -->
+  <div id="loading-indicator" class="loading" style="display:none">
+    <div class="loading-spinner"></div>
+    <p>記事を取得中...</p>
+  </div>
+
+  <!-- 記事一覧 -->
+  <div id="article-list" class="article-list"></div>
+
+  <!-- 更新ボタン -->
+  <button id="refresh-btn" class="refresh-btn" aria-label="記事を更新">🔄 更新</button>
+</section>
+
+<!-- タブコンテンツ: お気に入り -->
+<section id="tab-favorites" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-favorites" style="display:none">
+  <div id="favorites-list" class="article-list"></div>
+  <p id="favorites-empty" class="empty-message" style="display:none">お気に入りの記事はまだありません</p>
+</section>
+
+<!-- タブコンテンツ: 設定 -->
+<section id="tab-settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-settings" style="display:none">
+  <!-- フィードソース管理 -->
+  <div class="settings-section">
+    <h2 class="settings-heading">フィードソース管理</h2>
+    <div id="feed-source-list"></div>
+    <div class="feed-add-form">
+      <input id="feed-add-name" placeholder="フィード名" />
+      <input id="feed-add-url" placeholder="RSS/Atom URL" />
+      <select id="feed-add-category">
+        <option value="テック">💻 テック</option>
+        <option value="ゲーム">🎮 ゲーム</option>
+        <option value="おでかけ">🏞️ おでかけ</option>
+      </select>
+      <button id="feed-add-btn">追加</button>
+      <p id="feed-add-error" class="form-error" style="display:none"></p>
+    </div>
+  </div>
+
+  <!-- CORSプロキシ設定 -->
+  <div class="settings-section">
+    <h2 class="settings-heading">CORSプロキシ設定</h2>
+    <div id="proxy-list"></div>
+    <div class="proxy-add-form">
+      <input id="proxy-add-name" placeholder="プロキシ名" />
+      <input id="proxy-add-url" placeholder="URLプレフィックス" />
+      <button id="proxy-add-btn">追加</button>
+    </div>
+  </div>
+
+  <!-- 通知設定 -->
+  <div class="settings-section">
+    <h2 class="settings-heading">プッシュ通知</h2>
+    <label class="toggle-label">
+      <input type="checkbox" id="news-notify-toggle" />
+      朝のニュース通知（毎朝7:00）
+    </label>
+    <p id="news-notify-status" class="settings-note" style="display:none"></p>
+  </div>
+
+  <!-- デバッグ設定 -->
+  <div class="settings-section">
+    <h2 class="settings-heading">デバッグ</h2>
+    <label class="toggle-label">
+      <input type="checkbox" id="debug-log-toggle" />
+      デバッグログを有効にする
+    </label>
+  </div>
+</section>
+
+<script type="module" src="../js/news-app.js"></script>
+</body>
+</html>

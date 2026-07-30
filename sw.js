@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v306';
+const CACHE_NAME = 'okozukai-v307';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,14 @@ const ASSETS = [
   './pages/settlement.html',
   './pages/poker-chips-exchange.html',
   './pages/hair-removal-tracker.html',
+  './pages/news.html',
+  './css/news.css',
+  './js/news-app.js',
+  './js/news-feed-parser.js',
+  './js/news-feed-service.js',
+  './js/news-article-store.js',
+  './js/news-favorite-store.js',
+  './js/news-setting-store.js',
   './js/recipe-router.js',
   './js/recipe-api.js',
   './js/recipe-ui.js',
@@ -99,6 +107,10 @@ self.addEventListener('notificationclick', e => {
   const title = e.notification.title || '';
   if (title.includes('でんわ') || title.includes('ナースコール')) {
     url = './pages/nurse-call.html';
+  }
+  // ニュース通知の場合はニュースアプリ画面を開く
+  if (title.includes('ニュース') || title.includes('📰')) {
+    url = './pages/news.html';
   }
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
