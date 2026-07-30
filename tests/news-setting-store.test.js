@@ -28,8 +28,8 @@ describe("getDefaultSettings", () => {
     const settings = getDefaultSettings();
     expect(settings.proxies).toHaveLength(3);
     expect(settings.proxies[0].name).toBe("allorigins");
-    expect(settings.proxies[1].name).toBe("corsproxy");
-    expect(settings.proxies[2].name).toBe("codetabs");
+    expect(settings.proxies[1].name).toBe("everyorigin");
+    expect(settings.proxies[2].name).toBe("corslol");
     expect(settings.debugLog).toBe(false);
   });
 

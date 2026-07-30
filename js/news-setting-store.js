@@ -17,8 +17,8 @@ export function getDefaultSettings() {
   return {
     proxies: [
       { name: "allorigins", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
-      { name: "corsproxy", urlPrefix: "https://corsproxy.io/?", type: "raw" },
-      { name: "codetabs", urlPrefix: "https://api.codetabs.com/v1/proxy?quest=", type: "raw" },
+      { name: "everyorigin", urlPrefix: "https://everyorigin.jwvbremen.nl/api/get?url=", type: "query" },
+      { name: "corslol", urlPrefix: "https://api.cors.lol/?url=", type: "raw" },
     ],
     debugLog: false,
   };
