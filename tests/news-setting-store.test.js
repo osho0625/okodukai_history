@@ -17,10 +17,13 @@ import {
   _internals,
 } from "../js/news-setting-store.js";
 
-const { SETTINGS_KEY, FEEDS_KEY } = _internals;
+const { SETTINGS_KEY, FEEDS_KEY, FEEDS_VERSION, FEEDS_VERSION_KEY, SETTINGS_VERSION, SETTINGS_VERSION_KEY } = _internals;
 
 beforeEach(() => {
   localStorage.clear();
+  // バージョンキーを設定して、マイグレーションによるリセットを回避
+  localStorage.setItem(FEEDS_VERSION_KEY, String(FEEDS_VERSION));
+  localStorage.setItem(SETTINGS_VERSION_KEY, String(SETTINGS_VERSION));
 });
 
 describe("getDefaultSettings", () => {
@@ -43,19 +46,19 @@ describe("getDefaultSettings", () => {
 });
 
 describe("getDefaultFeedSources", () => {
-  it("デフォルトフィードソースが10件ある", () => {
+  it("デフォルトフィードソースが7件ある", () => {
     const sources = getDefaultFeedSources();
-    expect(sources).toHaveLength(10);
+    expect(sources).toHaveLength(7);
   });
 
-  it("テック5件、ゲーム3件、おでかけ2件のカテゴリ構成", () => {
+  it("テック3件、ゲーム3件、おでかけ1件のカテゴリ構成", () => {
     const sources = getDefaultFeedSources();
     const tech = sources.filter((s) => s.category === "テック");
     const game = sources.filter((s) => s.category === "ゲーム");
     const outing = sources.filter((s) => s.category === "おでかけ");
-    expect(tech).toHaveLength(5);
+    expect(tech).toHaveLength(3);
     expect(game).toHaveLength(3);
-    expect(outing).toHaveLength(2);
+    expect(outing).toHaveLength(1);
   });
 
   it("全フィードソースがFeedSource型の必須フィールドを持つ", () => {
@@ -120,11 +123,11 @@ describe("loadSettings / saveSettings", () => {
 describe("loadFeedSources / saveFeedSources", () => {
   it("初回起動時はデフォルトフィードを登録して返す", () => {
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(10);
+    expect(sources).toHaveLength(7);
     // localStorageにも保存されている
     const raw = localStorage.getItem(FEEDS_KEY);
     expect(raw).not.toBeNull();
-    expect(JSON.parse(raw)).toHaveLength(10);
+    expect(JSON.parse(raw)).toHaveLength(7);
   });
 
   it("保存したフィードソースを正しく読み込める", () => {
@@ -149,13 +152,13 @@ describe("loadFeedSources / saveFeedSources", () => {
   it("不正なJSONの場合はデフォルトに戻す", () => {
     localStorage.setItem(FEEDS_KEY, "not valid json");
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(10);
+    expect(sources).toHaveLength(7);
   });
 
   it("配列でないデータの場合はデフォルトに戻す", () => {
     localStorage.setItem(FEEDS_KEY, JSON.stringify({ not: "array" }));
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(10);
+    expect(sources).toHaveLength(7);
   });
 });
 

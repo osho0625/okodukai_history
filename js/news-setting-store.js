@@ -30,42 +30,9 @@ export function getDefaultFeedSources() {
   return [
     // テック
     {
-      id: "hacker-news",
-      name: "Hacker News",
-      url: "https://hnrss.org/frontpage",
-      category: "テック",
-      enabled: true,
-      lastSuccessAt: "",
-      errorCount: 0,
-      lastError: "",
-      lastErrorAt: "",
-    },
-    {
-      id: "publickey",
-      name: "Publickey",
-      url: "https://www.publickey1.jp/atom.xml",
-      category: "テック",
-      enabled: true,
-      lastSuccessAt: "",
-      errorCount: 0,
-      lastError: "",
-      lastErrorAt: "",
-    },
-    {
       id: "zenn-trending",
       name: "Zenn Trending",
       url: "https://zenn.dev/feed",
-      category: "テック",
-      enabled: true,
-      lastSuccessAt: "",
-      errorCount: 0,
-      lastError: "",
-      lastErrorAt: "",
-    },
-    {
-      id: "qiita-trending",
-      name: "Qiita Trending",
-      url: "https://qiita.com/popular-items/feed",
       category: "テック",
       enabled: true,
       lastSuccessAt: "",
@@ -84,18 +51,18 @@ export function getDefaultFeedSources() {
       lastError: "",
       lastErrorAt: "",
     },
-    // ゲーム
     {
-      id: "minecraft-news",
-      name: "Minecraft公式ニュース",
-      url: "https://www.minecraft.net/en-us/feeds/community-content/rss",
-      category: "ゲーム",
+      id: "gigazine",
+      name: "GIGAZINE",
+      url: "https://gigazine.net/news/rss_2.0/",
+      category: "テック",
       enabled: true,
       lastSuccessAt: "",
       errorCount: 0,
       lastError: "",
       lastErrorAt: "",
     },
+    // ゲーム
     {
       id: "nintendo-news",
       name: "任天堂ニュース",
@@ -108,9 +75,20 @@ export function getDefaultFeedSources() {
       lastErrorAt: "",
     },
     {
-      id: "famitsu",
-      name: "ファミ通",
-      url: "https://www.famitsu.com/feed/",
+      id: "minecraft-japan",
+      name: "Minecraft（Google検索）",
+      url: "https://news.google.com/rss/search?q=マインクラフト+アップデート&hl=ja&gl=JP&ceid=JP:ja",
+      category: "ゲーム",
+      enabled: true,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+    },
+    {
+      id: "kirby-japan",
+      name: "カービィ（Google検索）",
+      url: "https://news.google.com/rss/search?q=星のカービィ+エアライド&hl=ja&gl=JP&ceid=JP:ja",
       category: "ゲーム",
       enabled: true,
       lastSuccessAt: "",
@@ -121,19 +99,8 @@ export function getDefaultFeedSources() {
     // おでかけ
     {
       id: "google-news-athletic",
-      name: "Googleニュース（アスレチック 公園）",
-      url: "https://news.google.com/rss/search?q=アスレチック+公園&hl=ja&gl=JP&ceid=JP:ja",
-      category: "おでかけ",
-      enabled: true,
-      lastSuccessAt: "",
-      errorCount: 0,
-      lastError: "",
-      lastErrorAt: "",
-    },
-    {
-      id: "hatena-athletic",
-      name: "はてなブックマーク検索（アスレチック）",
-      url: "https://b.hatena.ne.jp/search/tag?q=アスレチック&mode=rss",
+      name: "アスレチック・公園（Google検索）",
+      url: "https://news.google.com/rss/search?q=アスレチック+公園+子供&hl=ja&gl=JP&ceid=JP:ja",
       category: "おでかけ",
       enabled: true,
       lastSuccessAt: "",
@@ -144,13 +111,27 @@ export function getDefaultFeedSources() {
   ];
 }
 
+// プロキシ設定バージョン
+const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION_KEY = "family-news-settings-version";
+
 /**
  * 設定をlocalStorageから読み込み
- * 保存データがない場合はデフォルト設定を返す
+ * バージョン不一致時はデフォルト設定にリセット
  * @returns {object} 設定オブジェクト
  */
 export function loadSettings() {
   try {
+    const currentVersion = localStorage.getItem(SETTINGS_VERSION_KEY);
+
+    // バージョン不一致 → デフォルトにリセット
+    if (!currentVersion || parseInt(currentVersion) < SETTINGS_VERSION) {
+      const defaults = getDefaultSettings();
+      saveSettings(defaults);
+      localStorage.setItem(SETTINGS_VERSION_KEY, String(SETTINGS_VERSION));
+      return defaults;
+    }
+
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return getDefaultSettings();
     const settings = JSON.parse(raw);
@@ -175,15 +156,28 @@ export function saveSettings(settings) {
   }
 }
 
+// 設定バージョン（フィードリスト変更時にインクリメント）
+const FEEDS_VERSION = 2;
+const FEEDS_VERSION_KEY = "family-news-feeds-version";
+
 /**
- * フィードソース一覧読み込み（初回起動時はデフォルト登録）
+ * フィードソース一覧読み込み（初回起動時またはバージョン変更時はデフォルト登録）
  * @returns {FeedSource[]} フィードソース配列
  */
 export function loadFeedSources() {
   try {
+    const currentVersion = localStorage.getItem(FEEDS_VERSION_KEY);
     const raw = localStorage.getItem(FEEDS_KEY);
+
+    // バージョン不一致または未設定 → デフォルトにリセット
+    if (!currentVersion || parseInt(currentVersion) < FEEDS_VERSION) {
+      const defaults = getDefaultFeedSources();
+      saveFeedSources(defaults);
+      localStorage.setItem(FEEDS_VERSION_KEY, String(FEEDS_VERSION));
+      return defaults;
+    }
+
     if (!raw) {
-      // 初回起動: デフォルトフィードを登録して返す
       const defaults = getDefaultFeedSources();
       saveFeedSources(defaults);
       return defaults;
@@ -333,5 +327,9 @@ function generateId(name) {
 export const _internals = {
   SETTINGS_KEY,
   FEEDS_KEY,
+  FEEDS_VERSION,
+  FEEDS_VERSION_KEY,
+  SETTINGS_VERSION,
+  SETTINGS_VERSION_KEY,
   generateId,
 };
