@@ -2,72 +2,236 @@
  * Body Map Data - ゾーン定義データ（簡易版）
  * SVG viewBox: 0 0 400 800
  * 人体図は中心 x=200 に配置
- * 顔は楕円形の輪郭を部位ごとに切り分け、体も丸みを持たせた形状
+ * 
+ * 人体のプロポーション (400x800 canvas):
+ * - 頭部: y 30-120 (楕円形、幅70)
+ * - 首: y 120-150
+ * - 肩〜胸: y 150-280
+ * - 腰: y 280-360
+ * - 股〜太もも: y 360-520
+ * - ひざ下: y 520-700
  */
 
 var BODY_MAP_DATA = {
   front: [
     // ===== 顔 =====
-    // 顔の輪郭: 楕円形 中心(200, 72) rx=38 ry=48, top=24, bottom=120
-    // 左ほっぺ: 顔の左半分、目の下〜口の横 (y: 60-95)
-    { id: "front_cheek_left", name: "左ほっぺ", svgPath: "M162,60 L200,60 L200,95 L168,95 Q162,78 162,60 Z", side: "front", group: "顔" },
-    // 右ほっぺ: 顔の右半分、目の下〜口の横 (y: 60-95)
-    { id: "front_cheek_right", name: "右ほっぺ", svgPath: "M200,60 L238,60 Q238,78 232,95 L200,95 L200,60 Z", side: "front", group: "顔" },
-    // くちびるの上: 鼻の下〜唇の上 (y: 95-108)
-    { id: "front_upper_lip", name: "くちびるの上", svgPath: "M168,95 L200,95 L232,95 L225,108 L175,108 Z", side: "front", group: "顔" },
-    // 顎下: 唇下〜顎先 (y: 108-125)
-    { id: "front_chin", name: "顎下", svgPath: "M175,108 L225,108 Q225,120 200,128 Q175,120 175,108 Z", side: "front", group: "顔" },
+    // 頭部全体は楕円: 中心(200,75), 横幅35px(半径), 縦45px(半径)
+    // 左ほっぺ: 顔の左側、目〜口の高さ
+    {
+      id: "front_cheek_left",
+      name: "左ほっぺ",
+      svgPath: "M172,58 C172,58 168,70 170,82 C172,90 178,95 185,95 L185,58 C180,55 175,55 172,58 Z",
+      side: "front",
+      group: "顔"
+    },
+    // 右ほっぺ: 顔の右側
+    {
+      id: "front_cheek_right",
+      name: "右ほっぺ",
+      svgPath: "M228,58 C225,55 220,55 215,58 L215,95 C222,95 228,90 230,82 C232,70 228,58 228,58 Z",
+      side: "front",
+      group: "顔"
+    },
+    // くちびるの上: 鼻下〜唇 (中央帯)
+    {
+      id: "front_upper_lip",
+      name: "くちびるの上",
+      svgPath: "M185,95 L185,58 L200,55 L215,58 L215,95 L200,92 Z",
+      side: "front",
+      group: "顔"
+    },
+    // 顎下: 顎のライン
+    {
+      id: "front_chin",
+      name: "顎下",
+      svgPath: "M170,82 C172,90 178,95 185,95 L200,92 L215,95 C222,95 228,90 230,82 L230,95 C230,108 218,118 200,120 C182,118 170,108 170,95 Z",
+      side: "front",
+      group: "顔"
+    },
 
     // ===== 首 =====
-    { id: "front_neck", name: "首", svgPath: "M178,128 Q200,132 222,128 L228,158 Q200,162 172,158 Z", side: "front", group: "首" },
+    {
+      id: "front_neck",
+      name: "首",
+      svgPath: "M182,120 C190,122 210,122 218,120 L222,152 C212,155 188,155 178,152 Z",
+      side: "front",
+      group: "首"
+    },
 
     // ===== 胴体 =====
-    // 胸: 肩のラインから丸みを帯びた胴体上部
-    { id: "front_chest", name: "胸", svgPath: "M148,162 Q155,158 200,158 Q245,158 252,162 L252,255 Q200,260 148,255 Z", side: "front", group: "胴体" },
-    // 左わき: 胸の左外側の凹み
-    { id: "front_armpit_left", name: "左わき", svgPath: "M128,168 L148,162 L148,205 L132,205 Q128,185 128,168 Z", side: "front", group: "胴体" },
-    // 右わき: 胸の右外側の凹み
-    { id: "front_armpit_right", name: "右わき", svgPath: "M252,162 L272,168 Q272,185 268,205 L252,205 L252,162 Z", side: "front", group: "胴体" },
-    // 腰: 胴体下部、くびれから骨盤上まで
-    { id: "front_waist", name: "腰", svgPath: "M148,255 Q200,260 252,255 L255,345 Q200,350 145,345 Z", side: "front", group: "胴体" },
+    // 胸: 鎖骨〜みぞおち
+    {
+      id: "front_chest",
+      name: "胸",
+      svgPath: "M148,165 C155,155 178,152 200,152 C222,152 245,155 252,165 L252,270 C240,275 160,275 148,270 Z",
+      side: "front",
+      group: "胴体"
+    },
+    // 左わき
+    {
+      id: "front_armpit_left",
+      name: "左わき",
+      svgPath: "M135,168 L148,165 L148,210 C144,210 138,205 135,195 Z",
+      side: "front",
+      group: "胴体"
+    },
+    // 右わき
+    {
+      id: "front_armpit_right",
+      name: "右わき",
+      svgPath: "M252,165 L265,168 L265,195 C262,205 256,210 252,210 Z",
+      side: "front",
+      group: "胴体"
+    },
+    // 腰: みぞおち〜骨盤
+    {
+      id: "front_waist",
+      name: "腰",
+      svgPath: "M148,270 C160,275 240,275 252,270 L248,355 C235,360 165,360 152,355 Z",
+      side: "front",
+      group: "胴体"
+    },
 
     // ===== 腕 =====
-    // 左腕: 肩から手首まで、やや斜めの自然な形
-    { id: "front_arm_left", name: "左腕", svgPath: "M128,168 Q120,170 112,178 L85,320 Q80,335 78,345 L105,348 L132,205 L128,168 Z", side: "front", group: "腕" },
-    // 右腕: 肩から手首まで
-    { id: "front_arm_right", name: "右腕", svgPath: "M272,168 Q280,170 288,178 L315,320 Q320,335 322,345 L295,348 L268,205 L272,168 Z", side: "front", group: "腕" },
+    // 左腕: 肩から手首、人体らしい自然なカーブ
+    {
+      id: "front_arm_left",
+      name: "左腕",
+      svgPath: "M135,168 C125,172 118,182 112,200 L92,290 C88,305 85,320 84,335 L108,340 C110,325 112,310 115,295 L132,210 L135,168 Z",
+      side: "front",
+      group: "腕"
+    },
+    // 右腕
+    {
+      id: "front_arm_right",
+      name: "右腕",
+      svgPath: "M265,168 C275,172 282,182 288,200 L308,290 C312,305 315,320 316,335 L292,340 C290,325 288,310 285,295 L268,210 L265,168 Z",
+      side: "front",
+      group: "腕"
+    },
 
     // ===== 下半身 =====
-    // 股間: 骨盤中央
-    { id: "front_groin", name: "股間", svgPath: "M170,345 Q200,350 230,345 L225,388 Q200,395 175,388 Z", side: "front", group: "下半身" },
-    // 左ふともも: 股から膝上まで
-    { id: "front_thigh_left", name: "左ふともも", svgPath: "M145,345 L175,388 Q178,440 175,500 L148,500 Q142,420 145,345 Z", side: "front", group: "下半身" },
+    // 股間
+    {
+      id: "front_groin",
+      name: "股間",
+      svgPath: "M175,355 C185,360 215,360 225,355 L220,395 C210,400 190,400 180,395 Z",
+      side: "front",
+      group: "下半身"
+    },
+    // 左ふともも
+    {
+      id: "front_thigh_left",
+      name: "左ふともも",
+      svgPath: "M152,355 L175,355 L180,395 C182,440 180,480 178,515 L150,515 C148,475 148,430 152,355 Z",
+      side: "front",
+      group: "下半身"
+    },
     // 右ふともも
-    { id: "front_thigh_right", name: "右ふともも", svgPath: "M225,388 L255,345 Q258,420 252,500 L225,500 Q222,440 225,388 Z", side: "front", group: "下半身" },
-    // 左ひざ下: 膝から足首まで
-    { id: "front_lower_leg_left", name: "左ひざ下", svgPath: "M148,500 L175,500 Q178,580 175,660 L152,660 Q148,580 148,500 Z", side: "front", group: "下半身" },
+    {
+      id: "front_thigh_right",
+      name: "右ふともも",
+      svgPath: "M225,355 L248,355 C252,430 252,475 250,515 L222,515 C220,480 218,440 220,395 Z",
+      side: "front",
+      group: "下半身"
+    },
+    // 左ひざ下
+    {
+      id: "front_lower_leg_left",
+      name: "左ひざ下",
+      svgPath: "M150,515 L178,515 C176,560 174,610 172,680 L153,680 C152,610 150,560 150,515 Z",
+      side: "front",
+      group: "下半身"
+    },
     // 右ひざ下
-    { id: "front_lower_leg_right", name: "右ひざ下", svgPath: "M225,500 L252,500 Q252,580 248,660 L225,660 Q222,580 225,500 Z", side: "front", group: "下半身" }
+    {
+      id: "front_lower_leg_right",
+      name: "右ひざ下",
+      svgPath: "M222,515 L250,515 C250,560 248,610 247,680 L228,680 C226,610 224,560 222,515 Z",
+      side: "front",
+      group: "下半身"
+    }
   ],
 
   back: [
     // ===== 首(背面) =====
-    { id: "back_neck", name: "うなじ", svgPath: "M175,85 Q200,80 225,85 L228,158 Q200,162 172,158 Z", side: "back", group: "首" },
+    {
+      id: "back_neck",
+      name: "うなじ",
+      svgPath: "M182,90 C190,92 210,92 218,90 L222,152 C212,155 188,155 178,152 Z",
+      side: "back",
+      group: "首"
+    },
 
     // ===== 背中 =====
-    { id: "back_upper", name: "背中", svgPath: "M145,158 Q200,162 255,158 L258,285 Q200,290 142,285 Z", side: "back", group: "胴体" },
-    { id: "back_lower", name: "腰(背面)", svgPath: "M142,285 Q200,290 258,285 L255,355 Q200,360 145,355 Z", side: "back", group: "胴体" },
-    { id: "back_buttocks", name: "おしり", svgPath: "M145,355 Q200,360 255,355 Q258,380 250,410 Q200,418 150,410 Q142,380 145,355 Z", side: "back", group: "下半身" },
+    {
+      id: "back_upper",
+      name: "背中",
+      svgPath: "M145,165 C155,155 178,152 200,152 C222,152 245,155 255,165 L255,280 C240,285 160,285 145,280 Z",
+      side: "back",
+      group: "胴体"
+    },
+    {
+      id: "back_lower",
+      name: "腰(背面)",
+      svgPath: "M145,280 C160,285 240,285 255,280 L252,360 C238,365 162,365 148,360 Z",
+      side: "back",
+      group: "胴体"
+    },
+    // おしり
+    {
+      id: "back_buttocks",
+      name: "おしり",
+      svgPath: "M148,360 C162,365 238,365 252,360 L250,410 C240,420 160,420 150,410 Z",
+      side: "back",
+      group: "下半身"
+    },
 
     // ===== 腕(背面) =====
-    { id: "back_arm_left", name: "左腕(背面)", svgPath: "M128,165 Q118,170 110,180 L82,325 Q78,338 76,348 L103,350 L130,200 L128,165 Z", side: "back", group: "腕" },
-    { id: "back_arm_right", name: "右腕(背面)", svgPath: "M272,165 Q282,170 290,180 L318,325 Q322,338 324,348 L297,350 L270,200 L272,165 Z", side: "back", group: "腕" },
+    {
+      id: "back_arm_left",
+      name: "左腕(背面)",
+      svgPath: "M132,168 C122,172 115,182 109,200 L89,290 C85,305 82,320 81,335 L105,340 C107,325 109,310 112,295 L129,210 L132,168 Z",
+      side: "back",
+      group: "腕"
+    },
+    {
+      id: "back_arm_right",
+      name: "右腕(背面)",
+      svgPath: "M268,168 C278,172 285,182 291,200 L311,290 C315,305 318,320 319,335 L295,340 C293,325 291,310 288,295 L271,210 L268,168 Z",
+      side: "back",
+      group: "腕"
+    },
 
     // ===== 脚(背面) =====
-    { id: "back_thigh_left", name: "左ふともも(背面)", svgPath: "M150,410 Q175,415 198,410 Q198,460 195,530 L150,530 Q148,460 150,410 Z", side: "back", group: "下半身" },
-    { id: "back_thigh_right", name: "右ふともも(背面)", svgPath: "M202,410 Q225,415 250,410 Q252,460 250,530 L205,530 Q202,460 202,410 Z", side: "back", group: "下半身" },
-    { id: "back_lower_leg_left", name: "左ひざ下(背面)", svgPath: "M150,530 L195,530 Q195,610 190,680 L155,680 Q150,610 150,530 Z", side: "back", group: "下半身" },
-    { id: "back_lower_leg_right", name: "右ひざ下(背面)", svgPath: "M205,530 L250,530 Q250,610 245,680 L210,680 Q205,610 205,530 Z", side: "back", group: "下半身" }
+    {
+      id: "back_thigh_left",
+      name: "左ふともも(背面)",
+      svgPath: "M150,410 C160,420 190,420 200,415 L198,520 L152,520 C150,470 150,440 150,410 Z",
+      side: "back",
+      group: "下半身"
+    },
+    {
+      id: "back_thigh_right",
+      name: "右ふともも(背面)",
+      svgPath: "M200,415 C210,420 240,420 250,410 C250,440 250,470 248,520 L202,520 Z",
+      side: "back",
+      group: "下半身"
+    },
+    {
+      id: "back_lower_leg_left",
+      name: "左ひざ下(背面)",
+      svgPath: "M152,520 L198,520 C196,570 194,620 192,690 L155,690 C153,620 152,570 152,520 Z",
+      side: "back",
+      group: "下半身"
+    },
+    {
+      id: "back_lower_leg_right",
+      name: "右ひざ下(背面)",
+      svgPath: "M202,520 L248,520 C247,570 247,620 245,690 L208,690 C206,620 204,570 202,520 Z",
+      side: "back",
+      group: "下半身"
+    }
   ]
 };
 
