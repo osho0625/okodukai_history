@@ -1697,6 +1697,22 @@
       this._zones = zones || [];
       this._svgEl.innerHTML = '';
 
+      // 背景: 人体シルエット（選択不可）
+      if (typeof BODY_SILHOUETTE !== 'undefined') {
+        var side = (this._zones.length > 0 && this._zones[0].side) ? this._zones[0].side : 'front';
+        var silhouettePath = BODY_SILHOUETTE[side];
+        if (silhouettePath) {
+          var bg = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          bg.setAttribute('d', silhouettePath);
+          bg.setAttribute('fill', '#e8e8e8');
+          bg.setAttribute('stroke', '#ccc');
+          bg.setAttribute('stroke-width', '1');
+          bg.setAttribute('pointer-events', 'none');
+          bg.classList.add('body-silhouette');
+          this._svgEl.appendChild(bg);
+        }
+      }
+
       var self = this;
       this._zones.forEach(function(zone) {
         if (!zone.svgPath) {
@@ -1711,8 +1727,9 @@
         // 色適用
         var color = (colorMap && colorMap[zone.id]) ? colorMap[zone.id] : '#ccc';
         path.setAttribute('fill', color);
-        path.setAttribute('stroke', '#999');
-        path.setAttribute('stroke-width', '0.5');
+        path.setAttribute('fill-opacity', '0.4');
+        path.setAttribute('stroke', '#666');
+        path.setAttribute('stroke-width', '1');
 
         self._svgEl.appendChild(path);
       });
@@ -2089,7 +2106,23 @@
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', 'Body Map');
 
-    // ゾーン描画
+    // 背景: 人体シルエット（選択不可）
+    if (typeof BODY_SILHOUETTE !== 'undefined') {
+      var side = (zones.length > 0 && zones[0].side) ? zones[0].side : 'front';
+      var silhouettePath = BODY_SILHOUETTE[side];
+      if (silhouettePath) {
+        var bg = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        bg.setAttribute('d', silhouettePath);
+        bg.setAttribute('fill', '#e8e8e8');
+        bg.setAttribute('stroke', '#ccc');
+        bg.setAttribute('stroke-width', '1');
+        bg.setAttribute('pointer-events', 'none');
+        bg.classList.add('body-silhouette');
+        svg.appendChild(bg);
+      }
+    }
+
+    // ゾーン描画（クリッカブル）
     for (var i = 0; i < zones.length; i++) {
       var zone = zones[i];
       if (!zone.svgPath) continue;
@@ -2098,8 +2131,9 @@
       path.setAttribute('data-zone-id', zone.id);
       path.setAttribute('data-zone-name', zone.name);
       path.setAttribute('fill', '#ccc');
-      path.setAttribute('stroke', '#999');
-      path.setAttribute('stroke-width', '0.5');
+      path.setAttribute('fill-opacity', '0.4');
+      path.setAttribute('stroke', '#666');
+      path.setAttribute('stroke-width', '1');
       svg.appendChild(path);
     }
 
