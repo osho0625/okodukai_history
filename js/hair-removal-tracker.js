@@ -334,6 +334,27 @@
       invalidateStatsCache();
     },
 
+    /** 全人物の全データを削除（Supabase上のレコードを完全リセット） */
+    resetAllPersons: async function() {
+      try {
+        await client.from('hair_removal_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        var persons = ['りょうすけ', 'めぐみ'];
+        for (var i = 0; i < persons.length; i++) {
+          await client.from('hair_removal_settings').upsert({
+            person: persons[i],
+            default_cycle_days: 30,
+            color_threshold_days: 30,
+            zone_cycles: {},
+            group_cycles: {},
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (e) { console.error('resetAllPersons error:', e); }
+      _recordsCache = [];
+      _settingsCache = null;
+      invalidateStatsCache();
+    },
+
     importData: async function(json, mode) {
       var validation = this.validateImportData(json);
       if (!validation.valid) return { success: false, error: validation.errors[0] };
@@ -3227,6 +3248,7 @@
       importData: function(json, mode) { return StorageManager.importData(json, mode); },
       handleImport: handleImport,
       resetAll: function() { return StorageManager.resetAll(); },
+      resetAllPersons: function() { return StorageManager.resetAllPersons(); },
       handleReset: handleReset,
       PhotoCompressor: PhotoCompressor,
       renderPhotoStorageUsage: renderPhotoStorageUsage,
