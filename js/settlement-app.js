@@ -51,7 +51,7 @@ function onTabSwitch(tab) {
     case 'master': loadExpenseMasters(); break;
     case 'monthly': loadMonthlySettlement(currentMonthlyYearMonth); break;
     case 'difference': loadDifferenceManagement(); break;
-    case 'diff-settlement': loadDifferenceSettlement(currentDiffYear, currentDiffPeriod); break;
+    case 'diff-settlement': loadDifferenceSettlement(getCurrentYearMonth()); break;
   }
 }
 
@@ -62,6 +62,7 @@ async function loadDashboard() {
 
   try {
     const yearMonth = getCurrentYearMonth();
+    const nextYM = nextMonth(yearMonth);
 
     // 1. Current month settlement result
     const { data: monthlyExpenses, error: meErr } = await client
@@ -87,65 +88,84 @@ async function loadDashboard() {
 
     const result = calculateSettlement(monthlyExpenses || [], tempExpenses || [], ['めぐみ', '涼介']);
 
-    // 2. Pending (unpaid) count across all months
-    const { data: pendingItems, error: piErr } = await client
+    // 2. Unsettled months: months from SETTLEMENT_START_MONTH to current that have no monthly settlement in history
+    const allMonths = [];
+    let ym = SETTLEMENT_START_MONTH;
+    while (ym <= yearMonth) {
+      allMonths.push(ym);
+      ym = nextMonth(ym);
+    }
+
+    const { data: settledMonths, error: smErr } = await client
       .from('settlement_history')
-      .select('id, target_period, payer_from, payer_to, amount, settlement_type, status')
-      .eq('status', 'pending');
-    if (piErr) throw piErr;
+      .select('target_period')
+      .eq('settlement_type', 'monthly')
+      .in('target_period', allMonths);
+    if (smErr) throw smErr;
 
-    // 3. Difference settlement pending: half_year items with unsettled differences
-    const { data: diffPending, error: dpErr } = await client
+    const settledSet = new Set((settledMonths || []).map(s => s.target_period));
+    const unsettledMonths = allMonths.filter(m => !settledSet.has(m));
+
+    // 3. Difference settlement pending: months with half_year items that are missing actual_amount or not difference_settled
+    const { data: halfYearExpenses, error: hyErr } = await client
       .from('monthly_expenses')
-      .select('id, payer, planned_amount, actual_amount, difference')
-      .eq('difference_settled', false)
-      .not('actual_amount', 'is', null);
-    if (dpErr) throw dpErr;
+      .select('id, year_month, actual_amount, difference_settled, expense_master:expense_master_id(settlement_cycle)')
+      .in('year_month', allMonths);
+    if (hyErr) throw hyErr;
 
-    // Filter to only items that have actual differences
-    const diffItems = (diffPending || []).filter(d => d.actual_amount !== null && (d.actual_amount - d.planned_amount) !== 0);
+    const halfYearItems = (halfYearExpenses || []).filter(e => e.expense_master && e.expense_master.settlement_cycle === 'half_year');
+    const diffPendingMonths = new Set();
+    for (const item of halfYearItems) {
+      if (item.actual_amount == null || !item.difference_settled) {
+        diffPendingMonths.add(item.year_month);
+      }
+    }
 
     // Render dashboard
     let html = '';
 
     // Settlement result card
     html += '<div class="card">';
-    html += `<h3 style="margin-bottom:12px;">📊 今月の精算 (${yearMonth})</h3>`;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">`;
+    html += `<h3 style="margin:0;">📊 今月の精算 (${yearMonth})</h3>`;
+    html += `<button class="btn-secondary" style="padding:6px 12px;font-size:0.85em;" onclick="showTemporaryExpenseModal(null, '${nextYM}')">＋立替追加</button>`;
+    html += `</div>`;
     if (historyCheck) {
       html += `<div style="color:#4caf50;font-weight:600;">✅ 精算済み (${historyCheck.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
       html += `<div style="margin-top:8px;">${escapeHtml(historyCheck.payer_from)} → ${escapeHtml(historyCheck.payer_to)}: ${formatAmount(historyCheck.amount)}</div>`;
     } else if (result.transfers.length > 0) {
       const t = result.transfers[0];
       html += `<div style="font-size:1.2em;font-weight:700;color:#1565c0;">${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}</div>`;
-      html += `<div style="margin-top:4px;color:#888;">世帯合計: ${formatAmount(result.householdTotal)} / 一人あたり: ${formatAmount(result.fairShare)}</div>`;
     } else {
       html += '<div style="color:#888;">精算額は0円です（精算不要）</div>';
     }
     html += '</div>';
 
-    // Pending badge
-    const pendingCount = (pendingItems || []).length;
+    // Unsettled months
     html += '<div class="card">';
-    html += `<h3 style="margin-bottom:12px;">⏳ 未払い精算 <span style="background:#ff5722;color:#fff;border-radius:12px;padding:2px 10px;font-size:0.85em;margin-left:8px;">${pendingCount}件</span></h3>`;
-    if (pendingCount > 0) {
-      html += '<ul style="list-style:none;padding:0;">';
-      for (const item of pendingItems) {
-        html += `<li style="padding:6px 0;border-bottom:1px solid #eee;">${escapeHtml(item.target_period)} (${item.settlement_type === 'monthly' ? '月次' : '差額'}): ${escapeHtml(item.payer_from)} → ${escapeHtml(item.payer_to)} ${formatAmount(item.amount)}</li>`;
+    html += `<h3 style="margin-bottom:12px;">⏳ 未精算月 <span style="background:#ff5722;color:#fff;border-radius:12px;padding:2px 10px;font-size:0.85em;margin-left:8px;">${unsettledMonths.length}件</span></h3>`;
+    if (unsettledMonths.length > 0) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      for (const m of unsettledMonths) {
+        html += `<span style="background:#fff3e0;border:1px solid #ffcc80;border-radius:6px;padding:4px 10px;font-size:0.9em;">${m}</span>`;
       }
-      html += '</ul>';
+      html += '</div>';
     } else {
-      html += '<div style="color:#4caf50;">すべて支払い済みです 🎉</div>';
+      html += '<div style="color:#4caf50;">すべて精算済みです 🎉</div>';
     }
     html += '</div>';
 
-    // Difference pending summary
+    // Difference pending months
     html += '<div class="card">';
-    html += `<h3 style="margin-bottom:12px;">📈 差額精算待ち</h3>`;
-    if (diffItems.length > 0) {
-      const totalDiff = diffItems.reduce((sum, d) => sum + (d.actual_amount - d.planned_amount), 0);
-      html += `<div>${diffItems.length}件の差額未精算項目 (合計差額: ${formatAmount(totalDiff)})</div>`;
+    html += `<h3 style="margin-bottom:12px;">📈 差額精算待ち <span style="background:#ff9800;color:#fff;border-radius:12px;padding:2px 10px;font-size:0.85em;margin-left:8px;">${diffPendingMonths.size}件</span></h3>`;
+    if (diffPendingMonths.size > 0) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      for (const m of [...diffPendingMonths].sort()) {
+        html += `<span style="background:#fce4ec;border:1px solid #f48fb1;border-radius:6px;padding:4px 10px;font-size:0.9em;">${m}</span>`;
+      }
+      html += '</div>';
     } else {
-      html += '<div style="color:#888;">差額精算待ちの項目はありません</div>';
+      html += '<div style="color:#4caf50;">差額精算待ちの項目はありません</div>';
     }
     html += '</div>';
 
@@ -1205,17 +1225,23 @@ async function onActualAmountChange(input) {
 
 // ========== Difference Settlement ==========
 async function loadDifferenceSettlement(year, period) {
-  currentDiffYear = year;
-  currentDiffPeriod = period;
+  // period引数は互換性のため残すが、yearMonthベースに変更
+  // year が YYYY-MM形式の文字列ならそのまま使う、それ以外は現在月
+  let yearMonth;
+  if (typeof year === 'string' && year.match(/^\d{4}-\d{2}$/)) {
+    yearMonth = year;
+  } else {
+    yearMonth = getCurrentYearMonth();
+  }
+  if (yearMonth < SETTLEMENT_START_MONTH) yearMonth = SETTLEMENT_START_MONTH;
+
   const container = document.getElementById('tab-diff-settlement');
   container.innerHTML = '<div class="loading">読み込み中...</div>';
 
   try {
-    const periodMonths = getPeriodMonths(year, period);
-    const periodLabel = period === 'first_half' ? '上半期 (1〜6月)' : '下半期 (7〜12月)';
-    const targetPeriod = year + '-' + (period === 'first_half' ? 'H1' : 'H2');
+    const targetPeriod = yearMonth;
 
-    // Check if already settled
+    // Check if already settled for this month
     const { data: existingSettlement } = await client
       .from('settlement_history')
       .select('id, status, payer_from, payer_to, amount, memo, created_at')
@@ -1225,13 +1251,12 @@ async function loadDifferenceSettlement(year, period) {
 
     const isSettled = !!existingSettlement;
 
-    // Get half_year expenses for the period
+    // Get half_year expenses for this month
     const { data: expenses, error } = await client
       .from('monthly_expenses')
       .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, expense_master:expense_master_id(name, settlement_cycle, base_amount)')
-      .in('year_month', periodMonths)
-      .eq('difference_settled', false)
-      .order('year_month', { ascending: true });
+      .eq('year_month', yearMonth)
+      .order('created_at', { ascending: true });
     if (error) throw error;
 
     // Filter to half_year items only
@@ -1243,15 +1268,12 @@ async function loadDifferenceSettlement(year, period) {
     // Render
     let html = '';
 
-    // Period selector
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">';
-    html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadDifferenceSettlement(${year - 1}, '${period}')">◀</button>`;
-    html += `<h3 style="margin:0;">🔄 ${year}年 ${periodLabel}</h3>`;
-    html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadDifferenceSettlement(${year + 1}, '${period}')">▶</button>`;
-    html += '</div>';
-    html += '<div style="display:flex;gap:8px;margin-bottom:16px;">';
-    html += `<button class="${period === 'first_half' ? 'btn-primary' : 'btn-secondary'}" style="padding:8px 16px;font-size:0.9em;" onclick="loadDifferenceSettlement(${year}, 'first_half')">上半期</button>`;
-    html += `<button class="${period === 'second_half' ? 'btn-primary' : 'btn-secondary'}" style="padding:8px 16px;font-size:0.9em;" onclick="loadDifferenceSettlement(${year}, 'second_half')">下半期</button>`;
+    // Month selector
+    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">';
+    const prevDisabled = yearMonth <= SETTLEMENT_START_MONTH ? 'disabled style="padding:8px 12px;opacity:0.3;cursor:not-allowed;"' : 'style="padding:8px 12px;"';
+    html += `<button class="btn-secondary" ${prevDisabled} onclick="loadDifferenceSettlement('${prevMonth(yearMonth)}')">◀</button>`;
+    html += `<h3 style="margin:0;">🔄 ${yearMonth} の差額精算</h3>`;
+    html += `<button class="btn-secondary" style="padding:8px 12px;" onclick="loadDifferenceSettlement('${nextMonth(yearMonth)}')">▶</button>`;
     html += '</div>';
 
     // Already settled notice
@@ -1263,27 +1285,27 @@ async function loadDifferenceSettlement(year, period) {
       if (existingSettlement.status === 'pending') {
         html += `<button class="btn-primary" style="padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaidDiff('${existingSettlement.id}')">支払い完了にする</button>`;
       }
-      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertDifferenceSettlement('${existingSettlement.id}', ${year}, '${period}')">⏪ 精算取消</button>`;
+      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertDifferenceSettlement('${existingSettlement.id}', '${yearMonth}')">⏪ 精算取消</button>`;
       html += `</div>`;
       html += '</div>';
     }
 
-    // Accumulated difference list
+    // Difference list
     html += '<div class="card">';
-    html += '<h4 style="margin-bottom:8px;">累積差額一覧</h4>';
+    html += '<h4 style="margin-bottom:8px;">差額一覧</h4>';
     if (halfYearExpenses.length === 0) {
-      html += '<div style="color:#888;">対象期間に未精算の半年項目はありません</div>';
+      html += '<div style="color:#888;">対象月に半年精算項目はありません</div>';
     } else {
       html += '<table style="width:100%;font-size:0.9em;border-collapse:collapse;">';
-      html += '<thead><tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:4px;">年月</th><th style="text-align:left;padding:4px;">項目</th><th style="text-align:right;padding:4px;">基準額</th><th style="text-align:right;padding:4px;">実費</th><th style="text-align:right;padding:4px;">差額</th></tr></thead>';
+      html += '<thead><tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:4px;">項目</th><th style="text-align:left;padding:4px;">支払者</th><th style="text-align:right;padding:4px;">基準額</th><th style="text-align:right;padding:4px;">実費</th><th style="text-align:right;padding:4px;">差額</th></tr></thead>';
       html += '<tbody>';
       for (const exp of halfYearExpenses) {
-        const name = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
+        const name = exp.expense_master ? exp.expense_master.name : '(不明)';
         const diff = calculateDifference(exp.actual_amount, exp.planned_amount);
         const diffColor = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#888';
         html += `<tr style="border-bottom:1px solid #f0f0f0;">`;
-        html += `<td style="padding:4px;">${exp.year_month}</td>`;
         html += `<td style="padding:4px;">${escapeHtml(name)}</td>`;
+        html += `<td style="padding:4px;">${escapeHtml(exp.payer)}</td>`;
         html += `<td style="text-align:right;padding:4px;">${formatAmount(exp.planned_amount)}</td>`;
         html += `<td style="text-align:right;padding:4px;">${exp.actual_amount != null ? formatAmount(exp.actual_amount) : '-'}</td>`;
         html += `<td style="text-align:right;padding:4px;color:${diffColor};font-weight:600;">${exp.actual_amount != null ? ((diff >= 0 ? '+' : '') + formatAmount(diff)) : '-'}</td>`;
@@ -1300,7 +1322,7 @@ async function loadDifferenceSettlement(year, period) {
     for (const payer of diffPayers) {
       const val = result.payerDiffs[payer];
       const color = val > 0 ? '#d32f2f' : val < 0 ? '#2e7d32' : '#333';
-      html += `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${escapeHtml(payer)} 累積差額</span><span style="color:${color};font-weight:600;">${val >= 0 ? '+' : ''}${formatAmount(val)}</span></div>`;
+      html += `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${escapeHtml(payer)} 差額</span><span style="color:${color};font-weight:600;">${val >= 0 ? '+' : ''}${formatAmount(val)}</span></div>`;
     }
     if (result.transfers.length > 0) {
       const t = result.transfers[0];
@@ -1317,23 +1339,9 @@ async function loadDifferenceSettlement(year, period) {
       const canSettle = result.transfers.length > 0 && result.transfers[0].amount > 0;
       html += '<div style="text-align:center;margin:16px 0;">';
       if (canSettle) {
-        html += `<button class="btn-primary" id="btn-execute-diff" onclick="executeDifferenceSettlement(${year}, '${period}')">差額精算を確定する</button>`;
+        html += `<button class="btn-primary" id="btn-execute-diff" onclick="executeDifferenceSettlementMonthly('${yearMonth}')">差額精算を確定する</button>`;
       } else {
         html += `<button class="btn-primary" disabled style="opacity:0.5;cursor:not-allowed;">差額が0円のため精算不要です</button>`;
-      }
-      html += '</div>';
-    }
-
-    // Base amount suggestions
-    if (result.suggestions.length > 0) {
-      html += '<div class="card">';
-      html += '<h4 style="margin-bottom:8px;">💡 基準額調整提案</h4>';
-      html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">半年間の実費平均から基準額を1000円単位で提案します</div>';
-      for (const s of result.suggestions) {
-        html += `<div style="padding:8px 0;border-bottom:1px solid #f0f0f0;">`;
-        html += `<div style="font-weight:600;">${escapeHtml(s.name)}</div>`;
-        html += `<div style="color:#666;font-size:0.9em;">平均実費: ${formatAmount(s.avgActual)} → 提案基準額: ${formatAmount(s.suggestedBase)} (現在: ${formatAmount(s.currentBase)})</div>`;
-        html += `</div>`;
       }
       html += '</div>';
     }
@@ -1341,7 +1349,7 @@ async function loadDifferenceSettlement(year, period) {
     container.innerHTML = html;
   } catch (err) {
     console.error('Difference settlement load error:', err);
-    container.innerHTML = '<div class="card"><div style="color:#d32f2f;">データの取得に失敗しました</div><button class="btn-secondary" style="margin-top:12px;" onclick="loadDifferenceSettlement(' + year + ', \'' + period + '\')">リトライ</button></div>';
+    container.innerHTML = '<div class="card"><div style="color:#d32f2f;">データの取得に失敗しました</div><button class="btn-secondary" style="margin-top:12px;" onclick="loadDifferenceSettlement(\'' + yearMonth + '\')">リトライ</button></div>';
     showToast('データの取得に失敗しました');
   }
 }
@@ -1400,6 +1408,64 @@ async function executeDifferenceSettlement(year, period) {
     if (btn) btn.disabled = false;
     if (err.message && err.message.includes('Already settled')) {
       showToast('この期間は既に差額精算済みです');
+    } else {
+      showToast('差額精算確定に失敗しました');
+    }
+  }
+}
+
+async function executeDifferenceSettlementMonthly(yearMonth) {
+  if (!confirm(`${yearMonth} の差額精算を確定しますか？`)) return;
+
+  const btn = document.getElementById('btn-execute-diff');
+  if (btn) btn.disabled = true;
+
+  try {
+    // Get target expenses for this month
+    const { data: expenses, error: fetchErr } = await client
+      .from('monthly_expenses')
+      .select('id, payer, planned_amount, actual_amount, difference, expense_master:expense_master_id(settlement_cycle)')
+      .eq('year_month', yearMonth)
+      .eq('difference_settled', false);
+    if (fetchErr) throw fetchErr;
+
+    const halfYearExpenses = (expenses || []).filter(e => e.expense_master && e.expense_master.settlement_cycle === 'half_year');
+    const result = calculateDifferenceSettlement(halfYearExpenses);
+
+    if (result.transfers.length === 0 || !shouldCreateSettlement(result.transfers[0].amount)) {
+      showToast('差額が0円のため精算不要です');
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    const transfer = result.transfers[0];
+    const expenseIds = halfYearExpenses.map(e => e.id);
+    const [y, m] = yearMonth.split('-');
+
+    const { data: settlementId, error } = await client.rpc('execute_difference_settlement', {
+      p_year: y,
+      p_period: yearMonth,
+      p_payer_from: transfer.from,
+      p_payer_to: transfer.to,
+      p_amount: transfer.amount,
+      p_monthly_expense_ids: expenseIds
+    });
+
+    if (error) throw error;
+
+    showToast('差額精算を確定しました');
+
+    // Discord通知
+    notifyDiscord(`✅ **差額精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
+    // Push通知
+    queuePushNotification('✅ 差額精算確定', `${yearMonth}の差額精算が確定しました。${transfer.from}→${transfer.to} ${transfer.amount.toLocaleString()}円`, 'all');
+
+    loadDifferenceSettlement(yearMonth);
+  } catch (err) {
+    console.error('Execute difference settlement monthly error:', err);
+    if (btn) btn.disabled = false;
+    if (err.message && err.message.includes('Already settled')) {
+      showToast('この月は既に差額精算済みです');
     } else {
       showToast('差額精算確定に失敗しました');
     }
@@ -1652,7 +1718,7 @@ async function revertMonthlySettlement(settlementId, yearMonth) {
   }
 }
 
-async function revertDifferenceSettlement(settlementId, year, period) {
+async function revertDifferenceSettlement(settlementId, yearMonth) {
   if (!confirm('差額精算を取り消して処理前の状態に戻しますか？\n差額精算済みフラグも元に戻ります。')) return;
 
   try {
@@ -1672,18 +1738,17 @@ async function revertDifferenceSettlement(settlementId, year, period) {
     showToast('差額精算を取り消しました');
 
     // Discord通知
-    const periodLabel = period === 'first_half' ? '上半期' : '下半期';
-    const content = `⏪ **差額精算取消** (${year}年${periodLabel})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の差額精算を取り消しました`;
+    const content = `⏪ **差額精算取消** (${record.target_period})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の差額精算を取り消しました`;
     notifyDiscord(content);
 
     // Push通知（両方に通知）
     queuePushNotification(
       '⏪ 差額精算取消',
-      `${year}年${periodLabel}の差額精算（${record.payer_from}→${record.payer_to} ${record.amount.toLocaleString()}円）が取り消されました`,
+      `${record.target_period}の差額精算（${record.payer_from}→${record.payer_to} ${record.amount.toLocaleString()}円）が取り消されました`,
       'all'
     );
 
-    loadDifferenceSettlement(year, period);
+    loadDifferenceSettlement(yearMonth);
   } catch (err) {
     console.error('Revert difference settlement error:', err);
     if (err.message && err.message.includes('not found')) {

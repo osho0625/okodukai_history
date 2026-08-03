@@ -77,11 +77,17 @@ fileMatchPattern: "*settlement*"
 - 精算開始月: 2026-06（SETTLEMENT_START_MONTH）。これ以前のデータは生成・表示しない
 - 同月に複数回の月次精算が可能（精算後の追加立替対応）
 - 端数: floor()で切り捨て、payer_from（支払う側）に有利
-- 差額精算期間: 固定2期間（1〜6月=上半期、7〜12月=下半期）
+- 差額精算期間: 月単位（各月ごとに差額精算を確定）
 - Expense_Master変更は既生成のMonthly_Expenseに影響しない
 - 「月次精算済み」の判定: settlement_historyにレコードがあるかで導出
 - 精算確定はSupabase RPC（Transaction + ROW_COUNTチェック）
 - Monthly_Expense生成: 手動ボタン「この月の精算データを作成する」で明示的に作成（INSERT ON CONFLICT DO NOTHING）
+
+## ダッシュボード
+
+- 今月の精算カード: 右上に「＋立替追加」ボタン（翌月の year_month で temporary_expenses に登録）
+- 未精算月: SETTLEMENT_START_MONTH〜当月で settlement_history にレコードがない月の一覧
+- 差額精算待ち: 半年項目で actual_amount 未入力 or difference_settled=false の月の一覧
 
 ## RPC Functions
 
