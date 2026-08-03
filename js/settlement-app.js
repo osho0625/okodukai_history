@@ -655,13 +655,34 @@ async function loadMonthlySettlement(yearMonth) {
     // Calculation result
     html += '<div class="card" style="background:#e3f2fd;">';
     html += `<h4 style="margin-bottom:8px;">精算結果</h4>`;
+    // 各payerの項目内での相手負担額を表示
+    for (const payer of payers) {
+      const otherPayer = payers.find(p => p !== payer);
+      if (!otherPayer) continue;
+      const payerMonthlyForCalc = (monthlyExpenses || []).filter(e => e.payer === payer);
+      const payerTempForCalc = unsettledTemp.filter(t => t.payer === payer);
+      let otherOwesForPayer = 0;
+      for (const exp of payerMonthlyForCalc) {
+        otherOwesForPayer += exp.planned_amount / 2;
+      }
+      for (const t of payerTempForCalc) {
+        const beneficiaries = (t.beneficiaries && t.beneficiaries.length > 0) ? t.beneficiaries : payers;
+        if (beneficiaries.includes(otherPayer)) {
+          otherOwesForPayer += t.amount / beneficiaries.length;
+        }
+      }
+      otherOwesForPayer = Math.round(otherOwesForPayer);
+      if (otherOwesForPayer > 0) {
+        html += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.95em;"><span>${escapeHtml(payer)}の項目</span><span>${escapeHtml(otherPayer)}→${escapeHtml(payer)}: ${formatAmount(otherOwesForPayer)}</span></div>`;
+      }
+    }
     if (result.transfers.length > 0) {
       const t = result.transfers[0];
-      html += `<div style="padding:12px;background:#fff;border-radius:8px;text-align:center;font-size:1.1em;font-weight:700;">`;
-      html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
+      html += `<div style="margin-top:8px;padding:12px;background:#fff;border-radius:8px;text-align:center;font-size:1.1em;font-weight:700;">`;
+      html += `計: ${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
       html += `</div>`;
     } else {
-      html += `<div style="text-align:center;color:#888;">精算不要（差額0円）</div>`;
+      html += `<div style="margin-top:8px;text-align:center;color:#888;">精算不要（差額0円）</div>`;
     }
     html += '</div>';
 
