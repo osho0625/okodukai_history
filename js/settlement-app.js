@@ -679,7 +679,7 @@ async function loadMonthlySettlement(yearMonth) {
     if (result.transfers.length > 0) {
       const t = result.transfers[0];
       html += `<div style="margin-top:8px;padding:12px;background:#fff;border-radius:8px;text-align:center;font-size:1.1em;font-weight:700;">`;
-      html += `計: ${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
+      html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
       html += `</div>`;
     } else {
       html += `<div style="margin-top:8px;text-align:center;color:#888;">精算不要（差額0円）</div>`;
