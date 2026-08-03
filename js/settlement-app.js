@@ -50,7 +50,6 @@ function onTabSwitch(tab) {
     case 'dashboard': loadDashboard(); break;
     case 'master': loadExpenseMasters(); break;
     case 'monthly': loadMonthlySettlement(currentMonthlyYearMonth); break;
-    case 'difference': loadDifferenceManagement(); break;
     case 'diff-settlement': loadDifferenceSettlement(getCurrentYearMonth()); break;
   }
 }
@@ -1290,7 +1289,7 @@ async function loadDifferenceSettlement(year, period) {
       html += '</div>';
     }
 
-    // Difference list
+    // Difference list with actual amount input
     html += '<div class="card">';
     html += '<h4 style="margin-bottom:8px;">差額一覧</h4>';
     if (halfYearExpenses.length === 0) {
@@ -1303,12 +1302,13 @@ async function loadDifferenceSettlement(year, period) {
         const name = exp.expense_master ? exp.expense_master.name : '(不明)';
         const diff = calculateDifference(exp.actual_amount, exp.planned_amount);
         const diffColor = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#888';
+        const disabled = exp.difference_settled ? 'disabled style="background:#f5f5f5;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;"' : 'style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;"';
         html += `<tr style="border-bottom:1px solid #f0f0f0;">`;
         html += `<td style="padding:4px;">${escapeHtml(name)}</td>`;
         html += `<td style="padding:4px;">${escapeHtml(exp.payer)}</td>`;
         html += `<td style="text-align:right;padding:4px;">${formatAmount(exp.planned_amount)}</td>`;
-        html += `<td style="text-align:right;padding:4px;">${exp.actual_amount != null ? formatAmount(exp.actual_amount) : '-'}</td>`;
-        html += `<td style="text-align:right;padding:4px;color:${diffColor};font-weight:600;">${exp.actual_amount != null ? ((diff >= 0 ? '+' : '') + formatAmount(diff)) : '-'}</td>`;
+        html += `<td style="text-align:right;padding:4px;"><input type="number" value="${exp.actual_amount != null ? exp.actual_amount : ''}" placeholder="未入力" ${disabled} data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)"></td>`;
+        html += `<td style="text-align:right;padding:4px;color:${diffColor};font-weight:600;" id="diff-${exp.id}">${exp.actual_amount != null ? ((diff >= 0 ? '+' : '') + formatAmount(diff)) : '-'}</td>`;
         html += `</tr>`;
       }
       html += '</tbody></table>';
