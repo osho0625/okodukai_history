@@ -1263,7 +1263,7 @@ async function loadDifferenceManagement() {
         if (rec.difference_settled) {
           html += `<span style="font-size:0.95em;">${rec.actual_amount != null ? formatAmount(rec.actual_amount) : '-'}</span>`;
         } else if (rec.actual_amount != null) {
-          html += `<span id="actual-display-${rec.id}" style="font-size:0.95em;">${formatAmount(rec.actual_amount)} <span style="cursor:pointer;font-size:0.85em;" onclick="enableActualEdit('${rec.id}', ${rec.planned_amount})">✏</span></span>`;
+          html += `<span id="actual-display-${rec.id}" style="font-size:0.95em;">${formatAmount(rec.actual_amount)} <button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;" onclick="enableActualEdit('${rec.id}', ${rec.planned_amount})">✏️</button></span>`;
           html += `<input id="actual-input-${rec.id}" type="number" value="${rec.actual_amount}" data-id="${rec.id}" data-planned="${rec.planned_amount}" onchange="onActualAmountChange(this)" style="display:none;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;" onkeydown="if(event.key==='Enter')this.blur()">`;
         } else {
           html += `<input type="number" value="" placeholder="未入力" data-id="${rec.id}" data-planned="${rec.planned_amount}" onchange="onActualAmountChange(this)" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;">`;
@@ -1416,7 +1416,7 @@ async function loadDifferenceSettlement(year, period) {
         if (exp.difference_settled) {
           html += `<span style="font-size:0.95em;">${exp.actual_amount != null ? formatAmount(exp.actual_amount) : '-'}</span>`;
         } else if (exp.actual_amount != null) {
-          html += `<span id="actual-display-${exp.id}" style="font-size:0.95em;">${formatAmount(exp.actual_amount)} <span style="cursor:pointer;font-size:0.85em;" onclick="enableActualEdit('${exp.id}', ${exp.planned_amount})">✏</span></span>`;
+          html += `<span id="actual-display-${exp.id}" style="font-size:0.95em;">${formatAmount(exp.actual_amount)} <button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;" onclick="enableActualEdit('${exp.id}', ${exp.planned_amount})">✏️</button></span>`;
           html += `<input id="actual-input-${exp.id}" type="number" value="${exp.actual_amount}" data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)" style="display:none;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;" onkeydown="if(event.key==='Enter')this.blur()">`;
         } else {
           html += `<input type="number" value="" placeholder="未入力" data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;">`;
