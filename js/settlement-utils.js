@@ -226,22 +226,25 @@ function getPeriodMonths(year, period) {
  * @param {Array} monthlyExpenses - 対象期間のhalf_year & difference_settled=falseレコード
  * @returns {{payerDiffs: Object, transfers: Array, suggestions: Array}}
  */
-function calculateDifferenceSettlement(monthlyExpenses) {
+function calculateDifferenceSettlement(monthlyExpenses, payers) {
   // payer別の累積差額
+  const allPayers = payers || ['めぐみ', '涼介'];
   const payerDiffs = {};
+  for (const p of allPayers) {
+    payerDiffs[p] = 0;
+  }
   for (const exp of monthlyExpenses) {
     const diff = calculateDifference(exp.actual_amount, exp.planned_amount);
     payerDiffs[exp.payer] = (payerDiffs[exp.payer] || 0) + diff;
   }
 
-  const payers = Object.keys(payerDiffs);
   const householdDiffTotal = Object.values(payerDiffs).reduce((sum, v) => sum + v, 0);
-  const fairDiff = Math.floor(householdDiffTotal / 2);
+  const fairDiff = Math.floor(householdDiffTotal / allPayers.length);
 
-  // transfers（月次と同じロジック）
+  // transfers: 差額を折半して差し引き
   const transfers = [];
-  if (payers.length >= 2) {
-    const sorted = payers.slice().sort((a, b) => payerDiffs[a] - payerDiffs[b]);
+  if (allPayers.length >= 2) {
+    const sorted = allPayers.slice().sort((a, b) => payerDiffs[a] - payerDiffs[b]);
     const payerFrom = sorted[0];
     const payerTo = sorted[1];
     const amount = fairDiff - payerDiffs[payerFrom];

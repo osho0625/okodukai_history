@@ -1217,19 +1217,6 @@ async function onActualAmountChange(input) {
   const value = input.value.trim();
   const actualAmount = value === '' ? null : parseInt(value, 10);
 
-  // Real-time difference display
-  const diff = calculateDifference(actualAmount, planned);
-  const diffEl = document.getElementById('diff-' + id);
-  if (diffEl) {
-    if (actualAmount == null) {
-      diffEl.textContent = '-';
-      diffEl.style.color = '#888';
-    } else {
-      diffEl.textContent = (diff >= 0 ? '+' : '') + formatAmount(diff);
-      diffEl.style.color = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#888';
-    }
-  }
-
   // Save to DB
   try {
     const { error } = await client
@@ -1237,6 +1224,16 @@ async function onActualAmountChange(input) {
       .update({ actual_amount: actualAmount })
       .eq('id', id);
     if (error) throw error;
+    // ページを自動更新して精算結果を再計算
+    const container = document.getElementById('tab-diff-settlement');
+    if (container && container.classList.contains('active')) {
+      // 差額精算タブが表示中なら再読み込み
+      const monthHeader = container.querySelector('h3');
+      const match = monthHeader && monthHeader.textContent.match(/(\d{4}-\d{2})/);
+      if (match) {
+        loadDifferenceSettlement(match[1]);
+      }
+    }
   } catch (err) {
     console.error('Save actual amount error:', err);
     showToast('保存に失敗しました');
@@ -1283,7 +1280,7 @@ async function loadDifferenceSettlement(year, period) {
     const halfYearExpenses = (expenses || []).filter(e => e.expense_master && e.expense_master.settlement_cycle === 'half_year');
 
     // Calculate difference settlement
-    const result = calculateDifferenceSettlement(halfYearExpenses);
+    const result = calculateDifferenceSettlement(halfYearExpenses, ['めぐみ', '涼介']);
 
     // Render
     let html = '';
@@ -1393,7 +1390,7 @@ async function executeDifferenceSettlement(year, period) {
     if (fetchErr) throw fetchErr;
 
     const halfYearExpenses = (expenses || []).filter(e => e.expense_master && e.expense_master.settlement_cycle === 'half_year');
-    const result = calculateDifferenceSettlement(halfYearExpenses);
+    const result = calculateDifferenceSettlement(halfYearExpenses, ['めぐみ', '涼介']);
 
     if (result.transfers.length === 0 || !shouldCreateSettlement(result.transfers[0].amount)) {
       showToast('差額が0円のため精算不要です');
@@ -1451,7 +1448,7 @@ async function executeDifferenceSettlementMonthly(yearMonth) {
     if (fetchErr) throw fetchErr;
 
     const halfYearExpenses = (expenses || []).filter(e => e.expense_master && e.expense_master.settlement_cycle === 'half_year');
-    const result = calculateDifferenceSettlement(halfYearExpenses);
+    const result = calculateDifferenceSettlement(halfYearExpenses, ['めぐみ', '涼介']);
 
     if (result.transfers.length === 0 || !shouldCreateSettlement(result.transfers[0].amount)) {
       showToast('差額が0円のため精算不要です');
