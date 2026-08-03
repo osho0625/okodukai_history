@@ -142,6 +142,16 @@ h1 { margin-bottom: 16px; color: #333; font-size: 1.4em; }
 }
 
 /* レスポンシブ */
+/* number inputのスピンボタン非表示 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 @media (max-width: 480px) {
   body { padding: 12px; padding-bottom: 80px; }
   h1 { font-size: 1.2em; }
