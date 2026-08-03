@@ -643,7 +643,9 @@ async function loadMonthlySettlement(yearMonth) {
         html += '</div>';
       }
       // Temporary expenses for this payer
-      const payerTemp = unsettledTemp.filter(t => t.payer === payer);
+      const payerTemp = isSettled
+        ? (tempExpenses || []).filter(t => t.payer === payer && t.settled)
+        : unsettledTemp.filter(t => t.payer === payer);
       if (payerTemp.length > 0) {
         html += '<div style="border-top:1px dashed #ddd;padding-top:8px;margin-top:8px;">';
         html += '<div style="font-size:0.85em;color:#888;margin-bottom:4px;">一時立替:</div>';
@@ -699,7 +701,9 @@ async function loadMonthlySettlement(yearMonth) {
       const otherPayer = payers.find(p => p !== payer);
       if (!otherPayer) continue;
       const payerMonthlyForCalc = (monthlyExpenses || []).filter(e => e.payer === payer);
-      const payerTempForCalc = unsettledTemp.filter(t => t.payer === payer);
+      const payerTempForCalc = isSettled
+        ? (tempExpenses || []).filter(t => t.payer === payer && t.settled)
+        : unsettledTemp.filter(t => t.payer === payer);
       let otherOwesForPayer = 0;
       for (const exp of payerMonthlyForCalc) {
         otherOwesForPayer += exp.planned_amount / 2;
