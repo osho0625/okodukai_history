@@ -599,17 +599,28 @@ async function loadMonthlySettlement(yearMonth) {
       html += `<div style="border-top:1px solid #ddd;padding-top:8px;margin-top:8px;font-weight:600;display:flex;justify-content:space-between;">`;
       html += `<span>小計</span><span>${formatAmount(result.payerTotals[payer])}</span>`;
       html += `</div>`;
-      // 相手→自分の精算額を表示
-      if (result.transfers.length > 0) {
-        const t = result.transfers[0];
-        if (t.to === payer) {
-          html += `<div style="margin-top:8px;padding:10px;background:#e8f5e9;border-radius:8px;text-align:center;font-weight:700;color:#2e7d32;">`;
-          html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
-          html += `</div>`;
-        } else if (t.from === payer) {
-          html += `<div style="margin-top:8px;padding:10px;background:#ffebee;border-radius:8px;text-align:center;font-weight:700;color:#c62828;">`;
-          html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
-          html += `</div>`;
+      // 相手→自分の精算額を表示（このpayerの項目内で相手が負担すべき金額）
+      {
+        const otherPayer = payers.find(p => p !== payer);
+        if (otherPayer && result.payerTotals[payer] > 0) {
+          // 固定費: 折半なので planned_amount / 2 が相手の負担分
+          let otherOwes = 0;
+          for (const exp of payerMonthly) {
+            otherOwes += exp.planned_amount / 2;
+          }
+          // 一時立替: beneficiariesに応じて按分
+          for (const t of payerTemp) {
+            const beneficiaries = (t.beneficiaries && t.beneficiaries.length > 0) ? t.beneficiaries : payers;
+            if (beneficiaries.includes(otherPayer)) {
+              otherOwes += t.amount / beneficiaries.length;
+            }
+          }
+          otherOwes = Math.round(otherOwes);
+          if (otherOwes > 0) {
+            html += `<div style="margin-top:8px;padding:10px;background:#e8f5e9;border-radius:8px;text-align:center;font-weight:700;color:#2e7d32;">`;
+            html += `${escapeHtml(otherPayer)} → ${escapeHtml(payer)}: ${formatAmount(otherOwes)}`;
+            html += `</div>`;
+          }
         }
       }
       html += `</div>`;
