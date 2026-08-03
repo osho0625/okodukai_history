@@ -1496,11 +1496,9 @@ async function executeDifferenceSettlementMonthly(yearMonth) {
 
     const transfer = result.transfers[0];
     const expenseIds = halfYearExpenses.map(e => e.id);
-    const [y, m] = yearMonth.split('-');
 
-    const { data: settlementId, error } = await client.rpc('execute_difference_settlement', {
-      p_year: y,
-      p_period: yearMonth,
+    const { data: settlementId, error } = await client.rpc('execute_difference_settlement_monthly', {
+      p_year_month: yearMonth,
       p_payer_from: transfer.from,
       p_payer_to: transfer.to,
       p_amount: transfer.amount,
@@ -1508,11 +1506,6 @@ async function executeDifferenceSettlementMonthly(yearMonth) {
     });
 
     if (error) throw error;
-
-    // 精算確定=支払い完了なので即paidに更新
-    if (settlementId) {
-      await client.from('settlement_history').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', settlementId);
-    }
 
     showToast('差額精算を確定しました');
 

@@ -16,6 +16,7 @@ fileMatchPattern: "*settlement*"
 - `js/settlement-app.js` — UI・Supabase操作
 - `sql/create_settlement_tables.sql` — テーブル定義
 - `sql/create_settlement_rpc.sql` — Postgres Functions（Transaction）
+- `sql/create_settlement_rpc_monthly_diff.sql` — 差額精算確定（月単位版）Postgres Function
 - `sql/create_settlement_revert_rpc.sql` — 精算取消 Postgres Functions
 - `sql/alter_monthly_expenses_manual.sql` — 手動追加対応（expense_master_id NULLable + name追加）
 - `sql/alter_settlement_rls.sql` — RLS無効化（再実行用）
