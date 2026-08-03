@@ -1194,7 +1194,14 @@ async function loadDifferenceManagement() {
         html += `<td style="padding:6px 4px;">${rec.year_month}${settledBadge}</td>`;
         html += `<td style="text-align:right;padding:6px 4px;">${formatAmount(rec.planned_amount)}</td>`;
         html += `<td style="text-align:right;padding:6px 4px;">`;
-        html += `<input type="number" value="${rec.actual_amount != null ? rec.actual_amount : ''}" placeholder="未入力" ${disabled} data-id="${rec.id}" data-planned="${rec.planned_amount}" onchange="onActualAmountChange(this)" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;">`;
+        if (rec.difference_settled) {
+          html += `<span style="font-size:0.95em;">${rec.actual_amount != null ? formatAmount(rec.actual_amount) : '-'}</span>`;
+        } else if (rec.actual_amount != null) {
+          html += `<span id="actual-display-${rec.id}" style="font-size:0.95em;">${formatAmount(rec.actual_amount)} <span style="cursor:pointer;font-size:0.85em;" onclick="enableActualEdit('${rec.id}', ${rec.planned_amount})">✏</span></span>`;
+          html += `<input id="actual-input-${rec.id}" type="number" value="${rec.actual_amount}" data-id="${rec.id}" data-planned="${rec.planned_amount}" onchange="onActualAmountChange(this)" style="display:none;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;" onkeydown="if(event.key==='Enter')this.blur()">`;
+        } else {
+          html += `<input type="number" value="" placeholder="未入力" data-id="${rec.id}" data-planned="${rec.planned_amount}" onchange="onActualAmountChange(this)" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;">`;
+        }
         html += `</td>`;
         html += `<td style="text-align:right;padding:6px 4px;color:${diffColor};font-weight:600;" id="diff-${rec.id}">${diffText}</td>`;
         html += `</tr>`;
@@ -1208,6 +1215,17 @@ async function loadDifferenceManagement() {
     console.error('Difference management load error:', err);
     container.innerHTML = '<div class="card"><div style="color:#d32f2f;">データの取得に失敗しました</div><button class="btn-secondary" style="margin-top:12px;" onclick="loadDifferenceManagement()">リトライ</button></div>';
     showToast('データの取得に失敗しました');
+  }
+}
+
+function enableActualEdit(id, planned) {
+  const display = document.getElementById('actual-display-' + id);
+  const input = document.getElementById('actual-input-' + id);
+  if (display && input) {
+    display.style.display = 'none';
+    input.style.display = 'inline-block';
+    input.focus();
+    input.select();
   }
 }
 
@@ -1320,12 +1338,20 @@ async function loadDifferenceSettlement(year, period) {
         const name = exp.expense_master ? exp.expense_master.name : '(不明)';
         const diff = calculateDifference(exp.actual_amount, exp.planned_amount);
         const diffColor = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#888';
-        const disabled = exp.difference_settled ? 'disabled style="background:#f5f5f5;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;"' : 'style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;"';
         html += `<tr style="border-bottom:1px solid #f0f0f0;">`;
         html += `<td style="padding:4px;">${escapeHtml(name)}</td>`;
         html += `<td style="padding:4px;">${escapeHtml(exp.payer)}</td>`;
         html += `<td style="text-align:right;padding:4px;">${formatAmount(exp.planned_amount)}</td>`;
-        html += `<td style="text-align:right;padding:4px;"><input type="number" value="${exp.actual_amount != null ? exp.actual_amount : ''}" placeholder="未入力" ${disabled} data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)"></td>`;
+        html += `<td style="text-align:right;padding:4px;">`;
+        if (exp.difference_settled) {
+          html += `<span style="font-size:0.95em;">${exp.actual_amount != null ? formatAmount(exp.actual_amount) : '-'}</span>`;
+        } else if (exp.actual_amount != null) {
+          html += `<span id="actual-display-${exp.id}" style="font-size:0.95em;">${formatAmount(exp.actual_amount)} <span style="cursor:pointer;font-size:0.85em;" onclick="enableActualEdit('${exp.id}', ${exp.planned_amount})">✏</span></span>`;
+          html += `<input id="actual-input-${exp.id}" type="number" value="${exp.actual_amount}" data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)" style="display:none;width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;" onkeydown="if(event.key==='Enter')this.blur()">`;
+        } else {
+          html += `<input type="number" value="" placeholder="未入力" data-id="${exp.id}" data-planned="${exp.planned_amount}" onchange="onActualAmountChange(this)" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:0.95em;-moz-appearance:textfield;">`;
+        }
+        html += `</td>`;
         html += `<td style="text-align:right;padding:4px;color:${diffColor};font-weight:600;" id="diff-${exp.id}">${exp.actual_amount != null ? ((diff >= 0 ? '+' : '') + formatAmount(diff)) : '-'}</td>`;
         html += `</tr>`;
       }
