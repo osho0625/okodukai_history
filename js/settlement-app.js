@@ -31,6 +31,48 @@ let currentMonthlyYearMonth = getCurrentYearMonth();
 let currentDiffYear = new Date().getFullYear();
 let currentDiffPeriod = getDifferenceSettlementPeriod(getCurrentYearMonth());
 
+// ========== Audit Log ==========
+async function logSettlementAction(action, targetType, detail, yearMonth, targetId) {
+  try {
+    await client.from('settlement_audit_log').insert({
+      action,
+      target_type: targetType,
+      detail,
+      year_month: yearMonth || null,
+      target_id: targetId || null
+    });
+  } catch (err) {
+    console.error('Audit log error:', err);
+  }
+}
+
+async function loadAuditLog(yearMonth) {
+  const { data, error } = await client
+    .from('settlement_audit_log')
+    .select('id, action, target_type, detail, year_month, created_at')
+    .eq('year_month', yearMonth)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  if (error) { console.error('Load audit log error:', error); return []; }
+  return data || [];
+}
+
+function renderAuditLog(logs) {
+  if (!logs || logs.length === 0) return '';
+  let html = '<div class="card" style="margin-top:16px;">';
+  html += '<h4 style="margin-bottom:8px;">📝 操作履歴</h4>';
+  html += '<div style="max-height:200px;overflow-y:auto;font-size:0.85em;">';
+  for (const log of logs) {
+    const time = new Date(log.created_at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    html += `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;">`;
+    html += `<span>${escapeHtml(log.detail)}</span>`;
+    html += `<span style="color:#999;white-space:nowrap;margin-left:8px;">${time}</span>`;
+    html += `</div>`;
+  }
+  html += '</div></div>';
+  return html;
+}
+
 // ========== initApp ==========
 function initApp() {
   // Tab switching is handled by inline script in HTML.
@@ -738,6 +780,10 @@ async function loadMonthlySettlement(yearMonth) {
       html += '</div>';
     }
 
+    // 操作履歴
+    const auditLogs = await loadAuditLog(yearMonth);
+    html += renderAuditLog(auditLogs);
+
     container.innerHTML = html;
   } catch (err) {
     console.error('Monthly settlement load error:', err);
@@ -792,6 +838,7 @@ async function executeMonthlySettlement(yearMonth) {
     }
 
     showToast('精算を確定しました');
+    logSettlementAction('settlement_confirm', 'monthly_settlement', `${transfer.from}→${transfer.to}: ${transfer.amount.toLocaleString()}円 確定`, yearMonth);
 
     // Discord通知
     notifyDiscord(`✅ **月次精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
@@ -859,6 +906,7 @@ async function executeAdditionalSettlement(yearMonth) {
     }
 
     showToast('追加精算を確定しました');
+    logSettlementAction('settlement_confirm', 'monthly_settlement', `追加精算 ${transfer.from}→${transfer.to}: ${transfer.amount.toLocaleString()}円 確定`, yearMonth);
 
     // Discord通知
     notifyDiscord(`✅ **追加精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
@@ -1095,12 +1143,14 @@ async function saveTemporaryExpense(id) {
         .eq('id', id);
       if (error) throw error;
       showToast('立替金を更新しました');
+      logSettlementAction('temp_edit', 'temporary_expense', `${title.trim()} (${payer}) ${amount.toLocaleString()}円 編集`, yearMonth, id);
     } else {
       const { error } = await client
         .from('temporary_expenses')
         .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note });
       if (error) throw error;
       showToast('立替金を追加しました');
+      logSettlementAction('temp_add', 'temporary_expense', `${title.trim()} (${payer}) ${amount.toLocaleString()}円 追加`, yearMonth);
     }
     closeTempModal();
     loadMonthlySettlement(currentMonthlyYearMonth);
@@ -1130,6 +1180,7 @@ async function deleteTemporaryExpense(id) {
       .eq('id', id);
     if (error) throw error;
     showToast('立替金を削除しました');
+    logSettlementAction('temp_delete', 'temporary_expense', `立替金削除`, currentMonthlyYearMonth, id);
     loadMonthlySettlement(currentMonthlyYearMonth);
   } catch (err) {
     console.error('Delete temporary expense error:', err);
@@ -1257,10 +1308,17 @@ async function onActualAmountChange(input) {
       .update({ actual_amount: actualAmount })
       .eq('id', id);
     if (error) throw error;
-    // ページを自動更新して精算結果を再計算
+    // 操作ログ
     const container = document.getElementById('tab-diff-settlement');
+    let logYm = null;
     if (container && container.classList.contains('active')) {
-      // 差額精算タブが表示中なら再読み込み
+      const monthHeader = container.querySelector('h3');
+      const match = monthHeader && monthHeader.textContent.match(/(\d{4}-\d{2})/);
+      if (match) logYm = match[1];
+    }
+    logSettlementAction('actual_amount_edit', 'monthly_expense', `実費 ${actualAmount != null ? actualAmount.toLocaleString() + '円' : '未入力'} に変更`, logYm, id);
+    // ページを自動更新して精算結果を再計算
+    if (container && container.classList.contains('active')) {
       const monthHeader = container.querySelector('h3');
       const match = monthHeader && monthHeader.textContent.match(/(\d{4}-\d{2})/);
       if (match) {
@@ -1402,6 +1460,10 @@ async function loadDifferenceSettlement(year, period) {
       html += '</div>';
     }
 
+    // 操作履歴
+    const auditLogs = await loadAuditLog(yearMonth);
+    html += renderAuditLog(auditLogs);
+
     container.innerHTML = html;
   } catch (err) {
     console.error('Difference settlement load error:', err);
@@ -1508,6 +1570,7 @@ async function executeDifferenceSettlementMonthly(yearMonth) {
     if (error) throw error;
 
     showToast('差額精算を確定しました');
+    logSettlementAction('settlement_confirm', 'difference_settlement', `${transfer.from}→${transfer.to}: ${transfer.amount.toLocaleString()}円 差額精算確定`, yearMonth);
 
     // Discord通知
     notifyDiscord(`✅ **差額精算確定** (${yearMonth})\n${transfer.from} → ${transfer.to}: ${transfer.amount.toLocaleString()}円`);
@@ -1677,6 +1740,7 @@ async function saveMonthlyExpenseEdit(id, isManual) {
       .eq('id', id);
     if (error) throw error;
     showToast('更新しました');
+    logSettlementAction('monthly_expense_edit', 'monthly_expense', `${payer} ${amount.toLocaleString()}円 に更新`, currentMonthlyYearMonth, id);
     closeMonthlyExpenseModal();
     loadMonthlySettlement(currentMonthlyYearMonth);
   } catch (err) {
@@ -1723,6 +1787,7 @@ async function deleteMonthlyExpense(id, yearMonth) {
       .eq('id', id);
     if (error) throw error;
     showToast('項目を削除しました');
+    logSettlementAction('monthly_expense_delete', 'monthly_expense', `固定費項目削除`, yearMonth, id);
     loadMonthlySettlement(yearMonth);
   } catch (err) {
     console.error('Delete monthly expense error:', err);
@@ -1749,6 +1814,7 @@ async function revertMonthlySettlement(settlementId, yearMonth) {
     if (error) throw error;
 
     showToast('精算を取り消しました');
+    logSettlementAction('settlement_revert', 'monthly_settlement', `${record.payer_from}→${record.payer_to}: ${record.amount.toLocaleString()}円 取消`, yearMonth);
 
     // Discord通知
     const content = `⏪ **月次精算取消** (${yearMonth})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の精算を取り消しました`;
@@ -1790,6 +1856,7 @@ async function revertDifferenceSettlement(settlementId, yearMonth) {
     if (error) throw error;
 
     showToast('差額精算を取り消しました');
+    logSettlementAction('settlement_revert', 'difference_settlement', `${record.payer_from}→${record.payer_to}: ${record.amount.toLocaleString()}円 差額精算取消`, yearMonth);
 
     // Discord通知
     const content = `⏪ **差額精算取消** (${record.target_period})\n${record.payer_from} → ${record.payer_to}: ${record.amount.toLocaleString()}円 の差額精算を取り消しました`;
