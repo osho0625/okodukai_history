@@ -599,6 +599,19 @@ async function loadMonthlySettlement(yearMonth) {
       html += `<div style="border-top:1px solid #ddd;padding-top:8px;margin-top:8px;font-weight:600;display:flex;justify-content:space-between;">`;
       html += `<span>小計</span><span>${formatAmount(result.payerTotals[payer])}</span>`;
       html += `</div>`;
+      // 相手→自分の精算額を表示
+      if (result.transfers.length > 0) {
+        const t = result.transfers[0];
+        if (t.to === payer) {
+          html += `<div style="margin-top:8px;padding:10px;background:#e8f5e9;border-radius:8px;text-align:center;font-weight:700;color:#2e7d32;">`;
+          html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
+          html += `</div>`;
+        } else if (t.from === payer) {
+          html += `<div style="margin-top:8px;padding:10px;background:#ffebee;border-radius:8px;text-align:center;font-weight:700;color:#c62828;">`;
+          html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
+          html += `</div>`;
+        }
+      }
       html += `</div>`;
     }
 
@@ -612,21 +625,13 @@ async function loadMonthlySettlement(yearMonth) {
     // Calculation result
     html += '<div class="card" style="background:#e3f2fd;">';
     html += `<h4 style="margin-bottom:8px;">精算結果</h4>`;
-    html += `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>世帯合計</span><span>${formatAmount(result.householdTotal)}</span></div>`;
-    html += `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>一人あたり (折半)</span><span>${formatAmount(result.fairShare)}</span></div>`;
-    for (const payer of payers) {
-      const diff = result.payerDiffs[payer];
-      const color = diff > 0 ? '#d32f2f' : diff < 0 ? '#2e7d32' : '#333';
-      const sign = diff > 0 ? '+' : '';
-      html += `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${escapeHtml(payer)} 差分</span><span style="color:${color};">${sign}${formatAmount(diff)}</span></div>`;
-    }
     if (result.transfers.length > 0) {
       const t = result.transfers[0];
-      html += `<div style="margin-top:12px;padding:12px;background:#fff;border-radius:8px;text-align:center;font-size:1.1em;font-weight:700;">`;
+      html += `<div style="padding:12px;background:#fff;border-radius:8px;text-align:center;font-size:1.1em;font-weight:700;">`;
       html += `${escapeHtml(t.from)} → ${escapeHtml(t.to)}: ${formatAmount(t.amount)}`;
       html += `</div>`;
     } else {
-      html += `<div style="margin-top:12px;text-align:center;color:#888;">精算不要（差額0円）</div>`;
+      html += `<div style="text-align:center;color:#888;">精算不要（差額0円）</div>`;
     }
     html += '</div>';
 
