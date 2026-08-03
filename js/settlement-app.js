@@ -130,7 +130,7 @@ async function loadDashboard() {
     html += `<button class="btn-secondary" style="padding:6px 12px;font-size:0.85em;" onclick="showTemporaryExpenseModal(null, '${nextYM}')">＋立替追加</button>`;
     html += `</div>`;
     if (historyCheck) {
-      html += `<div style="color:#4caf50;font-weight:600;">✅ 精算済み (${historyCheck.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
+      html += `<div style="color:#4caf50;font-weight:600;">✅ 精算済み</div>`;
       html += `<div style="margin-top:8px;">${escapeHtml(historyCheck.payer_from)} → ${escapeHtml(historyCheck.payer_to)}: ${formatAmount(historyCheck.amount)}</div>`;
     } else if (result.transfers.length > 0) {
       const t = result.transfers[0];
@@ -568,14 +568,11 @@ async function loadMonthlySettlement(yearMonth) {
     // Settled badge
     if (isSettled) {
       html += `<div class="card" style="background:#e8f5e9;border:1px solid #a5d6a7;">`;
-      html += `<div style="color:#2e7d32;font-weight:600;">✅ 精算確定済み (${settlementRecord.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
+      html += `<div style="color:#2e7d32;font-weight:600;">✅ 精算確定済み</div>`;
       html += `<div style="margin-top:4px;">${escapeHtml(settlementRecord.payer_from)} → ${escapeHtml(settlementRecord.payer_to)}: ${formatAmount(settlementRecord.amount)}</div>`;
       if (settlementRecord.memo) html += `<div style="margin-top:4px;color:#666;">メモ: ${escapeHtml(settlementRecord.memo)}</div>`;
       html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
-      if (settlementRecord.status === 'pending') {
-        html += `<button class="btn-primary" style="padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaid('${settlementRecord.id}')">支払い完了にする</button>`;
-        html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;" onclick="editSettlementMemo('${settlementRecord.id}')">メモ編集</button>`;
-      }
+      html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;" onclick="editSettlementMemo('${settlementRecord.id}')">メモ編集</button>`;
       html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertMonthlySettlement('${settlementRecord.id}', '${yearMonth}')">⏪ 精算取消</button>`;
       html += `</div>`;
       html += '</div>';
@@ -732,10 +729,9 @@ async function loadMonthlySettlement(yearMonth) {
       html += '<div class="card">';
       html += '<h4 style="margin-bottom:8px;">📝 精算履歴</h4>';
       for (const h of historyList) {
-        const statusLabel = h.status === 'paid' ? '✅支払済' : '⏳未払い';
         const typeLabel = h.settlement_type === 'monthly' ? '月次' : '差額';
         html += `<div style="padding:8px 0;border-bottom:1px solid #f0f0f0;">`;
-        html += `<div>${statusLabel} ${typeLabel}: ${escapeHtml(h.payer_from)} → ${escapeHtml(h.payer_to)} ${formatAmount(h.amount)}</div>`;
+        html += `<div>✅ ${typeLabel}: ${escapeHtml(h.payer_from)} → ${escapeHtml(h.payer_to)} ${formatAmount(h.amount)}</div>`;
         if (h.memo) html += `<div style="color:#666;font-size:0.85em;">メモ: ${escapeHtml(h.memo)}</div>`;
         html += `</div>`;
       }
@@ -790,6 +786,11 @@ async function executeMonthlySettlement(yearMonth) {
 
     if (error) throw error;
 
+    // 精算確定=支払い完了なので即paidに更新
+    if (settlementId) {
+      await client.from('settlement_history').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', settlementId);
+    }
+
     showToast('精算を確定しました');
 
     // Discord通知
@@ -842,6 +843,20 @@ async function executeAdditionalSettlement(yearMonth) {
     });
 
     if (error) throw error;
+
+    // 精算確定=支払い完了なので最新レコードをpaidに更新
+    const { data: latestRecord } = await client
+      .from('settlement_history')
+      .select('id')
+      .eq('target_period', yearMonth)
+      .eq('settlement_type', 'monthly')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestRecord) {
+      await client.from('settlement_history').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', latestRecord.id);
+    }
 
     showToast('追加精算を確定しました');
 
@@ -1314,12 +1329,9 @@ async function loadDifferenceSettlement(year, period) {
     // Already settled notice
     if (isSettled) {
       html += `<div class="card" style="background:#e8f5e9;border:1px solid #a5d6a7;">`;
-      html += `<div style="color:#2e7d32;font-weight:600;">✅ 差額精算済み (${existingSettlement.status === 'paid' ? '支払い完了' : '未払い'})</div>`;
+      html += `<div style="color:#2e7d32;font-weight:600;">✅ 差額精算済み</div>`;
       html += `<div style="margin-top:4px;">${escapeHtml(existingSettlement.payer_from)} → ${escapeHtml(existingSettlement.payer_to)}: ${formatAmount(existingSettlement.amount)}</div>`;
       html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
-      if (existingSettlement.status === 'pending') {
-        html += `<button class="btn-primary" style="padding:8px 16px;font-size:0.9em;" onclick="markSettlementPaidDiff('${existingSettlement.id}')">支払い完了にする</button>`;
-      }
       html += `<button class="btn-secondary" style="padding:8px 16px;font-size:0.9em;color:#d32f2f;border-color:#d32f2f;" onclick="revertDifferenceSettlement('${existingSettlement.id}', '${yearMonth}')">⏪ 精算取消</button>`;
       html += `</div>`;
       html += '</div>';
@@ -1496,6 +1508,11 @@ async function executeDifferenceSettlementMonthly(yearMonth) {
     });
 
     if (error) throw error;
+
+    // 精算確定=支払い完了なので即paidに更新
+    if (settlementId) {
+      await client.from('settlement_history').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', settlementId);
+    }
 
     showToast('差額精算を確定しました');
 
