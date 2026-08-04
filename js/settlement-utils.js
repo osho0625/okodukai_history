@@ -95,12 +95,30 @@ function calculateSettlement(monthlyExpenses, temporaryExpenses, payers) {
   }
 
   // 一時立替: payerが実際に支払い、受益者が按分で負担
+  // 補助金: 受取人(payer)が収入を得て全員で折半 → 相手のpayerPaidとして計算
   for (const temp of temporaryExpenses) {
     const beneficiaries = (temp.beneficiaries && temp.beneficiaries.length > 0) ? temp.beneficiaries : allPayerNames;
-    payerPaid[temp.payer] = (payerPaid[temp.payer] || 0) + temp.amount;
-    const perPerson = Math.floor(temp.amount / beneficiaries.length);
-    for (const b of beneficiaries) {
-      payerOwes[b] = (payerOwes[b] || 0) + perPerson;
+    if (temp.expense_type === 'subsidy') {
+      // 補助金: 受取人以外の全員が「支払った」扱いにする
+      // → 受取人が全員に半額渡す = 相手のpayerPaidに加算
+      const others = allPayerNames.filter(p => p !== temp.payer);
+      for (const other of others) {
+        const share = Math.floor(temp.amount / allPayerNames.length);
+        payerPaid[other] = (payerPaid[other] || 0) + share;
+        // 負担は全員で均等
+      }
+      // 全員がshareずつ負担
+      const perPerson = Math.floor(temp.amount / allPayerNames.length);
+      for (const p of allPayerNames) {
+        payerOwes[p] = (payerOwes[p] || 0) + perPerson;
+      }
+    } else {
+      // 通常の立替金
+      payerPaid[temp.payer] = (payerPaid[temp.payer] || 0) + temp.amount;
+      const perPerson = Math.floor(temp.amount / beneficiaries.length);
+      for (const b of beneficiaries) {
+        payerOwes[b] = (payerOwes[b] || 0) + perPerson;
+      }
     }
   }
 
