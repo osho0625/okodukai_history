@@ -11,17 +11,19 @@ fileMatchPattern: "*settlement*"
 
 ## ファイル構成
 
-- `pages/settlement.html` — 精算メイン画面（5タブ）
+- `pages/settlement.html` — 精算メイン画面（4タブ）
 - `js/settlement-utils.js` — 精算計算ロジック（純粋関数、dual export）
 - `js/settlement-app.js` — UI・Supabase操作
 - `sql/create_settlement_tables.sql` — テーブル定義
 - `sql/create_settlement_rpc.sql` — Postgres Functions（Transaction）
 - `sql/create_settlement_rpc_monthly_diff.sql` — 差額精算確定（月単位版）Postgres Function
 - `sql/create_settlement_revert_rpc.sql` — 精算取消 Postgres Functions
+- `sql/create_settlement_audit_log.sql` — 操作ログテーブル定義
 - `sql/alter_monthly_expenses_manual.sql` — 手動追加対応（expense_master_id NULLable + name追加）
 - `sql/alter_settlement_rls.sql` — RLS無効化（再実行用）
 - `sql/alter_settlement_allow_multiple.sql` — 同月複数精算対応ALTER
 - `sql/alter_temporary_expenses_beneficiaries.sql` — beneficiaries列追加
+- `sql/alter_temporary_expenses_subsidy.sql` — expense_type列追加（補助金対応）
 - `tests/property-settlement.test.js` — プロパティベーステスト（17 Properties）
 - `tests/settlement-integration.test.js` — 統合テスト
 - `tests/settlement-deep-check.test.js` — 深層バグチェック
@@ -50,6 +52,11 @@ fileMatchPattern: "*settlement*"
 - id, title, payer, amount, beneficiaries (TEXT[], default ['めぐみ','涼介']), year_month, note, settled, expense_type, created_at
 - beneficiaries: 受益者（誰の分を立て替えたか）。両方=折半、片方のみ=全額その人が返す
 - expense_type: 'expense'（立替金）/ 'subsidy'（補助金）。補助金の場合payerは受取人、折半して相手に半額渡す
+- RLS無効
+
+### settlement_audit_log（操作ログ）
+- id, action, target_type, target_id, year_month, detail, created_at
+- action: settlement_confirm, settlement_revert, temp_add, temp_edit, temp_delete, monthly_expense_edit, monthly_expense_delete, actual_amount_edit
 - RLS無効
 
 ## 画面構成（4タブ）
@@ -93,7 +100,8 @@ fileMatchPattern: "*settlement*"
 ## RPC Functions
 
 - `execute_monthly_settlement` — 月次精算確定（重複チェック + history INSERT + temp UPDATE）
-- `execute_difference_settlement` — 差額精算確定（重複チェック + history INSERT + monthly UPDATE）
+- `execute_difference_settlement` — 差額精算確定・半年版（重複チェック + history INSERT + monthly UPDATE）
+- `execute_difference_settlement_monthly` — 差額精算確定・月単位版（YYYY-MM形式で保存）
 - `revert_monthly_settlement` — 月次精算取消（temp settled→false + history DELETE + Discord/Push通知）
 - `revert_difference_settlement` — 差額精算取消（monthly difference_settled→false + history DELETE + Discord/Push通知）
 
