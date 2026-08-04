@@ -36,7 +36,7 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
-  <div><span class="ver">v2.35.0</span><span class="date">2026/08/03</span></div>
+  <div><span class="ver">v2.35.0</span><span class="date">2026/08/04</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 精算結果の表示を簡略化: 世帯合計・一人あたり折半を非表示に</li>
     <li><span class="tag tag-feat">feat</span> 各payerカード内に「相手→自分: 〇〇円」を表示（beneficiaries按分対応）</li>
@@ -45,6 +45,14 @@ h1 { margin-bottom: 24px; color: #333; }
     <li><span class="tag tag-feat">feat</span> ダッシュボード: 今月の精算カードに立替追加ボタン（翌月分として登録）</li>
     <li><span class="tag tag-feat">feat</span> 差額精算を半年単位から月単位に変更（月ナビゲーション対応）</li>
     <li><span class="tag tag-feat">feat</span> 差額管理と差額精算を1タブに統合（実費入力+精算確定を同画面で実施）</li>
+    <li><span class="tag tag-feat">feat</span> 精算確定=支払い完了に統一（支払い完了フェーズ削除）</li>
+    <li><span class="tag tag-feat">feat</span> 操作ログ機能追加（settlement_audit_logテーブル + 各操作にログ記録 + UI表示）</li>
+    <li><span class="tag tag-feat">feat</span> 補助金機能追加（受取人が折半して相手に渡す方向で精算）</li>
+    <li><span class="tag tag-feat">feat</span> 精算済み画面でもpayerカード内に一時立替金を表示</li>
+    <li><span class="tag tag-fix">fix</span> 差額精算: payer1人でも精算結果を正しく計算</li>
+    <li><span class="tag tag-fix">fix</span> 差額精算: 月次版RPC追加で404エラー修正</li>
+    <li><span class="tag tag-fix">fix</span> 差額精算: 実費入力後にページ自動更新</li>
+    <li><span class="tag tag-fix">fix</span> 実費入力UI: スピンボタン削除・入力済みは表示モード+✏で編集切替</li>
   </ul>
 </div>
 

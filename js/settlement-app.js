@@ -114,7 +114,7 @@ async function loadDashboard() {
 
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, beneficiaries, note, settled')
+      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type')
       .eq('year_month', yearMonth)
       .eq('settled', false);
     if (teErr) throw teErr;
@@ -556,7 +556,7 @@ async function loadMonthlySettlement(yearMonth) {
     // 3. Get temporary expenses for this month
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, beneficiaries, note, settled')
+      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type')
       .eq('year_month', yearMonth)
       .order('created_at', { ascending: true });
     if (teErr) throw teErr;
@@ -642,14 +642,26 @@ async function loadMonthlySettlement(yearMonth) {
         }
         html += '</div>';
       }
-      // Temporary expenses for this payer
+      // Temporary expenses for this payer (分けて表示: 立替金と補助金)
       const payerTemp = isSettled
         ? (tempExpenses || []).filter(t => t.payer === payer && t.settled)
         : unsettledTemp.filter(t => t.payer === payer);
-      if (payerTemp.length > 0) {
+      const payerExpenses = payerTemp.filter(t => t.expense_type !== 'subsidy');
+      const payerSubsidies = payerTemp.filter(t => t.expense_type === 'subsidy');
+      if (payerExpenses.length > 0) {
         html += '<div style="border-top:1px dashed #ddd;padding-top:8px;margin-top:8px;">';
         html += '<div style="font-size:0.85em;color:#888;margin-bottom:4px;">一時立替:</div>';
-        for (const t of payerTemp) {
+        for (const t of payerExpenses) {
+          html += `<div style="display:flex;justify-content:space-between;padding:4px 0;">`;
+          html += `<span>${escapeHtml(t.title)}</span><span>${formatAmount(t.amount)}</span>`;
+          html += `</div>`;
+        }
+        html += '</div>';
+      }
+      if (payerSubsidies.length > 0) {
+        html += '<div style="border-top:1px dashed #ddd;padding-top:8px;margin-top:8px;">';
+        html += '<div style="font-size:0.85em;color:#888;margin-bottom:4px;">💰 補助金:</div>';
+        for (const t of payerSubsidies) {
           html += `<div style="display:flex;justify-content:space-between;padding:4px 0;">`;
           html += `<span>${escapeHtml(t.title)}</span><span>${formatAmount(t.amount)}</span>`;
           html += `</div>`;
@@ -709,10 +721,18 @@ async function loadMonthlySettlement(yearMonth) {
         otherOwesForPayer += exp.planned_amount / 2;
       }
       for (const t of payerTempForCalc) {
+        if (t.expense_type === 'subsidy') continue; // 補助金は別計算
         const beneficiaries = (t.beneficiaries && t.beneficiaries.length > 0) ? t.beneficiaries : payers;
         if (beneficiaries.includes(otherPayer)) {
           otherOwesForPayer += t.amount / beneficiaries.length;
         }
+      }
+      // 補助金: 相手がpayerの補助金 → 自分が相手に半額もらえる
+      const otherTempForCalc = isSettled
+        ? (tempExpenses || []).filter(t => t.payer === otherPayer && t.settled && t.expense_type === 'subsidy')
+        : unsettledTemp.filter(t => t.payer === otherPayer && t.expense_type === 'subsidy');
+      for (const t of otherTempForCalc) {
+        otherOwesForPayer += Math.floor(t.amount / payers.length);
       }
       otherOwesForPayer = Math.round(otherOwesForPayer);
       if (otherOwesForPayer > 0) {
@@ -811,7 +831,7 @@ async function executeMonthlySettlement(yearMonth) {
 
     const { data: tempExpenses } = await client
       .from('temporary_expenses')
-      .select('id, payer, amount, beneficiaries, settled')
+      .select('id, payer, amount, beneficiaries, settled, expense_type')
       .eq('year_month', yearMonth)
       .eq('settled', false);
 
@@ -870,7 +890,7 @@ async function executeAdditionalSettlement(yearMonth) {
   try {
     const { data: tempExpenses } = await client
       .from('temporary_expenses')
-      .select('id, payer, amount, beneficiaries, settled')
+      .select('id, payer, amount, beneficiaries, settled, expense_type')
       .eq('year_month', yearMonth)
       .eq('settled', false);
 
@@ -1037,14 +1057,22 @@ async function showTemporaryExpenseModal(id, yearMonth) {
   modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;';
   modal.innerHTML = `
     <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:90vh;overflow-y:auto;">
-      <h3 style="margin-bottom:16px;">${existing ? '一時立替編集' : '一時立替追加'}</h3>
+      <h3 style="margin-bottom:16px;">${existing ? '編集' : '追加'}</h3>
       <div id="temp-errors" style="color:#d32f2f;margin-bottom:12px;font-size:0.9em;"></div>
+      <div style="display:block;margin-bottom:12px;">
+        <span style="font-weight:600;">種別</span>
+        <input id="temp-expense-type" type="hidden" value="${existing && existing.expense_type === 'subsidy' ? 'subsidy' : 'expense'}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="expense-type-btn" data-value="expense" style="flex:1;padding:10px;border:2px solid ${!existing || existing.expense_type !== 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${!existing || existing.expense_type !== 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">🧾 立替金</button>
+          <button type="button" class="expense-type-btn" data-value="subsidy" style="flex:1;padding:10px;border:2px solid ${existing && existing.expense_type === 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.expense_type === 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">💰 補助金</button>
+        </div>
+      </div>
       <label style="display:block;margin-bottom:12px;">
         <span style="font-weight:600;">タイトル</span>
         <input id="temp-title" type="text" value="${existing ? escapeHtml(existing.title) : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <div style="display:block;margin-bottom:12px;">
-        <span style="font-weight:600;">支払担当者</span>
+        <span style="font-weight:600;" id="temp-payer-label">${existing && existing.expense_type === 'subsidy' ? '受取人' : '支払担当者'}</span>
         <input id="temp-payer" type="hidden" value="${existing ? escapeHtml(existing.payer) : ''}">
         <div style="display:flex;gap:8px;margin-top:4px;">
           <button type="button" class="payer-btn" data-target="temp-payer" data-value="めぐみ" style="flex:1;padding:10px;border:2px solid ${existing && existing.payer === 'めぐみ' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.payer === 'めぐみ' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">めぐみ</button>
@@ -1078,6 +1106,21 @@ async function showTemporaryExpenseModal(id, yearMonth) {
   `;
   document.body.appendChild(modal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeTempModal(); });
+  // 種別ボタン
+  modal.querySelectorAll('.expense-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('temp-expense-type').value = btn.dataset.value;
+      modal.querySelectorAll('.expense-type-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+      // ラベル切り替え
+      const label = document.getElementById('temp-payer-label');
+      if (label) label.textContent = btn.dataset.value === 'subsidy' ? '受取人' : '支払担当者';
+    });
+  });
   modal.querySelectorAll('.payer-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const target = document.getElementById(btn.dataset.target);
@@ -1122,6 +1165,7 @@ async function saveTemporaryExpense(id) {
   const amount = parseInt(document.getElementById('temp-amount').value, 10);
   const yearMonth = document.getElementById('temp-yearmonth').value;
   const note = document.getElementById('temp-note').value || null;
+  const expenseType = document.getElementById('temp-expense-type').value || 'expense';
 
   // 受益者ボタンから選択状態を読み取る
   const modal = document.getElementById('temp-modal');
@@ -1143,17 +1187,17 @@ async function saveTemporaryExpense(id) {
     if (id) {
       const { error } = await client
         .from('temporary_expenses')
-        .update({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note })
+        .update({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note, expense_type: expenseType })
         .eq('id', id);
       if (error) throw error;
-      showToast('立替金を更新しました');
+      showToast(expenseType === 'subsidy' ? '補助金を更新しました' : '立替金を更新しました');
       logSettlementAction('temp_edit', 'temporary_expense', `${title.trim()} (${payer}) ${amount.toLocaleString()}円 編集`, yearMonth, id);
     } else {
       const { error } = await client
         .from('temporary_expenses')
-        .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note });
+        .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note, expense_type: expenseType });
       if (error) throw error;
-      showToast('立替金を追加しました');
+      showToast(expenseType === 'subsidy' ? '補助金を追加しました' : '立替金を追加しました');
       logSettlementAction('temp_add', 'temporary_expense', `${title.trim()} (${payer}) ${amount.toLocaleString()}円 追加`, yearMonth);
     }
     closeTempModal();
