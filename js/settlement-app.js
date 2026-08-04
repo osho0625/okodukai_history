@@ -253,8 +253,9 @@ async function loadExpenseMasters() {
     if (!masters || masters.length === 0) {
       html += '<div class="empty-state"><div class="emoji">📋</div><div>固定費マスタが登録されていません</div></div>';
     } else {
-      const monthlyMasters = masters.filter(m => m.settlement_cycle === 'monthly');
-      const halfYearMasters = masters.filter(m => m.settlement_cycle === 'half_year');
+      const monthlyMasters = masters.filter(m => m.settlement_cycle === 'monthly' && m.expense_type !== 'subsidy');
+      const halfYearMasters = masters.filter(m => m.settlement_cycle === 'half_year' && m.expense_type !== 'subsidy');
+      const subsidyMasters = masters.filter(m => m.expense_type === 'subsidy');
 
       // 月次セクション
       html += `<details class="card" style="padding:0;">`;
@@ -290,6 +291,30 @@ async function loadExpenseMasters() {
         html += '<div style="color:#888;text-align:center;padding:12px;">半年項目はありません</div>';
       } else {
         for (const m of halfYearMasters) {
+          const enabledClass = m.enabled ? '' : 'opacity:0.5;';
+          html += `<div style="${enabledClass}border-bottom:1px solid #f0f0f0;padding:12px 0;display:flex;justify-content:space-between;align-items:center;">`;
+          html += `<div>`;
+          html += `<div style="font-weight:600;">${escapeHtml(m.name)}</div>`;
+          html += `<div style="color:#666;margin-top:2px;font-size:0.9em;">${escapeHtml(m.payer)} / ${formatAmount(m.base_amount)}</div>`;
+          html += `</div>`;
+          html += `<div style="display:flex;gap:8px;align-items:center;">`;
+          html += `<button class="btn-secondary" style="padding:4px 10px;font-size:0.8em;" onclick="showExpenseMasterModal('${m.id}')">編集</button>`;
+          html += `<label style="cursor:pointer;font-size:0.85em;"><input type="checkbox" ${m.enabled ? 'checked' : ''} onchange="toggleExpenseMasterEnabled('${m.id}', this.checked)"> 有効</label>`;
+          html += `</div></div>`;
+        }
+      }
+      html += `</div></details>`;
+
+      // 補助金セクション
+      html += `<details class="card" style="padding:0;margin-top:12px;">`;
+      html += `<summary style="padding:16px 20px;cursor:pointer;font-weight:600;font-size:1.05em;list-style:none;display:flex;justify-content:space-between;align-items:center;">`;
+      html += `<span>💰 補助金（${subsidyMasters.length}件）</span><span style="font-size:0.8em;color:#888;">タップで開閉</span>`;
+      html += `</summary>`;
+      html += `<div style="padding:0 20px 16px;">`;
+      if (subsidyMasters.length === 0) {
+        html += '<div style="color:#888;text-align:center;padding:12px;">補助金項目はありません</div>';
+      } else {
+        for (const m of subsidyMasters) {
           const enabledClass = m.enabled ? '' : 'opacity:0.5;';
           html += `<div style="${enabledClass}border-bottom:1px solid #f0f0f0;padding:12px 0;display:flex;justify-content:space-between;align-items:center;">`;
           html += `<div>`;
@@ -356,6 +381,14 @@ async function showExpenseMasterModal(id) {
           <button type="button" class="cycle-btn" data-value="half_year" style="flex:1;padding:10px;border:2px solid ${existing && existing.settlement_cycle === 'half_year' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.settlement_cycle === 'half_year' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">半年</button>
         </div>
       </div>
+      <div style="display:block;margin-bottom:16px;">
+        <span style="font-weight:600;">種別</span>
+        <input id="master-expense-type" type="hidden" value="${existing && existing.expense_type === 'subsidy' ? 'subsidy' : 'expense'}">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="button" class="master-type-btn" data-value="expense" style="flex:1;padding:10px;border:2px solid ${!existing || existing.expense_type !== 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${!existing || existing.expense_type !== 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">🧾 固定費</button>
+          <button type="button" class="master-type-btn" data-value="subsidy" style="flex:1;padding:10px;border:2px solid ${existing && existing.expense_type === 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.expense_type === 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">💰 補助金</button>
+        </div>
+      </div>
       <div style="display:flex;gap:12px;">
         <button class="btn-primary" style="flex:1;" onclick="saveExpenseMaster(${existing ? "'" + existing.id + "'" : 'null'})">${existing ? '更新' : '追加'}</button>
         <button class="btn-secondary" style="flex:1;" onclick="closeMasterModal()">キャンセル</button>
@@ -387,6 +420,17 @@ async function showExpenseMasterModal(id) {
       btn.style.background = '#e3f2fd';
     });
   });
+  modal.querySelectorAll('.master-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('master-expense-type').value = btn.dataset.value;
+      modal.querySelectorAll('.master-type-btn').forEach(b => {
+        b.style.borderColor = '#ddd';
+        b.style.background = '#fff';
+      });
+      btn.style.borderColor = '#1565c0';
+      btn.style.background = '#e3f2fd';
+    });
+  });
 }
 
 function closeMasterModal() {
@@ -399,6 +443,7 @@ async function saveExpenseMaster(id) {
   const payer = document.getElementById('master-payer').value;
   const baseAmount = parseInt(document.getElementById('master-amount').value, 10);
   const cycle = document.getElementById('master-cycle').value;
+  const expenseType = document.getElementById('master-expense-type').value || 'expense';
 
   const data = { name, payer, base_amount: isNaN(baseAmount) ? -1 : baseAmount, settlement_cycle: cycle };
   const validation = validateExpenseMaster(data);
@@ -411,14 +456,14 @@ async function saveExpenseMaster(id) {
     if (id) {
       const { error } = await client
         .from('expense_master')
-        .update({ name: name.trim(), payer: payer.trim(), base_amount: baseAmount, settlement_cycle: cycle, updated_at: new Date().toISOString() })
+        .update({ name: name.trim(), payer: payer.trim(), base_amount: baseAmount, settlement_cycle: cycle, expense_type: expenseType, updated_at: new Date().toISOString() })
         .eq('id', id);
       if (error) throw error;
       showToast('固定費を更新しました');
     } else {
       const { error } = await client
         .from('expense_master')
-        .insert({ name: name.trim(), payer: payer.trim(), base_amount: baseAmount, settlement_cycle: cycle });
+        .insert({ name: name.trim(), payer: payer.trim(), base_amount: baseAmount, settlement_cycle: cycle, expense_type: expenseType });
       if (error) throw error;
       showToast('固定費を追加しました');
     }
@@ -548,7 +593,7 @@ async function loadMonthlySettlement(yearMonth) {
     // 2. Get existing monthly expenses
     const { data: monthlyExpenses, error: meErr } = await client
       .from('monthly_expenses')
-      .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, name, expense_master:expense_master_id(name, settlement_cycle)')
+      .select('id, year_month, expense_master_id, payer, planned_amount, actual_amount, difference, difference_settled, name, expense_type, expense_master:expense_master_id(name, settlement_cycle)')
       .eq('year_month', yearMonth)
       .order('created_at', { ascending: true });
     if (meErr) throw meErr;
@@ -625,10 +670,29 @@ async function loadMonthlySettlement(yearMonth) {
     for (const payer of payers) {
       html += `<div class="card">`;
       html += `<h4 style="margin-bottom:8px;">${escapeHtml(payer)} の項目</h4>`;
-      const payerMonthly = (monthlyExpenses || []).filter(e => e.payer === payer);
+      const payerMonthly = (monthlyExpenses || []).filter(e => e.payer === payer && e.expense_type !== 'subsidy');
+      const payerSubsidyMonthly = (monthlyExpenses || []).filter(e => e.payer === payer && e.expense_type === 'subsidy');
       if (payerMonthly.length > 0) {
         html += '<div style="margin-bottom:8px;">';
         for (const exp of payerMonthly) {
+          const name = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">`;
+          html += `<span>${escapeHtml(name)}</span>`;
+          html += `<div style="display:flex;align-items:center;gap:6px;">`;
+          html += `<span>${formatAmount(exp.planned_amount)}</span>`;
+          if (!isSettled) {
+            html += `<button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;" onclick="showMonthlyExpenseEditModal('${exp.id}')">✏️</button>`;
+            html += `<button class="btn-secondary" style="padding:2px 8px;font-size:0.75em;color:#d32f2f;border-color:#d32f2f;" onclick="deleteMonthlyExpense('${exp.id}', '${yearMonth}')">🗑</button>`;
+          }
+          html += `</div></div>`;
+        }
+        html += '</div>';
+      }
+      // 補助金（固定費マスタから生成）
+      if (payerSubsidyMonthly.length > 0) {
+        html += '<div style="border-top:1px dashed #ddd;padding-top:8px;margin-top:8px;">';
+        html += '<div style="font-size:0.85em;color:#888;margin-bottom:4px;">💰 補助金:</div>';
+        for (const exp of payerSubsidyMonthly) {
           const name = exp.expense_master ? exp.expense_master.name : (exp.name || '(手動追加)');
           html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">`;
           html += `<span>${escapeHtml(name)}</span>`;

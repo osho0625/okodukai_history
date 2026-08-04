@@ -64,7 +64,8 @@ function generateMonthlyExpenses(enabledMasters, existingRecords, yearMonth) {
       expense_master_id: m.id,
       payer: m.payer,
       planned_amount: m.base_amount,
-      actual_amount: null
+      actual_amount: null,
+      expense_type: m.expense_type || 'expense'
     }));
 }
 
@@ -85,12 +86,24 @@ function calculateSettlement(monthlyExpenses, temporaryExpenses, payers) {
   const payerOwes = {}; // 各人が負担すべき総額
 
   // 固定費: 各payerの支払いかつ折半対象（両者の負担）
+  // 補助金(subsidy): 受取人が収入を得て全員で折半 → 相手のpayerPaidに加算
   for (const exp of monthlyExpenses) {
-    payerPaid[exp.payer] = (payerPaid[exp.payer] || 0) + exp.planned_amount;
-    // 固定費は全員で折半（2人前提）
-    const perPerson = Math.floor(exp.planned_amount / allPayerNames.length);
-    for (const p of allPayerNames) {
-      payerOwes[p] = (payerOwes[p] || 0) + perPerson;
+    if (exp.expense_type === 'subsidy') {
+      // 補助金: 受取人以外のpayerPaidに半額加算、全員owes半額
+      const others = allPayerNames.filter(p => p !== exp.payer);
+      const perPerson = Math.floor(exp.planned_amount / allPayerNames.length);
+      for (const other of others) {
+        payerPaid[other] = (payerPaid[other] || 0) + perPerson;
+      }
+      for (const p of allPayerNames) {
+        payerOwes[p] = (payerOwes[p] || 0) + perPerson;
+      }
+    } else {
+      payerPaid[exp.payer] = (payerPaid[exp.payer] || 0) + exp.planned_amount;
+      const perPerson = Math.floor(exp.planned_amount / allPayerNames.length);
+      for (const p of allPayerNames) {
+        payerOwes[p] = (payerOwes[p] || 0) + perPerson;
+      }
     }
   }
 
