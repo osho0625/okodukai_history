@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/04 v2.35.0
+最終更新: 2026/08/05 v2.35.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -60,7 +60,12 @@ inclusion: auto
 │   ├── auto-chore-points.js  # 自動お手伝いポイント付与
 │   ├── auto-chore-tasks.js   # 定型業務の毎朝自動追加
 │   ├── reminder-notify.js    # リマインダーDiscord通知
+│   ├── news-notify.js        # ニュース差分Push通知
 │   └── generate-vapid-keys.js
+├── supabase/functions/ # Supabase Edge Functions
+│   ├── push-notify/    # Push通知配信
+│   ├── push-nurse-call/ # ナースコール通知
+│   └── cors-proxy/     # ニュース用CORSプロキシ
 ├── sql/                # DBマイグレーション
 ├── backups/            # 自動バックアップJSON
 ├── .kiro/specs/today-science/ # 今日のサイエンス機能データ
@@ -253,7 +258,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.33.0
+- 現在: v2.35.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -279,12 +284,13 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 | ブランチ | 状態 | 内容 |
 |----------|------|------|
-| main | 最新 | TSJ260702までマージ済み |
+| main | 最新 | TSJ260803までマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | マージ済み | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
 | TSJ260603 | マージ済み | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
 | TSJ260618 | マージ済み | お手伝いリスト機能（チェックリスト、定型業務テンプレート、自動追加cron、ひらがなモード、完了→ポイント承認フロー） |
-| TSJ260702 | 作業中 | テキサスホールデム ルールガイド、リマインダー通知ワークフロー追加、ゲーム公開設定更新 |
+| TSJ260702 | マージ済み | テキサスホールデム ルールガイド、リマインダー通知ワークフロー追加、ゲーム公開設定更新 |
+| TSJ260803 | マージ済み | 精算機能改善+補助金+操作ログ |
 
 ### マージルール
 - mainへのマージは必ず `git merge --no-ff` を使う（fast-forward禁止、マージコミットを残す）

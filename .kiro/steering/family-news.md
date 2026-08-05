@@ -25,6 +25,7 @@ fileMatchPattern: "*news*"
 | `js/news-setting-store.js` | 設定・フィードソース管理 |
 | `js/news-app.js` | UI制御、タブ切替、イベントハンドリング |
 | `scripts/news-notify.js` | GitHub Actions用：RSS差分→Push通知 |
+| `supabase/functions/cors-proxy/index.ts` | Supabase Edge Function: CORSプロキシ |
 
 ## localStorageキー
 
@@ -35,9 +36,24 @@ fileMatchPattern: "*news*"
 
 ## デフォルトフィードソース
 
-テック: Hacker News, Publickey, Zenn, Qiita, はてブテクノロジー
-ゲーム: Minecraft公式, 任天堂, ファミ通
-おでかけ: Googleニュース（アスレチック公園）, はてブ検索
+テック: Zenn, はてブテクノロジー, GIGAZINE
+ゲーム: 任天堂ニュース, Minecraft(Google検索), カービィ(Google検索)
+おでかけ: アスレチック公園(Google検索)
+
+## CORSプロキシ構成
+
+フォールバック3段構成（上から順に試行、1つ成功で完了）:
+
+1. **supabase-proxy** — `https://ynecezxnltigplrfzzoh.supabase.co/functions/v1/cors-proxy?url=`（自前Edge Function、JWT不要）
+2. **corsproxy-io** — `https://corsproxy.io/?url=`（外部サービス、フォールバック用）
+3. **allorigins-raw** — `https://api.allorigins.win/raw?url=`（外部サービス、フォールバック用）
+
+### Supabase Edge Function: cors-proxy
+- パス: `supabase/functions/cors-proxy/index.ts`
+- デプロイ: `npx supabase functions deploy cors-proxy --project-ref ynecezxnltigplrfzzoh --no-verify-jwt`
+- 許可Origin: `https://kc-asse.github.io`, `http://localhost`, `http://127.0.0.1`
+- レスポンス上限: 5MB
+- タイムアウト: 15秒
 
 ## データモデル
 

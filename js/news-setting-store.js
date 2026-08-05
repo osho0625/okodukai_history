@@ -16,8 +16,9 @@ const FEEDS_KEY = "family-news-feeds";
 export function getDefaultSettings() {
   return {
     proxies: [
+      { name: "supabase-proxy", urlPrefix: "https://ynecezxnltigplrfzzoh.supabase.co/functions/v1/cors-proxy?url=", type: "raw" },
+      { name: "corsproxy-io", urlPrefix: "https://corsproxy.io/?url=", type: "raw" },
       { name: "allorigins-raw", urlPrefix: "https://api.allorigins.win/raw?url=", type: "raw" },
-      { name: "allorigins-json", urlPrefix: "https://api.allorigins.win/get?url=", type: "query" },
     ],
     debugLog: false,
   };
@@ -113,7 +114,7 @@ export function getDefaultFeedSources() {
 }
 
 // プロキシ設定バージョン
-const SETTINGS_VERSION = 3;
+const SETTINGS_VERSION = 4;
 const SETTINGS_VERSION_KEY = "family-news-settings-version";
 
 /**
