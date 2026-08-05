@@ -374,19 +374,13 @@ async function showExpenseMasterModal(id) {
         <input id="master-amount" type="number" min="0" value="${existing ? existing.base_amount : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <div style="display:block;margin-bottom:16px;">
-        <span style="font-weight:600;">精算周期</span>
-        <input id="master-cycle" type="hidden" value="${existing ? existing.settlement_cycle : 'monthly'}">
-        <div style="display:flex;gap:8px;margin-top:4px;">
-          <button type="button" class="cycle-btn" data-value="monthly" style="flex:1;padding:10px;border:2px solid ${!existing || existing.settlement_cycle === 'monthly' ? '#1565c0' : '#ddd'};border-radius:8px;background:${!existing || existing.settlement_cycle === 'monthly' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">月次</button>
-          <button type="button" class="cycle-btn" data-value="half_year" style="flex:1;padding:10px;border:2px solid ${existing && existing.settlement_cycle === 'half_year' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.settlement_cycle === 'half_year' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">半年</button>
-        </div>
-      </div>
-      <div style="display:block;margin-bottom:16px;">
         <span style="font-weight:600;">種別</span>
+        <input id="master-cycle" type="hidden" value="${existing ? existing.settlement_cycle : 'monthly'}">
         <input id="master-expense-type" type="hidden" value="${existing && existing.expense_type === 'subsidy' ? 'subsidy' : 'expense'}">
         <div style="display:flex;gap:8px;margin-top:4px;">
-          <button type="button" class="master-type-btn" data-value="expense" style="flex:1;padding:10px;border:2px solid ${!existing || existing.expense_type !== 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${!existing || existing.expense_type !== 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">🧾 固定費</button>
-          <button type="button" class="master-type-btn" data-value="subsidy" style="flex:1;padding:10px;border:2px solid ${existing && existing.expense_type === 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.expense_type === 'subsidy' ? '#e3f2fd' : '#fff'};font-size:1em;font-weight:600;cursor:pointer;">💰 補助金</button>
+          <button type="button" class="master-category-btn" data-cycle="monthly" data-type="expense" style="flex:1;padding:10px;border:2px solid ${(!existing || (existing.settlement_cycle === 'monthly' && existing.expense_type !== 'subsidy')) ? '#1565c0' : '#ddd'};border-radius:8px;background:${(!existing || (existing.settlement_cycle === 'monthly' && existing.expense_type !== 'subsidy')) ? '#e3f2fd' : '#fff'};font-size:0.95em;font-weight:600;cursor:pointer;">💴 月次</button>
+          <button type="button" class="master-category-btn" data-cycle="half_year" data-type="expense" style="flex:1;padding:10px;border:2px solid ${existing && existing.settlement_cycle === 'half_year' && existing.expense_type !== 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.settlement_cycle === 'half_year' && existing.expense_type !== 'subsidy' ? '#e3f2fd' : '#fff'};font-size:0.95em;font-weight:600;cursor:pointer;">📈 半年</button>
+          <button type="button" class="master-category-btn" data-cycle="monthly" data-type="subsidy" style="flex:1;padding:10px;border:2px solid ${existing && existing.expense_type === 'subsidy' ? '#1565c0' : '#ddd'};border-radius:8px;background:${existing && existing.expense_type === 'subsidy' ? '#e3f2fd' : '#fff'};font-size:0.95em;font-weight:600;cursor:pointer;">💰 補助金</button>
         </div>
       </div>
       <div style="display:flex;gap:12px;">
@@ -409,21 +403,11 @@ async function showExpenseMasterModal(id) {
       btn.style.background = '#e3f2fd';
     });
   });
-  modal.querySelectorAll('.cycle-btn').forEach(btn => {
+  modal.querySelectorAll('.master-category-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.getElementById('master-cycle').value = btn.dataset.value;
-      modal.querySelectorAll('.cycle-btn').forEach(b => {
-        b.style.borderColor = '#ddd';
-        b.style.background = '#fff';
-      });
-      btn.style.borderColor = '#1565c0';
-      btn.style.background = '#e3f2fd';
-    });
-  });
-  modal.querySelectorAll('.master-type-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('master-expense-type').value = btn.dataset.value;
-      modal.querySelectorAll('.master-type-btn').forEach(b => {
+      document.getElementById('master-cycle').value = btn.dataset.cycle;
+      document.getElementById('master-expense-type').value = btn.dataset.type;
+      modal.querySelectorAll('.master-category-btn').forEach(b => {
         b.style.borderColor = '#ddd';
         b.style.background = '#fff';
       });
