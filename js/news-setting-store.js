@@ -71,7 +71,7 @@ export function getDefaultFeedSources() {
     {
       id: "nintendo-news",
       name: "任天堂ニュース",
-      url: "https://www.nintendo.co.jp/rss/news.xml",
+      url: "https://news.google.com/rss/search?q=任天堂+ニュース+新作&hl=ja&gl=JP&ceid=JP:ja",
       category: "ゲーム",
       enabled: true,
       lastSuccessAt: "",
@@ -236,7 +236,7 @@ export function saveSettings(settings) {
 }
 
 // 設定バージョン（フィードリスト変更時にインクリメント）
-const FEEDS_VERSION = 3;
+const FEEDS_VERSION = 4;
 const FEEDS_VERSION_KEY = "family-news-feeds-version";
 
 /**
