@@ -20,6 +20,9 @@ export function getDefaultSettings() {
       { name: "corsproxy-io", urlPrefix: "https://corsproxy.io/?url=", type: "raw" },
       { name: "allorigins-raw", urlPrefix: "https://api.allorigins.win/raw?url=", type: "raw" },
     ],
+    regions: {
+      kansai: false,
+    },
     debugLog: false,
   };
 }
@@ -98,17 +101,91 @@ export function getDefaultFeedSources() {
       lastError: "",
       lastErrorAt: "",
     },
-    // おでかけ
+    // おでかけ（関東）
     {
-      id: "google-news-athletic",
-      name: "アスレチック・公園（Google検索）",
-      url: "https://news.google.com/rss/search?q=アスレチック+公園+子供&hl=ja&gl=JP&ceid=JP:ja",
+      id: "yokohama-athletic",
+      name: "横浜アスレチック",
+      url: "https://news.google.com/rss/search?q=横浜+アスレチック+公園+子供&hl=ja&gl=JP&ceid=JP:ja",
       category: "おでかけ",
       enabled: true,
       lastSuccessAt: "",
       errorCount: 0,
       lastError: "",
       lastErrorAt: "",
+      region: "関東",
+    },
+    {
+      id: "kanto-kids-leisure",
+      name: "関東キッズレジャー",
+      url: "https://news.google.com/rss/search?q=関東+子供+レジャー+おでかけ&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: true,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関東",
+    },
+    {
+      id: "kanto-theater",
+      name: "関東 演劇・ミュージカル",
+      url: "https://news.google.com/rss/search?q=関東+ミュージカル+演劇+チケット&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: true,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関東",
+    },
+    {
+      id: "kanto-adult-leisure",
+      name: "関東 大人レジャー",
+      url: "https://news.google.com/rss/search?q=関東+レジャー+イベント+大人&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: true,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関東",
+    },
+    // おでかけ（関西）— デフォルト無効
+    {
+      id: "kansai-kids-leisure",
+      name: "関西キッズレジャー",
+      url: "https://news.google.com/rss/search?q=関西+子供+レジャー+おでかけ&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: false,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関西",
+    },
+    {
+      id: "kansai-theater",
+      name: "関西 演劇・ミュージカル",
+      url: "https://news.google.com/rss/search?q=関西+ミュージカル+演劇+チケット&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: false,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関西",
+    },
+    {
+      id: "kansai-adult-leisure",
+      name: "関西 大人レジャー",
+      url: "https://news.google.com/rss/search?q=関西+レジャー+イベント+大人&hl=ja&gl=JP&ceid=JP:ja",
+      category: "おでかけ",
+      enabled: false,
+      lastSuccessAt: "",
+      errorCount: 0,
+      lastError: "",
+      lastErrorAt: "",
+      region: "関西",
     },
   ];
 }
@@ -159,7 +236,7 @@ export function saveSettings(settings) {
 }
 
 // 設定バージョン（フィードリスト変更時にインクリメント）
-const FEEDS_VERSION = 2;
+const FEEDS_VERSION = 3;
 const FEEDS_VERSION_KEY = "family-news-feeds-version";
 
 /**
@@ -299,6 +376,44 @@ export function isValidUrl(url) {
   } catch {
     return false;
   }
+}
+
+/**
+ * 地域設定を更新し、対応するフィードソースのenabled状態を切り替える
+ * @param {string} region - 地域名（例: "関西"）
+ * @param {boolean} enabled - 有効/無効
+ */
+export function setRegionEnabled(region, enabled) {
+  // 設定を更新
+  const settings = loadSettings();
+  if (!settings.regions) settings.regions = {};
+  settings.regions[region === "関西" ? "kansai" : region] = enabled;
+  saveSettings(settings);
+
+  // 該当地域のフィードソースを一括切替
+  const sources = loadFeedSources();
+  let changed = false;
+  for (const source of sources) {
+    if (source.region === region) {
+      source.enabled = enabled;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveFeedSources(sources);
+  }
+}
+
+/**
+ * 地域が有効かどうか判定
+ * @param {string} region - 地域名（例: "関西"）
+ * @returns {boolean}
+ */
+export function isRegionEnabled(region) {
+  const settings = loadSettings();
+  if (!settings.regions) return false;
+  const key = region === "関西" ? "kansai" : region;
+  return settings.regions[key] === true;
 }
 
 /**
