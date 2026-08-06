@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
 const ALLOWED_ORIGINS = [
+  "https://osho0625.github.io",
   "https://kc-asse.github.io",
   "http://localhost",
   "http://127.0.0.1",
