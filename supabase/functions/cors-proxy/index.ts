@@ -72,8 +72,9 @@ serve(async (req: Request) => {
 
     const response = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "FamilyNewsBot/1.0",
+        "User-Agent": "Mozilla/5.0 (compatible; FamilyNewsReader/1.0)",
         "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+        "Accept-Language": "ja,en;q=0.9",
       },
       redirect: "follow",
       signal: controller.signal,
