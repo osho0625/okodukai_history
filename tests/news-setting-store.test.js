@@ -27,13 +27,14 @@ beforeEach(() => {
 });
 
 describe("getDefaultSettings", () => {
-  it("デフォルト設定にプロキシ3件とdebugLog=falseが含まれる", () => {
+  it("デフォルト設定にプロキシ3件とdebugLog=falseとregionsが含まれる", () => {
     const settings = getDefaultSettings();
     expect(settings.proxies).toHaveLength(3);
     expect(settings.proxies[0].name).toBe("supabase-proxy");
     expect(settings.proxies[1].name).toBe("corsproxy-io");
     expect(settings.proxies[2].name).toBe("allorigins-raw");
     expect(settings.debugLog).toBe(false);
+    expect(settings.regions).toEqual({ kansai: false });
   });
 
   it("各プロキシにname, urlPrefix, typeフィールドがある", () => {
@@ -48,19 +49,19 @@ describe("getDefaultSettings", () => {
 });
 
 describe("getDefaultFeedSources", () => {
-  it("デフォルトフィードソースが7件ある", () => {
+  it("デフォルトフィードソースが13件ある", () => {
     const sources = getDefaultFeedSources();
-    expect(sources).toHaveLength(7);
+    expect(sources).toHaveLength(13);
   });
 
-  it("テック3件、ゲーム3件、おでかけ1件のカテゴリ構成", () => {
+  it("テック3件、ゲーム3件、おでかけ7件のカテゴリ構成", () => {
     const sources = getDefaultFeedSources();
     const tech = sources.filter((s) => s.category === "テック");
     const game = sources.filter((s) => s.category === "ゲーム");
     const outing = sources.filter((s) => s.category === "おでかけ");
     expect(tech).toHaveLength(3);
     expect(game).toHaveLength(3);
-    expect(outing).toHaveLength(1);
+    expect(outing).toHaveLength(7);
   });
 
   it("全フィードソースがFeedSource型の必須フィールドを持つ", () => {
@@ -75,7 +76,7 @@ describe("getDefaultFeedSources", () => {
       expect(source).toHaveProperty("errorCount");
       expect(source).toHaveProperty("lastError");
       expect(source).toHaveProperty("lastErrorAt");
-      expect(source.enabled).toBe(true);
+      expect(typeof source.enabled).toBe("boolean");
       expect(source.errorCount).toBe(0);
     }
   });
@@ -125,11 +126,11 @@ describe("loadSettings / saveSettings", () => {
 describe("loadFeedSources / saveFeedSources", () => {
   it("初回起動時はデフォルトフィードを登録して返す", () => {
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(7);
+    expect(sources).toHaveLength(13);
     // localStorageにも保存されている
     const raw = localStorage.getItem(FEEDS_KEY);
     expect(raw).not.toBeNull();
-    expect(JSON.parse(raw)).toHaveLength(7);
+    expect(JSON.parse(raw)).toHaveLength(13);
   });
 
   it("保存したフィードソースを正しく読み込める", () => {
@@ -154,13 +155,13 @@ describe("loadFeedSources / saveFeedSources", () => {
   it("不正なJSONの場合はデフォルトに戻す", () => {
     localStorage.setItem(FEEDS_KEY, "not valid json");
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(7);
+    expect(sources).toHaveLength(13);
   });
 
   it("配列でないデータの場合はデフォルトに戻す", () => {
     localStorage.setItem(FEEDS_KEY, JSON.stringify({ not: "array" }));
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(7);
+    expect(sources).toHaveLength(13);
   });
 });
 

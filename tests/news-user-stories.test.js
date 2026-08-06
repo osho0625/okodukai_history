@@ -77,9 +77,9 @@ afterEach(() => {
 // シナリオ1: 初回起動
 // =============================================================================
 describe("シナリオ1: 初回起動 - デフォルトフィードソース10件が登録される", () => {
-  it("loadFeedSources()がデフォルト7件を返す", () => {
+  it("loadFeedSources()がデフォルト13件を返す", () => {
     const sources = loadFeedSources();
-    expect(sources).toHaveLength(7);
+    expect(sources).toHaveLength(13);
   });
 
   it("デフォルトフィードソースがlocalStorageに保存される", () => {
@@ -87,7 +87,7 @@ describe("シナリオ1: 初回起動 - デフォルトフィードソース10�
     const raw = localStorage.getItem("family-news-feeds");
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw);
-    expect(parsed).toHaveLength(7);
+    expect(parsed).toHaveLength(13);
   });
 
   it("デフォルトソースに各カテゴリが含まれる", () => {

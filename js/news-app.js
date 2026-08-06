@@ -8,7 +8,7 @@
 
 import { fetchAllFeeds } from './news-feed-service.js';
 import { loadCache, saveToCache, getDisplayArticles } from './news-article-store.js';
-import { loadFeedSources, loadSettings, saveSettings, isDebugLogEnabled, updateFeedSource, addFeedSource, removeFeedSource, isValidUrl } from './news-setting-store.js';
+import { loadFeedSources, loadSettings, saveSettings, isDebugLogEnabled, updateFeedSource, addFeedSource, removeFeedSource, isValidUrl, setRegionEnabled, isRegionEnabled } from './news-setting-store.js';
 import { loadFavorites, addFavorite, removeFavorite, isFavorite } from './news-favorite-store.js';
 
 // --- カテゴリアイコンマッピング ---
@@ -612,7 +612,8 @@ function createFeedSourceItem(source) {
   const categorySpan = document.createElement('span');
   categorySpan.className = 'feed-source-category';
   const categoryIcon = getCategoryIcon(source.category);
-  categorySpan.textContent = `${categoryIcon} ${source.category}`;
+  const regionLabel = source.region ? ` [${source.region}]` : '';
+  categorySpan.textContent = `${categoryIcon} ${source.category}${regionLabel}`;
 
   info.appendChild(nameSpan);
   info.appendChild(categorySpan);
@@ -921,6 +922,28 @@ function handleAddProxy() {
   renderProxyList();
 }
 
+// --- 設定タブ: 地域設定 ---
+
+/**
+ * 地域トグルの初期化とイベント設定
+ */
+function setupRegionToggle() {
+  const kansaiToggle = document.getElementById('region-kansai-toggle');
+  if (!kansaiToggle) return;
+
+  // 現在の設定を反映
+  kansaiToggle.checked = isRegionEnabled('関西');
+
+  // イベントリスナー（重複防止: onchangeで上書き）
+  kansaiToggle.onchange = () => {
+    const enabled = kansaiToggle.checked;
+    setRegionEnabled('関西', enabled);
+    debugLog(`関西ニュース: ${enabled ? 'ON' : 'OFF'}`);
+    // フィードソースリストを再描画
+    renderFeedSourceList();
+  };
+}
+
 // --- 設定タブ: デバッグログ設定 ---
 
 /**
@@ -1098,6 +1121,7 @@ async function setupNotificationToggle() {
 function renderSettingsTab() {
   renderFeedSourceList();
   renderProxyList();
+  setupRegionToggle();
   setupDebugToggle();
   setupNotificationToggle();
 }
