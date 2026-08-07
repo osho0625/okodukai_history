@@ -3,15 +3,15 @@
 ## 基本情報
 
 ### 参加者
-- 大人：4名
-  - 父
-  - 母
-  - 妻
-  - 妻の父（参加の場合あり）
+- 大人：3〜4名
+  - 涼介
+  - めぐみ
+  - お義父さん（参加の場合あり）
+  - お兄さん（未定）
 - 子供：3名
-  - 小学5年生
-  - 小学3年生
-  - 小学1年生
+  - はるちか（小5）
+  - いろは（小3）
+  - かいせい（小1）
 
 ### 日程
 - 1泊2日予定
@@ -41,34 +41,6 @@
 
 ---
 
-## 現時点の判断
-
-### お義父さん不参加 → プランA優先
-
-理由：
-- 子供3人が確実に楽しめる
-- 移動が少ない
-- 親の負担が少ない
-
-### お義父さん参加 → プランB優先
-
-理由：
-- 箱根観光を満喫できる
-- 海賊船、ロープウェイ、大涌谷は世代問わず楽しめる
-- 温泉旅行として満足度が高い
-
----
-
-## 次に確認すること
-
-- 具体的な宿候補と料金比較
-- 10月末〜11月上旬の空室確認
-- 平日泊可能か
-- 妻の父の参加可否
-- 車移動ルート確認
-
----
-
 <details>
 <summary>📋 プランA：箱根ホテル小涌園 + ユネッサン満喫プラン</summary>
 
@@ -87,6 +59,12 @@
 - ビュッフェ形式で子供でも食事を選びやすい
 - 雨でも楽しめる
 
+予約・公式：
+- 公式：https://www.yunessun.com/hotel/kowakien/
+- 楽天トラベル：https://travel.rakuten.co.jp/HOTEL/184829/184829.html
+- じゃらん：https://www.jalan.net/yad325498/
+- 一休.com：https://www.ikyu.com/00003020/
+
 候補プラン：
 - 夕朝食付き
 - ユネッサン利用付きプラン
@@ -104,6 +82,8 @@
 横浜出発 → 箱根へ
 
 ### メイン：箱根小涌園ユネッサン
+
+- 公式：https://www.yunessun.com/
 
 内容：
 - 水着エリアで遊ぶ
@@ -126,11 +106,14 @@
   - 火山ガスが出る箱根の有名観光地
   - 黒たまご
   - 景色
+  - 紹介：https://www.kanagawa-kankou.or.jp/features/337
 - **箱根ロープウェイ**
   - 大涌谷までの移動も楽しめる
+  - 公式：https://www.hakonenavi.jp/hakone-ropeway/
 - **芦ノ湖遊覧船（箱根海賊船）**
   - 子供も楽しめる
   - 大人も景色を楽しめる
+  - 公式：https://www.hakonenavi.jp/hakone-kankosen/
 
 ---
 
@@ -170,11 +153,18 @@
 - 強羅温泉
 - 仙石原温泉
 
+宿検索リンク：
+- 楽天トラベル（箱根）：https://travel.rakuten.co.jp/yado/kanagawa/hakone.html
+- じゃらん（箱根）：https://www.jalan.net/kankou/140000/141000/
+- 一休.com（箱根）：https://www.ikyu.com/area/a14r1402/
+
 ---
 
 ## 1日目
 
 ### 小田原城
+
+- 公式：https://odawaracastle.com/
 
 目的：
 - 横浜から箱根への途中で寄れる
@@ -184,6 +174,9 @@
 ↓
 
 ### 小田原かまぼこ通り
+
+- 紹介：https://www.odawara-kankou.com/spot/spot_area/kamabokodouri.html
+- 鈴廣かまぼこの里：https://www.kamaboko.com/sato/
 
 目的：
 - 昼食
@@ -200,6 +193,8 @@
 
 ### 箱根ロープウェイ
 
+- 公式：https://www.hakonenavi.jp/hakone-ropeway/
+
 目的：
 - 乗り物として楽しめる
 - 景色が良い
@@ -207,6 +202,8 @@
 ↓
 
 ### 大涌谷（おおわくだに）
+
+- 紹介：https://www.kanagawa-kankou.or.jp/features/337
 
 内容：
 - 火山地帯を見る
@@ -216,6 +213,9 @@
 ↓
 
 ### 箱根海賊船
+
+- 公式：https://www.hakonenavi.jp/hakone-kankosen/
+- 海賊船＋ロープウェイ乗り放題パス：https://www.hakonenavi.jp/transportation/ticket/ship_ropeway/
 
 目的：
 - 芦ノ湖を船で移動
@@ -248,6 +248,8 @@
 
 ## 箱根ガラスの森美術館
 
+- 公式：https://www.hakone-garasunomori.jp/
+
 ### 概要
 - ヴェネチアン・グラスを展示する美術館
 - 庭園や建物の雰囲気が良い
@@ -265,6 +267,8 @@
 ---
 
 ## 彫刻の森美術館
+
+- 公式：https://www.hakone-oam.or.jp/
 
 ### 概要
 - 屋外展示型の美術館
@@ -287,6 +291,8 @@
 ---
 
 ## 箱根小涌園 天悠
+
+- 公式：https://www.ten-yu.com/
 
 ### 概要
 - 箱根小涌園系列の高級温泉宿
