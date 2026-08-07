@@ -73,8 +73,12 @@ fileMatchPattern: "*family-notes*,*family_notes*"
 [
   { "title": "連絡先・個人情報", "file": "contacts.md" },
   { "title": "アスレチック・公園まとめ", "file": "outdoor-parks.md" },
+  { "title": "おでかけスポットまとめ", "file": "outing-spots.md" },
   { "title": "八景島シーパラダイス", "file": "hakkeijima-seaparadise.md" },
-  { "title": "子供の自立心・育成ロードマップ", "file": "child-independence-roadmap.md" }
+  { "title": "子供の自立心・育成ロードマップ", "file": "child-independence-roadmap.md" },
+  { "title": "🎮 Scratchでゲームをつくろう！", "file": "scratch-guide.md" },
+  { "title": "🪀 けん玉ロードマップ", "file": "kendama-roadmap.md" },
+  { "title": "🪀 けん玉チャレンジ！", "file": "kendama-kids.md" }
 ]
 ```
 
