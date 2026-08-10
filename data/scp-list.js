@@ -206,7 +206,7 @@ window.SCP_DATA = [
   {
     "id": "scp-488-jp",
     "number": "SCP-488-JP",
-    "title": "闇から来るもの",
+    "title": "人狼",
     "url": "https://scp-jp.wikidot.com/scp-488-jp"
   },
   {
