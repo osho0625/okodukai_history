@@ -79,7 +79,8 @@ fileMatchPattern: "*family-notes*,*family_notes*"
   { "title": "子供の自立心・育成ロードマップ", "file": "child-independence-roadmap.md" },
   { "title": "🎮 Scratchでゲームをつくろう！", "file": "scratch-guide.md" },
   { "title": "🪀 けん玉ロードマップ", "file": "kendama-roadmap.md" },
-  { "title": "🪀 けん玉チャレンジ！", "file": "kendama-kids.md" }
+  { "title": "🪀 けん玉チャレンジ！", "file": "kendama-kids.md" },
+  { "title": "💪 筋トレマイルストーン", "file": "bodymaking-plan.md" }
 ]
 ```
 
