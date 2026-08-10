@@ -1,0 +1,6 @@
+[{"id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","name":"りょうすけ","balance":80,"show_balance_on_top":true,"require_password":true,"password":"299792458","sort_order":3}, 
+ {"id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","name":"かいせい","balance":300,"show_balance_on_top":false,"require_password":false,"password":null,"sort_order":2}, 
+ {"id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","name":"はるちか","balance":-258,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":0}, 
+ {"id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","name":"いろは","balance":376,"show_balance_on_top":false,"require_password":false,"password":null,"sort_order":1}, 
+ {"id":"dc1dc522-3bae-4428-86f3-24068b4473b4","name":"いろはが返すお金","balance":-23425,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":5}, 
+ {"id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","name":"めぐみ","balance":7140,"show_balance_on_top":true,"require_password":false,"password":null,"sort_order":4}]
