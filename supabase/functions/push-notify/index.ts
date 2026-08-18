@@ -292,7 +292,7 @@ serve(async (_req: Request) => {
 
     // ---- Part 2: push_messages queue ----
     const messages: PushMessage[] = await supabaseGet(
-      SUPABASE_URL, SUPABASE_KEY, "push_messages?sent=eq.false&select=*&order=created_at.asc"
+      SUPABASE_URL, SUPABASE_KEY, "push_messages?sent=eq.false&deliver_at=lte.now()&select=*&order=created_at.asc"
     );
     results.push(`Queue: ${messages.length} pending`);
 

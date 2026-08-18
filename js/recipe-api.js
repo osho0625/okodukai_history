@@ -44,7 +44,7 @@ const RecipeRepository = {
   async getById(id) {
     const { data, error } = await client
       .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
+      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order, group_label), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
       .eq('id', id)
       .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
       .order('sort_order', { referencedTable: 'recipe_steps', ascending: true })
@@ -110,7 +110,7 @@ const RecipeRepository = {
 
     let query = client
       .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
+      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order, group_label), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
 
     if (status) {
       query = query.eq('status', status);
@@ -371,7 +371,8 @@ const IngredientRepository = {
         name: ing.name,
         quantity: ing.quantity || '',
         memo: ing.memo || '',
-        sort_order: ing.sort_order !== undefined ? ing.sort_order : idx
+        sort_order: ing.sort_order !== undefined ? ing.sort_order : idx,
+        group_label: ing.group_label || ''
       };
     });
 

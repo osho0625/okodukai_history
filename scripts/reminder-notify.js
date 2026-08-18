@@ -563,7 +563,7 @@ async function processPushMessages(supabaseUrl, supabaseKey, vapidPublicKey, vap
   webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
 
   // 未送信メッセージを取得
-  const msgRes = await fetch(`${supabaseUrl}/rest/v1/push_messages?sent=eq.false&select=*&order=created_at.asc`, {
+  const msgRes = await fetch(`${supabaseUrl}/rest/v1/push_messages?sent=eq.false&deliver_at=lte.now()&select=*&order=created_at.asc`, {
     headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
   });
   if (!msgRes.ok) return;
