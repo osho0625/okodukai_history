@@ -42,28 +42,33 @@ const RecipeRepository = {
    * @returns {Promise<{data: object|null, error: object|null}>}
    */
   async getById(id) {
-    // Try with group_label first, fallback without if column doesn't exist yet
+    // Query without group_label first (guaranteed to work), then try with group_label
     var { data, error } = await client
       .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order, group_label), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
+      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
       .eq('id', id)
       .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
       .order('sort_order', { referencedTable: 'recipe_steps', ascending: true })
       .order('sort_order', { referencedTable: 'recipe_photos', ascending: true })
       .maybeSingle();
 
-    // Fallback: if error mentions group_label column, retry without it
-    if (error && error.message && error.message.indexOf('group_label') !== -1) {
-      var fallback = await client
-        .from('recipes')
-        .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
-        .eq('id', id)
-        .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
-        .order('sort_order', { referencedTable: 'recipe_steps', ascending: true })
-        .order('sort_order', { referencedTable: 'recipe_photos', ascending: true })
-        .maybeSingle();
-      data = fallback.data;
-      error = fallback.error;
+    if (!error && data) {
+      // Try to fetch group_label separately (if column exists)
+      try {
+        var { data: ingWithGroup, error: groupErr } = await client
+          .from('recipe_ingredients')
+          .select('id, group_label')
+          .eq('recipe_id', id);
+        if (!groupErr && ingWithGroup && data.recipe_ingredients) {
+          var groupMap = {};
+          for (var gi = 0; gi < ingWithGroup.length; gi++) {
+            groupMap[ingWithGroup[gi].id] = ingWithGroup[gi].group_label || '';
+          }
+          for (var ii = 0; ii < data.recipe_ingredients.length; ii++) {
+            data.recipe_ingredients[ii].group_label = groupMap[data.recipe_ingredients[ii].id] || '';
+          }
+        }
+      } catch(e) { /* group_label column doesn't exist yet — ignore */ }
     }
 
     return { data, error };
@@ -125,7 +130,7 @@ const RecipeRepository = {
 
     let query = client
       .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order, group_label), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
+      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
 
     if (status) {
       query = query.eq('status', status);
@@ -133,20 +138,6 @@ const RecipeRepository = {
 
     query = query.order('updated_at', { ascending: false });
     var { data, error } = await query;
-
-    // Fallback if group_label column doesn't exist
-    if (error && error.message && error.message.indexOf('group_label') !== -1) {
-      let fallbackQuery = client
-        .from('recipes')
-        .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
-      if (status) {
-        fallbackQuery = fallbackQuery.eq('status', status);
-      }
-      fallbackQuery = fallbackQuery.order('updated_at', { ascending: false });
-      var fallbackResult = await fallbackQuery;
-      data = fallbackResult.data;
-      error = fallbackResult.error;
-    }
 
     return { data, error };
   },
@@ -411,7 +402,7 @@ const IngredientRepository = {
       .insert(rows);
 
     // Fallback: if group_label column doesn't exist, retry without it
-    if (insertError && insertError.message && insertError.message.indexOf('group_label') !== -1) {
+    if (insertError) {
       var rowsNoGroup = ingredients.map(function(ing, idx) {
         return {
           recipe_id: recipeId,
