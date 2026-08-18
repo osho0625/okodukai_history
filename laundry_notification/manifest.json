@@ -1,0 +1,24 @@
+{
+  "name": "洗濯通知",
+  "short_name": "洗濯通知",
+  "description": "洗濯完了通知アプリ",
+  "start_url": "/laundry_notification/index.html",
+  "scope": "/laundry_notification/",
+  "display": "standalone",
+  "background_color": "#e3f2fd",
+  "theme_color": "#2196F3",
+  "icons": [
+    {
+      "src": "images/laundry-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/laundry-512.png",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
