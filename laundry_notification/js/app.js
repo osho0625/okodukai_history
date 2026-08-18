@@ -1,6 +1,6 @@
 // Supabase設定（お小遣い手帳と同じプロジェクト）
 const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluZWNlenhubHRpZ3BscmZ6em9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzOTU4MjAsImV4cCI6MjA1ODk3MTgyMH0.CNZEK1FS-UXGXHV2o1NnhRGMVFqr2Og0i04Jo8geWKU';
+const SUPABASE_ANON_KEY = 'sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4';
 const VAPID_PUBLIC_KEY = 'BACPY31DgyoV3La_IdzxPvK4SrNT0NLj5KOi3PPekNv8dzU6_R4qO4tYkA4OHUptgQ_rSaPxw7S6Tu9I-j9uz08';
 
 // Service Worker登録
