@@ -1167,33 +1167,58 @@ function renderIngredients(ingredients) {
     return (a.sort_order || 0) - (b.sort_order || 0);
   });
 
-  var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;';
-
+  // Group ingredients by group_label
+  var groups = [];
+  var currentGroup = null;
   for (var i = 0; i < sorted.length; i++) {
-    var ing = sorted[i];
-    var row = document.createElement('tr');
-    row.style.cssText = 'border-bottom:1px solid #eee;';
-
-    var nameCell = document.createElement('td');
-    nameCell.style.cssText = 'padding:8px 4px;font-weight:600;';
-    nameCell.textContent = ing.name || '';
-    row.appendChild(nameCell);
-
-    var qtyCell = document.createElement('td');
-    qtyCell.style.cssText = 'padding:8px 4px;color:#666;';
-    qtyCell.textContent = ing.quantity || '';
-    row.appendChild(qtyCell);
-
-    var memoCell = document.createElement('td');
-    memoCell.style.cssText = 'padding:8px 4px;color:#999;font-size:0.85em;';
-    memoCell.textContent = ing.memo || '';
-    row.appendChild(memoCell);
-
-    table.appendChild(row);
+    var label = sorted[i].group_label || '';
+    if (label !== (currentGroup ? currentGroup.label : '')) {
+      currentGroup = { label: label, items: [] };
+      groups.push(currentGroup);
+    }
+    currentGroup.items.push(sorted[i]);
   }
 
-  section.appendChild(table);
+  for (var g = 0; g < groups.length; g++) {
+    var group = groups[g];
+
+    // Show group header if label exists
+    if (group.label) {
+      var groupHeader = document.createElement('div');
+      groupHeader.style.cssText = 'font-weight:700;color:#e65100;font-size:1em;margin-top:12px;margin-bottom:4px;padding:4px 8px;background:#fff3e0;border-radius:6px;display:inline-block;';
+      groupHeader.textContent = group.label;
+      section.appendChild(groupHeader);
+    }
+
+    var table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;';
+
+    for (var j = 0; j < group.items.length; j++) {
+      var ing = group.items[j];
+      var row = document.createElement('tr');
+      row.style.cssText = 'border-bottom:1px solid #eee;';
+
+      var nameCell = document.createElement('td');
+      nameCell.style.cssText = 'padding:8px 4px;font-weight:600;';
+      nameCell.textContent = ing.name || '';
+      row.appendChild(nameCell);
+
+      var qtyCell = document.createElement('td');
+      qtyCell.style.cssText = 'padding:8px 4px;color:#666;';
+      qtyCell.textContent = ing.quantity || '';
+      row.appendChild(qtyCell);
+
+      var memoCell = document.createElement('td');
+      memoCell.style.cssText = 'padding:8px 4px;color:#999;font-size:0.85em;';
+      memoCell.textContent = ing.memo || '';
+      row.appendChild(memoCell);
+
+      table.appendChild(row);
+    }
+
+    section.appendChild(table);
+  }
+
   fragment.appendChild(section);
   return fragment;
 }
@@ -1647,7 +1672,7 @@ function clearFieldErrors() {
 
 /**
  * 材料行を追加
- * @param {object} [data] - {name?, quantity?, memo?}
+ * @param {object} [data] - {name?, quantity?, memo?, group_label?}
  * @returns {HTMLElement} 追加された行要素
  */
 function addIngredientRow(data) {
@@ -1657,7 +1682,22 @@ function addIngredientRow(data) {
 
   var row = document.createElement('div');
   row.className = 'ingredient-row';
-  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
+  row.draggable = true;
+  row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;padding:6px;border-radius:8px;border:1px solid transparent;transition:border-color 0.2s,background 0.2s;';
+
+  // Drag handle
+  var dragHandle = document.createElement('span');
+  dragHandle.className = 'ing-drag-handle';
+  dragHandle.textContent = '☰';
+  dragHandle.style.cssText = 'cursor:grab;font-size:1.2em;color:#bbb;padding:4px;user-select:none;touch-action:none;';
+
+  // Group label input
+  var groupInput = document.createElement('input');
+  groupInput.type = 'text';
+  groupInput.placeholder = 'グループ';
+  groupInput.value = data.group_label || '';
+  groupInput.className = 'ing-group';
+  groupInput.style.cssText = 'width:50px;padding:8px 6px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;text-align:center;font-weight:700;color:#e65100;';
 
   var nameInput = document.createElement('input');
   nameInput.type = 'text';
@@ -1688,17 +1728,96 @@ function addIngredientRow(data) {
     row.parentNode.removeChild(row);
   });
 
+  row.appendChild(dragHandle);
+  row.appendChild(groupInput);
   row.appendChild(nameInput);
   row.appendChild(qtyInput);
   row.appendChild(memoInput);
   row.appendChild(removeBtn);
+
+  // Drag-and-drop events
+  row.addEventListener('dragstart', function(e) {
+    e.dataTransfer.effectAllowed = 'move';
+    row.style.opacity = '0.5';
+    row._dragSrc = true;
+  });
+  row.addEventListener('dragend', function() {
+    row.style.opacity = '1';
+    row._dragSrc = false;
+    // Clean up any drag-over styles
+    var allRows = container.querySelectorAll('.ingredient-row');
+    for (var r = 0; r < allRows.length; r++) {
+      allRows[r].style.borderColor = 'transparent';
+    }
+  });
+  row.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    row.style.borderColor = '#e65100';
+  });
+  row.addEventListener('dragleave', function() {
+    row.style.borderColor = 'transparent';
+  });
+  row.addEventListener('drop', function(e) {
+    e.preventDefault();
+    row.style.borderColor = 'transparent';
+    var dragged = container.querySelector('.ingredient-row[style*="opacity: 0.5"]') || container.querySelector('.ingredient-row[style*="opacity:0.5"]');
+    if (dragged && dragged !== row) {
+      // Insert dragged before or after drop target
+      var allRows = Array.from(container.querySelectorAll('.ingredient-row'));
+      var dragIdx = allRows.indexOf(dragged);
+      var dropIdx = allRows.indexOf(row);
+      if (dragIdx < dropIdx) {
+        container.insertBefore(dragged, row.nextSibling);
+      } else {
+        container.insertBefore(dragged, row);
+      }
+    }
+  });
+
+  // Touch-based drag for mobile
+  var touchStartY = 0;
+  var touchCurrentRow = null;
+  dragHandle.addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+    touchCurrentRow = row;
+    row.style.opacity = '0.5';
+    row.style.background = '#fff3e0';
+  }, { passive: true });
+  dragHandle.addEventListener('touchmove', function(e) {
+    if (!touchCurrentRow) return;
+    e.preventDefault();
+    var touch = e.touches[0];
+    var allRows = Array.from(container.querySelectorAll('.ingredient-row'));
+    for (var r = 0; r < allRows.length; r++) {
+      var rect = allRows[r].getBoundingClientRect();
+      if (touch.clientY > rect.top && touch.clientY < rect.bottom && allRows[r] !== touchCurrentRow) {
+        var dragIdx = allRows.indexOf(touchCurrentRow);
+        var dropIdx = allRows.indexOf(allRows[r]);
+        if (dragIdx < dropIdx) {
+          container.insertBefore(touchCurrentRow, allRows[r].nextSibling);
+        } else {
+          container.insertBefore(touchCurrentRow, allRows[r]);
+        }
+        break;
+      }
+    }
+  });
+  dragHandle.addEventListener('touchend', function() {
+    if (touchCurrentRow) {
+      touchCurrentRow.style.opacity = '1';
+      touchCurrentRow.style.background = '';
+      touchCurrentRow = null;
+    }
+  });
+
   container.appendChild(row);
   return row;
 }
 
 /**
  * 手順行を追加
- * @param {object} [data] - {description?, photoUrl?}
+ * @param {object} [data] - {description?, photoUrl?, stepId?}
  * @returns {HTMLElement} 追加された行要素
  */
 function addStepRow(data) {
@@ -1724,16 +1843,70 @@ function addStepRow(data) {
   descInput.value = data.description || '';
   descInput.className = 'step-description';
   descInput.rows = 2;
-  descInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;resize:vertical;';
+  descInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;resize:vertical;box-sizing:border-box;';
 
   contentDiv.appendChild(descInput);
 
+  // Per-step photo section
+  var photoRow = document.createElement('div');
+  photoRow.style.cssText = 'margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+
+  var photoBtn = document.createElement('label');
+  photoBtn.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fafafa;font-size:0.85em;cursor:pointer;color:#666;';
+  photoBtn.textContent = '📷 写真追加';
+
+  var photoFileInput = document.createElement('input');
+  photoFileInput.type = 'file';
+  photoFileInput.accept = 'image/*';
+  photoFileInput.className = 'step-photo-input';
+  photoFileInput.style.display = 'none';
+  photoBtn.appendChild(photoFileInput);
+
+  var photoPreviewContainer = document.createElement('div');
+  photoPreviewContainer.className = 'step-photo-preview';
+  photoPreviewContainer.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+
+  photoFileInput.addEventListener('change', function() {
+    if (photoFileInput.files && photoFileInput.files[0]) {
+      var file = photoFileInput.files[0];
+      var imgValid = validateImageFile(file);
+      if (!imgValid.valid) {
+        showToast(imgValid.error, 'error');
+        return;
+      }
+      var preview = document.createElement('div');
+      preview.style.cssText = 'position:relative;display:inline-block;';
+      var img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.alt = '手順写真';
+      img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:6px;';
+      preview.appendChild(img);
+      var rmBtn = document.createElement('button');
+      rmBtn.type = 'button';
+      rmBtn.textContent = '✕';
+      rmBtn.style.cssText = 'position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;border:none;background:#e53935;color:#fff;font-size:0.7em;cursor:pointer;line-height:1;';
+      rmBtn.addEventListener('click', function() {
+        preview.parentNode.removeChild(preview);
+      });
+      preview.appendChild(rmBtn);
+      photoPreviewContainer.appendChild(preview);
+    }
+  });
+
+  photoRow.appendChild(photoBtn);
+  photoRow.appendChild(photoPreviewContainer);
+  contentDiv.appendChild(photoRow);
+
+  // Show existing photo if editing
   if (data.photoUrl) {
-    var preview = document.createElement('img');
-    preview.src = data.photoUrl;
-    preview.alt = '手順写真';
-    preview.style.cssText = 'max-width:100px;height:auto;border-radius:6px;margin-top:6px;';
-    contentDiv.appendChild(preview);
+    var existingPreview = document.createElement('div');
+    existingPreview.style.cssText = 'position:relative;display:inline-block;';
+    var existingImg = document.createElement('img');
+    existingImg.src = data.photoUrl;
+    existingImg.alt = '手順写真';
+    existingImg.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:6px;';
+    existingPreview.appendChild(existingImg);
+    photoPreviewContainer.appendChild(existingPreview);
   }
 
   var removeBtn = document.createElement('button');
@@ -1788,31 +1961,14 @@ async function saveRecipe(status) {
     var nameEl = ingredientRows[i].querySelector('.ing-name');
     var qtyEl = ingredientRows[i].querySelector('.ing-quantity');
     var memoEl = ingredientRows[i].querySelector('.ing-memo');
+    var groupEl = ingredientRows[i].querySelector('.ing-group');
     var name = nameEl ? nameEl.value.trim() : '';
     if (name) {
       ingredients.push({
         name: name,
         quantity: qtyEl ? qtyEl.value.trim() : '',
         memo: memoEl ? memoEl.value.trim() : '',
-        sort_order: sortIdx++
-      });
-    }
-  }
-
-  // Collect ingredients from 調味料 section
-  var seasoningRows = document.querySelectorAll('#edit-seasonings-list .seasoning-row');
-  for (var si2 = 0; si2 < seasoningRows.length; si2++) {
-    var seaNameEl = seasoningRows[si2].querySelector('.sea-name');
-    var seaName = seaNameEl ? seaNameEl.value.trim() : '';
-    if (seaName) {
-      var seaQty = '';
-      if (seasoningRows[si2].getQuantity) {
-        seaQty = seasoningRows[si2].getQuantity();
-      }
-      ingredients.push({
-        name: seaName,
-        quantity: seaQty,
-        memo: '',
+        group_label: groupEl ? groupEl.value.trim() : '',
         sort_order: sortIdx++
       });
     }
@@ -1884,6 +2040,49 @@ async function saveRecipe(status) {
   var stepResult = await StepRepository.saveAll(savedId, steps);
   if (stepResult.error) {
     showToast('手順の保存に失敗しました', 'error');
+  }
+
+  // Upload step photos (per-step)
+  var savedStepsResult = await client
+    .from('recipe_steps')
+    .select('id, sort_order')
+    .eq('recipe_id', savedId)
+    .order('sort_order', { ascending: true });
+  var savedSteps = (savedStepsResult.data || []);
+
+  var stepRowsForPhotos = document.querySelectorAll('#edit-steps-list .step-row');
+  var stepPhotoIdx = 0;
+  for (var spi = 0; spi < stepRowsForPhotos.length; spi++) {
+    var stepPhotoInput = stepRowsForPhotos[spi].querySelector('.step-photo-input');
+    if (stepPhotoInput && stepPhotoInput.files && stepPhotoInput.files.length > 0) {
+      var stepId = savedSteps[stepPhotoIdx] ? savedSteps[stepPhotoIdx].id : null;
+      if (stepId) {
+        for (var spf = 0; spf < stepPhotoInput.files.length; spf++) {
+          var stepFile = stepPhotoInput.files[spf];
+          var stepImgValid = validateImageFile(stepFile);
+          if (!stepImgValid.valid) {
+            showToast(stepImgValid.error, 'error');
+            continue;
+          }
+          var resizedStepBlob = await resizeImage(stepFile);
+          var stepUploadResult = await PhotoRepository.upload({
+            file: resizedStepBlob,
+            recipeId: savedId,
+            stepId: stepId,
+            type: '途中写真',
+            caption: ''
+          });
+          if (stepUploadResult.error) {
+            showToast('手順写真のアップロードに失敗しました', 'error');
+          }
+        }
+      }
+    }
+    // Only increment if step has content (matches saved steps order)
+    var descCheck = stepRowsForPhotos[spi].querySelector('.step-description');
+    if (descCheck && descCheck.value.trim()) {
+      stepPhotoIdx++;
+    }
   }
 
   // Collect tags from editTagsList (new pill-based UI)
@@ -2196,13 +2395,18 @@ async function loadEditForm(id) {
 
   fragment.appendChild(timeServRow);
 
-  // === 材料 section (regular ingredients) ===
+  // === 材料 section (unified - no more seasoning split) ===
   var ingSection = document.createElement('div');
   ingSection.style.cssText = 'margin-bottom:16px;';
   var ingLabel = document.createElement('label');
   ingLabel.textContent = '🥕 材料';
-  ingLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;font-size:1.1em;';
+  ingLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:4px;color:#333;font-size:1.1em;';
   ingSection.appendChild(ingLabel);
+
+  var ingHint = document.createElement('div');
+  ingHint.textContent = 'グループ欄にA,Bなど入力するとレシピでグループ表示されます。ドラッグで並び替え可。';
+  ingHint.style.cssText = 'font-size:0.8em;color:#999;margin-bottom:8px;';
+  ingSection.appendChild(ingHint);
 
   var ingList = document.createElement('div');
   ingList.id = 'edit-ingredients-list';
@@ -2217,28 +2421,6 @@ async function loadEditForm(id) {
   });
   ingSection.appendChild(addIngBtn);
   fragment.appendChild(ingSection);
-
-  // === 調味料 section (seasonings) ===
-  var seaSection = document.createElement('div');
-  seaSection.style.cssText = 'margin-bottom:16px;';
-  var seaLabel = document.createElement('label');
-  seaLabel.textContent = '🧂 調味料';
-  seaLabel.style.cssText = 'display:block;font-weight:600;margin-bottom:8px;color:#333;font-size:1.1em;';
-  seaSection.appendChild(seaLabel);
-
-  var seaList = document.createElement('div');
-  seaList.id = 'edit-seasonings-list';
-  seaSection.appendChild(seaList);
-
-  var addSeaBtn = document.createElement('button');
-  addSeaBtn.type = 'button';
-  addSeaBtn.textContent = '＋ 調味料を追加';
-  addSeaBtn.style.cssText = 'width:100%;min-height:48px;padding:12px;border:2px dashed #ddd;border-radius:10px;background:#fafafa;font-size:1.1em;font-weight:600;color:#e65100;cursor:pointer;transition:border-color 0.2s;';
-  addSeaBtn.addEventListener('click', function() {
-    addSeasoningRow();
-  });
-  seaSection.appendChild(addSeaBtn);
-  fragment.appendChild(seaSection);
 
   // Steps section
   var stepSection = document.createElement('div');
@@ -2488,27 +2670,24 @@ async function loadEditForm(id) {
         }
       }
 
-      // Pre-fill ingredients (split into regular ingredients vs seasonings)
+      // Pre-fill ingredients (unified list)
       var ings = (recipe.recipe_ingredients || []).sort(function(a, b) {
         return (a.sort_order || 0) - (b.sort_order || 0);
       });
 
-      // Heuristic: if quantity matches seasoning unit patterns, put in seasoning section
-      var seasoningPattern = /^(大さじ|小さじ|カップ)\s*/;
       for (var ii = 0; ii < ings.length; ii++) {
-        if (seasoningPattern.test(ings[ii].quantity)) {
-          addSeasoningRow({ name: ings[ii].name, quantity: ings[ii].quantity, memo: ings[ii].memo });
-        } else {
-          addIngredientRow({ name: ings[ii].name, quantity: ings[ii].quantity, memo: ings[ii].memo });
-        }
+        addIngredientRow({ name: ings[ii].name, quantity: ings[ii].quantity, memo: ings[ii].memo, group_label: ings[ii].group_label || '' });
       }
 
-      // Pre-fill steps
+      // Pre-fill steps (with existing photos)
       var steps = (recipe.recipe_steps || []).sort(function(a, b) {
         return (a.sort_order || 0) - (b.sort_order || 0);
       });
+      var recipePhotos = recipe.recipe_photos || [];
       for (var si = 0; si < steps.length; si++) {
-        addStepRow({ description: steps[si].description });
+        var stepPhotos = recipePhotos.filter(function(p) { return p.step_id === steps[si].id; });
+        var photoUrl = stepPhotos.length > 0 ? stepPhotos[0].url : null;
+        addStepRow({ description: steps[si].description, photoUrl: photoUrl, stepId: steps[si].id });
       }
 
       // Pre-fill tags (pill-based)
@@ -2569,10 +2748,6 @@ async function loadEditForm(id) {
       for (var dii = 0; dii < draftIngs.length; dii++) {
         addIngredientRow(draftIngs[dii]);
       }
-      var draftSeas = savedDraft.seasonings || [];
-      for (var dsi = 0; dsi < draftSeas.length; dsi++) {
-        addSeasoningRow(draftSeas[dsi]);
-      }
       var draftSteps = savedDraft.steps || [];
       for (var dst = 0; dst < draftSteps.length; dst++) {
         addStepRow(draftSteps[dst]);
@@ -2592,7 +2767,6 @@ async function loadEditForm(id) {
       showToast('前回の入力を復元しました', 'info');
     } else {
       addIngredientRow();
-      addSeasoningRow();
       addStepRow();
     }
   }
@@ -2623,18 +2797,9 @@ async function loadEditForm(id) {
         var n = ingRows[i].querySelector('.ing-name');
         var q = ingRows[i].querySelector('.ing-quantity');
         var m = ingRows[i].querySelector('.ing-memo');
+        var g = ingRows[i].querySelector('.ing-group');
         if (n && n.value.trim()) {
-          ings.push({ name: n.value, quantity: q ? q.value : '', memo: m ? m.value : '' });
-        }
-      }
-
-      var seas = [];
-      var seaRows = document.querySelectorAll('#edit-seasonings-list .seasoning-row');
-      for (var s = 0; s < seaRows.length; s++) {
-        var sn = seaRows[s].querySelector('.sea-name');
-        if (sn && sn.value.trim()) {
-          var sq = seaRows[s].getQuantity ? seaRows[s].getQuantity() : '';
-          seas.push({ name: sn.value, quantity: sq });
+          ings.push({ name: n.value, quantity: q ? q.value : '', memo: m ? m.value : '', group_label: g ? g.value : '' });
         }
       }
 
@@ -2654,7 +2819,7 @@ async function loadEditForm(id) {
       }
 
       // 何も入力が無ければ保存しない
-      if (!t && !d && ings.length === 0 && seas.length === 0 && stps.length === 0) return null;
+      if (!t && !d && ings.length === 0 && stps.length === 0) return null;
 
       return {
         title: t,
@@ -2664,7 +2829,6 @@ async function loadEditForm(id) {
         category: cat,
         author: hiddenAuthor ? hiddenAuthor.value : '',
         ingredients: ings,
-        seasonings: seas,
         steps: stps,
         tags: editTagsList.slice(),
         allergies: als
@@ -3627,7 +3791,7 @@ async function showPrintView(id) {
     container.appendChild(descEl);
   }
 
-  // Ingredients table
+  // Ingredients table (with group labels)
   var ings = (recipe.recipe_ingredients || []).slice().sort(function(a, b) {
     return (a.sort_order || 0) - (b.sort_order || 0);
   });
@@ -3637,28 +3801,50 @@ async function showPrintView(id) {
     ingHeading.textContent = '材料';
     container.appendChild(ingHeading);
 
-    var table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;margin-bottom:24px;';
+    // Group by group_label
+    var printGroups = [];
+    var printCurrentGroup = null;
     for (var i = 0; i < ings.length; i++) {
-      var tr = document.createElement('tr');
-      tr.style.cssText = 'border-bottom:1px solid #ddd;';
-      var tdName = document.createElement('td');
-      tdName.style.cssText = 'padding:8px 6px;font-weight:600;font-size:1.1em;';
-      tdName.textContent = ings[i].name;
-      var tdQty = document.createElement('td');
-      tdQty.style.cssText = 'padding:8px 6px;font-size:1.1em;color:#555;';
-      tdQty.textContent = ings[i].quantity || '';
-      tr.appendChild(tdName);
-      tr.appendChild(tdQty);
-      if (ings[i].memo) {
-        var tdMemo = document.createElement('td');
-        tdMemo.style.cssText = 'padding:8px 6px;font-size:0.9em;color:#999;';
-        tdMemo.textContent = ings[i].memo;
-        tr.appendChild(tdMemo);
+      var gl = ings[i].group_label || '';
+      if (gl !== (printCurrentGroup ? printCurrentGroup.label : '')) {
+        printCurrentGroup = { label: gl, items: [] };
+        printGroups.push(printCurrentGroup);
       }
-      table.appendChild(tr);
+      printCurrentGroup.items.push(ings[i]);
     }
-    container.appendChild(table);
+
+    for (var pg = 0; pg < printGroups.length; pg++) {
+      if (printGroups[pg].label) {
+        var groupLabel = document.createElement('div');
+        groupLabel.style.cssText = 'font-weight:700;color:#e65100;margin-top:8px;margin-bottom:4px;font-size:1.1em;';
+        groupLabel.textContent = printGroups[pg].label;
+        container.appendChild(groupLabel);
+      }
+
+      var table = document.createElement('table');
+      table.style.cssText = 'width:100%;border-collapse:collapse;margin-bottom:8px;';
+      for (var pi = 0; pi < printGroups[pg].items.length; pi++) {
+        var ing = printGroups[pg].items[pi];
+        var tr = document.createElement('tr');
+        tr.style.cssText = 'border-bottom:1px solid #ddd;';
+        var tdName = document.createElement('td');
+        tdName.style.cssText = 'padding:8px 6px;font-weight:600;font-size:1.1em;';
+        tdName.textContent = ing.name;
+        var tdQty = document.createElement('td');
+        tdQty.style.cssText = 'padding:8px 6px;font-size:1.1em;color:#555;';
+        tdQty.textContent = ing.quantity || '';
+        tr.appendChild(tdName);
+        tr.appendChild(tdQty);
+        if (ing.memo) {
+          var tdMemo = document.createElement('td');
+          tdMemo.style.cssText = 'padding:8px 6px;font-size:0.9em;color:#999;';
+          tdMemo.textContent = ing.memo;
+          tr.appendChild(tdMemo);
+        }
+        table.appendChild(tr);
+      }
+      container.appendChild(table);
+    }
   }
 
   // Steps (numbered)

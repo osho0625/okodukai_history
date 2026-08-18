@@ -1,0 +1,87 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "お小遣い帳",
+      "intents": [
+        {
+          "name": "RequestChorePointsIntent",
+          "slots": [
+            {
+              "name": "childName",
+              "type": "CHILD_NAME"
+            },
+            {
+              "name": "choreName",
+              "type": "CHORE_NAME"
+            }
+          ],
+          "samples": [
+            "{childName} の {choreName}",
+            "{childName} が {choreName} した",
+            "{childName} が {choreName} やった",
+            "{childName} の {choreName} 申請",
+            "{childName} {choreName}",
+            "ポイント申請 {childName} {choreName}",
+            "{childName} の {choreName} ポイント",
+            "{childName} が {choreName} したよ",
+            "{childName} が {choreName} 終わった",
+            "{childName} が {choreName} できた"
+          ]
+        },
+        {
+          "name": "CheckBalanceIntent",
+          "slots": [
+            {
+              "name": "childName",
+              "type": "CHILD_NAME"
+            }
+          ],
+          "samples": [
+            "{childName} の残高",
+            "{childName} の お小遣い",
+            "{childName} いくら",
+            "{childName} のポイント"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": [
+        {
+          "name": "CHILD_NAME",
+          "values": [
+            { "name": { "value": "りょうすけ" } },
+            { "name": { "value": "めぐみ" } }
+          ]
+        },
+        {
+          "name": "CHORE_NAME",
+          "values": [
+            { "name": { "value": "お風呂掃除", "synonyms": ["風呂掃除", "お風呂"] } },
+            { "name": { "value": "食洗器", "synonyms": ["食洗機", "しょくせんき"] } },
+            { "name": { "value": "洗濯機", "synonyms": ["洗濯", "せんたくき"] } },
+            { "name": { "value": "料理", "synonyms": ["ごはん", "りょうり"] } },
+            { "name": { "value": "掃除機", "synonyms": ["そうじき", "掃除"] } },
+            { "name": { "value": "ゴミ出し", "synonyms": ["ゴミ捨て", "ごみ出し"] } },
+            { "name": { "value": "片付け", "synonyms": ["かたづけ", "お片付け"] } },
+            { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } }
+          ]
+        }
+      ]
+    }
+  }
+}

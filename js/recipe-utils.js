@@ -390,7 +390,8 @@ function duplicateRecipeData(recipe) {
       name: ing.name,
       quantity: ing.quantity || '',
       memo: ing.memo || '',
-      sort_order: ing.sort_order !== undefined ? ing.sort_order : 0
+      sort_order: ing.sort_order !== undefined ? ing.sort_order : 0,
+      group_label: ing.group_label || ''
     };
   });
 

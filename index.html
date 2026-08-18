@@ -97,7 +97,10 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 
 <!-- 隠しボタン（左上透明） -->
 <div id="secretBtn" style="position:fixed; top:0; left:0; width:60px; height:60px; z-index:90; cursor:default;"></div>
-<h1><a href="pages/arcade.html" style="text-decoration:none; font-size:1.2em;">&#x1F579;&#xFE0F;</a> <a href="pages/chores.html" style="text-decoration:none; font-size:1.2em;">&#x1F4CB;</a> <a href="pages/recipe.html" style="text-decoration:none; font-size:1.2em;">&#x1F373;</a> &#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <a href="pages/news.html" style="text-decoration:none; font-size:1.2em;">&#x1F4F0;</a> <span id="gardenBtn" style="cursor:pointer; font-size:1.2em;">&#x1FAB4;</span> <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
+<h1 id="topHeader">&#x304A;&#x5C0F;&#x9063;&#x3044;&#x624B;&#x5E33; <span style="cursor:pointer; font-size:0.6em; opacity:0.4;" onclick="goAdmin()">&#x1F527;</span></h1>
+
+<!-- 上部アイコン行 -->
+<div id="topIconsRow" style="text-align:center; margin-bottom:12px; display:flex; justify-content:center; gap:14px; flex-wrap:wrap;"></div>
 
 <div id="mathReviewNotice" style="display:none; text-align:center; margin:8px 0;">
   <a href="pages/math-olympiad.html#admin-review" style="color:#ffa500; font-weight:600; text-decoration:none; font-size:0.85em;">
@@ -157,37 +160,90 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <div class="loading">読み込み中...</div>
 </div>
 
-<div id="adminIcons" style="text-align:center; margin-top:16px; display:none; justify-content:center; gap:20px;">
-  <a href="pages/kenka-chat.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F916;</a>
-  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F3E5;</a>
-  <a href="https://osho0625.github.io/kc_pickleball_club_app/" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x1F3D3;</a>
-  <a href="#" onclick="openSortModal(); return false;" style="text-decoration:none; font-size:2.5em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">&#x2699;&#xFE0F;</a>
-</div>
-
-<!-- 非admin用ナースコールアイコン -->
-<div id="userNurseCallIcon" style="text-align:center; margin-top:16px;">
-  <a href="pages/nurse-call.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">🏥</a>
-</div>
-
-<!-- 家族メモ帳アイコン（下部） -->
-<div style="text-align:center; margin-top:16px;">
-  <a href="pages/family-notes.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">📝</a>
-  <a id="settlementIcon" href="pages/settlement.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15)); margin-left:16px; display:none;">💰</a>
-  <a href="pages/poker-chips.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15)); margin-left:16px;">&#x1FA99;</a>
-  <a id="hair-removal-icon" href="pages/hair-removal-tracker.html" style="text-decoration:none; font-size:2.2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15)); margin-left:16px; display:none;">&#x1FA92;</a>
-</div>
+<!-- 下部アイコン行 -->
+<div id="bottomIconsRow" style="text-align:center; margin-top:16px; display:flex; justify-content:center; gap:14px; flex-wrap:wrap;"></div>
 
 <script>
-// admin権限ならアイコン表示 + user用ナースコール非表示
-if (localStorage.getItem('deviceRole') === 'admin') {
-  document.getElementById('adminIcons').style.display = 'flex';
-  document.getElementById('userNurseCallIcon').style.display = 'none';
-  document.getElementById('settlementIcon').style.display = 'inline';
-  document.getElementById('hair-removal-icon').style.display = 'inline';
-}
-</script>
+// --- アイコン定義（全アイコンのマスターリスト） ---
+const ALL_ICONS = [
+  { id: 'arcade', emoji: '🕹️', label: 'ゲームセンター', href: 'pages/arcade.html', position: 'top', adminOnly: false },
+  { id: 'chores', emoji: '📋', label: 'お手伝い', href: 'pages/chores.html', position: 'top', adminOnly: false },
+  { id: 'recipe', emoji: '🍳', label: 'レシピ', href: 'pages/recipe.html', position: 'top', adminOnly: false },
+  { id: 'news', emoji: '📰', label: 'ニュース', href: 'pages/news.html', position: 'top', adminOnly: false },
+  { id: 'garden', emoji: '🪴', label: 'ぷよ畑', href: '#', position: 'top', adminOnly: false, isGarden: true },
+  { id: 'kenka', emoji: '🤖', label: 'けんかチャット', href: 'pages/kenka-chat.html', position: 'bottom', adminOnly: true },
+  { id: 'nurse', emoji: '🏥', label: 'ナースコール', href: 'pages/nurse-call.html', position: 'bottom', adminOnly: false },
+  { id: 'pickleball', emoji: '🏓', label: 'ピックルボール', href: 'https://osho0625.github.io/kc_pickleball_club_app/', position: 'bottom', adminOnly: true },
+  { id: 'laundry', emoji: '👕', label: '洗濯通知', href: 'https://osho0625.github.io/laundry_notification/', position: 'bottom', adminOnly: true },
+  { id: 'notes', emoji: '📝', label: '家族メモ帳', href: 'pages/family-notes.html', position: 'bottom', adminOnly: false },
+  { id: 'settlement', emoji: '💰', label: '家庭内精算', href: 'pages/settlement.html', position: 'bottom', adminOnly: true },
+  { id: 'poker-chips', emoji: '🪙', label: 'ポーカーチップ', href: 'pages/poker-chips.html', position: 'bottom', adminOnly: false },
+  { id: 'hair-removal', emoji: '🪒', label: '脱毛管理', href: 'pages/hair-removal-tracker.html', position: 'bottom', adminOnly: true },
+  { id: 'settings', emoji: '⚙️', label: '設定', href: '#', position: 'bottom', adminOnly: false, isSettings: true }
+];
 
-<!-- お手伝いアイコン（アカウント一覧の下に配置） -->
+// デフォルトで表示するアイコンID
+const DEFAULT_VISIBLE = ['arcade','chores','recipe','news','garden','nurse','notes','poker-chips','settings'];
+const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','settings'];
+
+function getVisibleIcons() {
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  const saved = localStorage.getItem('top_visible_icons');
+  if (saved) {
+    try { return JSON.parse(saved); } catch(e) {}
+  }
+  return isAdmin ? DEFAULT_ADMIN_VISIBLE : DEFAULT_VISIBLE;
+}
+
+function saveVisibleIcons(ids) {
+  localStorage.setItem('top_visible_icons', JSON.stringify(ids));
+}
+
+function renderTopIcons() {
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  const visibleIds = getVisibleIcons();
+  const topRow = document.getElementById('topIconsRow');
+  const bottomRow = document.getElementById('bottomIconsRow');
+  topRow.innerHTML = '';
+  bottomRow.innerHTML = '';
+
+  ALL_ICONS.forEach(icon => {
+    if (!visibleIds.includes(icon.id)) return;
+    if (icon.adminOnly && !isAdmin) return;
+
+    const el = document.createElement('a');
+    el.href = icon.href;
+    el.style.cssText = 'text-decoration:none; font-size:2em; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));';
+
+    if (icon.isGarden) {
+      el.href = '#';
+      el.id = 'gardenBtn';
+      el.style.cursor = 'pointer';
+    }
+    if (icon.isSettings) {
+      el.href = '#';
+      el.onclick = function(e) { e.preventDefault(); openSortModal(); };
+    }
+
+    el.textContent = icon.emoji;
+    el.title = icon.label;
+
+    if (icon.position === 'top') {
+      topRow.appendChild(el);
+    } else {
+      bottomRow.appendChild(el);
+    }
+  });
+
+  // 上部行が空なら非表示
+  if (topRow.children.length === 0) topRow.style.display = 'none';
+  else topRow.style.display = 'flex';
+  if (bottomRow.children.length === 0) bottomRow.style.display = 'none';
+  else bottomRow.style.display = 'flex';
+}
+
+renderTopIcons();
+</script>
 
 <!-- 設定モーダル -->
 <div class="overlay" id="sortOverlay">
@@ -202,6 +258,18 @@ if (localStorage.getItem('deviceRole') === 'admin') {
       <div id="sortBody" style="display:none; padding:0 14px 14px;">
         <div id="sortList"></div>
         <button class="btn-ok" onclick="saveSortOrder()" style="width:100%; margin-top:10px;">保存</button>
+      </div>
+    </div>
+
+    <!-- 表示アイコン選択 -->
+    <div style="background:#f9f9f9; border-radius:10px; overflow:hidden; margin-bottom:10px;">
+      <div onclick="toggleSettingAcc('iconVisBody', this)" style="padding:12px 14px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#555; user-select:none;">
+        <span class="acc-arrow-s">▶</span> 🎨 表示アイコンの選択
+      </div>
+      <div id="iconVisBody" style="display:none; padding:0 14px 14px;">
+        <p style="font-size:0.8em; color:#888; margin-bottom:8px;">TOPに表示するアイコンを選択</p>
+        <div id="iconCheckList"></div>
+        <button class="btn-ok" onclick="saveIconVisibility()" style="width:100%; margin-top:10px;">保存</button>
       </div>
     </div>
 
@@ -269,6 +337,7 @@ let sortItems = [];
 function openSortModal() {
   sortItems = allChildren.slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   renderSortList();
+  renderIconCheckList();
   document.getElementById('sortOverlay').classList.add('active');
 }
 
@@ -300,6 +369,42 @@ function moveSortItem(idx, dir) {
   sortItems[idx] = sortItems[newIdx];
   sortItems[newIdx] = tmp;
   renderSortList();
+}
+
+// --- 表示アイコン選択 ---
+function renderIconCheckList() {
+  const list = document.getElementById('iconCheckList');
+  const isAdmin = localStorage.getItem('deviceRole') === 'admin';
+  const visibleIds = getVisibleIcons();
+  list.innerHTML = '';
+
+  ALL_ICONS.forEach(icon => {
+    // 設定アイコンは常に表示（非表示不可）
+    if (icon.isSettings) return;
+    // admin限定アイコンは非adminには表示しない
+    if (icon.adminOnly && !isAdmin) return;
+
+    const item = document.createElement('label');
+    item.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 4px; cursor:pointer; font-size:0.9em;';
+    const checked = visibleIds.includes(icon.id) ? 'checked' : '';
+    item.innerHTML = '<input type="checkbox" data-icon-id="' + icon.id + '" ' + checked + ' style="width:18px;height:18px;">'
+      + '<span style="font-size:1.3em;">' + icon.emoji + '</span>'
+      + '<span>' + icon.label + '</span>';
+    list.appendChild(item);
+  });
+}
+
+function saveIconVisibility() {
+  const checks = document.querySelectorAll('#iconCheckList input[type=checkbox]');
+  const ids = [];
+  checks.forEach(cb => {
+    if (cb.checked) ids.push(cb.dataset.iconId);
+  });
+  // 設定アイコンは常に含める
+  if (!ids.includes('settings')) ids.push('settings');
+  saveVisibleIcons(ids);
+  renderTopIcons();
+  closeSortModal();
 }
 
 async function saveSortOrder() {
@@ -1346,12 +1451,6 @@ loadTodayScp();
         document.getElementById('nurseCallLink').style.display = 'block';
       }
     }
-    // user端末でvisible=falseならアイコンも非表示
-    if (!data || data.nurse_call_visible_to_user === false) {
-      if (localStorage.getItem('deviceRole') !== 'admin') {
-        document.getElementById('userNurseCallIcon').style.display = 'none';
-      }
-    }
   } catch(e) {}
 })();
 
@@ -1380,8 +1479,6 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-meme-warning.js"></script>
 
 <div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.35.1</a></div>
-
-<!-- 脱毛周期管理アイコンは上部アイコン列に移動済み -->
 
 </body>
 </html>
