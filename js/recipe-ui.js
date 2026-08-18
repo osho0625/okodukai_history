@@ -1683,71 +1683,111 @@ function addIngredientRow(data) {
   var row = document.createElement('div');
   row.className = 'ingredient-row';
   row.draggable = true;
-  row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;padding:6px;border-radius:8px;border:1px solid transparent;transition:border-color 0.2s,background 0.2s;';
+  row.style.cssText = 'margin-bottom:10px;padding:10px;border-radius:10px;border:1px solid #eee;background:#fafafa;transition:border-color 0.2s,background 0.2s,opacity 0.2s;position:relative;';
+
+  // Row 1: drag handle + group buttons + remove
+  var topRow = document.createElement('div');
+  topRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
 
   // Drag handle
   var dragHandle = document.createElement('span');
   dragHandle.className = 'ing-drag-handle';
   dragHandle.textContent = '☰';
   dragHandle.style.cssText = 'cursor:grab;font-size:1.2em;color:#bbb;padding:4px;user-select:none;touch-action:none;';
+  topRow.appendChild(dragHandle);
 
-  // Group label input
+  // Group buttons container
+  var groupBtnContainer = document.createElement('div');
+  groupBtnContainer.className = 'ing-group-btns';
+  groupBtnContainer.style.cssText = 'display:flex;gap:4px;flex:1;flex-wrap:wrap;';
+
+  // Get available groups
+  var availableGroups = getIngredientGroups();
+  var currentGroupLabel = data.group_label || '';
+
+  // Hidden input to store value
   var groupInput = document.createElement('input');
-  groupInput.type = 'text';
-  groupInput.placeholder = 'グループ';
-  groupInput.value = data.group_label || '';
+  groupInput.type = 'hidden';
   groupInput.className = 'ing-group';
-  groupInput.style.cssText = 'width:50px;padding:8px 6px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;text-align:center;font-weight:700;color:#e65100;';
+  groupInput.value = currentGroupLabel;
+  row.appendChild(groupInput);
 
+  // "なし" button (no group)
+  var noneBtn = document.createElement('button');
+  noneBtn.type = 'button';
+  noneBtn.textContent = 'なし';
+  noneBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;font-weight:600;cursor:pointer;border:1px solid #ddd;' + (!currentGroupLabel ? 'background:#e65100;color:#fff;border-color:#e65100;' : 'background:#fff;color:#666;');
+  noneBtn.addEventListener('click', function() {
+    groupInput.value = '';
+    updateGroupBtnStyles(groupBtnContainer, '');
+  });
+  groupBtnContainer.appendChild(noneBtn);
+
+  for (var gi = 0; gi < availableGroups.length; gi++) {
+    (function(label) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.setAttribute('data-group', label);
+      btn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;font-weight:700;cursor:pointer;border:1px solid #ddd;' + (currentGroupLabel === label ? 'background:#e65100;color:#fff;border-color:#e65100;' : 'background:#fff;color:#e65100;');
+      btn.addEventListener('click', function() {
+        groupInput.value = label;
+        updateGroupBtnStyles(groupBtnContainer, label);
+      });
+      groupBtnContainer.appendChild(btn);
+    })(availableGroups[gi]);
+  }
+
+  topRow.appendChild(groupBtnContainer);
+
+  // Remove button
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.textContent = '✕';
+  removeBtn.style.cssText = 'width:32px;height:32px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:0.9em;color:#999;flex-shrink:0;';
+  removeBtn.addEventListener('click', function() {
+    row.parentNode.removeChild(row);
+  });
+  topRow.appendChild(removeBtn);
+  row.appendChild(topRow);
+
+  // Row 2: name
   var nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.placeholder = '材料名';
   nameInput.value = data.name || '';
   nameInput.className = 'ing-name';
-  nameInput.style.cssText = 'flex:2;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:80px;';
+  nameInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;box-sizing:border-box;margin-bottom:6px;';
+  row.appendChild(nameInput);
 
+  // Row 3: quantity
   var qtyInput = document.createElement('input');
   qtyInput.type = 'text';
-  qtyInput.placeholder = '分量';
+  qtyInput.placeholder = '分量（例: 大さじ2、300g、適量）';
   qtyInput.value = data.quantity || '';
   qtyInput.className = 'ing-quantity';
-  qtyInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:60px;';
+  qtyInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;box-sizing:border-box;margin-bottom:6px;';
+  row.appendChild(qtyInput);
 
+  // Row 4: memo
   var memoInput = document.createElement('input');
   memoInput.type = 'text';
-  memoInput.placeholder = 'メモ';
+  memoInput.placeholder = 'メモ（任意）';
   memoInput.value = data.memo || '';
   memoInput.className = 'ing-memo';
-  memoInput.style.cssText = 'flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1em;min-width:60px;';
-
-  var removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.textContent = '✕';
-  removeBtn.style.cssText = 'width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:1em;color:#999;';
-  removeBtn.addEventListener('click', function() {
-    row.parentNode.removeChild(row);
-  });
-
-  row.appendChild(dragHandle);
-  row.appendChild(groupInput);
-  row.appendChild(nameInput);
-  row.appendChild(qtyInput);
+  memoInput.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9em;box-sizing:border-box;color:#666;';
   row.appendChild(memoInput);
-  row.appendChild(removeBtn);
 
   // Drag-and-drop events
   row.addEventListener('dragstart', function(e) {
     e.dataTransfer.effectAllowed = 'move';
     row.style.opacity = '0.5';
-    row._dragSrc = true;
   });
   row.addEventListener('dragend', function() {
     row.style.opacity = '1';
-    row._dragSrc = false;
-    // Clean up any drag-over styles
     var allRows = container.querySelectorAll('.ingredient-row');
     for (var r = 0; r < allRows.length; r++) {
-      allRows[r].style.borderColor = 'transparent';
+      allRows[r].style.borderColor = '#eee';
     }
   });
   row.addEventListener('dragover', function(e) {
@@ -1756,14 +1796,13 @@ function addIngredientRow(data) {
     row.style.borderColor = '#e65100';
   });
   row.addEventListener('dragleave', function() {
-    row.style.borderColor = 'transparent';
+    row.style.borderColor = '#eee';
   });
   row.addEventListener('drop', function(e) {
     e.preventDefault();
-    row.style.borderColor = 'transparent';
+    row.style.borderColor = '#eee';
     var dragged = container.querySelector('.ingredient-row[style*="opacity: 0.5"]') || container.querySelector('.ingredient-row[style*="opacity:0.5"]');
     if (dragged && dragged !== row) {
-      // Insert dragged before or after drop target
       var allRows = Array.from(container.querySelectorAll('.ingredient-row'));
       var dragIdx = allRows.indexOf(dragged);
       var dropIdx = allRows.indexOf(row);
@@ -1776,10 +1815,8 @@ function addIngredientRow(data) {
   });
 
   // Touch-based drag for mobile
-  var touchStartY = 0;
   var touchCurrentRow = null;
   dragHandle.addEventListener('touchstart', function(e) {
-    touchStartY = e.touches[0].clientY;
     touchCurrentRow = row;
     row.style.opacity = '0.5';
     row.style.background = '#fff3e0';
@@ -1806,13 +1843,58 @@ function addIngredientRow(data) {
   dragHandle.addEventListener('touchend', function() {
     if (touchCurrentRow) {
       touchCurrentRow.style.opacity = '1';
-      touchCurrentRow.style.background = '';
+      touchCurrentRow.style.background = '#fafafa';
       touchCurrentRow = null;
     }
   });
 
   container.appendChild(row);
   return row;
+}
+
+/**
+ * グループボタンのスタイルを更新
+ */
+function updateGroupBtnStyles(btnContainer, activeLabel) {
+  var btns = btnContainer.querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) {
+    var btnLabel = btns[i].getAttribute('data-group');
+    var isNone = !btnLabel && btns[i].textContent === 'なし';
+    var isActive = (isNone && !activeLabel) || (btnLabel === activeLabel);
+    if (isActive) {
+      btns[i].style.background = '#e65100';
+      btns[i].style.color = '#fff';
+      btns[i].style.borderColor = '#e65100';
+    } else {
+      btns[i].style.background = '#fff';
+      btns[i].style.color = isNone ? '#666' : '#e65100';
+      btns[i].style.borderColor = '#ddd';
+    }
+  }
+}
+
+/**
+ * 利用可能なグループラベル一覧を取得（localStorage管理）
+ * @returns {string[]}
+ */
+function getIngredientGroups() {
+  try {
+    var stored = localStorage.getItem('recipe_ingredient_groups');
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return ['A', 'B', 'C', 'D'];
+}
+
+/**
+ * グループラベルを追加
+ * @param {string} label
+ */
+function addIngredientGroup(label) {
+  var groups = getIngredientGroups();
+  if (groups.indexOf(label) === -1) {
+    groups.push(label);
+    localStorage.setItem('recipe_ingredient_groups', JSON.stringify(groups));
+  }
 }
 
 /**
@@ -2404,9 +2486,66 @@ async function loadEditForm(id) {
   ingSection.appendChild(ingLabel);
 
   var ingHint = document.createElement('div');
-  ingHint.textContent = 'グループ欄にA,Bなど入力するとレシピでグループ表示されます。ドラッグで並び替え可。';
+  ingHint.textContent = 'グループ(A,Bなど)でまとめられます。ドラッグで並び替え可。';
   ingHint.style.cssText = 'font-size:0.8em;color:#999;margin-bottom:8px;';
   ingSection.appendChild(ingHint);
+
+  // グループ管理ボタン
+  var groupMgmtRow = document.createElement('div');
+  groupMgmtRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;';
+
+  var groupMgmtLabel = document.createElement('span');
+  groupMgmtLabel.textContent = 'グループ:';
+  groupMgmtLabel.style.cssText = 'font-size:0.85em;color:#666;font-weight:600;';
+  groupMgmtRow.appendChild(groupMgmtLabel);
+
+  var currentGroups = getIngredientGroups();
+  for (var cgi = 0; cgi < currentGroups.length; cgi++) {
+    var groupBadge = document.createElement('span');
+    groupBadge.style.cssText = 'padding:3px 10px;border-radius:6px;background:#fff3e0;color:#e65100;font-size:0.8em;font-weight:700;';
+    groupBadge.textContent = currentGroups[cgi];
+    groupMgmtRow.appendChild(groupBadge);
+  }
+
+  var addGroupBtn = document.createElement('button');
+  addGroupBtn.type = 'button';
+  addGroupBtn.textContent = '＋ グループ追加';
+  addGroupBtn.style.cssText = 'padding:4px 10px;border:1px dashed #ccc;border-radius:6px;background:#fff;font-size:0.8em;cursor:pointer;color:#e65100;font-weight:600;';
+  addGroupBtn.addEventListener('click', function() {
+    var newGroup = prompt('新しいグループ名を入力（例: E, タレ, 下味）');
+    if (newGroup && newGroup.trim()) {
+      newGroup = newGroup.trim();
+      addIngredientGroup(newGroup);
+      // Add badge
+      var badge = document.createElement('span');
+      badge.style.cssText = 'padding:3px 10px;border-radius:6px;background:#fff3e0;color:#e65100;font-size:0.8em;font-weight:700;';
+      badge.textContent = newGroup;
+      groupMgmtRow.insertBefore(badge, addGroupBtn);
+      // Update existing ingredient rows to add the new group button
+      var existingRows = document.querySelectorAll('#edit-ingredients-list .ingredient-row');
+      for (var eri = 0; eri < existingRows.length; eri++) {
+        var btnCont = existingRows[eri].querySelector('.ing-group-btns');
+        if (btnCont) {
+          var newGBtn = document.createElement('button');
+          newGBtn.type = 'button';
+          newGBtn.textContent = newGroup;
+          newGBtn.setAttribute('data-group', newGroup);
+          newGBtn.style.cssText = 'padding:4px 10px;border-radius:6px;font-size:0.8em;font-weight:700;cursor:pointer;border:1px solid #ddd;background:#fff;color:#e65100;';
+          (function(btn, cont, rowEl) {
+            btn.addEventListener('click', function() {
+              var hiddenInput = rowEl.querySelector('.ing-group');
+              if (hiddenInput) hiddenInput.value = newGroup;
+              updateGroupBtnStyles(cont, newGroup);
+            });
+          })(newGBtn, btnCont, existingRows[eri]);
+          btnCont.appendChild(newGBtn);
+        }
+      }
+      showToast('グループ「' + newGroup + '」を追加しました', 'success');
+    }
+  });
+  groupMgmtRow.appendChild(addGroupBtn);
+  ingSection.appendChild(groupMgmtRow);
 
   var ingList = document.createElement('div');
   ingList.id = 'edit-ingredients-list';
@@ -3887,5 +4026,5 @@ async function showPrintView(id) {
 
 // Dual-export: ブラウザではグローバル、Node.jsではmodule.exports
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getRecipeMembers, addRecipeMember, removeRecipeMember, showMemberSettingsModal, promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, loadSettingsView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI };
+  module.exports = { getRecipeMembers, addRecipeMember, removeRecipeMember, showMemberSettingsModal, promptUserName, renderRecipeCard, loadRecipeList, loadTopSections, showToast, loadRecipeDetail, renderIngredients, renderSteps, loadEditForm, addIngredientRow, addSeasoningRow, addStepRow, saveRecipe, showFieldError, clearFieldErrors, loadIngredientSearchView, renderAllergyFilterUI, loadShoppingView, loadMealPlanView, loadSettingsView, showShoppingModal, showPrintView, addEditTag, removeEditTag, renderEditTagPills, createSeasoningQuantityUI, updateGroupBtnStyles, getIngredientGroups, addIngredientGroup };
 }
