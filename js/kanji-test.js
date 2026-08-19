@@ -942,6 +942,7 @@
     var interfaceEl = document.getElementById('grading-interface');
 
     interfaceEl.style.display = 'none';
+    listEl.style.display = 'block';
 
     var tests = Grading.getPendingTests();
 
