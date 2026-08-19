@@ -31,7 +31,7 @@ fileMatchPattern: "*hair-removal*"
 |--------------|------|
 | Color Calculator | HSL補間ヒートマップ色計算（純粋関数） |
 | Storage Manager | CRUD/設定/インポート/エクスポート/マージ/リセット |
-| BodyMapRenderer | SVG描画/タップ/長押し/ツールチップ/色更新 |
+| BodyMapRenderer | SVG描画/タップ選択・解除/ツールチップ/色更新 |
 | TreatmentModal | 施術記録入力UI（単一/バッチ/写真添付） |
 | MultiSelectManager | 複数選択モード管理 |
 | Statistics Engine | 月別/Top5/平均強度/カバー率/強度分布（純粋関数） |
@@ -68,9 +68,19 @@ fileMatchPattern: "*hair-removal*"
 - 単体500KB上限、総写真4MB上限
 - base64 data URI としてレコードの`photo`フィールドに保存
 
+## Body Map ゾーン構成（v2.37.0〜）
+
+画像ベースの部位分け（人体図の赤丸楕円に準拠）:
+
+**前面15箇所:** 顎〜首、左胸、右胸、左わき、右わき、腹、VIO、左上腕、右上腕、左ひじ下、右ひじ下、左ふともも、右ふともも、左ひざ下、右ひざ下
+
+**背面13箇所:** うなじ、左肩甲骨、右肩甲骨、左上腕、右上腕、腰、左ひじ下、右ひじ下、おしり、左ふともも、右ふともも、左ひざ下、右ひざ下
+
+**グループ:** 顔・首、首、胴体、腕、脚、下半身
+
 ## 注意点
 
 - 色計算: `hue = 120 * (1 - elapsed/threshold)`、HSL(120→0, 60%, 50%)
-- 長押し: 500ms
+- タップで選択/解除（長押し廃止）
 - ページネーション: 履歴100件/ページ
 - 統計キャッシュ: レコード変更時に `invalidateStatsCache()` で破棄
