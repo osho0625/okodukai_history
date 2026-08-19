@@ -26,6 +26,7 @@
 | `hair-removal-tracker.md` | `*hair-removal*` ファイルを開いた時 | 脱毛周期管理アプリ |
 
 | `family-news.md` | `*news*` ファイルを開いた時 | ファミリーニュース |
+| `laundry-notification.md` | `*laundry*` ファイルを開いた時 | 洗濯通知アプリ |
 
 ## 機能一覧
 
