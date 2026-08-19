@@ -1629,10 +1629,6 @@
     _svgEl: null,
     _currentSide: 'front',
     _tapCallback: null,
-    _longPressCallback: null,
-    _longPressDuration: 500,
-    _longPressTimer: null,
-    _longPressTriggered: false,
     _tooltipEl: null,
     _zones: [],
 
@@ -1792,16 +1788,6 @@
     },
 
     /**
-     * 長押しイベント登録
-     * @param {Function} callback - function(zoneId, zoneName)
-     * @param {number} duration - 長押し判定時間(ms)、デフォルト500
-     */
-    onZoneLongPress: function(callback, duration) {
-      this._longPressCallback = callback;
-      this._longPressDuration = duration || 500;
-    },
-
-    /**
      * ツールチップ表示
      * @param {string} zoneId - ゾーンID
      * @param {Object} position - {x, y} 画面座標
@@ -1899,71 +1885,21 @@
     },
 
     /**
-     * イベントバインディング（タップ・長押し・ツールチップ）
+     * イベントバインディング（タップ選択/解除のみ）
      */
     _bindEvents: function() {
       if (!this._svgEl) return;
       var self = this;
 
-      // --- タッチイベント ---
-      this._svgEl.addEventListener('touchstart', function(e) {
-        var path = self._getZonePath(e.target);
-        if (!path) return;
-
-        self._longPressTriggered = false;
-        var zoneId = path.getAttribute('data-zone-id');
-        var zoneName = path.getAttribute('data-zone-name');
-
-        // ツールチップ表示
-        var touch = e.touches[0];
-        self.showTooltip(zoneId, { x: touch.clientX, y: touch.clientY });
-
-        // 長押しタイマー開始
-        self._longPressTimer = setTimeout(function() {
-          self._longPressTriggered = true;
-          if (self._longPressCallback) {
-            self._longPressCallback(zoneId, zoneName);
-          }
-        }, self._longPressDuration);
-      }, { passive: true });
-
+      // --- タッチイベント（タップのみ） ---
       this._svgEl.addEventListener('touchend', function(e) {
         var path = self._getZonePath(e.target);
-
-        // ツールチップ非表示
-        self.hideTooltip();
-
-        // 長押しタイマークリア
-        if (self._longPressTimer) {
-          clearTimeout(self._longPressTimer);
-          self._longPressTimer = null;
+        if (!path) return;
+        var zoneId = path.getAttribute('data-zone-id');
+        var zoneName = path.getAttribute('data-zone-name');
+        if (self._tapCallback) {
+          self._tapCallback(zoneId, zoneName);
         }
-
-        // 長押しでなければタップとして処理
-        if (!self._longPressTriggered && path) {
-          var zoneId = path.getAttribute('data-zone-id');
-          var zoneName = path.getAttribute('data-zone-name');
-          if (self._tapCallback) {
-            self._tapCallback(zoneId, zoneName);
-          }
-        }
-      }, { passive: true });
-
-      this._svgEl.addEventListener('touchmove', function(e) {
-        // 指が動いたら長押しキャンセル
-        if (self._longPressTimer) {
-          clearTimeout(self._longPressTimer);
-          self._longPressTimer = null;
-        }
-        self.hideTooltip();
-      }, { passive: true });
-
-      this._svgEl.addEventListener('touchcancel', function() {
-        if (self._longPressTimer) {
-          clearTimeout(self._longPressTimer);
-          self._longPressTimer = null;
-        }
-        self.hideTooltip();
       }, { passive: true });
 
       // --- マウスイベント（PC対応） ---
@@ -1976,13 +1912,6 @@
           self._tapCallback(zoneId, zoneName);
         }
       });
-
-      this._svgEl.addEventListener('mouseenter', function(e) {
-        var path = self._getZonePath(e.target);
-        if (!path) return;
-        var zoneId = path.getAttribute('data-zone-id');
-        self.showTooltip(zoneId, { x: e.clientX, y: e.clientY });
-      }, true);
 
       this._svgEl.addEventListener('mouseover', function(e) {
         var path = self._getZonePath(e.target);
