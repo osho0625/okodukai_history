@@ -9,7 +9,7 @@ fileMatchPattern: "*hair-removal*"
 
 - `pages/hair-removal-tracker.html` — メインHTML（4タブ: マップ/履歴/統計/設定）
 - `js/hair-removal-tracker.js` — アプリロジック全体（IIFE構成、~2900行）
-- `js/body-map-data.js` — Body Zoneデータ（前面107ゾーン/背面96ゾーン/16グループ）
+- `js/body-map-data.js` — Body Zoneデータ（前面15ゾーン/背面13ゾーン/6グループ）
 - `css/hair-removal-tracker.css` — スタイル全体（レスポンシブ/ダークモード）
 - `tests/hair-removal-tracker/` — テスト（12ファイル、161テスト）
 
