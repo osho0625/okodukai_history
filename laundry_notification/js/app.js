@@ -189,28 +189,33 @@ function showStatus(msg, type) {
 async function loadScheduledNotifications() {
   const infoEl = document.getElementById('scheduledInfo');
   const textEl = document.getElementById('scheduledText');
+  const btn = document.getElementById('notifyBtn');
   try {
     const now = new Date().toISOString();
     const res = await supabaseRequest(
       `/rest/v1/push_messages?select=id,title,body,deliver_at&sent=eq.false&deliver_at=gt.${now}&title=like.*洗濯*&order=deliver_at.asc`,
       'GET', null
     );
-    if (!res.ok) { infoEl.style.display = 'none'; return; }
+    if (!res.ok) { infoEl.style.display = 'none'; btn.disabled = false; return; }
     const data = await res.json();
     if (!data || data.length === 0) {
       infoEl.style.display = 'none';
+      btn.disabled = false;
       return;
     }
     // 最も遅い通知（完了通知）の時刻を表示
     const last = data[data.length - 1];
     const deliverAt = new Date(last.deliver_at);
     const timeStr = `${String(deliverAt.getHours()).padStart(2,'0')}:${String(deliverAt.getMinutes()).padStart(2,'0')}`;
-    textEl.innerHTML = `🔔 セット中: <strong>${timeStr}</strong> 完了予定（残り${data.length}件の通知）`;
+    textEl.innerHTML = `🔔 セット中: <strong>${timeStr}</strong> に完了予定`;
     infoEl.style.display = 'block';
+    // セット済みならボタン無効化
+    btn.disabled = true;
     // IDを保存しておく
     infoEl.dataset.ids = JSON.stringify(data.map(d => d.id));
   } catch(e) {
     infoEl.style.display = 'none';
+    btn.disabled = false;
   }
 }
 
@@ -224,6 +229,7 @@ async function cancelScheduled() {
       await supabaseRequest(`/rest/v1/push_messages?id=eq.${id}`, 'DELETE', null);
     }
     infoEl.style.display = 'none';
+    document.getElementById('notifyBtn').disabled = false;
     showStatus('通知をキャンセルしました', 'success');
   } catch(e) {
     showStatus('キャンセルに失敗しました', 'error');
