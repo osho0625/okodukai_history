@@ -11,6 +11,7 @@ if ('serviceWorker' in navigator) {
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   checkPushStatus();
+  loadScheduledNotifications();
 });
 
 // --- Push通知登録 ---
@@ -144,6 +145,7 @@ async function scheduleNotification() {
 
     if (res.ok) {
       showStatus(`✓ ${timeStr}に完了通知をセットしました`, 'success');
+      loadScheduledNotifications();
     } else {
       const err = await res.text();
       throw new Error(err);
@@ -158,16 +160,19 @@ async function scheduleNotification() {
 
 // --- Supabase REST helper ---
 async function supabaseRequest(path, method, body, extraHeaders = {}) {
-  return fetch(SUPABASE_URL + path, {
+  const opts = {
     method,
     headers: {
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
       ...extraHeaders
-    },
-    body: JSON.stringify(body)
-  });
+    }
+  };
+  if (body !== null && body !== undefined) {
+    opts.body = JSON.stringify(body);
+  }
+  return fetch(SUPABASE_URL + path, opts);
 }
 
 // --- UI helpers ---
@@ -177,5 +182,50 @@ function showStatus(msg, type) {
   el.className = 'status ' + (type || '');
   if (type === 'success') {
     setTimeout(() => { el.textContent = ''; el.className = 'status'; }, 5000);
+  }
+}
+
+// --- 予約済み通知の読み込み ---
+async function loadScheduledNotifications() {
+  const infoEl = document.getElementById('scheduledInfo');
+  const textEl = document.getElementById('scheduledText');
+  try {
+    const now = new Date().toISOString();
+    const res = await supabaseRequest(
+      `/rest/v1/push_messages?select=id,title,body,deliver_at&sent=eq.false&deliver_at=gt.${now}&title=like.*洗濯*&order=deliver_at.asc`,
+      'GET', null
+    );
+    if (!res.ok) { infoEl.style.display = 'none'; return; }
+    const data = await res.json();
+    if (!data || data.length === 0) {
+      infoEl.style.display = 'none';
+      return;
+    }
+    // 最も遅い通知（完了通知）の時刻を表示
+    const last = data[data.length - 1];
+    const deliverAt = new Date(last.deliver_at);
+    const timeStr = `${String(deliverAt.getHours()).padStart(2,'0')}:${String(deliverAt.getMinutes()).padStart(2,'0')}`;
+    textEl.innerHTML = `🔔 セット中: <strong>${timeStr}</strong> 完了予定（残り${data.length}件の通知）`;
+    infoEl.style.display = 'block';
+    // IDを保存しておく
+    infoEl.dataset.ids = JSON.stringify(data.map(d => d.id));
+  } catch(e) {
+    infoEl.style.display = 'none';
+  }
+}
+
+// --- 予約キャンセル ---
+async function cancelScheduled() {
+  if (!confirm('セット中の洗濯通知をキャンセルしますか？')) return;
+  const infoEl = document.getElementById('scheduledInfo');
+  const ids = JSON.parse(infoEl.dataset.ids || '[]');
+  try {
+    for (const id of ids) {
+      await supabaseRequest(`/rest/v1/push_messages?id=eq.${id}`, 'DELETE', null);
+    }
+    infoEl.style.display = 'none';
+    showStatus('通知をキャンセルしました', 'success');
+  } catch(e) {
+    showStatus('キャンセルに失敗しました', 'error');
   }
 }

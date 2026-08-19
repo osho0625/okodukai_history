@@ -120,6 +120,13 @@
       🔔 洗濯通知をセット
     </button>
 
+    <div id="scheduledInfo" style="margin-top:16px; display:none;">
+      <div style="background:#e8f5e9; border-radius:10px; padding:12px; font-size:0.85rem; color:#2e7d32;">
+        <div id="scheduledText"></div>
+        <button onclick="cancelScheduled()" style="margin-top:8px; font-size:0.75rem; padding:4px 12px; border:1px solid #a5d6a7; border-radius:6px; background:white; color:#c62828; cursor:pointer;">✕ キャンセル</button>
+      </div>
+    </div>
+
     <p class="status" id="status"></p>
 
     <div class="push-setup">
