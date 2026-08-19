@@ -45,7 +45,7 @@
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
 | チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |
-| 脱毛周期管理 | pages/hair-removal-tracker.html | Body Mapヒートマップ・施術記録・統計・写真管理 |
+| 脱毛周期管理 | pages/hair-removal-tracker.html | Body Map（前面15/背面13ゾーン）・タップ選択・ヒートマップ・施術記録・統計・写真管理 |
 | ファミリーニュース | pages/news.html | RSSニュースアグリゲーター（テック・ゲーム・おでかけ） |
 
 ## CSS構成
