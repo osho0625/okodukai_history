@@ -1,0 +1,4 @@
+[{"id":"a068cbd1-e8b9-4429-b2b3-a0976015180b","ticket_no":3,"owner":"いろは","duration_minutes":60,"status":"unused","created_at":"2026-05-19T09:30:34.726526+00:00","used_at":null,"reserved_at":null}, 
+ {"id":"612e40b2-e657-40de-bde5-a14ad2c11c62","ticket_no":5,"owner":"いろは","duration_minutes":60,"status":"unused","created_at":"2026-05-24T03:39:06.616144+00:00","used_at":null,"reserved_at":null}, 
+ {"id":"051bff73-34b7-4275-9054-af1379e1cd42","ticket_no":2,"owner":"はるちか","duration_minutes":60,"status":"used","created_at":"2026-05-19T09:02:25.721057+00:00","used_at":"2026-05-27T12:35:36.269+00:00","reserved_at":"2026-05-27T10:00:00+00:00"}, 
+ {"id":"d820311e-d42f-4ea6-876e-2d8acbf6cac1","ticket_no":4,"owner":"はるちか","duration_minutes":60,"status":"used","created_at":"2026-05-24T03:39:00.555078+00:00","used_at":"2026-07-29T05:33:07.834+00:00","reserved_at":"2026-07-28T11:00:00+00:00"}]
