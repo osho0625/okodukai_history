@@ -147,13 +147,15 @@ function filterDueReminders(reminders, now) {
 
 /**
  * repeat型リマインダーの通知対象をフィルタ
- * 前日17:30 + 当日08:00 の固定スケジュール
+ * 前日22:00に翌日分のPush通知を送信
  */
 function filterDueRepeatReminders(reminders, now) {
   const { dateStr, timeStr } = now;
   const todayDate = new Date(dateStr + 'T00:00:00+09:00');
-  const dayOfWeek = todayDate.getDay(); // 0=日, 1=月, ..., 6=土
-  const tomorrowDow = (dayOfWeek + 1) % 7;
+  const tomorrowDow = (todayDate.getDay() + 1) % 7;
+
+  // 22:00 ウィンドウでのみトリガー
+  if (!isInWindow('22:00', timeStr)) return [];
 
   return reminders.filter(r => {
     if (r.deleted_at != null) return false;
@@ -162,19 +164,8 @@ function filterDueRepeatReminders(reminders, now) {
     if (!Array.isArray(r.repeat_days)) return false;
 
     const days = r.repeat_days.map(Number);
-    const isToday = days.includes(dayOfWeek);    // 当日通知: 08:00
-    const isTomorrow = days.includes(tomorrowDow); // 前日通知: 17:30
-
-    // 時間ウィンドウ判定（custom_scheduleがあればそちらを優先）
-    if (r.custom_schedule && Array.isArray(r.custom_schedule) && r.custom_schedule.length > 0) {
-      const inTimeWindow = r.custom_schedule.some(s => isInWindow(s, timeStr));
-      return (isToday || isTomorrow) && inTimeWindow;
-    }
-
-    // デフォルト: 前日17:30 or 当日08:00
-    if (isToday && isInWindow('08:00', timeStr)) return true;
-    if (isTomorrow && isInWindow('17:30', timeStr)) return true;
-    return false;
+    // 明日の曜日がrepeat_daysに含まれていれば通知対象
+    return days.includes(tomorrowDow);
   });
 }
 
@@ -278,17 +269,10 @@ function formatMessage(reminders, todayStr) {
  */
 function formatRepeatMessage(repeats, now) {
   if (!repeats || repeats.length === 0) return '';
-  const { dateStr, timeStr } = now;
-  const todayDate = new Date(dateStr + 'T00:00:00+09:00');
-  const dayOfWeek = todayDate.getDay();
-  const tomorrowDow = (dayOfWeek + 1) % 7;
 
-  let msg = '🔁 くりかえしリマインダー\n\n';
+  let msg = '🔁 明日のくりかえしリマインダー\n\n';
   repeats.forEach(r => {
-    const days = r.repeat_days.map(Number);
-    const isToday = days.includes(dayOfWeek);
-    const label = isToday ? '📌 今日' : '📌 明日';
-    msg += `${label} • ${r.message}\n`;
+    msg += `📌 ${r.message}\n`;
   });
   return msg.trim();
 }
@@ -373,8 +357,13 @@ async function main() {
     }
   }
 
-  // repeat型の通知は無効化（TOPバナー表示のみ、Discord/Push通知は送らない）
-  // if (dueRepeats.length > 0) { ... }
+  // repeat型のPush通知（前日22:00に翌日分を配信）
+  if (dueRepeats.length > 0) {
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      console.log('Sending Web Push (repeat) to admin...');
+      await sendWebPush(SUPABASE_URL, SUPABASE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, dueRepeats, now.dateStr, 'repeat');
+    }
+  }
 
   // yearly型（記念日）の通知（別のDiscordメッセージ＋別のPush通知）
   const dueYearly = filterDueYearlyReminders(reminders, now);
@@ -499,14 +488,9 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
   // 通知ペイロード作成
   let title, bodyLines = [];
   if (tagPrefix === 'repeat') {
-    title = '🔁 くりかえしリマインダー';
-    const todayDate = new Date(todayStr + 'T00:00:00+09:00');
-    const dayOfWeek = todayDate.getDay();
+    title = '🔁 明日のくりかえしリマインダー';
     reminders.forEach(r => {
-      const days = r.repeat_days.map(Number);
-      const isToday = days.includes(dayOfWeek);
-      const label = isToday ? '今日' : '明日';
-      bodyLines.push(`${label}: ${r.message}`);
+      bodyLines.push(r.message);
     });
   } else if (tagPrefix === 'yearly') {
     title = '🎂 記念日リマインダー';
