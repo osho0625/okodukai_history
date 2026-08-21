@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/19 v2.36.2
+最終更新: 2026/08/21 v2.37.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -72,7 +72,7 @@ inclusion: auto
 ├── .kiro/specs/hair-removal-tracker/ # 脱毛周期管理アプリspec
 ├── tests/hair-removal-tracker/  # 脱毛周期管理テスト（12ファイル/161テスト）
 ├── docs/               # 開発者ドキュメント
-└── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, push-notify)
+└── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, reminder-notify, news-notify)
 ```
 
 ## Supabaseテーブル構成
@@ -258,7 +258,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.35.1
+- 現在: v2.37.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -291,6 +291,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | TSJ260618 | マージ済み | お手伝いリスト機能（チェックリスト、定型業務テンプレート、自動追加cron、ひらがなモード、完了→ポイント承認フロー） |
 | TSJ260702 | マージ済み | テキサスホールデム ルールガイド、リマインダー通知ワークフロー追加、ゲーム公開設定更新 |
 | TSJ260803 | マージ済み | 精算機能改善+補助金+操作ログ |
+| fix/github-actions-node22-upgrade | 作業中 | GitHub Actions Node.js 22 + actions v5 移行 |
 
 ### マージルール
 - mainへのマージは必ず `git merge --no-ff` を使う（fast-forward禁止、マージコミットを残す）
