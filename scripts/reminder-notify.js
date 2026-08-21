@@ -488,7 +488,7 @@ async function sendWebPush(supabaseUrl, supabaseKey, vapidPublicKey, vapidPrivat
   // 通知ペイロード作成
   let title, bodyLines = [];
   if (tagPrefix === 'repeat') {
-    title = '🔁 明日のくりかえしリマインダー';
+    title = '🔁 繰り返しリマインダー';
     reminders.forEach(r => {
       bodyLines.push(r.message);
     });
