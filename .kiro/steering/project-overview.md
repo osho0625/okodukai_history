@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/21 v2.37.1
+最終更新: 2026/08/21 v2.37.2
 
 ## 🔴 Steering Files 運用ルール
 
@@ -145,7 +145,7 @@ inclusion: auto
 - INDEX: idx_reminders_child_id, idx_reminders_type_event_date, idx_reminders_snooze (全てWHERE deleted_at IS NULL)
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
-- 通知タイミング: memo/event=07:50,17:30、repeat=前日17:30+当日08:00、yearly=7日前から07:50,17:30
+- 通知タイミング: memo/event=07:50,17:30、repeat=前日22:00（Push通知のみ）、yearly=7日前から07:50,17:30
 
 ### poker_chips_exchanges（チップ交換履歴）
 - id: UUID (PK), player_name: TEXT, prize_name: TEXT, cost: INT, created_at: TIMESTAMPTZ
@@ -258,7 +258,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.37.1
+- 現在: v2.37.2
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
