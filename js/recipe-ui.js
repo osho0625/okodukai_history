@@ -903,7 +903,288 @@ async function loadRecipeList() {
     randomBtn.textContent = '🎲';
     randomControls.appendChild(randomBtn);
 
+    // 材料選択ボタン
+    var ingSelectBtn = document.createElement('button');
+    ingSelectBtn.type = 'button';
+    ingSelectBtn.className = 'btn-secondary';
+    ingSelectBtn.style.cssText = 'padding:8px 14px;font-size:0.9em;border-radius:8px;';
+    ingSelectBtn.textContent = '🥕 材料で絞る';
+    randomControls.appendChild(ingSelectBtn);
+
     randomSection.appendChild(randomControls);
+
+    // --- 材料選択パネル ---
+    var ingPanelWrap = document.createElement('div');
+    ingPanelWrap.id = 'random-ing-panel';
+    ingPanelWrap.style.cssText = 'display:none;margin-bottom:12px;padding:12px;background:#f9f9f6;border-radius:10px;border:1px solid #eee;';
+
+    var ingPanelHeader = document.createElement('div');
+    ingPanelHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
+    var ingPanelTitle = document.createElement('span');
+    ingPanelTitle.style.cssText = 'font-weight:700;font-size:0.95em;color:#333;';
+    ingPanelTitle.textContent = '家にある材料を選択';
+    ingPanelHeader.appendChild(ingPanelTitle);
+
+    var ingPanelActions = document.createElement('div');
+    ingPanelActions.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    var ingClearBtn = document.createElement('button');
+    ingClearBtn.type = 'button';
+    ingClearBtn.textContent = 'クリア';
+    ingClearBtn.style.cssText = 'padding:4px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:0.8em;cursor:pointer;color:#666;';
+    ingPanelActions.appendChild(ingClearBtn);
+    var ingSettingsBtn = document.createElement('button');
+    ingSettingsBtn.type = 'button';
+    ingSettingsBtn.textContent = '⚙️';
+    ingSettingsBtn.title = '表示する材料を設定';
+    ingSettingsBtn.style.cssText = 'padding:4px 8px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:1em;cursor:pointer;';
+    ingPanelActions.appendChild(ingSettingsBtn);
+    ingPanelHeader.appendChild(ingPanelActions);
+    ingPanelWrap.appendChild(ingPanelHeader);
+
+    var ingGrid = document.createElement('div');
+    ingGrid.id = 'random-ing-grid';
+    ingGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+    ingPanelWrap.appendChild(ingGrid);
+
+    var ingActiveLabel = document.createElement('div');
+    ingActiveLabel.id = 'random-ing-active-label';
+    ingActiveLabel.style.cssText = 'margin-top:8px;font-size:0.8em;color:#e65100;font-weight:600;display:none;';
+    ingPanelWrap.appendChild(ingActiveLabel);
+
+    randomSection.insertBefore(ingPanelWrap, randomResult);
+
+    // --- 材料データ収集（全レシピから一意な材料名を抽出） ---
+    var allIngNames = {};
+    try {
+      var ingNamesResult = await client.from('recipe_ingredients').select('name');
+      if (ingNamesResult.data) {
+        for (var ri = 0; ri < ingNamesResult.data.length; ri++) {
+          var ingName = (ingNamesResult.data[ri].name || '').trim();
+          if (ingName && !allIngNames[ingName]) {
+            allIngNames[ingName] = true;
+          }
+        }
+      }
+    } catch(e) {}
+    // フォールバック: recipesにingredientsが含まれている場合
+    if (Object.keys(allIngNames).length === 0) {
+      for (var ri2 = 0; ri2 < recipes.length; ri2++) {
+        var rIngs = recipes[ri2].recipe_ingredients || [];
+        for (var rj = 0; rj < rIngs.length; rj++) {
+          var ingName2 = (rIngs[rj].name || '').trim();
+          if (ingName2 && !allIngNames[ingName2]) {
+            allIngNames[ingName2] = true;
+          }
+        }
+      }
+    }
+
+    // 材料→絵文字マッピング
+    var ingEmojiMap = {
+      '鶏肉': '🍗', '鶏もも肉': '🍗', '鶏むね肉': '🍗', 'ささみ': '🍗',
+      '豚肉': '🥩', '豚バラ肉': '🥩', '豚バラ': '🥩', '豚ロース': '🥩', '豚こま': '🥩', 'ひき肉': '🥩', '牛肉': '🥩', '合いびき肉': '🥩',
+      '魚': '🐟', 'サバ': '🐟', 'サーモン': '🐟', '鮭': '🐟', 'マグロ': '🐟', 'ツナ': '🐟', 'えび': '🦐', 'いか': '🦑',
+      '卵': '🥚', 'たまご': '🥚',
+      '豆腐': '🧈', '油揚げ': '🧈', '厚揚げ': '🧈', '納豆': '🫘',
+      '米': '🍚', 'ごはん': '🍚', 'パン': '🍞', 'うどん': '🍜', 'そば': '🍜', 'パスタ': '🍝', 'スパゲッティ': '🍝', '中華麺': '🍜',
+      'にんじん': '🥕', '人参': '🥕',
+      'じゃがいも': '🥔', 'ジャガイモ': '🥔', 'さつまいも': '🍠',
+      'たまねぎ': '🧅', '玉ねぎ': '🧅', 'ネギ': '🧅', '長ネギ': '🧅',
+      'トマト': '🍅', 'ミニトマト': '🍅',
+      'キャベツ': '🥬', 'レタス': '🥬', 'ほうれん草': '🥬', '小松菜': '🥬', '白菜': '🥬',
+      'きゅうり': '🥒', 'ナス': '🍆', 'なす': '🍆',
+      'ピーマン': '🫑', 'パプリカ': '🫑',
+      'きのこ': '🍄', 'しめじ': '🍄', 'えのき': '🍄', 'しいたけ': '🍄', 'エリンギ': '🍄', 'まいたけ': '🍄',
+      'にんにく': '🧄', 'ニンニク': '🧄', 'ニンニクチューブ': '🧄', '生姜': '🫚', 'しょうが': '🫚', '生姜チューブ': '🫚',
+      'バター': '🧈', 'チーズ': '🧀', '牛乳': '🥛', 'ヨーグルト': '🥛', '生クリーム': '🥛',
+      'りんご': '🍎', 'バナナ': '🍌', 'レモン': '🍋', 'いちご': '🍓', 'みかん': '🍊',
+      'ごま油': '🫒', 'オリーブオイル': '🫒', 'サラダ油': '🫒',
+      '醤油': '🫙', 'みりん': '🫙', '酒': '🍶', '料理酒': '🍶', '味噌': '🫙', '砂糖': '🫙', '塩': '🧂', 'こしょう': '🧂',
+      'カレー粉': '🍛', 'カレールー': '🍛',
+      '大根': '🥬', 'もやし': '🌱', 'ブロッコリー': '🥦', 'アボカド': '🥑', 'とうもろこし': '🌽', 'コーン': '🌽',
+      'ベーコン': '🥓', 'ハム': '🥓', 'ソーセージ': '🌭', 'ウインナー': '🌭',
+      '海苔': '🍙', 'わかめ': '🍙', '塩昆布': '🍙', 'かつお節': '🍙',
+      '水': '💧', 'コチュジャン': '🌶️', '片栗粉': '🫙', '小麦粉': '🫙', '薄力粉': '🫙'
+    };
+
+    function getIngEmoji(name) {
+      if (ingEmojiMap[name]) return ingEmojiMap[name];
+      var keys = Object.keys(ingEmojiMap);
+      for (var k = 0; k < keys.length; k++) {
+        if (name.indexOf(keys[k]) !== -1 || keys[k].indexOf(name) !== -1) return ingEmojiMap[keys[k]];
+      }
+      return '🥄';
+    }
+
+    // localStorage: 表示する材料の設定
+    var ING_DISPLAY_KEY = 'recipe_random_ing_display';
+    function getDisplayIngredients() {
+      try {
+        var stored = localStorage.getItem(ING_DISPLAY_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch(e) {}
+      return null; // null = 全て表示
+    }
+    function setDisplayIngredients(list) {
+      localStorage.setItem(ING_DISPLAY_KEY, JSON.stringify(list));
+    }
+
+    // 選択中の材料
+    var selectedIngs = {};
+
+    function renderIngPanel() {
+      ingGrid.innerHTML = '';
+      var allNames = Object.keys(allIngNames).sort();
+      var displayList = getDisplayIngredients();
+
+      var displayNames = displayList ? allNames.filter(function(n) { return displayList.indexOf(n) !== -1; }) : allNames;
+
+      for (var ni = 0; ni < displayNames.length; ni++) {
+        (function(name) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.setAttribute('data-ing', name);
+          var emoji = getIngEmoji(name);
+          chip.textContent = emoji + ' ' + name;
+          var isSelected = !!selectedIngs[name];
+          chip.style.cssText = 'padding:6px 12px;border-radius:20px;font-size:0.85em;cursor:pointer;border:1px solid ' + (isSelected ? '#e65100' : '#ddd') + ';background:' + (isSelected ? '#fff3e0' : '#fff') + ';color:' + (isSelected ? '#e65100' : '#333') + ';font-weight:' + (isSelected ? '700' : '400') + ';';
+          chip.addEventListener('click', function() {
+            if (selectedIngs[name]) {
+              delete selectedIngs[name];
+            } else {
+              selectedIngs[name] = true;
+            }
+            renderIngPanel();
+            updateIngActiveLabel();
+          });
+          ingGrid.appendChild(chip);
+        })(displayNames[ni]);
+      }
+    }
+
+    function updateIngActiveLabel() {
+      var keys = Object.keys(selectedIngs);
+      if (keys.length > 0) {
+        ingActiveLabel.style.display = '';
+        ingActiveLabel.textContent = '選択中: ' + keys.join(', ') + '（これだけで作れるレシピから選出）';
+        ingSelectBtn.textContent = '🥕 材料(' + keys.length + ')';
+        ingSelectBtn.style.background = '#fff3e0';
+        ingSelectBtn.style.borderColor = '#e65100';
+        ingSelectBtn.style.color = '#e65100';
+      } else {
+        ingActiveLabel.style.display = 'none';
+        ingSelectBtn.textContent = '🥕 材料で絞る';
+        ingSelectBtn.style.background = '';
+        ingSelectBtn.style.borderColor = '';
+        ingSelectBtn.style.color = '';
+      }
+    }
+
+    // パネル開閉
+    ingSelectBtn.addEventListener('click', function() {
+      var isVisible = ingPanelWrap.style.display !== 'none';
+      ingPanelWrap.style.display = isVisible ? 'none' : '';
+      if (!isVisible) renderIngPanel();
+    });
+
+    // クリアボタン
+    ingClearBtn.addEventListener('click', function() {
+      selectedIngs = {};
+      renderIngPanel();
+      updateIngActiveLabel();
+    });
+
+    // 設定ボタン（表示材料の選択モーダル）
+    ingSettingsBtn.addEventListener('click', function() {
+      var allNames = Object.keys(allIngNames).sort();
+      var displayList = getDisplayIngredients() || allNames.slice();
+
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;';
+
+      var modal = document.createElement('div');
+      modal.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:90%;width:400px;max-height:80vh;overflow-y:auto;';
+
+      var mTitle = document.createElement('h3');
+      mTitle.style.cssText = 'margin-bottom:12px;font-size:1.1em;';
+      mTitle.textContent = '⚙️ 表示する材料を選択';
+      modal.appendChild(mTitle);
+
+      var mSelectAll = document.createElement('div');
+      mSelectAll.style.cssText = 'margin-bottom:12px;display:flex;gap:8px;';
+      var selectAllBtn = document.createElement('button');
+      selectAllBtn.type = 'button';
+      selectAllBtn.textContent = '全選択';
+      selectAllBtn.style.cssText = 'padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:0.85em;cursor:pointer;';
+      var deselectAllBtn = document.createElement('button');
+      deselectAllBtn.type = 'button';
+      deselectAllBtn.textContent = '全解除';
+      deselectAllBtn.style.cssText = 'padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:0.85em;cursor:pointer;';
+      mSelectAll.appendChild(selectAllBtn);
+      mSelectAll.appendChild(deselectAllBtn);
+      modal.appendChild(mSelectAll);
+
+      var checkboxes = [];
+      var mList = document.createElement('div');
+      mList.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;';
+      for (var ai = 0; ai < allNames.length; ai++) {
+        (function(name) {
+          var label = document.createElement('label');
+          label.style.cssText = 'display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #eee;border-radius:6px;font-size:0.85em;cursor:pointer;';
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = name;
+          cb.checked = displayList.indexOf(name) !== -1;
+          checkboxes.push(cb);
+          label.appendChild(cb);
+          var txt = document.createTextNode(getIngEmoji(name) + ' ' + name);
+          label.appendChild(txt);
+          mList.appendChild(label);
+        })(allNames[ai]);
+      }
+      modal.appendChild(mList);
+
+      selectAllBtn.addEventListener('click', function() {
+        for (var c = 0; c < checkboxes.length; c++) checkboxes[c].checked = true;
+      });
+      deselectAllBtn.addEventListener('click', function() {
+        for (var c = 0; c < checkboxes.length; c++) checkboxes[c].checked = false;
+      });
+
+      var mBtnRow = document.createElement('div');
+      mBtnRow.style.cssText = 'display:flex;gap:8px;';
+      var mSaveBtn = document.createElement('button');
+      mSaveBtn.type = 'button';
+      mSaveBtn.className = 'btn-primary';
+      mSaveBtn.textContent = '保存';
+      mSaveBtn.style.cssText = 'flex:1;padding:12px;';
+      mSaveBtn.addEventListener('click', function() {
+        var selected = [];
+        for (var c = 0; c < checkboxes.length; c++) {
+          if (checkboxes[c].checked) selected.push(checkboxes[c].value);
+        }
+        setDisplayIngredients(selected);
+        overlay.parentNode.removeChild(overlay);
+        renderIngPanel();
+      });
+      mBtnRow.appendChild(mSaveBtn);
+      var mCancelBtn = document.createElement('button');
+      mCancelBtn.type = 'button';
+      mCancelBtn.className = 'btn-secondary';
+      mCancelBtn.textContent = 'キャンセル';
+      mCancelBtn.style.cssText = 'flex:1;padding:12px;';
+      mCancelBtn.addEventListener('click', function() {
+        overlay.parentNode.removeChild(overlay);
+      });
+      mBtnRow.appendChild(mCancelBtn);
+      modal.appendChild(mBtnRow);
+
+      overlay.appendChild(modal);
+      overlay.addEventListener('click', function(ev) {
+        if (ev.target === overlay) overlay.parentNode.removeChild(overlay);
+      });
+      document.body.appendChild(overlay);
+    });
 
     var randomResult = document.createElement('div');
     randomResult.id = 'random-result';
@@ -911,7 +1192,7 @@ async function loadRecipeList() {
 
     container.appendChild(randomSection);
 
-    // Random button event
+    // Random button event — 材料選択時はフィルタリング
     randomBtn.addEventListener('click', async function() {
       var cat = randomCatSelect.value || null;
       randomResult.innerHTML = '';
@@ -920,20 +1201,61 @@ async function loadRecipeList() {
       loadingDiv.textContent = '選んでいます...';
       randomResult.appendChild(loadingDiv);
 
-      var res = await RecipeRepository.getRandom(cat);
-      randomResult.innerHTML = '';
+      var selectedIngKeys = Object.keys(selectedIngs);
 
-      if (!res.data) {
-        var emptyDiv = document.createElement('div');
-        emptyDiv.style.cssText = 'text-align:center;color:#999;padding:12px;';
-        emptyDiv.textContent = 'レシピが見つかりません';
-        randomResult.appendChild(emptyDiv);
-        return;
+      if (selectedIngKeys.length > 0) {
+        // 材料フィルタ: 選んだ材料だけで作れるレシピからランダム
+        var allWithIngs = await RecipeRepository.getAllWithIngredients({ status: 'published' });
+        var candidates = (allWithIngs.data || []).filter(function(r) {
+          if (cat && r.category !== cat) return false;
+          var recipeIngs = (r.recipe_ingredients || []).map(function(ing) { return (ing.name || '').trim().toLowerCase(); });
+          if (recipeIngs.length === 0) return false;
+          // レシピの全材料が、選択した材料に含まれているか（調味料系は除外して判定）
+          var seasonings = ['塩', 'こしょう', '砂糖', '醤油', 'みりん', '酒', '料理酒', '味噌', 'サラダ油', 'ごま油', 'オリーブオイル', '片栗粉', '小麦粉', '薄力粉', '水', '酢', 'マヨネーズ', 'ケチャップ', 'ソース', 'バター', 'コンソメ', 'だし', '顆粒だし', 'めんつゆ', 'ポン酢', 'コチュジャン'];
+          var availableLower = selectedIngKeys.map(function(k) { return k.toLowerCase(); });
+          for (var ri2 = 0; ri2 < recipeIngs.length; ri2++) {
+            var ingLower = recipeIngs[ri2];
+            // 調味料はスキップ
+            var isSeasoning = seasonings.some(function(s) { return ingLower === s.toLowerCase() || ingLower.indexOf(s.toLowerCase()) !== -1; });
+            if (isSeasoning) continue;
+            // 選択材料に含まれるか（部分一致）
+            var found = availableLower.some(function(a) { return ingLower.indexOf(a) !== -1 || a.indexOf(ingLower) !== -1; });
+            if (!found) return false;
+          }
+          return true;
+        });
+
+        randomResult.innerHTML = '';
+        if (candidates.length === 0) {
+          var emptyDiv = document.createElement('div');
+          emptyDiv.style.cssText = 'text-align:center;color:#999;padding:12px;';
+          emptyDiv.textContent = '選んだ材料だけで作れるレシピが見つかりません';
+          randomResult.appendChild(emptyDiv);
+          return;
+        }
+
+        var randomIdx = Math.floor(Math.random() * candidates.length);
+        var chosen = candidates[randomIdx];
+        var rCardData2 = recipeCardData(chosen, userFavorites, cookStats);
+        var rCardFrag2 = renderRecipeCard(rCardData2);
+        randomResult.appendChild(rCardFrag2);
+      } else {
+        // 通常のランダム
+        var res = await RecipeRepository.getRandom(cat);
+        randomResult.innerHTML = '';
+
+        if (!res.data) {
+          var emptyDiv2 = document.createElement('div');
+          emptyDiv2.style.cssText = 'text-align:center;color:#999;padding:12px;';
+          emptyDiv2.textContent = 'レシピが見つかりません';
+          randomResult.appendChild(emptyDiv2);
+          return;
+        }
+
+        var rCardData = recipeCardData(res.data, userFavorites, cookStats);
+        var rCardFrag = renderRecipeCard(rCardData);
+        randomResult.appendChild(rCardFrag);
       }
-
-      var rCardData = recipeCardData(res.data, userFavorites, cookStats);
-      var rCardFrag = renderRecipeCard(rCardData);
-      randomResult.appendChild(rCardFrag);
 
       // もう一回ボタン
       var retryBtn = document.createElement('button');
