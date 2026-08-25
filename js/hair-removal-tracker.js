@@ -2119,6 +2119,10 @@
       document.getElementById('body-map-container-back')
     ];
 
+    // タッチ操作後の合成mouseイベントを無視するためのフラグ
+    var _touchHandled = false;
+    var _touchHandledTimer = null;
+
     containers.forEach(function(container) {
       if (!container) return;
       var svg = container.querySelector('svg');
@@ -2129,6 +2133,8 @@
 
       // Touch events - シングルタップで選択/解除トグル、スワイプで複数選択
       svg.addEventListener('touchstart', function(e) {
+        e.preventDefault(); // 合成mouseイベント・300msタップ遅延を防止
+        _touchHandled = true;
         _swipeSelecting = true;
         _swipeMoved = false;
         var path = getZonePathFromPoint(svg, e.touches[0]);
@@ -2158,11 +2164,17 @@
         _swipeSelecting = false;
         _swipeStartZoneId = null;
         updateSwipeSelectBar();
+
+        // タッチ後の合成mouseイベントを500msブロック
+        clearTimeout(_touchHandledTimer);
+        _touchHandledTimer = setTimeout(function() { _touchHandled = false; }, 500);
       });
 
       svg.addEventListener('touchcancel', function() {
         _swipeSelecting = false;
         _swipeStartZoneId = null;
+        clearTimeout(_touchHandledTimer);
+        _touchHandledTimer = setTimeout(function() { _touchHandled = false; }, 500);
       });
 
       // Mouse events for desktop - シングルクリックで選択/解除トグル、ドラッグで複数選択
@@ -2170,6 +2182,7 @@
       var _mouseStartZoneId = null;
 
       svg.addEventListener('mousedown', function(e) {
+        if (_touchHandled) return; // タッチ後の合成イベントを無視
         _swipeSelecting = true;
         _mouseSwipeMoved = false;
         var path = getZonePathFromMouse(e);
@@ -2177,6 +2190,7 @@
       });
 
       svg.addEventListener('mousemove', function(e) {
+        if (_touchHandled) return;
         if (!_swipeSelecting) return;
         var path = getZonePathFromMouse(e);
         if (path) {
@@ -2187,6 +2201,7 @@
       });
 
       svg.addEventListener('mouseup', function(e) {
+        if (_touchHandled) return; // タッチ後の合成イベントを無視
         if (!_mouseSwipeMoved && _mouseStartZoneId) {
           // シングルクリック → トグル（選択 or 解除）
           toggleSwipeSelection(_mouseStartZoneId);
@@ -2201,6 +2216,7 @@
       });
 
       svg.addEventListener('mouseleave', function() {
+        if (_touchHandled) return;
         if (_swipeSelecting) {
           _swipeSelecting = false;
           _mouseStartZoneId = null;
