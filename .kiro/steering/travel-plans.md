@@ -9,8 +9,8 @@ fileMatchPattern: "*travel*,*trip*"
 
 | ファイル | 内容 |
 |----------|------|
-| `docs/honeymoon-trip.md` | 新婚旅行計画（台湾/沖縄、予算100万円、2026年10月） |
-| `docs/family-train-trip.md` | 家族鉄道旅行計画（サンライズ瀬戸→四国、予算35万円、2026年10月） |
+| `.kiro/specs/family-notes/docs/honeymoon-trip.md` | 新婚旅行計画（台湾/沖縄、予算100万円、2026年10月） |
+| `.kiro/specs/family-notes/docs/family-train-trip.md` | 家族鉄道旅行計画（サンライズ瀬戸→四国、予算35万円、2026年10月） |
 
 ## 概要
 
