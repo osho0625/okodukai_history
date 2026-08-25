@@ -109,6 +109,41 @@ h1 { margin-bottom: 16px; color: #333; }
   <button class="tab-btn" data-tab="history" onclick="switchTab('history')">履歴</button>
 </div>
 
+<div id="issueSection" style="display:none; margin-bottom:24px;">
+  <div style="background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <h3 style="margin-bottom:16px; font-size:1.1em; color:#333;">🎫 チケット発行</h3>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; font-size:0.9em; margin-bottom:4px;">だれに？</div>
+      <select id="issueOwner" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+        <option value="">-- 選択 --</option>
+        <option value="かいせい">かいせい</option>
+        <option value="はるちか">はるちか</option>
+        <option value="いろは">いろは</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; font-size:0.9em; margin-bottom:4px;">あそび時間</div>
+      <select id="issueDuration" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+        <option value="">-- 選択 --</option>
+        <option value="30">30分</option>
+        <option value="60">60分</option>
+        <option value="90">90分</option>
+        <option value="120">120分</option>
+        <option value="150">150分</option>
+        <option value="180">180分</option>
+        <option value="210">210分</option>
+        <option value="240">240分</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600; font-size:0.9em; margin-bottom:4px;">枚数</div>
+      <input type="number" id="issueQuantity" placeholder="1〜100" min="1" max="100" value="1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1em;">
+    </div>
+    <button id="issueBtn" onclick="issueTickets()" style="width:100%; padding:12px; background:#4caf50; color:#fff; border:none; border-radius:8px; font-size:1em; font-weight:700; cursor:pointer;">発行する</button>
+    <div id="issueMsg" style="display:none; margin-top:8px; font-size:0.9em; text-align:center;"></div>
+  </div>
+</div>
+
 <div id="ticketList"></div>
 
 <!-- チケット使用確認モーダル -->
@@ -310,6 +345,8 @@ function updateMainTabLabel() {
     document.getElementById('playSubTabs').style.display = 'none';
     currentMainTab = 'reward';
     rewardBtn.classList.add('active');
+    // りょうすけはチケット発行セクションを表示
+    document.getElementById('issueSection').style.display = 'block';
     renderRewardTickets();
   } else {
     rewardBtn.textContent = '🍬 おやつチケット';
@@ -736,6 +773,53 @@ async function useRewardTicket(id, label) {
     .eq('id', id);
   if (error) { alert('エラー: ' + error.message); return; }
   renderRewardTickets();
+}
+
+// --- チケット発行（りょうすけ用） ---
+function showIssueMsg(msg, isError) {
+  const el = document.getElementById('issueMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.color = isError ? '#e53935' : '#4caf50';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+async function issueTickets() {
+  const owner = document.getElementById('issueOwner').value;
+  const duration = parseInt(document.getElementById('issueDuration').value, 10);
+  const quantity = parseInt(document.getElementById('issueQuantity').value, 10);
+
+  if (!owner) { showIssueMsg('だれに発行するか選んでください', true); return; }
+  if (!duration || duration < 30 || duration > 480) { showIssueMsg('時間を選んでね', true); return; }
+  if (!quantity || quantity < 1 || quantity > 100) { showIssueMsg('枚数は1〜100で入力してね', true); return; }
+
+  const btn = document.getElementById('issueBtn');
+  btn.disabled = true;
+
+  try {
+    const rows = Array.from({ length: quantity }, () => ({
+      owner,
+      duration_minutes: duration,
+      status: 'unused'
+    }));
+
+    const { data, error } = await client.from('tickets').insert(rows).select();
+
+    if (error) {
+      showIssueMsg('発行に失敗しました: ' + error.message, true);
+      return;
+    }
+
+    notifyWithTimeout(`🎫 ${owner}にチケットを${quantity}枚発行しました（${duration}分）`).catch(() => {});
+    showIssueMsg(`✓ ${owner}に${quantity}枚発行しました！`, false);
+
+    // フォームリセット
+    document.getElementById('issueOwner').value = '';
+    document.getElementById('issueDuration').value = '';
+    document.getElementById('issueQuantity').value = '1';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // --- ページ読み込み ---
