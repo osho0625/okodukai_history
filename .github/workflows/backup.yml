@@ -323,6 +323,159 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/math_battle_dispute_votes?select=*" \
             -o backups/math_battle_dispute_votes_$(date +%Y%m%d).json
 
+      # --- その他 ---
+      - name: Backup chore_tasks table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/chore_tasks?select=*" \
+            -o backups/chore_tasks_$(date +%Y%m%d).json
+
+      - name: Backup push_messages table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/push_messages?select=*" \
+            -o backups/push_messages_$(date +%Y%m%d).json
+
+      - name: Backup news_last_check table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/news_last_check?select=*" \
+            -o backups/news_last_check_$(date +%Y%m%d).json
+
+      - name: Backup device_settings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/device_settings?select=*" \
+            -o backups/device_settings_$(date +%Y%m%d).json
+
+      - name: Backup pending_effects table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/pending_effects?select=*" \
+            -o backups/pending_effects_$(date +%Y%m%d).json
+
+      - name: Backup app_config table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/app_config?select=*" \
+            -o backups/app_config_$(date +%Y%m%d).json
+
+      - name: Backup activity_log table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/activity_log?select=*" \
+            -o backups/activity_log_$(date +%Y%m%d).json
+
+      - name: Backup blast_rankings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/blast_rankings?select=*" \
+            -o backups/blast_rankings_$(date +%Y%m%d).json
+
+      - name: Backup custom_presets table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/custom_presets?select=*" \
+            -o backups/custom_presets_$(date +%Y%m%d).json
+
+      - name: Backup custom_rankings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/custom_rankings?select=*" \
+            -o backups/custom_rankings_$(date +%Y%m%d).json
+
+      - name: Backup kenka_chat table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kenka_chat?select=*" \
+            -o backups/kenka_chat_$(date +%Y%m%d).json
+
+      - name: Backup poker_chips table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/poker_chips?select=*" \
+            -o backups/poker_chips_$(date +%Y%m%d).json
+
+      - name: Backup poker_chips_exchanges table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/poker_chips_exchanges?select=*" \
+            -o backups/poker_chips_exchanges_$(date +%Y%m%d).json
+
+      - name: Backup poker_chips_history table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/poker_chips_history?select=*" \
+            -o backups/poker_chips_history_$(date +%Y%m%d).json
+
+      - name: Backup puyo_counts table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/puyo_counts?select=*" \
+            -o backups/puyo_counts_$(date +%Y%m%d).json
+
+      - name: Backup reward_tickets table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/reward_tickets?select=*" \
+            -o backups/reward_tickets_$(date +%Y%m%d).json
+
+      - name: Backup roach_counts table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/roach_counts?select=*" \
+            -o backups/roach_counts_$(date +%Y%m%d).json
+
+      - name: Backup suika_saves table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/suika_saves?select=*" \
+            -o backups/suika_saves_$(date +%Y%m%d).json
+
+      - name: Backup tetris_rankings table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/tetris_rankings?select=*" \
+            -o backups/tetris_rankings_$(date +%Y%m%d).json
+
       - name: Delete backups older than 14 days
         run: |
           find backups/ -name "*.json" -mtime +14 -delete 2>/dev/null || true
