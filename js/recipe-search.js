@@ -68,8 +68,9 @@ function sortRecipes(recipes, mode, favoriteCounts, cookStats) {
  */
 function filterVisibleRecipes(recipes, currentUser) {
   return recipes.filter(function(r) {
-    if (r.status === 'published') return true;
-    if ((r.status === 'draft' || r.status === 'private') && r.author === currentUser) return true;
+    var status = r.status || 'published';
+    if (status === 'published') return true;
+    if ((status === 'draft' || status === 'private') && r.author === currentUser) return true;
     return false;
   });
 }
