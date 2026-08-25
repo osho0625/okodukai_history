@@ -81,6 +81,6 @@ fileMatchPattern: "*hair-removal*"
 ## 注意点
 
 - 色計算: `hue = 120 * (1 - elapsed/threshold)`、HSL(120→0, 60%, 50%)
-- タップで選択/解除（長押し廃止）
+- タップで選択/解除（長押し廃止）— touchstart/mousedownでは選択せず、touchend/mouseupで移動なし判定時にトグル
 - ページネーション: 履歴100件/ページ
 - 統計キャッシュ: レコード変更時に `invalidateStatsCache()` で破棄
