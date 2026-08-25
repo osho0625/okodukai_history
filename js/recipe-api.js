@@ -52,6 +52,15 @@ const RecipeRepository = {
       error = result.error;
     }
 
+    // Ultimate fallback: no filter, no sort, just get all rows
+    if (!data) {
+      var fallbackResult = await client.from('recipes').select('*');
+      if (!fallbackResult.error) {
+        data = fallbackResult.data;
+        error = null;
+      }
+    }
+
     // Normalize: ensure status field exists (old recipes may have null)
     if (data) {
       for (var i = 0; i < data.length; i++) {
@@ -101,6 +110,15 @@ const RecipeRepository = {
         break;
       }
       error = result.error;
+    }
+
+    // Ultimate fallback: just get the recipe row
+    if (!data && error) {
+      var fallbackResult = await client.from('recipes').select('*').eq('id', id).maybeSingle();
+      if (!fallbackResult.error) {
+        data = fallbackResult.data;
+        error = null;
+      }
     }
 
     if (data) {
