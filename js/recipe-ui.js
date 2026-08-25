@@ -1040,8 +1040,9 @@ async function loadRecipeList() {
     container.innerHTML = '';
     var errorEl = document.createElement('div');
     errorEl.className = 'empty-state';
-    errorEl.textContent = 'エラーが発生しました。再読み込みしてください。';
+    errorEl.textContent = 'エラーが発生しました: ' + (e.message || e) + '。再読み込みしてください。';
     container.appendChild(errorEl);
+    console.error('loadRecipeList error:', e);
   }
 }
 
