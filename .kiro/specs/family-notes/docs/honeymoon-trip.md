@@ -40,7 +40,7 @@
 
 ## メリット
 
-- 日本から近い
+- 日本から近い（フライト約3.5時間）
 - 3泊でも十分楽しめる
 - 海外旅行らしさがある
 - 食事が楽しめる
@@ -52,10 +52,12 @@
 
 ## ホテル候補
 
-- Regent Taipei
-- Mandarin Oriental Taipei
-- Grand Hyatt Taipei
-- The Okura Prestige Taipei
+| ホテル | 公式サイト |
+|--------|-----------|
+| Regent Taipei | [IHG公式](https://www.ihg.com/regent/hotels/jp/ja/taipei/tperg/hoteldetail) |
+| Mandarin Oriental Taipei | [公式](https://www.mandarinoriental.com/en/taipei/songshan) |
+| Grand Hyatt Taipei | [公式](https://www.hyatt.com/grand-hyatt/ja-JP/taigh-grand-hyatt-taipei) |
+| The Okura Prestige Taipei | [公式](https://www.okurataipei.com.tw/jp/) |
 
 5つ星クラスのホテルを候補とする。
 
@@ -76,7 +78,7 @@
 ## 2日目
 
 - 朝はホテルでゆっくり
-- 九份などを観光
+- [九份](https://jp.taiwan.net.tw/m1.aspx?id=290&sNo=0003016)などを観光
 - 台北に戻る
 - 高級台湾料理などで夕食
 
@@ -88,7 +90,7 @@
 - カフェ
 - マッサージ
 - 買い物
-- 台北101
+- [台北101](https://www.taipei-101.com.tw/ja/)
 - 高級レストラン
 
 観光を詰め込みすぎず、ホテルで過ごす時間も確保。
@@ -136,9 +138,11 @@
 
 ## ホテル候補
 
-- ハレクラニ沖縄
-- ハイアット リージェンシー 瀬良垣アイランド 沖縄
-- ザ・リッツ・カールトン沖縄
+| ホテル | 公式サイト |
+|--------|-----------|
+| ハレクラニ沖縄 | [公式](https://www.okinawa.halekulani.com/) |
+| ハイアット リージェンシー 瀬良垣アイランド 沖縄 | [公式](https://www.hyatt.com/hyatt-regency/ja-JP/okaro-hyatt-regency-seragaki-island-okinawa) |
+| ザ・リッツ・カールトン沖縄 | [公式](https://www.ritzcarlton.com/ja/hotels/okarz-the-ritz-carlton-okinawa/overview/) |
 
 恩納村周辺の高級リゾートを中心に検討。
 
@@ -167,8 +171,8 @@
 
 ## 3日目
 
-- 美ら海水族館
-- 古宇利島
+- [美ら海水族館](https://churaumi.okinawa/)
+- [古宇利島](https://www.kourijima323-1.com/)
 - カフェ
 - ホテルへ戻る
 - 夜はホテルでゆっくり
@@ -226,10 +230,10 @@
 ### 台湾
 
 - 二人で夜市へ行く
-- 九份を歩く
+- [九份](https://jp.taiwan.net.tw/m1.aspx?id=290&sNo=0003016)を歩く
 - 台湾茶を楽しむ
 - マッサージ
-- 台北101
+- [台北101](https://www.taipei-101.com.tw/ja/)
 - 高級台湾料理
 - 二人で海外旅行をすること自体を思い出にする
 
@@ -238,7 +242,7 @@
 - 二人でシュノーケリング
 - ホテルのビーチ
 - サンセット
-- 美ら海水族館
+- [美ら海水族館](https://churaumi.okinawa/)
 - ガラス細工・陶芸などの体験
 - 高級リゾートでゆっくりする
 - 沖縄料理・高級ディナー
@@ -304,3 +308,29 @@
 5. 航空券・ホテル料金を確認
 6. 3泊4日の具体的な行程を決定
 7. 予算100万円の中でホテル・食事・体験の配分を決める
+
+---
+
+# 参考リンクまとめ
+
+## 台湾
+
+| 項目 | URL |
+|------|-----|
+| 台湾観光局（交通部観光署） | https://jp.taiwan.net.tw/ |
+| 九份（観光署） | https://jp.taiwan.net.tw/m1.aspx?id=290&sNo=0003016 |
+| 台北101 | https://www.taipei-101.com.tw/ja/ |
+| Regent Taipei | https://www.ihg.com/regent/hotels/jp/ja/taipei/tperg/hoteldetail |
+| Mandarin Oriental Taipei | https://www.mandarinoriental.com/en/taipei/songshan |
+| Grand Hyatt Taipei | https://www.hyatt.com/grand-hyatt/ja-JP/taigh-grand-hyatt-taipei |
+| The Okura Prestige Taipei | https://www.okurataipei.com.tw/jp/ |
+
+## 沖縄
+
+| 項目 | URL |
+|------|-----|
+| 沖縄美ら海水族館 | https://churaumi.okinawa/ |
+| 古宇利島 | https://www.kourijima323-1.com/ |
+| ハレクラニ沖縄 | https://www.okinawa.halekulani.com/ |
+| ハイアット リージェンシー 瀬良垣 | https://www.hyatt.com/hyatt-regency/ja-JP/okaro-hyatt-regency-seragaki-island-okinawa |
+| ザ・リッツ・カールトン沖縄 | https://www.ritzcarlton.com/ja/hotels/okarz-the-ritz-carlton-okinawa/overview/ |

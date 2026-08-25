@@ -1,8 +1,8 @@
-# 家族鉄道旅行計画
+# 家族寝台特急旅行計画
 
 ## 目的
 
-夫婦＋子供3人で、寝台特急「サンライズ瀬戸」を中心とした鉄道旅行をする。
+夫婦＋子供3人で、寝台特急「サンライズ瀬戸」を中心とした寝台特急旅行をする。
 新婚旅行とは分けて、子供も一緒に楽しめる家族旅行として計画する。
 
 ### 家族構成
@@ -46,10 +46,10 @@
 - 朝、高松駅到着
 - 讃岐うどん
 - 香川観光
-- 四国水族館
+- [四国水族館](https://shikoku-aquarium.jp/)
 - 高松市内ホテルに宿泊
 
-四国水族館の料金目安：
+四国水族館の料金目安（[料金ページ](https://shikoku-aquarium.jp/ticket/)）：
 - 大人：2,600円
 - 小中学生：1,400円
 - 幼児：700円
@@ -59,10 +59,10 @@
 ### 3日目：四国まんなか千年ものがたり
 
 - 高松 → 多度津へ移動
-- 多度津から「四国まんなか千年ものがたり」に乗車
+- 多度津から「[四国まんなか千年ものがたり](https://www.jr-shikoku.co.jp/sennenmonogatari/)」に乗車
 - 「そらの郷紀行」で大歩危方面へ
 - 車内で食事
-- 大歩危・祖谷エリアを観光
+- [大歩危・祖谷エリア](https://miyoshi-tourism.jp/)を観光
 - 大歩危周辺の温泉旅館に宿泊
 
 「四国まんなか千年ものがたり」は、四国の自然や車窓を楽しむ観光列車。
@@ -73,12 +73,14 @@
 - 朝は旅館でゆっくり
 - 大歩危・祖谷周辺を軽く観光
 - 高松方面へ移動
-- 高松空港から羽田へ
+- [高松空港](https://www.takamatsu-airport.com/)から羽田へ
 - 帰宅
 
 ---
 
 # サンライズ瀬戸
+
+公式：[JRおでかけネット サンライズ瀬戸・出雲](https://www.jr-odekake.net/train/sunriseseto_izumo/index.html)
 
 ## 東京～高松
 
@@ -168,11 +170,13 @@
 サンライズは人気があるため、発売開始時刻に予約を狙う。
 特にサンライズツインは部屋数が少ないため、家族旅行では複数のシングルを狙う方が現実的。
 
+参考：[サンライズ瀬戸・出雲 空席チェッカー（非公式）](https://sunrise-checker.com/)
+
 ---
 
 # 帰りは飛行機がおすすめ
 
-往復ともサンライズにすると鉄道旅行としては面白いが、家族旅行としては疲れやすい。
+往復ともサンライズにすると寝台特急旅行としては面白いが、家族旅行としては疲れやすい。
 
 そのため、
 
@@ -180,7 +184,7 @@
 ↓ サンライズ瀬戸
 ↓ 高松
 ↓ 四国旅行
-↓ 高松空港
+↓ [高松空港](https://www.takamatsu-airport.com/)
 ↓ 羽田
 
 という片道だけ寝台特急を利用する構成を推奨。
@@ -189,7 +193,13 @@
 
 # 四国まんなか千年ものがたり
 
+公式：[四国まんなか千年ものがたり（JR四国）](https://www.jr-shikoku.co.jp/sennenmonogatari/)
+
 サンライズとは別の観光列車。多度津～大歩危方面を走り、車窓や食事を楽しむ。
+
+- [料金・予約](https://www.jr-shikoku.co.jp/sennenmonogatari/ticket/index.html)
+- [運転日](https://www.jr-shikoku.co.jp/sennenmonogatari/operation/index.html)
+- [旅のご案内](https://www.jr-shikoku.co.jp/sennenmonogatari/guidance/index.html)
 
 ## 2026年10月以降
 
@@ -204,6 +214,15 @@
 ## 食事
 
 2026年10月から車内食は6,300円/人。
+
+---
+
+# 大歩危・祖谷エリア
+
+公式観光サイト：[大歩危祖谷ナビ（三好市）](https://miyoshi-tourism.jp/)
+
+- [アクセス情報](https://miyoshi-tourism.jp/access/)
+- [観光コース](https://miyoshi-tourism.jp/course/enjoy/)
 
 ---
 
@@ -234,20 +253,22 @@
 
 # 今後検討すること
 
-1. 2026年10月の千年ものがたり運転日を確認
+1. 2026年10月の[千年ものがたり運転日](https://www.jr-shikoku.co.jp/sennenmonogatari/operation/index.html)を確認
 2. サンライズ瀬戸の候補日を決める
 3. 発売日の1か月前10時に予約
 4. 家族5人の個室構成を決める
 5. 千年ものがたりの5人の座席構成をJR四国に確認
 6. 高松ホテルを決める
 7. 大歩危・祖谷の旅館を決める
-8. 帰りの高松→羽田便を予約
+8. 帰りの[高松→羽田便](https://www.takamatsu-airport.com/)を予約
 
 ---
 
 # 追加候補
 
 ## 瀬戸大橋アンパンマントロッコ
+
+公式：[瀬戸大橋アンパンマントロッコ（JR四国）](https://www.jr-shikoku.co.jp/01_trainbus/event_train/anpanman.html)
 
 10月にも運転日が設定される場合がある。子供向けの追加イベントとして候補。
 
@@ -264,3 +285,18 @@
 3泊4日、予算35万円程度。
 
 「寝台列車に乗ること」そのものを旅行の大きな思い出にする。
+
+---
+
+# 参考リンクまとめ
+
+| 項目 | URL |
+|------|-----|
+| サンライズ瀬戸・出雲（JRおでかけネット） | https://www.jr-odekake.net/train/sunriseseto_izumo/index.html |
+| サンライズ空席チェッカー（非公式） | https://sunrise-checker.com/ |
+| 四国水族館 | https://shikoku-aquarium.jp/ |
+| 四国まんなか千年ものがたり | https://www.jr-shikoku.co.jp/sennenmonogatari/ |
+| 大歩危祖谷ナビ（三好市観光） | https://miyoshi-tourism.jp/ |
+| 高松空港 | https://www.takamatsu-airport.com/ |
+| 瀬戸大橋アンパンマントロッコ | https://www.jr-shikoku.co.jp/01_trainbus/event_train/anpanman.html |
+| とれたび サンライズ乗り方ガイド | https://www.toretabi.jp/railway_info/entry-773.html |
