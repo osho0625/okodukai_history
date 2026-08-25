@@ -10,7 +10,7 @@ fileMatchPattern: "*travel*,*trip*"
 | ファイル | 内容 |
 |----------|------|
 | `.kiro/specs/family-notes/docs/honeymoon-trip.md` | 新婚旅行計画（台湾/沖縄、予算100万円、2026年10月） |
-| `.kiro/specs/family-notes/docs/family-train-trip.md` | 家族鉄道旅行計画（サンライズ瀬戸→四国、予算35万円、2026年10月） |
+| `.kiro/specs/family-notes/docs/family-train-trip.md` | 家族寝台特急旅行計画（サンライズ瀬戸→四国、予算35万円、2026年10月） |
 
 ## 概要
 
@@ -22,7 +22,7 @@ fileMatchPattern: "*travel*,*trip*"
 - 候補：台湾（第1位）/ 沖縄（第2位）
 - コンセプト：ゆっくり＋二人で初めての体験
 
-### 家族鉄道旅行
+### 家族寝台特急旅行
 - 時期：2026年10月（新婚旅行とは別日程）
 - 期間：3泊4日
 - 旅行者：夫婦＋子供3人（小1/小3/小5）
