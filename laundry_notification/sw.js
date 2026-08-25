@@ -1,4 +1,4 @@
-const CACHE_NAME = 'laundry-v5';
+const CACHE_NAME = 'laundry-v6';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([
