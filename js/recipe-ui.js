@@ -1193,7 +1193,7 @@ function renderIngredients(ingredients) {
     }
 
     var table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;';
+    table.style.cssText = 'width:100%;border-collapse:collapse;table-layout:fixed;';
 
     for (var j = 0; j < group.items.length; j++) {
       var ing = group.items[j];
@@ -1201,17 +1201,17 @@ function renderIngredients(ingredients) {
       row.style.cssText = 'border-bottom:1px solid #eee;';
 
       var nameCell = document.createElement('td');
-      nameCell.style.cssText = 'padding:8px 4px;font-weight:600;';
+      nameCell.style.cssText = 'padding:8px 4px;font-weight:600;width:45%;';
       nameCell.textContent = ing.name || '';
       row.appendChild(nameCell);
 
       var qtyCell = document.createElement('td');
-      qtyCell.style.cssText = 'padding:8px 4px;color:#666;';
+      qtyCell.style.cssText = 'padding:8px 4px;color:#666;width:30%;text-align:right;';
       qtyCell.textContent = ing.quantity || '';
       row.appendChild(qtyCell);
 
       var memoCell = document.createElement('td');
-      memoCell.style.cssText = 'padding:8px 4px;color:#999;font-size:0.85em;';
+      memoCell.style.cssText = 'padding:8px 4px;color:#999;font-size:0.85em;width:25%;';
       memoCell.textContent = ing.memo || '';
       row.appendChild(memoCell);
 
