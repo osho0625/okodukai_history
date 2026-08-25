@@ -1174,7 +1174,7 @@ function renderIngredients(ingredients) {
   var currentGroup = null;
   for (var i = 0; i < sorted.length; i++) {
     var label = sorted[i].group_label || '';
-    if (label !== (currentGroup ? currentGroup.label : '')) {
+    if (!currentGroup || label !== currentGroup.label) {
       currentGroup = { label: label, items: [] };
       groups.push(currentGroup);
     }
