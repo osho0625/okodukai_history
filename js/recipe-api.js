@@ -14,25 +14,54 @@ const RecipeRepository = {
     const sort = opts.sort || 'updated_at DESC';
     const limit = opts.limit || null;
 
-    let query = client
-      .from('recipes')
-      .select('*, recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
     // Parse sort string (e.g. "updated_at DESC")
     const sortParts = sort.split(' ');
     const sortColumn = sortParts[0];
     const sortAscending = sortParts[1] && sortParts[1].toUpperCase() === 'ASC';
-    query = query.order(sortColumn, { ascending: sortAscending });
 
-    if (limit) {
-      query = query.limit(limit);
+    // Try full query with all relations
+    var selectQueries = [
+      '*, recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)',
+      '*, recipe_photos(url, sort_order), recipe_tags(tag)',
+      '*, recipe_tags(tag)',
+      '*'
+    ];
+
+    var data = null;
+    var error = null;
+
+    for (var qi = 0; qi < selectQueries.length; qi++) {
+      let query = client.from('recipes').select(selectQueries[qi]);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      query = query.order(sortColumn, { ascending: sortAscending });
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      var result = await query;
+      if (!result.error) {
+        data = result.data;
+        error = null;
+        break;
+      }
+      error = result.error;
     }
 
-    const { data, error } = await query;
+    // Normalize: ensure status field exists (old recipes may have null)
+    if (data) {
+      for (var i = 0; i < data.length; i++) {
+        if (!data[i].status) data[i].status = 'published';
+        if (!data[i].recipe_photos) data[i].recipe_photos = [];
+        if (!data[i].recipe_tags) data[i].recipe_tags = [];
+        if (!data[i].recipe_favorites) data[i].recipe_favorites = [];
+      }
+    }
+
     return { data, error };
   },
 
@@ -42,33 +71,85 @@ const RecipeRepository = {
    * @returns {Promise<{data: object|null, error: object|null}>}
    */
   async getById(id) {
-    // Query without group_label first (guaranteed to work), then try with group_label
-    var { data, error } = await client
-      .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)')
-      .eq('id', id)
-      .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
-      .order('sort_order', { referencedTable: 'recipe_steps', ascending: true })
-      .order('sort_order', { referencedTable: 'recipe_photos', ascending: true })
-      .maybeSingle();
+    // Try full query with all relations, fallback progressively
+    var selectQueries = [
+      '*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order, caption, step_id), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at), recipe_cook_history(id, user_name, created_at)',
+      '*, recipe_ingredients(id, name, quantity, sort_order), recipe_steps(id, description, sort_order), recipe_photos(id, url, type, sort_order), recipe_tags(id, tag), recipe_favorites(id, user_name, created_at)',
+      '*, recipe_ingredients(id, name, quantity), recipe_steps(id, description), recipe_photos(id, url), recipe_tags(id, tag)',
+      '*, recipe_ingredients(id, name, quantity), recipe_steps(id, description)',
+      '*'
+    ];
 
-    if (!error && data) {
-      // Try to fetch group_label separately (if column exists)
-      try {
-        var { data: ingWithGroup, error: groupErr } = await client
-          .from('recipe_ingredients')
-          .select('id, group_label')
-          .eq('recipe_id', id);
-        if (!groupErr && ingWithGroup && data.recipe_ingredients) {
-          var groupMap = {};
-          for (var gi = 0; gi < ingWithGroup.length; gi++) {
-            groupMap[ingWithGroup[gi].id] = ingWithGroup[gi].group_label || '';
+    var data = null;
+    var error = null;
+
+    for (var qi = 0; qi < selectQueries.length; qi++) {
+      var query = client.from('recipes').select(selectQueries[qi]).eq('id', id);
+
+      // Only add order clauses for queries that include sort_order
+      if (qi <= 1) {
+        query = query
+          .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
+          .order('sort_order', { referencedTable: 'recipe_steps', ascending: true })
+          .order('sort_order', { referencedTable: 'recipe_photos', ascending: true });
+      }
+
+      var result = await query.maybeSingle();
+      if (!result.error) {
+        data = result.data;
+        error = null;
+        break;
+      }
+      error = result.error;
+    }
+
+    if (data) {
+      // Normalize: ensure all relation arrays exist
+      if (!data.status) data.status = 'published';
+      if (!data.recipe_ingredients) data.recipe_ingredients = [];
+      if (!data.recipe_steps) data.recipe_steps = [];
+      if (!data.recipe_photos) data.recipe_photos = [];
+      if (!data.recipe_tags) data.recipe_tags = [];
+      if (!data.recipe_favorites) data.recipe_favorites = [];
+      if (!data.recipe_cook_history) data.recipe_cook_history = [];
+
+      // Normalize ingredients: ensure memo and sort_order exist
+      for (var ii = 0; ii < data.recipe_ingredients.length; ii++) {
+        if (data.recipe_ingredients[ii].memo === undefined) data.recipe_ingredients[ii].memo = '';
+        if (data.recipe_ingredients[ii].sort_order === undefined) data.recipe_ingredients[ii].sort_order = ii;
+        if (data.recipe_ingredients[ii].group_label === undefined) data.recipe_ingredients[ii].group_label = '';
+      }
+
+      // Normalize steps: ensure sort_order exists
+      for (var si = 0; si < data.recipe_steps.length; si++) {
+        if (data.recipe_steps[si].sort_order === undefined) data.recipe_steps[si].sort_order = si;
+      }
+
+      // Normalize photos: ensure step_id and caption exist
+      for (var pi = 0; pi < data.recipe_photos.length; pi++) {
+        if (data.recipe_photos[pi].step_id === undefined) data.recipe_photos[pi].step_id = null;
+        if (data.recipe_photos[pi].caption === undefined) data.recipe_photos[pi].caption = '';
+        if (data.recipe_photos[pi].sort_order === undefined) data.recipe_photos[pi].sort_order = pi;
+      }
+
+      // Try to fetch group_label separately (if column exists and not already fetched)
+      if (data.recipe_ingredients.length > 0 && !data.recipe_ingredients[0].hasOwnProperty('group_label_fetched')) {
+        try {
+          var { data: ingWithGroup, error: groupErr } = await client
+            .from('recipe_ingredients')
+            .select('id, group_label')
+            .eq('recipe_id', id);
+          if (!groupErr && ingWithGroup) {
+            var groupMap = {};
+            for (var gi = 0; gi < ingWithGroup.length; gi++) {
+              groupMap[ingWithGroup[gi].id] = ingWithGroup[gi].group_label || '';
+            }
+            for (var ij = 0; ij < data.recipe_ingredients.length; ij++) {
+              data.recipe_ingredients[ij].group_label = groupMap[data.recipe_ingredients[ij].id] || '';
+            }
           }
-          for (var ii = 0; ii < data.recipe_ingredients.length; ii++) {
-            data.recipe_ingredients[ii].group_label = groupMap[data.recipe_ingredients[ii].id] || '';
-          }
-        }
-      } catch(e) { /* group_label column doesn't exist yet — ignore */ }
+        } catch(e) { /* group_label column doesn't exist yet — ignore */ }
+      }
     }
 
     return { data, error };
@@ -128,16 +209,44 @@ const RecipeRepository = {
     const opts = options || {};
     const status = opts.hasOwnProperty('status') ? opts.status : 'published';
 
-    let query = client
-      .from('recipes')
-      .select('*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)');
+    var selectQueries = [
+      '*, recipe_ingredients(id, name, quantity, memo, sort_order), recipe_photos(url, sort_order), recipe_tags(tag), recipe_favorites(user_name)',
+      '*, recipe_ingredients(id, name, quantity), recipe_photos(url, sort_order), recipe_tags(tag)',
+      '*, recipe_ingredients(id, name, quantity), recipe_tags(tag)',
+      '*, recipe_ingredients(id, name, quantity)',
+      '*'
+    ];
 
-    if (status) {
-      query = query.eq('status', status);
+    var data = null;
+    var error = null;
+
+    for (var qi = 0; qi < selectQueries.length; qi++) {
+      let query = client.from('recipes').select(selectQueries[qi]);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      query = query.order('updated_at', { ascending: false });
+      var result = await query;
+      if (!result.error) {
+        data = result.data;
+        error = null;
+        break;
+      }
+      error = result.error;
     }
 
-    query = query.order('updated_at', { ascending: false });
-    var { data, error } = await query;
+    // Normalize
+    if (data) {
+      for (var i = 0; i < data.length; i++) {
+        if (!data[i].status) data[i].status = 'published';
+        if (!data[i].recipe_ingredients) data[i].recipe_ingredients = [];
+        if (!data[i].recipe_photos) data[i].recipe_photos = [];
+        if (!data[i].recipe_tags) data[i].recipe_tags = [];
+        if (!data[i].recipe_favorites) data[i].recipe_favorites = [];
+      }
+    }
 
     return { data, error };
   },
@@ -235,13 +344,17 @@ const FavoriteRepository = {
    */
   async getByUser(userName) {
     if (!userName) return [];
-    const { data, error } = await client
-      .from('recipe_favorites')
-      .select('recipe_id')
-      .eq('user_name', userName);
+    try {
+      const { data, error } = await client
+        .from('recipe_favorites')
+        .select('recipe_id')
+        .eq('user_name', userName);
 
-    if (error || !data) return [];
-    return data.map(row => row.recipe_id);
+      if (error || !data) return [];
+      return data.map(row => row.recipe_id);
+    } catch (e) {
+      return [];
+    }
   },
 
   /**
@@ -251,18 +364,22 @@ const FavoriteRepository = {
    */
   async getCountsForRecipes(recipeIds) {
     if (!recipeIds || recipeIds.length === 0) return {};
-    const { data, error } = await client
-      .from('recipe_favorites')
-      .select('recipe_id')
-      .in('recipe_id', recipeIds);
+    try {
+      const { data, error } = await client
+        .from('recipe_favorites')
+        .select('recipe_id')
+        .in('recipe_id', recipeIds);
 
-    if (error || !data) return {};
+      if (error || !data) return {};
 
-    const counts = {};
-    for (const row of data) {
-      counts[row.recipe_id] = (counts[row.recipe_id] || 0) + 1;
+      const counts = {};
+      for (const row of data) {
+        counts[row.recipe_id] = (counts[row.recipe_id] || 0) + 1;
+      }
+      return counts;
+    } catch (e) {
+      return {};
     }
-    return counts;
   },
 
   /**
@@ -312,24 +429,28 @@ const CookHistoryRepository = {
    */
   async getStats(recipeIds) {
     if (!recipeIds || recipeIds.length === 0) return {};
-    const { data, error } = await client
-      .from('recipe_cook_history')
-      .select('recipe_id, created_at')
-      .in('recipe_id', recipeIds);
+    try {
+      const { data, error } = await client
+        .from('recipe_cook_history')
+        .select('recipe_id, created_at')
+        .in('recipe_id', recipeIds);
 
-    if (error || !data) return {};
+      if (error || !data) return {};
 
-    const stats = {};
-    for (const row of data) {
-      if (!stats[row.recipe_id]) {
-        stats[row.recipe_id] = { count: 0, lastCookedAt: null };
+      const stats = {};
+      for (const row of data) {
+        if (!stats[row.recipe_id]) {
+          stats[row.recipe_id] = { count: 0, lastCookedAt: null };
+        }
+        stats[row.recipe_id].count += 1;
+        if (!stats[row.recipe_id].lastCookedAt || row.created_at > stats[row.recipe_id].lastCookedAt) {
+          stats[row.recipe_id].lastCookedAt = row.created_at;
+        }
       }
-      stats[row.recipe_id].count += 1;
-      if (!stats[row.recipe_id].lastCookedAt || row.created_at > stats[row.recipe_id].lastCookedAt) {
-        stats[row.recipe_id].lastCookedAt = row.created_at;
-      }
+      return stats;
+    } catch (e) {
+      return {};
     }
-    return stats;
   },
 
   /**
@@ -338,13 +459,17 @@ const CookHistoryRepository = {
    * @returns {Promise<{data: Array|null, error: object|null}>}
    */
   async getByRecipeId(recipeId) {
-    const { data, error } = await client
-      .from('recipe_cook_history')
-      .select('id, recipe_id, user_name, created_at')
-      .eq('recipe_id', recipeId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await client
+        .from('recipe_cook_history')
+        .select('id, recipe_id, user_name, created_at')
+        .eq('recipe_id', recipeId)
+        .order('created_at', { ascending: false });
 
-    return { data, error };
+      return { data: data || [], error };
+    } catch (e) {
+      return { data: [], error: null };
+    }
   },
 
   /**
@@ -426,11 +551,15 @@ const IngredientRepository = {
    */
   async searchByNames(names) {
     if (!names || names.length === 0) return { data: [], error: null };
-    var query = client.from('recipe_ingredients').select('recipe_id, name');
-    var orFilter = names.map(function(n) { return 'name.ilike.%' + n + '%'; }).join(',');
-    query = query.or(orFilter);
-    var { data, error } = await query;
-    return { data: data || [], error: error || null };
+    try {
+      var query = client.from('recipe_ingredients').select('recipe_id, name');
+      var orFilter = names.map(function(n) { return 'name.ilike.%' + n + '%'; }).join(',');
+      query = query.or(orFilter);
+      var { data, error } = await query;
+      return { data: data || [], error: error || null };
+    } catch (e) {
+      return { data: [], error: null };
+    }
   }
 };
 
@@ -780,15 +909,19 @@ const RecipeCategoryRepository = {
    * @returns {Promise<string[]>}
    */
   async getAll() {
-    const { data, error } = await client
-      .from('game_settings')
-      .select('recipe_categories')
-      .eq('id', 1)
-      .maybeSingle();
-    if (error || !data || !data.recipe_categories) {
+    try {
+      const { data, error } = await client
+        .from('game_settings')
+        .select('recipe_categories')
+        .eq('id', 1)
+        .maybeSingle();
+      if (error || !data || !data.recipe_categories) {
+        return ['主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
+      }
+      return data.recipe_categories;
+    } catch (e) {
       return ['主菜', '副菜', '汁物', 'デザート', 'お弁当', 'お菓子'];
     }
-    return data.recipe_categories;
   },
 
   /**
