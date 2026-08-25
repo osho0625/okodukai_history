@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/25 v2.37.5
+最終更新: 2026/08/25 v2.37.6
 
 ## 🔴 Steering Files 運用ルール
 
@@ -127,10 +127,11 @@ inclusion: auto
 ### push_messages（Push通知メッセージキュー）
 - id: UUID (PK), target_role: TEXT NOT NULL DEFAULT 'user' CHECK IN ('admin','user','all')
 - target_child_name: TEXT (nullable), title: TEXT NOT NULL (1-100文字), body: TEXT NOT NULL (1-500文字)
-- sent: BOOLEAN NOT NULL DEFAULT false, created_at: TIMESTAMPTZ
-- INDEX: idx_push_messages_unsent (sent=false)
+- sent: BOOLEAN NOT NULL DEFAULT false, deliver_at: TIMESTAMPTZ NOT NULL DEFAULT now(), created_at: TIMESTAMPTZ
+- INDEX: idx_push_messages_unsent (sent=false, deliver_at)
 - RLS無効
 - 全Discord通知トリガー（バックアップ除く）から投入 → GitHub Actions cron（5分毎）で配信
+- 洗濯通知アプリからも投入（deliver_atで配信時刻を指定）
 
 ### reminders（リマインダー）
 - id: UUID (PK), type: TEXT ('memo'|'event'|'repeat'|'yearly')
@@ -258,7 +259,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.37.3
+- 現在: v2.37.6
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -292,6 +293,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 | TSJ260702 | マージ済み | テキサスホールデム ルールガイド、リマインダー通知ワークフロー追加、ゲーム公開設定更新 |
 | TSJ260803 | マージ済み | 精算機能改善+補助金+操作ログ |
 | TSJ260825 | マージ済み | レシピ一覧表示バグ修正 |
+| TSJ260825b | 作業中 | 洗濯通知エラー表示改善・バックアップ拡充・レシピSQL追加 |
 | fix/github-actions-node22-upgrade | 作業中 | GitHub Actions Node.js 22 + actions v5 移行 |
 
 ### マージルール
