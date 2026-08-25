@@ -959,8 +959,9 @@ async function loadRecipeList() {
     cardGrid.id = 'recipe-card-grid';
     cardGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;';
 
-    for (var i = 0; i < recipes.length; i++) {
-      var cardData = recipeCardData(recipes[i], userFavorites, cookStats);
+    var visibleRecipes = filterVisibleRecipes(recipes, currentUserName);
+    for (var i = 0; i < visibleRecipes.length; i++) {
+      var cardData = recipeCardData(visibleRecipes[i], userFavorites, cookStats);
       var cardFragment = renderRecipeCard(cardData);
       cardGrid.appendChild(cardFragment);
     }
