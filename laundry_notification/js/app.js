@@ -141,18 +141,19 @@ async function scheduleNotification() {
       deliver_at: n.deliver_at
     }));
 
-    const res = await supabaseRequest('/rest/v1/push_messages', 'POST', rows);
+    const res = await supabaseRequest('/rest/v1/push_messages', 'POST', rows, { 'Prefer': 'return=minimal' });
 
     if (res.ok) {
       showStatus(`✓ ${timeStr}に完了通知をセットしました`, 'success');
       loadScheduledNotifications();
     } else {
       const err = await res.text();
-      throw new Error(err);
+      console.error('push_messages INSERT failed:', res.status, err);
+      throw new Error(`${res.status}: ${err}`);
     }
   } catch (e) {
     console.error('Notification schedule failed:', e);
-    showStatus('通知の登録に失敗しました', 'error');
+    showStatus(`通知の登録に失敗: ${e.message}`, 'error');
   }
 
   btn.disabled = false;

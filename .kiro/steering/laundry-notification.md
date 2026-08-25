@@ -5,7 +5,7 @@ fileMatchPattern: "*laundry*"
 
 # 洗濯通知アプリ (Laundry Notification)
 
-最終更新: 2026/08/19
+最終更新: 2026/08/25
 
 ## 概要
 
@@ -62,3 +62,5 @@ fileMatchPattern: "*laundry*"
 - iOS SafariではPWAとしてホーム画面に追加しないとPush通知を受信できない
 - SWのキャッシュバージョン更新時は`CACHE_NAME`の数値を上げること
 - API keyを変更した場合はこのファイルとapp.jsの両方を更新すること
+- `push_messages`テーブルのRLSが有効だとanon keyでのINSERTがブロックされる（DISABLE ROW LEVEL SECURITY必須）
+- エラー発生時は具体的なHTTPステータスとレスポンスBodyをUI上に表示（デバッグ容易化）
