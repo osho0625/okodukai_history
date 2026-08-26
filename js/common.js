@@ -173,6 +173,24 @@ async function savePendingDeposit(cid, oldBalance, newBalance, amount) {
   }
 }
 
+// 枚コンプリート時にあそびチケット60分×2枚を発行
+async function issuePageCompleteTickets(ownerName, totalBefore, totalAfter) {
+  const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+  if (!TICKET_OWNERS.includes(ownerName)) return 0;
+  const sheetsBefore = totalBefore > 0 ? Math.floor(totalBefore / 400) : 0;
+  const sheetsAfter = totalAfter > 0 ? Math.floor(totalAfter / 400) : 0;
+  const newSheets = sheetsAfter - sheetsBefore;
+  if (newSheets <= 0) return 0;
+  const rows = [];
+  for (let i = 0; i < newSheets * 2; i++) {
+    rows.push({ owner: ownerName, duration_minutes: 60 });
+  }
+  await client.from('tickets').insert(rows);
+  notifyDiscord('🎫🎉 **' + ownerName + '** ポイント表 ' + sheetsAfter + '枚目コンプリート！\nあそびチケット60分×' + (newSheets * 2) + '枚 発行しました！');
+  queuePushNotification('🎫 チケット発行', ownerName + ' ポイント表コンプリート！あそびチケット60分×' + (newSheets * 2) + '枚', 'all', ownerName);
+  return newSheets * 2;
+}
+
 // --- 夜間ゲーム制限（共通） ---
 function getNightStartHour() {
   const day = new Date().getDay();

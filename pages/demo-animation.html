@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演出デモ - 枚コンプリート＆チケット付与</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+h1 { margin-bottom: 20px; color: #333; text-align: center; }
+.demo-btn {
+  display: block; width: 100%; max-width: 400px; margin: 12px auto;
+  padding: 16px; border: none; border-radius: 12px;
+  font-size: 1.1em; font-weight: 700; cursor: pointer; color: #fff;
+  transition: opacity 0.2s;
+}
+.demo-btn:hover { opacity: 0.85; }
+.btn-complete { background: linear-gradient(135deg, #ffd700, #ff9800); }
+.btn-transition { background: linear-gradient(135deg, #4caf50, #2e7d32); }
+.btn-both { background: linear-gradient(135deg, #e91e63, #9c27b0); }
+.note { text-align: center; color: #999; font-size: 0.85em; margin-top: 24px; }
+
+/* 枚コンプリート演出 */
+.sheet-complete-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); z-index: 1000;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.5s;
+}
+.sheet-complete-overlay.show { opacity: 1; }
+.sheet-complete-overlay.fadeout { opacity: 0; }
+.sheet-complete-title {
+  font-size: 2.5em; font-weight: 900; color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
+  transform: scale(0); opacity: 0;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+}
+.sheet-complete-title.show { transform: scale(1); opacity: 1; }
+.sheet-complete-sub {
+  font-size: 1.2em; color: #fff; margin-top: 12px; opacity: 0;
+  transition: opacity 0.5s; transition-delay: 0.4s;
+}
+.sheet-complete-sub.show { opacity: 1; }
+.ticket-award-card {
+  margin-top: 24px; background: linear-gradient(135deg, #fdf6e3 0%, #f5e6c8 100%);
+  border-radius: 16px; padding: 20px 32px; border: 2px solid #d4a017;
+  box-shadow: 0 6px 24px rgba(212,160,23,0.4);
+  transform: scale(0) rotate(-10deg); opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  text-align: center;
+}
+.ticket-award-card.show { transform: scale(1) rotate(0deg); opacity: 1; }
+.ticket-award-icon { font-size: 2.5em; margin-bottom: 8px; }
+.ticket-award-text { font-size: 1.1em; font-weight: 700; color: #5a3e1b; }
+.ticket-award-detail { font-size: 0.9em; color: #8b7355; margin-top: 4px; }
+
+/* 次の枚への遷移演出 */
+.sheet-transition-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #f5f5f5; z-index: 900;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.4s;
+}
+.sheet-transition-overlay.show { opacity: 1; }
+.sheet-transition-overlay.fadeout { opacity: 0; }
+.sheet-transition-text {
+  font-size: 2em; font-weight: 900; color: #4caf50;
+  transform: translateY(20px); opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+}
+.sheet-transition-text.show { transform: translateY(0); opacity: 1; }
+.sheet-transition-sub {
+  font-size: 1em; color: #888; margin-top: 8px; opacity: 0;
+  transition: opacity 0.4s; transition-delay: 0.3s;
+}
+.sheet-transition-sub.show { opacity: 1; }
+
+.confetti {
+  position: fixed; pointer-events: none; z-index: 1001;
+  font-size: 1.8em;
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(120px) rotate(360deg) scale(0.3); }
+}
+@keyframes confettiRise {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-80px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.6); }
+}
+</style>
+</head>
+<body>
+<h1>🎬 演出デモ</h1>
+<p style="text-align:center; color:#555; margin-bottom:24px;">りょうすけ用の演出テスト</p>
+
+<button class="demo-btn btn-complete" onclick="demoComplete()">🎉 枚コンプリート演出のみ</button>
+<button class="demo-btn btn-transition" onclick="demoTransition()">📖 次の枚への遷移演出のみ</button>
+<button class="demo-btn btn-both" onclick="demoBoth()">🎬 両方つなげて再生</button>
+
+<p class="note">タップで演出を早送りできます</p>
+
+<script>
+function spawnConfetti(container) {
+  const emojis = ['🎉', '✨', '💰', '🪙', '⭐', '🎊', '💫', '🌟'];
+  for (let i = 0; i < 20; i++) {
+    const span = document.createElement('span');
+    span.className = 'confetti';
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const x = Math.random() * window.innerWidth;
+    const y = window.innerHeight * 0.3 + Math.random() * window.innerHeight * 0.4;
+    span.style.left = x + 'px';
+    span.style.top = y + 'px';
+    const rise = Math.random() < 0.5;
+    span.style.animation = `${rise ? 'confettiRise' : 'confettiFall'} ${0.8 + Math.random() * 0.8}s ease-out forwards`;
+    span.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(span);
+    setTimeout(() => span.remove(), 2000);
+  }
+}
+
+function showSheetCompleteAnimation(sheetNum, ticketCount, onDone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sheet-complete-overlay';
+
+  const title = document.createElement('div');
+  title.className = 'sheet-complete-title';
+  title.textContent = '🎉 ' + sheetNum + '枚目コンプリート！';
+
+  const sub = document.createElement('div');
+  sub.className = 'sheet-complete-sub';
+  sub.textContent = 'おめでとう！すごいがんばったね！';
+
+  overlay.appendChild(title);
+  overlay.appendChild(sub);
+
+  if (ticketCount > 0) {
+    const card = document.createElement('div');
+    card.className = 'ticket-award-card';
+    card.innerHTML = '<div class="ticket-award-icon">🎫✨</div>'
+      + '<div class="ticket-award-text">あそびチケット 60分 × ' + ticketCount + '枚 GET!</div>'
+      + '<div class="ticket-award-detail">チケットページで使えるよ</div>';
+    overlay.appendChild(card);
+  }
+
+  document.body.appendChild(overlay);
+
+  let finished = false;
+  overlay.addEventListener('click', () => {
+    if (!finished) { finished = true; finishSheetComplete(); }
+  });
+
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    setTimeout(() => title.classList.add('show'), 200);
+    setTimeout(() => sub.classList.add('show'), 600);
+    if (ticketCount > 0) {
+      const card = overlay.querySelector('.ticket-award-card');
+      setTimeout(() => { if (card) card.classList.add('show'); }, 1000);
+    }
+    setTimeout(() => spawnConfetti(overlay), 400);
+  });
+
+  setTimeout(() => { if (!finished) { finished = true; finishSheetComplete(); } }, 5000);
+
+  function finishSheetComplete() {
+    overlay.classList.add('fadeout');
+    setTimeout(() => {
+      overlay.remove();
+      if (onDone) onDone();
+    }, 500);
+  }
+}
+
+function showSheetTransition(newSheetNum, onDone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sheet-transition-overlay';
+
+  const text = document.createElement('div');
+  text.className = 'sheet-transition-text';
+  text.textContent = '📖 ' + newSheetNum + '枚目スタート！';
+
+  const sub = document.createElement('div');
+  sub.className = 'sheet-transition-sub';
+  sub.textContent = 'あたらしいページだよ！がんばろう！';
+
+  overlay.appendChild(text);
+  overlay.appendChild(sub);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    setTimeout(() => text.classList.add('show'), 100);
+    setTimeout(() => sub.classList.add('show'), 300);
+  });
+
+  setTimeout(() => {
+    overlay.classList.add('fadeout');
+    setTimeout(() => {
+      overlay.remove();
+      if (onDone) onDone();
+    }, 400);
+  }, 2000);
+}
+
+function demoComplete() {
+  showSheetCompleteAnimation(3, 2, () => {});
+}
+
+function demoTransition() {
+  showSheetTransition(4, () => {});
+}
+
+function demoBoth() {
+  showSheetCompleteAnimation(3, 2, () => {
+    showSheetTransition(4, () => {});
+  });
+}
+</script>
+</body>
+</html>
