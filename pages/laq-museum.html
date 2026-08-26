@@ -229,8 +229,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
       <span class="back-album" onclick="closeAlbumPage()">←</span>
       <div class="album-page-title">
         <div style="display:flex; align-items:center; gap:6px;">
-          <h2 id="albumPageTitle" style="flex:1;"></h2>
-          <span id="albumEditIcons" style="display:none; font-size:1em; display:flex; gap:6px;">
+          <h2 id="albumPageTitle"></h2>
+          <span id="albumEditIcons" style="display:none; font-size:1em; gap:6px;">
             <span onclick="startEditAlbumTitle()" style="cursor:pointer;" title="名前変更">✏️</span>
             <span onclick="openThumbChangeModal('album')" style="cursor:pointer;" title="サムネ変更">🖼️</span>
           </span>
@@ -419,15 +419,19 @@ function renderDetailInfo() {
   const info=document.getElementById('detailInfo');
   if (detailType==='laq') {
     const photos=currentDetailWork.laq_photos;
-    let h='<div class="detail-title">'+(currentDetailWork.title||'（名前なし）')+'</div><div class="detail-author">👤 '+currentDetailWork.author+'</div><div class="detail-date">📅 '+new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')+'</div><div class="detail-counter">'+(currentPhotoIdx+1)+' / '+photos.length+'</div>';
-    if (isAdmin) h+='<div class="admin-edit"><input type="text" id="editTitle" value="'+(currentDetailWork.title||'')+'" placeholder="作品名"><div class="admin-btns"><button class="btn-save" onclick="saveTitle()">名前変更</button><button class="btn-thumb" onclick="openThumbChangeModal(\'laq\')">サムネ変更</button><button class="btn-delete" onclick="deleteWork()">削除</button></div></div>';
-    else h+='<div class="user-actions"><button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button></div>';
+    let h='<div style="display:flex;align-items:center;gap:6px;"><div class="detail-title" style="flex:1;">'+(currentDetailWork.title||'（名前なし）')+'</div>';
+    if (isAdmin) h+='<span onclick="startEditLaqTitle()" style="cursor:pointer;font-size:1em;" title="名前変更">✏️</span><span onclick="openThumbChangeModal(\'laq\')" style="cursor:pointer;font-size:1em;" title="サムネ変更">🖼️</span><span onclick="deleteWork()" style="cursor:pointer;font-size:1em;" title="削除">🗑️</span>';
+    h+='</div>';
+    h+='<div class="detail-author">👤 '+currentDetailWork.author+'</div><div class="detail-date">📅 '+new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')+'</div><div class="detail-counter">'+(currentPhotoIdx+1)+' / '+photos.length+'</div>';
+    if (isAdmin) h+='<div id="laqTitleEditArea" style="display:none;margin-top:8px;"><div style="display:flex;gap:8px;"><input type="text" class="form-input" id="editTitle" style="flex:1;padding:8px;"><button onclick="saveTitle()" style="padding:8px 12px;background:#6a1b9a;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">保存</button><button onclick="document.getElementById(\'laqTitleEditArea\').style.display=\'none\'" style="padding:8px 12px;background:#eee;border:none;border-radius:8px;cursor:pointer;">取消</button></div></div>';
+    if (!isAdmin) h+='<div class="user-actions"><button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button></div>';
     info.innerHTML=h;
   }
 }
 
 // ===== LaQ管理者操作 =====
-async function saveTitle() { const t=document.getElementById('editTitle').value.trim(); await client.from('laq_works').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailWork.id); currentDetailWork.title=t; renderDetailInfo(); alert('変更しました！'); }
+function startEditLaqTitle() { document.getElementById('laqTitleEditArea').style.display='block'; document.getElementById('editTitle').value=currentDetailWork.title||''; document.getElementById('editTitle').focus(); }
+async function saveTitle() { const t=document.getElementById('editTitle').value.trim(); await client.from('laq_works').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailWork.id); currentDetailWork.title=t; renderDetailInfo(); }
 async function deleteWork() { if(!confirm('この作品を削除しますか？'))return; for(const p of currentDetailWork.laq_photos){const path=p.url.split('/laq-photos/')[1];if(path)await client.storage.from(STORAGE_BUCKET).remove([path]);} await client.from('laq_works').delete().eq('id',currentDetailWork.id); closeDetail(); loadGallery(); }
 async function requestDelete() { if(!confirm('削除をリクエストしますか？'))return; await client.from('laq_delete_requests').insert({work_id:currentDetailWork.id,requested_by:currentDetailWork.author}); alert('リクエストを送りました！'); closeDetail(); }
 
