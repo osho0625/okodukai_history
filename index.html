@@ -114,6 +114,8 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
   <button onclick="dismissPushBanner()" style="margin-left:4px; padding:4px 8px; border:none; border-radius:6px; background:#e0e0e0; color:#555; font-size:0.85em; cursor:pointer;">後で</button>
 </div>
 
+<div id="laqDeleteBanner" style="display:none; max-width:480px; margin:0 auto 12px; padding:0 8px;"></div>
+
 <div id="reminderBanner" style="display:none; max-width:480px; margin:0 auto 12px; padding:0 8px;"></div>
 
 <!-- 今日のサイエンス -->
@@ -179,7 +181,7 @@ const ALL_ICONS = [
   { id: 'settlement', emoji: '💰', label: '家庭内精算', href: 'pages/settlement.html', position: 'bottom', adminOnly: true },
   { id: 'poker-chips', emoji: '🪙', label: 'ポーカーチップ', href: 'pages/poker-chips.html', position: 'bottom', adminOnly: false },
   { id: 'hair-removal', emoji: '🪒', label: '脱毛管理', href: 'pages/hair-removal-tracker.html', position: 'bottom', adminOnly: true },
-  { id: 'laq-museum', emoji: '🎨', label: 'LaQ美術館', href: 'pages/laq-museum.html', position: 'top', adminOnly: false },
+  { id: 'laq-museum', emoji: '🏛️', label: 'LaQ美術館', href: 'pages/laq-museum.html', position: 'top', adminOnly: false },
   { id: 'settings', emoji: '⚙️', label: '設定', href: '#', position: 'bottom', adminOnly: false, isSettings: true }
 ];
 
@@ -815,15 +817,16 @@ async function load() {
     }
   });
 
-  // admin用: LaQ美術館 削除承認
+  // admin用: LaQ美術館 削除承認（上部バナーに表示）
   if (localStorage.getItem('deviceRole') === 'admin') {
     try {
       const { data: delReqs } = await client.from('laq_delete_requests')
         .select('*, laq_works(id, title, author, thumbnail_photo_id, laq_photos(id, url))')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
+      const banner = document.getElementById('laqDeleteBanner');
       if (delReqs && delReqs.length > 0) {
-        let laqHtml = '<div class="approval-section" id="laq-delete-approvals">';
+        let laqHtml = '';
         delReqs.forEach(req => {
           const work = req.laq_works;
           if (!work) return;
@@ -842,8 +845,10 @@ async function load() {
             + '<button class="approval-btn reject" onclick="rejectLaqDelete(\'' + req.id + '\')">却下</button>'
             + '</div></div>';
         });
-        laqHtml += '</div>';
-        container.innerHTML += laqHtml;
+        banner.innerHTML = laqHtml;
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
       }
     } catch(e) { console.error('LaQ delete requests load error:', e); }
   }
@@ -1179,7 +1184,6 @@ async function rejectTicketFromTop(ticketId) {
 // --- LaQ美術館: 削除承認/却下 ---
 async function approveLaqDelete(requestId, workId) {
   if (!confirm('この作品を削除しますか？')) return;
-  // 写真をStorageから削除
   try {
     const { data: photos } = await client.from('laq_photos').select('url').eq('work_id', workId);
     if (photos) {
@@ -1187,12 +1191,11 @@ async function approveLaqDelete(requestId, workId) {
       if (paths.length > 0) await client.storage.from('laq-photos').remove(paths);
     }
   } catch(e) {}
-  // 作品削除（CASCADE で photos と requests も消える）
   await client.from('laq_works').delete().eq('id', workId);
   const el = document.getElementById('laq-del-' + requestId);
   if (el) el.remove();
-  const section = document.getElementById('laq-delete-approvals');
-  if (section && section.children.length === 0) section.remove();
+  const banner = document.getElementById('laqDeleteBanner');
+  if (banner && banner.children.length === 0) banner.style.display = 'none';
 }
 
 async function rejectLaqDelete(requestId) {
@@ -1200,8 +1203,8 @@ async function rejectLaqDelete(requestId) {
   await client.from('laq_delete_requests').update({ status: 'rejected' }).eq('id', requestId);
   const el = document.getElementById('laq-del-' + requestId);
   if (el) el.remove();
-  const section = document.getElementById('laq-delete-approvals');
-  if (section && section.children.length === 0) section.remove();
+  const banner = document.getElementById('laqDeleteBanner');
+  if (banner && banner.children.length === 0) banner.style.display = 'none';
 }
 
 async function giveAllowanceFromTop(targetChild, amount) {

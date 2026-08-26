@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#6a1b9a">
-<title>LaQ美術館</title>
+<title>美術館</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <style>
@@ -13,43 +13,40 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .header { background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 10; }
 .header h1 { font-size: 1.3em; }
 .header .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.2em; }
-.tabs { display: flex; background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 9; }
-.tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
-.tab.active { color: #6a1b9a; border-bottom-color: #6a1b9a; }
+.header .add-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.5em; cursor: pointer; display: none; }
+.mode-tabs { display: flex; background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 9; }
+.mode-tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.95em; }
+.mode-tab.active { color: #6a1b9a; border-bottom-color: #6a1b9a; }
+.sub-tabs { display: flex; background: #fafafa; border-bottom: 1px solid #eee; position: sticky; top: 103px; z-index: 8; }
+.sub-tab { flex: 1; padding: 10px; text-align: center; font-weight: 600; color: #aaa; cursor: pointer; font-size: 0.85em; border-bottom: 2px solid transparent; }
+.sub-tab.active { color: #6a1b9a; border-bottom-color: #ce93d8; }
 .view { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
 .view.active { display: block; }
-
-/* 登録フォーム */
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.9em; }
-.author-btns { display: flex; gap: 8px; }
-.author-btn { flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; font-size: 1em; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; }
+.author-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.author-btn { padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; }
 .author-btn.selected { border-color: #6a1b9a; background: #f3e5f5; color: #6a1b9a; }
 .form-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
-.photo-upload-area { border: 2px dashed #ce93d8; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; color: #888; background: #fce4ec08; transition: 0.2s; }
-.photo-upload-area:hover { border-color: #6a1b9a; background: #f3e5f510; }
+.photo-upload-area { border: 2px dashed #ce93d8; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; color: #888; transition: 0.2s; }
+.photo-upload-area:hover { border-color: #6a1b9a; }
 .photo-upload-area .icon { font-size: 2em; margin-bottom: 8px; }
 .photo-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
 .photo-preview { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
 .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
 .photo-preview .remove { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: rgba(220,50,50,0.85); color: #fff; border: none; border-radius: 50%; font-size: 0.8em; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-.btn-register { width: 100%; padding: 14px; background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.btn-register:hover { opacity: 0.9; }
+.btn-register { width: 100%; padding: 14px; background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700; cursor: pointer; }
 .btn-register:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* サムネイル選択モーダル */
 .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
 .overlay.active { display: flex; }
 .modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
 .modal h2 { text-align: center; margin-bottom: 16px; color: #333; font-size: 1.1em; }
 .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.thumb-option { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
+.thumb-option { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 3px solid transparent; cursor: pointer; }
 .thumb-option.selected { border-color: #6a1b9a; box-shadow: 0 0 0 2px #ce93d8; }
 .thumb-option img { width: 100%; height: 100%; object-fit: cover; }
 .btn-ok { width: 100%; padding: 12px; background: #6a1b9a; color: #fff; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; }
 .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ギャラリー */
 .author-section { margin-bottom: 24px; }
 .author-header { font-size: 1.1em; font-weight: 700; color: #6a1b9a; padding: 8px 0; border-bottom: 2px solid #ce93d8; margin-bottom: 12px; }
 .author-header .count { font-size: 0.8em; color: #888; font-weight: 400; margin-left: 8px; }
@@ -61,8 +58,80 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .work-card .info { padding: 8px 10px; }
 .work-card .title { font-size: 0.85em; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .work-card .date { font-size: 0.7em; color: #999; margin-top: 2px; }
-
-/* 作品詳細モーダル */
+.album-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.album-card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: 0.2s; }
+.album-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.album-card .album-thumb { overflow: hidden; }
+.album-card .album-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-card .album-info { padding: 6px 8px; }
+.album-card .album-date { font-size: 0.7em; color: #888; }
+.album-card .album-title { font-size: 0.8em; font-weight: 600; color: #333; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.album-card .album-meta { font-size: 0.65em; color: #aaa; margin-top: 2px; display: flex; gap: 6px; }
+/* サイズ別 */
+.album-card.size-large { width: calc(50% - 5px); }
+.album-card.size-large .album-thumb { aspect-ratio: 1; }
+.album-card.size-medium { width: calc(33.33% - 7px); }
+.album-card.size-medium .album-thumb { aspect-ratio: 1; }
+.album-card.size-medium .album-info { padding: 4px 6px; }
+.album-card.size-medium .album-title { font-size: 0.7em; }
+.album-card.size-medium .album-date { font-size: 0.6em; }
+.album-card.size-medium .album-meta { display: none; }
+.album-card.size-small { width: calc(25% - 8px); }
+.album-card.size-small .album-thumb { aspect-ratio: 1; }
+.album-card.size-small .album-info { padding: 3px 4px; }
+.album-card.size-small .album-title { font-size: 0.65em; }
+.album-card.size-small .album-date { display: none; }
+.album-card.size-small .album-meta { display: none; }
+/* サイズ切替 */
+.size-toggle { display: flex; gap: 4px; align-items: center; margin-bottom: 10px; justify-content: flex-end; }
+.size-toggle button { padding: 4px 10px; border: 1px solid #ce93d8; border-radius: 12px; background: #fff; font-size: 0.75em; font-weight: 600; cursor: pointer; color: #6a1b9a; }
+.size-toggle button.active { background: #6a1b9a; color: #fff; border-color: #6a1b9a; }
+/* アルバム詳細ページ */
+.album-page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+.album-page.active { display: block; }
+.album-page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.album-page-header .back-album { font-size: 1.3em; cursor: pointer; color: #6a1b9a; }
+.album-page-header .album-page-title { flex: 1; }
+.album-page-header .album-page-title h2 { font-size: 1em; font-weight: 700; color: #333; }
+.album-page-header .album-page-title .album-page-date { font-size: 0.8em; color: #888; }
+.album-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.album-photo-grid .album-photo-cell { aspect-ratio: 1; overflow: hidden; cursor: pointer; border-radius: 4px; position: relative; }
+.album-photo-grid .album-photo-cell img { width: 100%; height: 100%; object-fit: cover; }
+.album-photo-cell .photo-owner { position: absolute; bottom: 2px; right: 3px; font-size: 0.55em; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 4px; border-radius: 3px; pointer-events: none; }
+.album-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.album-filter-btn { padding: 5px 10px; border: 1px solid #ce93d8; border-radius: 14px; background: #6a1b9a; color: #fff; font-size: 0.75em; font-weight: 600; cursor: pointer; }
+.album-filter-btn.off { background: #fff; color: #999; border-color: #ddd; }
+/* フルスクリーンスライダー */
+.slider-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; }
+.slider-overlay.active { display: flex; }
+.slider-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%; font-size: 1.2em; cursor: pointer; z-index: 5; }
+.slider-container { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: pan-y; position: relative; }
+.slider-container img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+.slider-counter { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.8em; padding: 8px; }
+.slider-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 50%; font-size: 1.3em; cursor: pointer; }
+.slider-nav.prev { left: 8px; }
+.slider-nav.next { right: 8px; }
+.date-range { display: flex; align-items: center; gap: 8px; }
+.date-range input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; }
+.date-range span { color: #888; font-weight: 600; }
+.calendar-display { padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; color: #666; font-size: 0.95em; background: #fff; }
+.calendar-widget { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-top: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; color: #333; }
+.cal-nav { background: none; border: none; font-size: 1.4em; cursor: pointer; padding: 4px 10px; color: #6a1b9a; }
+.cal-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.75em; color: #999; font-weight: 600; margin-bottom: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.85em; border-radius: 50%; cursor: pointer; transition: 0.15s; color: #333; }
+.cal-cell:hover { background: #f3e5f5; }
+.cal-cell.empty { cursor: default; }
+.cal-cell.empty:hover { background: none; }
+.cal-cell.start { background: #6a1b9a; color: #fff; font-weight: 700; }
+.cal-cell.end { background: #6a1b9a; color: #fff; font-weight: 700; }
+.cal-cell.in-range { background: #e1bee7; color: #4a148c; }
+.cal-cell.today { border: 2px solid #ce93d8; }
+.cal-footer { display: flex; justify-content: space-between; margin-top: 8px; }
+.cal-clear, .cal-done { padding: 6px 14px; border: none; border-radius: 6px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
+.cal-clear { background: #ffebee; color: #e53935; }
+.cal-done { background: #6a1b9a; color: #fff; }
 .detail-modal { background: #fff; border-radius: 16px; padding: 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
 .detail-photos { position: relative; }
 .detail-photos img { width: 100%; display: block; }
@@ -83,495 +152,682 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .admin-edit .btn-delete { background: #e53935; color: #fff; }
 .user-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; }
 .btn-request-delete { padding: 10px 20px; background: #ffebee; color: #e53935; border: 1px solid #e53935; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
-.btn-request-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 .close-btn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 50%; font-size: 1.1em; cursor: pointer; z-index: 5; }
-
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-btn { padding: 6px 12px; border: 1px solid #ce93d8; border-radius: 16px; background: #fff; font-size: 0.8em; font-weight: 600; cursor: pointer; color: #6a1b9a; }
+.filter-btn.active { background: #6a1b9a; color: #fff; border-color: #6a1b9a; }
 .empty-msg { text-align: center; color: #999; padding: 40px 20px; font-size: 0.95em; }
 .loading { text-align: center; color: #999; padding: 40px; }
-
-@media (max-width: 400px) {
-  .works-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .photo-previews { grid-template-columns: repeat(3, 1fr); }
-}
+@media (max-width: 400px) { .works-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
 </style>
 </head>
 <body>
-
 <div class="header">
-  <a class="back" href="../index.html">←</a>
-  <h1>🎨 LaQ美術館</h1>
+  <a class="back" href="../index.html">🏠</a>
+  <h1>🏛️ 美術館</h1>
+  <span class="add-btn" id="albumAddBtn" onclick="showAlbumRegister()">＋</span>
+</div>
+<div class="mode-tabs">
+  <div class="mode-tab active" data-mode="laq">🧩 LaQ作品</div>
+  <div class="mode-tab" data-mode="album">📸 家族アルバム</div>
 </div>
 
-<div class="tabs">
-  <div class="tab active" data-view="gallery">🖼️ ギャラリー</div>
-  <div class="tab" data-view="register">📷 登録</div>
+<!-- LaQ作品 -->
+<div id="laqMode">
+  <div class="sub-tabs">
+    <div class="sub-tab active" data-view="gallery">LaQギャラリー</div>
+    <div class="sub-tab" data-view="register">📷 登録</div>
+  </div>
+  <div class="view active" id="galleryView"><div class="loading">読み込み中...</div></div>
+  <div class="view" id="registerView">
+    <div class="form-group"><label>誰の作品？</label>
+      <div class="author-btns" id="laqAuthorBtns">
+        <button class="author-btn" data-author="かいせい">かいせい</button>
+        <button class="author-btn" data-author="いろは">いろは</button>
+        <button class="author-btn" data-author="はるちか">はるちか</button>
+      </div>
+    </div>
+    <div class="form-group"><label>作品の名前（後からでもOK）</label><input type="text" class="form-input" id="workTitle" placeholder="作品の名前"></div>
+    <div class="form-group"><label>写真を撮ろう📸</label>
+      <div class="photo-upload-area" id="photoUploadArea"><div class="icon">📷</div><div>タップしてカメラで撮影</div></div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+      <div class="photo-previews" id="photoPreviews"></div>
+      <div id="addMoreArea" style="display:none; margin-top:8px; text-align:center;"><button id="addMoreBtn" style="padding:8px 16px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:8px; color:#6a1b9a; font-weight:600; cursor:pointer;">＋ もう1枚撮る</button></div>
+    </div>
+    <button class="btn-register" id="registerBtn" disabled>登録する！</button>
+  </div>
 </div>
 
-<!-- ギャラリー -->
-<div class="view active" id="galleryView">
-  <div class="loading">読み込み中...</div>
-</div>
-
-<!-- 登録 -->
-<div class="view" id="registerView">
-  <div class="form-group">
-    <label>誰の作品？</label>
-    <div class="author-btns">
-      <button class="author-btn" data-author="かいせい">かいせい</button>
-      <button class="author-btn" data-author="いろは">いろは</button>
-      <button class="author-btn" data-author="はるちか">はるちか</button>
+<!-- 家族アルバム -->
+<div id="albumMode" style="display:none;">
+  <div class="view active" id="albumListView"><div class="loading">読み込み中...</div></div>
+  <div class="view" id="albumRegisterView" style="display:none;">
+    <div class="form-group"><label>誰が追加する？</label>
+      <div class="author-btns" id="albumAuthorBtns">
+        <button class="author-btn" data-author="めぐみ">めぐみ</button>
+        <button class="author-btn" data-author="りょうすけ">りょうすけ</button>
+        <button class="author-btn" data-author="はるちか">はるちか</button>
+        <button class="author-btn" data-author="いろは">いろは</button>
+        <button class="author-btn" data-author="かいせい">かいせい</button>
+      </div>
+    </div>
+    <div class="form-group"><label>アルバムのタイトル</label><input type="text" class="form-input" id="albumTitle" placeholder="例: 新潟旅行"></div>
+    <div class="form-group"><label>📅 日付</label>
+      <div id="calendarDisplay" class="calendar-display" onclick="document.getElementById('calendarWidget').style.display='block'">
+        <span id="calendarText">タップして日付を選択</span>
+      </div>
+      <div id="calendarWidget" class="calendar-widget" style="display:none;">
+        <div class="cal-header">
+          <button class="cal-nav" onclick="calNav(-1)">‹</button>
+          <span id="calMonth"></span>
+          <button class="cal-nav" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-footer">
+          <button class="cal-clear" onclick="clearCalendar()">クリア</button>
+          <button class="cal-done" onclick="document.getElementById('calendarWidget').style.display='none'">閉じる</button>
+        </div>
+      </div>
+      <input type="hidden" id="albumDateStart">
+      <input type="hidden" id="albumDateEnd">
+    </div>
+    <div class="form-group"><label>写真を選ぶ📸</label>
+      <div class="photo-upload-area" id="albumPhotoUploadArea"><div class="icon">🖼️</div><div>タップして写真を選択（複数OK）</div></div>
+      <input type="file" id="albumPhotoInput" accept="image/*" multiple style="display:none;">
+      <div class="photo-previews" id="albumPhotoPreviews"></div>
+    </div>
+    <button class="btn-register" id="albumRegisterBtn" disabled>登録する！</button>
+    <button style="width:100%; margin-top:8px; padding:12px; background:#eee; border:none; border-radius:10px; font-size:0.95em; cursor:pointer; color:#666;" onclick="hideAlbumRegister()">キャンセル</button>
+  </div>
+  <!-- アルバム詳細ページ -->
+  <div class="album-page" id="albumPageView">
+    <div class="album-page-header">
+      <span class="back-album" onclick="closeAlbumPage()">←</span>
+      <div class="album-page-title">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h2 id="albumPageTitle"></h2>
+          <span id="albumEditIcons" style="display:none; font-size:1em; gap:6px;">
+            <span onclick="startEditAlbumTitle()" style="cursor:pointer;" title="名前変更">✏️</span>
+            <span onclick="openThumbChangeModal('album')" style="cursor:pointer;" title="サムネ変更">🖼️</span>
+          </span>
+        </div>
+        <div class="album-page-date" id="albumPageDate"></div>
+      </div>
+      <span id="albumDeleteIcon" style="display:none; font-size:1.2em; cursor:pointer; margin-left:8px;" onclick="deleteAlbumFromPage()" title="アルバム削除">🗑️</span>
+    </div>
+    <div id="albumTitleEditArea" style="display:none; margin-bottom:12px;">
+      <div style="display:flex; gap:8px;"><input type="text" class="form-input" id="editAlbumTitle" style="flex:1;"><button onclick="saveAlbumTitle()" style="padding:8px 14px; background:#6a1b9a; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">保存</button><button onclick="cancelEditAlbumTitle()" style="padding:8px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer;">取消</button></div>
+    </div>
+    <div id="albumPageAdmin"></div>
+    <div class="album-filter-bar" id="albumFilterBar"></div>
+    <div class="album-photo-grid" id="albumPhotoGrid"></div>
+    <!-- 写真追加エリア -->
+    <div id="albumAddPhotosArea" style="margin-top:16px; text-align:center;">
+      <button onclick="showAddPhotosUI()" style="padding:10px 20px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:10px; color:#6a1b9a; font-weight:600; cursor:pointer; font-size:0.9em;">＋ 写真を追加</button>
+    </div>
+    <div id="addPhotosForm" style="display:none; margin-top:12px; padding:12px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <div class="form-group"><label>誰が追加する？</label>
+        <div class="author-btns" id="addPhotoAuthorBtns">
+          <button class="author-btn" data-author="めぐみ">めぐみ</button>
+          <button class="author-btn" data-author="りょうすけ">りょうすけ</button>
+          <button class="author-btn" data-author="はるちか">はるちか</button>
+          <button class="author-btn" data-author="いろは">いろは</button>
+          <button class="author-btn" data-author="かいせい">かいせい</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="photo-upload-area" onclick="document.getElementById('addPhotoInput').click()"><div class="icon">🖼️</div><div>タップして写真を選択</div></div>
+        <input type="file" id="addPhotoInput" accept="image/*" multiple style="display:none;">
+        <div class="photo-previews" id="addPhotoPreviews"></div>
+      </div>
+      <button class="btn-register" id="addPhotosBtn" disabled onclick="doAddPhotos()">追加する</button>
+      <button style="width:100%; margin-top:6px; padding:10px; background:#eee; border:none; border-radius:8px; cursor:pointer; color:#666; font-size:0.9em;" onclick="hideAddPhotosUI()">キャンセル</button>
     </div>
   </div>
-  <div class="form-group">
-    <label>作品の名前（後からでもOK）</label>
-    <input type="text" class="form-input" id="workTitle" placeholder="作品の名前">
-  </div>
-  <div class="form-group">
-    <label>写真を撮ろう📸</label>
-    <div class="photo-upload-area" id="photoUploadArea">
-      <div class="icon">📷</div>
-      <div>タップしてカメラで撮影</div>
-    </div>
-    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
-    <div class="photo-previews" id="photoPreviews"></div>
-    <div id="addMoreArea" style="display:none; margin-top:8px; text-align:center;">
-      <button id="addMoreBtn" style="padding:8px 16px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:8px; color:#6a1b9a; font-weight:600; cursor:pointer;">＋ もう1枚撮る</button>
-    </div>
-  </div>
-  <button class="btn-register" id="registerBtn" disabled>登録する！</button>
 </div>
 
-<!-- サムネイル選択モーダル -->
-<div class="overlay" id="thumbOverlay">
-  <div class="modal">
-    <h2>⭐ 一番いい写真を選んでね！</h2>
-    <div class="thumb-grid" id="thumbGrid"></div>
-    <button class="btn-ok" id="thumbOkBtn" disabled>これに決めた！</button>
+<!-- フルスクリーンスライダー -->
+<div class="slider-overlay" id="sliderOverlay">
+  <button class="slider-close" onclick="closeSlider()">✕</button>
+  <div class="slider-container" id="sliderContainer">
+    <button class="slider-nav prev" onclick="sliderNav(-1)">‹</button>
+    <img id="sliderImg" src="">
+    <button class="slider-nav next" onclick="sliderNav(1)">›</button>
   </div>
+  <div class="slider-counter" id="sliderCounter"></div>
 </div>
 
-<!-- 作品詳細モーダル -->
-<div class="overlay" id="detailOverlay">
-  <div class="detail-modal" id="detailModal">
-    <div class="detail-photos" id="detailPhotos">
-      <button class="close-btn" onclick="closeDetail()">✕</button>
-    </div>
-    <div class="detail-info" id="detailInfo"></div>
-  </div>
-</div>
-
-<!-- サムネイル変更モーダル（管理者） -->
-<div class="overlay" id="thumbChangeOverlay">
-  <div class="modal">
-    <h2>📷 サムネイルを変更</h2>
-    <div class="thumb-grid" id="thumbChangeGrid"></div>
-    <button class="btn-ok" id="thumbChangeOkBtn" disabled>変更する</button>
-  </div>
-</div>
+<!-- サムネイル選択 -->
+<div class="overlay" id="thumbOverlay"><div class="modal"><h2>⭐ 一番いい写真を選んでね！</h2><div class="thumb-grid" id="thumbGrid"></div><button class="btn-ok" id="thumbOkBtn" disabled>これに決めた！</button></div></div>
+<!-- 詳細 -->
+<div class="overlay" id="detailOverlay"><div class="detail-modal" id="detailModal"><div class="detail-photos" id="detailPhotos"><button class="close-btn" onclick="closeDetail()">✕</button></div><div class="detail-info" id="detailInfo"></div></div></div>
+<!-- サムネ変更 -->
+<div class="overlay" id="thumbChangeOverlay"><div class="modal"><h2>📷 サムネイルを変更</h2><div class="thumb-grid" id="thumbChangeGrid"></div><button class="btn-ok" id="thumbChangeOkBtn" disabled>変更する</button></div></div>
 
 <script>
 const STORAGE_BUCKET = 'laq-photos';
+const FAMILY_MEMBERS = ['めぐみ','りょうすけ','はるちか','いろは','かいせい'];
+let currentMode = 'laq';
 let selectedAuthor = '';
 let photoFiles = [];
 let selectedThumbIdx = -1;
 let allWorks = [];
 let currentDetailWork = null;
 let currentPhotoIdx = 0;
+let detailType = 'laq';
+let albumSelectedAuthor = '';
+let albumPhotoFiles = [];
+let allAlbums = [];
+let currentDetailAlbum = null;
 
-// --- タブ切り替え ---
-document.querySelectorAll('.tab').forEach(tab => {
+// ===== モード切替 =====
+document.querySelectorAll('.mode-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentMode = tab.dataset.mode;
+    document.getElementById('laqMode').style.display = currentMode === 'laq' ? '' : 'none';
+    document.getElementById('albumMode').style.display = currentMode === 'album' ? '' : 'none';
+    document.getElementById('albumAddBtn').style.display = currentMode === 'album' ? 'inline' : 'none';
+    if (currentMode === 'laq') loadGallery();
+    if (currentMode === 'album') loadAlbums();
+  });
+});
+
+// ===== LaQサブタブ =====
+document.querySelectorAll('.sub-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#laqMode > .view').forEach(v => v.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(tab.dataset.view + 'View').classList.add('active');
     if (tab.dataset.view === 'gallery') loadGallery();
   });
 });
 
-// --- 作者選択 ---
-document.querySelectorAll('.author-btn').forEach(btn => {
+// ===== LaQ: 作者選択 =====
+document.querySelectorAll('#laqAuthorBtns .author-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.author-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#laqAuthorBtns .author-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedAuthor = btn.dataset.author;
     updateRegisterBtn();
   });
 });
 
-// --- 写真撮影（カメラ直接起動） ---
-document.getElementById('photoUploadArea').addEventListener('click', () => {
-  document.getElementById('photoInput').click();
-});
-document.getElementById('addMoreBtn').addEventListener('click', () => {
-  document.getElementById('photoInput').click();
-});
-
+// ===== LaQ: 写真 =====
+document.getElementById('photoUploadArea').addEventListener('click', () => document.getElementById('photoInput').click());
+document.getElementById('addMoreBtn').addEventListener('click', () => document.getElementById('photoInput').click());
 document.getElementById('photoInput').addEventListener('change', (e) => {
-  const files = Array.from(e.target.files);
-  files.forEach(f => photoFiles.push(f));
-  renderPhotoPreviews();
-  updateRegisterBtn();
-  // inputをリセットして同じファイルも再選択可能に
-  e.target.value = '';
+  Array.from(e.target.files).forEach(f => photoFiles.push(f));
+  renderPhotoPreviews(); updateRegisterBtn(); e.target.value = '';
 });
-
 function renderPhotoPreviews() {
-  const container = document.getElementById('photoPreviews');
-  container.innerHTML = '';
-  photoFiles.forEach((f, i) => {
-    const div = document.createElement('div');
-    div.className = 'photo-preview';
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(f);
-    const btn = document.createElement('button');
-    btn.className = 'remove';
-    btn.textContent = '✕';
-    btn.onclick = () => { photoFiles.splice(i, 1); renderPhotoPreviews(); updateRegisterBtn(); };
-    div.appendChild(img);
-    div.appendChild(btn);
-    container.appendChild(div);
-  });
-  // 写真があれば「もう1枚撮る」ボタンを表示
+  const c = document.getElementById('photoPreviews'); c.innerHTML = '';
+  photoFiles.forEach((f, i) => { c.innerHTML += '<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="photoFiles.splice('+i+',1);renderPhotoPreviews();updateRegisterBtn();">✕</button></div>'; });
   document.getElementById('addMoreArea').style.display = photoFiles.length > 0 ? 'block' : 'none';
 }
+function updateRegisterBtn() { document.getElementById('registerBtn').disabled = !(selectedAuthor && photoFiles.length > 0); }
 
-function updateRegisterBtn() {
-  document.getElementById('registerBtn').disabled = !(selectedAuthor && photoFiles.length > 0);
-}
-
-// --- 登録ボタン → サムネイル選択へ ---
+// ===== LaQ: 登録 =====
 document.getElementById('registerBtn').addEventListener('click', () => {
-  if (photoFiles.length === 1) {
-    selectedThumbIdx = 0;
-    doRegister();
-  } else {
-    openThumbSelector();
-  }
+  if (photoFiles.length === 1) { selectedThumbIdx = 0; doLaqRegister(); }
+  else openThumbSelector(photoFiles, idx => { selectedThumbIdx = idx; doLaqRegister(); });
 });
-
-function openThumbSelector() {
-  const grid = document.getElementById('thumbGrid');
-  grid.innerHTML = '';
-  selectedThumbIdx = -1;
-  document.getElementById('thumbOkBtn').disabled = true;
-
-  photoFiles.forEach((f, i) => {
-    const div = document.createElement('div');
-    div.className = 'thumb-option';
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(f);
-    div.appendChild(img);
-    div.onclick = () => {
-      grid.querySelectorAll('.thumb-option').forEach(d => d.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedThumbIdx = i;
-      document.getElementById('thumbOkBtn').disabled = false;
-    };
-    grid.appendChild(div);
-  });
-  document.getElementById('thumbOverlay').classList.add('active');
-}
-
-document.getElementById('thumbOkBtn').addEventListener('click', () => {
-  document.getElementById('thumbOverlay').classList.remove('active');
-  doRegister();
-});
-
-// --- 登録処理 ---
-async function doRegister() {
-  const btn = document.getElementById('registerBtn');
-  btn.disabled = true;
-  btn.textContent = '登録中...';
-
+async function doLaqRegister() {
+  const btn = document.getElementById('registerBtn'); btn.disabled = true; btn.textContent = '登録中...';
   try {
     const title = document.getElementById('workTitle').value.trim();
-    // 1. 作品レコード作成
-    const { data: work, error: workErr } = await client.from('laq_works').insert({
-      title: title || '',
-      author: selectedAuthor
-    }).select().single();
-    if (workErr) throw workErr;
-
-    // 2. 写真アップロード
-    const photoIds = [];
+    const { data: work, error: wErr } = await client.from('laq_works').insert({ title: title||'', author: selectedAuthor }).select().single();
+    if (wErr) throw wErr;
+    const ids = [];
     for (let i = 0; i < photoFiles.length; i++) {
-      const file = photoFiles[i];
-      const ext = file.name.split('.').pop() || 'jpg';
+      const f = photoFiles[i], ext = f.name.split('.').pop()||'jpg';
       const path = `${work.id}/${Date.now()}_${i}.${ext}`;
-      const { error: upErr } = await client.storage.from(STORAGE_BUCKET).upload(path, file, { contentType: file.type });
-      if (upErr) throw upErr;
-
-      const { data: urlData } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-      const { data: photo, error: phErr } = await client.from('laq_photos').insert({
-        work_id: work.id,
-        url: urlData.publicUrl,
-        sort_order: i
-      }).select().single();
-      if (phErr) throw phErr;
-      photoIds.push(photo.id);
+      const { error: uErr } = await client.storage.from(STORAGE_BUCKET).upload(path, f, { contentType: f.type });
+      if (uErr) throw uErr;
+      const { data: u } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      const { data: ph, error: pErr } = await client.from('laq_photos').insert({ work_id: work.id, url: u.publicUrl, sort_order: i }).select().single();
+      if (pErr) throw pErr;
+      ids.push(ph.id);
     }
-
-    // 3. サムネイル設定
-    const thumbId = photoIds[selectedThumbIdx] || photoIds[0];
-    await client.from('laq_works').update({ thumbnail_photo_id: thumbId }).eq('id', work.id);
-
-    // 完了
+    await client.from('laq_works').update({ thumbnail_photo_id: ids[selectedThumbIdx]||ids[0] }).eq('id', work.id);
     alert('🎉 登録できたよ！');
-    resetForm();
-    // ギャラリーに切り替え
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelector('[data-view="gallery"]').classList.add('active');
-    document.getElementById('galleryView').classList.add('active');
-    loadGallery();
-  } catch (e) {
-    console.error(e);
-    alert('エラーが発生しました: ' + (e.message || e));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '登録する！';
-    updateRegisterBtn();
-  }
+    location.reload();
+  } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
+  finally { btn.disabled=false; btn.textContent='登録する！'; updateRegisterBtn(); }
 }
 
-function resetForm() {
-  selectedAuthor = '';
-  photoFiles = [];
-  selectedThumbIdx = -1;
-  document.querySelectorAll('.author-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('workTitle').value = '';
-  document.getElementById('photoPreviews').innerHTML = '';
-  document.getElementById('addMoreArea').style.display = 'none';
-  document.getElementById('photoInput').value = '';
-  updateRegisterBtn();
-}
-
-// --- ギャラリー読み込み ---
+// ===== LaQ: ギャラリー =====
 async function loadGallery() {
-  const container = document.getElementById('galleryView');
-  container.innerHTML = '<div class="loading">読み込み中...</div>';
-
-  const { data: works, error } = await client.from('laq_works')
-    .select('*, laq_photos(*)')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    container.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
-    return;
-  }
-
-  allWorks = works || [];
-
-  if (allWorks.length === 0) {
-    container.innerHTML = '<div class="empty-msg">まだ作品がないよ！<br>📷 登録タブから作品を追加しよう</div>';
-    return;
-  }
-
-  // 作者ごとにグループ化
+  const c = document.getElementById('galleryView');
+  c.innerHTML = '<div class="loading">読み込み中...</div>';
+  const { data, error } = await client.from('laq_works').select('*, laq_photos(*)').order('created_at', { ascending: false });
+  if (error) { c.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>'; return; }
+  allWorks = data || [];
+  if (!allWorks.length) { c.innerHTML = '<div class="empty-msg">まだ作品がないよ！<br>📷 登録タブから追加しよう</div>'; return; }
   const byAuthor = {};
-  allWorks.forEach(w => {
-    if (!byAuthor[w.author]) byAuthor[w.author] = [];
-    byAuthor[w.author].push(w);
-  });
-
-  // 作品数が多い順にソート
-  const sortedAuthors = Object.keys(byAuthor).sort((a, b) => byAuthor[b].length - byAuthor[a].length);
-
-  container.innerHTML = '';
-  sortedAuthors.forEach(author => {
-    const section = document.createElement('div');
-    section.className = 'author-section';
-
-    const header = document.createElement('div');
-    header.className = 'author-header';
-    header.innerHTML = `${author}の作品<span class="count">${byAuthor[author].length}点</span>`;
-    section.appendChild(header);
-
-    const grid = document.createElement('div');
-    grid.className = 'works-grid';
-
-    byAuthor[author].forEach(work => {
-      const card = document.createElement('div');
-      card.className = 'work-card';
-      card.onclick = () => openDetail(work);
-
-      // サムネイル取得
-      const thumbPhoto = work.laq_photos.find(p => p.id === work.thumbnail_photo_id) || work.laq_photos[0];
-      const thumbUrl = thumbPhoto ? thumbPhoto.url : '';
-
-      card.innerHTML = `
-        <div class="thumb"><img src="${thumbUrl}" alt="${work.title || 'LaQ作品'}" loading="lazy"></div>
-        <div class="info">
-          <div class="title">${work.title || '（名前なし）'}</div>
-          <div class="date">${new Date(work.created_at).toLocaleDateString('ja-JP')}</div>
-        </div>
-      `;
-      grid.appendChild(card);
+  allWorks.forEach(w => { if (!byAuthor[w.author]) byAuthor[w.author]=[]; byAuthor[w.author].push(w); });
+  const sorted = Object.keys(byAuthor).sort((a,b) => byAuthor[b].length - byAuthor[a].length);
+  c.innerHTML = '';
+  sorted.forEach(author => {
+    const s = document.createElement('div'); s.className='author-section';
+    s.innerHTML = '<div class="author-header">'+author+'の作品<span class="count">'+byAuthor[author].length+'点</span></div>';
+    const g = document.createElement('div'); g.className='works-grid';
+    byAuthor[author].forEach(w => {
+      const card = document.createElement('div'); card.className='work-card'; card.onclick=()=>openLaqDetail(w);
+      const tp = w.laq_photos.find(p=>p.id===w.thumbnail_photo_id)||w.laq_photos[0];
+      card.innerHTML='<div class="thumb"><img src="'+(tp?tp.url:'')+'" loading="lazy"></div><div class="info"><div class="title">'+(w.title||'（名前なし）')+'</div><div class="date">'+new Date(w.created_at).toLocaleDateString('ja-JP')+'</div></div>';
+      g.appendChild(card);
     });
-
-    section.appendChild(grid);
-    container.appendChild(section);
+    s.appendChild(g); c.appendChild(s);
   });
 }
 
-// --- 作品詳細 ---
-function openDetail(work) {
-  currentDetailWork = work;
-  // サムネイル写真を最初に表示
-  const photos = work.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
-  const thumbIdx = photos.findIndex(p => p.id === work.thumbnail_photo_id);
-  currentPhotoIdx = thumbIdx >= 0 ? thumbIdx : 0;
-  renderDetailPhotos();
-  renderDetailInfo();
-  document.getElementById('detailOverlay').classList.add('active');
+// ===== LaQ: 詳細 =====
+function openLaqDetail(w) {
+  currentDetailWork=w; detailType='laq';
+  const photos=w.laq_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  const ti=photos.findIndex(p=>p.id===w.thumbnail_photo_id);
+  currentPhotoIdx=ti>=0?ti:0;
+  renderDetail(); document.getElementById('detailOverlay').classList.add('active');
 }
-
-function closeDetail() {
-  document.getElementById('detailOverlay').classList.remove('active');
-  currentDetailWork = null;
-}
-
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('active'); }
+function renderDetail() { renderDetailPhotos(); renderDetailInfo(); }
 function renderDetailPhotos() {
-  const container = document.getElementById('detailPhotos');
-  const photos = currentDetailWork.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
-  const photo = photos[currentPhotoIdx];
-  container.innerHTML = `
-    <button class="close-btn" onclick="closeDetail()">✕</button>
-    <img src="${photo ? photo.url : ''}" alt="作品写真" style="width:100%; display:block;">
-    ${photos.length > 1 ? `
-      <button class="photo-nav prev" onclick="navPhoto(-1)">‹</button>
-      <button class="photo-nav next" onclick="navPhoto(1)">›</button>
-    ` : ''}
-  `;
+  const c=document.getElementById('detailPhotos');
+  const photos=detailType==='laq'?currentDetailWork.laq_photos.sort((a,b)=>a.sort_order-b.sort_order):currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  const p=photos[currentPhotoIdx];
+  c.innerHTML='<button class="close-btn" onclick="closeDetail()">✕</button><img src="'+(p?p.url:'')+'" style="width:100%;display:block;">'+(photos.length>1?'<button class="photo-nav prev" onclick="navPhoto(-1)">‹</button><button class="photo-nav next" onclick="navPhoto(1)">›</button>':'');
 }
-
-function navPhoto(dir) {
-  const photos = currentDetailWork.laq_photos;
-  currentPhotoIdx = (currentPhotoIdx + dir + photos.length) % photos.length;
-  renderDetailPhotos();
-  renderDetailInfo();
+function navPhoto(d) {
+  const photos=detailType==='laq'?currentDetailWork.laq_photos:currentDetailAlbum.family_album_photos;
+  currentPhotoIdx=(currentPhotoIdx+d+photos.length)%photos.length;
+  renderDetail();
 }
-
 function renderDetailInfo() {
-  const info = document.getElementById('detailInfo');
-  const photos = currentDetailWork.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
-  let html = `
-    <div class="detail-title">${currentDetailWork.title || '（名前なし）'}</div>
-    <div class="detail-author">👤 ${currentDetailWork.author}</div>
-    <div class="detail-date">📅 ${new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')}</div>
-    <div class="detail-counter">${currentPhotoIdx + 1} / ${photos.length}</div>
-  `;
-
-  // 管理者: 編集・削除
-  if (isAdmin) {
-    html += `
-      <div class="admin-edit">
-        <input type="text" id="editTitle" value="${currentDetailWork.title || ''}" placeholder="作品名を入力">
-        <div class="admin-btns">
-          <button class="btn-save" onclick="saveTitle()">名前変更</button>
-          <button class="btn-thumb" onclick="openThumbChange()">サムネ変更</button>
-          <button class="btn-delete" onclick="deleteWork()">削除</button>
-        </div>
-      </div>
-    `;
-  } else {
-    // 一般ユーザー: 削除リクエスト
-    html += `
-      <div class="user-actions">
-        <button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button>
-      </div>
-    `;
+  const info=document.getElementById('detailInfo');
+  if (detailType==='laq') {
+    const photos=currentDetailWork.laq_photos;
+    let h='<div style="display:flex;align-items:center;gap:6px;"><div class="detail-title" style="flex:1;">'+(currentDetailWork.title||'（名前なし）')+'</div>';
+    if (isAdmin) h+='<span onclick="startEditLaqTitle()" style="cursor:pointer;font-size:1em;" title="名前変更">✏️</span><span onclick="openThumbChangeModal(\'laq\')" style="cursor:pointer;font-size:1em;" title="サムネ変更">🖼️</span><span onclick="deleteWork()" style="cursor:pointer;font-size:1em;" title="削除">🗑️</span>';
+    h+='</div>';
+    h+='<div class="detail-author">👤 '+currentDetailWork.author+'</div><div class="detail-date">📅 '+new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')+'</div><div class="detail-counter">'+(currentPhotoIdx+1)+' / '+photos.length+'</div>';
+    if (isAdmin) h+='<div id="laqTitleEditArea" style="display:none;margin-top:8px;"><div style="display:flex;gap:8px;"><input type="text" class="form-input" id="editTitle" style="flex:1;padding:8px;"><button onclick="saveTitle()" style="padding:8px 12px;background:#6a1b9a;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">保存</button><button onclick="document.getElementById(\'laqTitleEditArea\').style.display=\'none\'" style="padding:8px 12px;background:#eee;border:none;border-radius:8px;cursor:pointer;">取消</button></div></div>';
+    if (!isAdmin) h+='<div class="user-actions"><button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button></div>';
+    info.innerHTML=h;
   }
-  info.innerHTML = html;
 }
 
-// --- 管理者: 名前変更 ---
-async function saveTitle() {
-  const newTitle = document.getElementById('editTitle').value.trim();
-  const { error } = await client.from('laq_works').update({ title: newTitle, updated_at: new Date().toISOString() }).eq('id', currentDetailWork.id);
-  if (error) { alert('エラー: ' + error.message); return; }
-  currentDetailWork.title = newTitle;
-  renderDetailInfo();
-  alert('名前を変更しました！');
-}
+// ===== LaQ管理者操作 =====
+function startEditLaqTitle() { document.getElementById('laqTitleEditArea').style.display='block'; document.getElementById('editTitle').value=currentDetailWork.title||''; document.getElementById('editTitle').focus(); }
+async function saveTitle() { const t=document.getElementById('editTitle').value.trim(); await client.from('laq_works').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailWork.id); currentDetailWork.title=t; renderDetailInfo(); }
+async function deleteWork() { if(!confirm('この作品を削除しますか？'))return; for(const p of currentDetailWork.laq_photos){const path=p.url.split('/laq-photos/')[1];if(path)await client.storage.from(STORAGE_BUCKET).remove([path]);} await client.from('laq_works').delete().eq('id',currentDetailWork.id); closeDetail(); loadGallery(); }
+async function requestDelete() { if(!confirm('削除をリクエストしますか？'))return; await client.from('laq_delete_requests').insert({work_id:currentDetailWork.id,requested_by:currentDetailWork.author}); alert('リクエストを送りました！'); closeDetail(); }
 
-// --- 管理者: サムネイル変更 ---
-function openThumbChange() {
-  const grid = document.getElementById('thumbChangeGrid');
-  grid.innerHTML = '';
-  document.getElementById('thumbChangeOkBtn').disabled = true;
-  let selectedId = null;
-
-  currentDetailWork.laq_photos.forEach(photo => {
-    const div = document.createElement('div');
-    div.className = 'thumb-option' + (photo.id === currentDetailWork.thumbnail_photo_id ? ' selected' : '');
-    const img = document.createElement('img');
-    img.src = photo.url;
-    div.appendChild(img);
-    div.onclick = () => {
-      grid.querySelectorAll('.thumb-option').forEach(d => d.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedId = photo.id;
-      document.getElementById('thumbChangeOkBtn').disabled = false;
-    };
-    grid.appendChild(div);
+// ===== 家族アルバム =====
+// 作者選択
+document.querySelectorAll('#albumAuthorBtns .author-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#albumAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    albumSelectedAuthor = btn.dataset.author;
+    updateAlbumRegisterBtn();
   });
+});
 
-  document.getElementById('thumbChangeOkBtn').onclick = async () => {
-    if (!selectedId) return;
-    const { error } = await client.from('laq_works').update({ thumbnail_photo_id: selectedId }).eq('id', currentDetailWork.id);
-    if (error) { alert('エラー: ' + error.message); return; }
-    currentDetailWork.thumbnail_photo_id = selectedId;
-    document.getElementById('thumbChangeOverlay').classList.remove('active');
-    alert('サムネイルを変更しました！');
-  };
+function showAlbumRegister() { document.getElementById('albumListView').style.display='none'; document.getElementById('albumRegisterView').style.display='block'; document.getElementById('albumAddBtn').style.display='none'; }
+function hideAlbumRegister() { document.getElementById('albumRegisterView').style.display='none'; document.getElementById('albumListView').style.display='block'; document.getElementById('albumAddBtn').style.display='inline'; resetAlbumForm(); }
 
+document.getElementById('albumPhotoUploadArea').addEventListener('click', ()=>document.getElementById('albumPhotoInput').click());
+document.getElementById('albumPhotoInput').addEventListener('change', (e)=>{
+  Array.from(e.target.files).forEach(f=>albumPhotoFiles.push(f));
+  renderAlbumPreviews(); updateAlbumRegisterBtn();
+});
+function renderAlbumPreviews() {
+  const c=document.getElementById('albumPhotoPreviews'); c.innerHTML='';
+  albumPhotoFiles.forEach((f,i)=>{ c.innerHTML+='<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="albumPhotoFiles.splice('+i+',1);renderAlbumPreviews();updateAlbumRegisterBtn();">✕</button></div>'; });
+}
+function updateAlbumRegisterBtn() { document.getElementById('albumRegisterBtn').disabled = !(albumSelectedAuthor && albumPhotoFiles.length > 0); }
+function resetAlbumForm() { albumPhotoFiles=[]; albumSelectedAuthor=''; document.querySelectorAll('#albumAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('albumTitle').value=''; document.getElementById('albumDateStart').value=''; document.getElementById('albumDateEnd').value=''; document.getElementById('albumPhotoPreviews').innerHTML=''; document.getElementById('albumPhotoInput').value=''; clearCalendar(); updateAlbumRegisterBtn(); }
+
+// ===== カスタムカレンダー =====
+let calYear, calMonth, calStart=null, calEnd=null;
+(function initCal() { const d=new Date(); calYear=d.getFullYear(); calMonth=d.getMonth(); renderCalendar(); })();
+
+function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+
+function renderCalendar() {
+  document.getElementById('calMonth').textContent = calYear+'年'+(calMonth+1)+'月';
+  const grid=document.getElementById('calGrid'); grid.innerHTML='';
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date(); const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  for(let i=0;i<firstDay;i++) grid.innerHTML+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=daysInMonth;d++) {
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    let cls='cal-cell';
+    if(dateStr===todayStr) cls+=' today';
+    if(calStart && dateStr===calStart) cls+=' start';
+    if(calEnd && dateStr===calEnd) cls+=' end';
+    if(calStart && calEnd && dateStr>calStart && dateStr<calEnd) cls+=' in-range';
+    if(calStart && !calEnd && dateStr===calStart) cls+=' start';
+    grid.innerHTML+='<div class="'+cls+'" data-date="'+dateStr+'" onclick="selectCalDate(\''+dateStr+'\')">'+d+'</div>';
+  }
+}
+
+function selectCalDate(dateStr) {
+  if (!calStart || (calStart && calEnd)) {
+    // 1回目のタップ or リセット後
+    calStart=dateStr; calEnd=null;
+  } else {
+    // 2回目のタップ
+    if (dateStr < calStart) { calEnd=calStart; calStart=dateStr; }
+    else if (dateStr === calStart) { calEnd=null; }
+    else { calEnd=dateStr; }
+  }
+  document.getElementById('albumDateStart').value=calStart||'';
+  document.getElementById('albumDateEnd').value=calEnd||calStart||'';
+  updateCalendarDisplay();
+  renderCalendar();
+}
+
+function updateCalendarDisplay() {
+  const el=document.getElementById('calendarText');
+  if (!calStart) { el.textContent='タップして日付を選択'; return; }
+  const s=calStart.replace(/-/g,'/');
+  if (!calEnd || calEnd===calStart) { el.textContent=s; }
+  else { el.textContent=s+'〜'+calEnd.replace(/-/g,'/'); }
+}
+
+function clearCalendar() { calStart=null; calEnd=null; document.getElementById('albumDateStart').value=''; document.getElementById('albumDateEnd').value=''; updateCalendarDisplay(); renderCalendar(); }
+
+document.getElementById('albumRegisterBtn').addEventListener('click', ()=>{
+  if (albumPhotoFiles.length===1) doAlbumRegister(0);
+  else openThumbSelector(albumPhotoFiles, idx=>doAlbumRegister(idx));
+});
+
+async function doAlbumRegister(thumbIdx) {
+  const btn=document.getElementById('albumRegisterBtn'); btn.disabled=true; btn.textContent='登録中...';
+  try {
+    const title=document.getElementById('albumTitle').value.trim();
+    const ds=document.getElementById('albumDateStart').value||null;
+    const de=document.getElementById('albumDateEnd').value||null;
+    const { data:album, error:aErr } = await client.from('family_albums').insert({ title, date_start:ds, date_end:de, added_by:albumSelectedAuthor }).select().single();
+    if (aErr) throw aErr;
+    const ids=[];
+    for (let i=0; i<albumPhotoFiles.length; i++) {
+      const f=albumPhotoFiles[i], ext=f.name.split('.').pop()||'jpg';
+      const path=`album/${album.id}/${Date.now()}_${i}.${ext}`;
+      const { error:uErr } = await client.storage.from(STORAGE_BUCKET).upload(path, f, { contentType:f.type });
+      if (uErr) throw uErr;
+      const { data:u } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      const { data:ph, error:pErr } = await client.from('family_album_photos').insert({ album_id:album.id, url:u.publicUrl, added_by:albumSelectedAuthor, sort_order:i }).select().single();
+      if (pErr) throw pErr;
+      ids.push(ph.id);
+    }
+    await client.from('family_albums').update({ thumbnail_photo_id:ids[thumbIdx]||ids[0] }).eq('id',album.id);
+    alert('🎉 アルバムを作成しました！');
+    location.reload();
+  } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
+  finally { btn.disabled=false; btn.textContent='登録する！'; updateAlbumRegisterBtn(); }
+}
+
+async function loadAlbums() {
+  const c=document.getElementById('albumListView');
+  c.innerHTML='<div class="loading">読み込み中...</div>';
+  const { data, error } = await client.from('family_albums').select('*, family_album_photos(*)').order('date_start', { ascending:false, nullsFirst:false });
+  if (error) { c.innerHTML='<div class="empty-msg">読み込みに失敗しました</div>'; return; }
+  allAlbums = data || [];
+  if (!allAlbums.length) { c.innerHTML='<div class="empty-msg">まだアルバムがないよ！<br>右上の＋ボタンから追加しよう</div>'; return; }
+
+  // サイズ切替
+  let html = '<div style="padding:16px; max-width:600px; margin:0 auto;">';
+  html += '<div style="display:flex; justify-content:flex-end; margin-bottom:10px;">';
+  html += '<div class="size-toggle"><button class="'+(albumThumbSize==='small'?'active':'')+'" onclick="setAlbumSize(\'small\')">小</button><button class="'+(albumThumbSize==='medium'?'active':'')+'" onclick="setAlbumSize(\'medium\')">中</button><button class="'+(albumThumbSize==='large'?'active':'')+'" onclick="setAlbumSize(\'large\')">大</button></div>';
+  html += '</div>';
+
+  html += '<div class="album-grid">';
+  allAlbums.forEach(album => {
+    const tp = album.family_album_photos.find(p=>p.id===album.thumbnail_photo_id)||album.family_album_photos[0];
+    // 誰が何枚の集計
+    const byPerson = {};
+    album.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+    const metaStr = Object.entries(byPerson).map(([k,v])=>'👤'+k+'📷'+v).join(' ');
+    html += '<div class="album-card size-'+albumThumbSize+'" onclick="openAlbumDetail(\''+album.id+'\')">'
+      + '<div class="album-thumb"><img src="'+(tp?tp.url:'')+'" loading="lazy"></div>'
+      + '<div class="album-info"><div class="album-date">'+formatAlbumDate(album)+'</div>'
+      + '<div class="album-title">'+(album.title||'')+'</div>'
+      + '<div class="album-meta"><span>📷 '+album.family_album_photos.length+'枚</span><span>'+metaStr+'</span></div></div>'
+      + '</div>';
+  });
+  html += '</div></div>';
+  c.innerHTML = html;
+}
+
+let albumThumbSize = localStorage.getItem('albumThumbSize') || 'medium';
+function setAlbumSize(s) { albumThumbSize=s; localStorage.setItem('albumThumbSize',s); loadAlbums(); }
+function formatAlbumDate(a) { if(!a.date_start)return''; const s=a.date_start.replace(/-/g,'/'); if(!a.date_end||a.date_end===a.date_start)return s; return s+'〜'+a.date_end.replace(/-/g,'/'); }
+
+function openAlbumDetail(id) {
+  const album = allAlbums.find(a=>a.id===id);
+  if (!album) return;
+  currentDetailAlbum=album;
+  // アルバムページを表示
+  document.getElementById('albumListView').style.display='none';
+  document.getElementById('albumAddBtn').style.display='none';
+  const page = document.getElementById('albumPageView');
+  page.classList.add('active');
+  document.getElementById('albumPageTitle').textContent = album.title || '';
+  // 誰が何枚の集計 → フィルターバー
+  const byPerson = {};
+  album.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+  albumPhotoFilter = Object.keys(byPerson); // デフォルト全員選択
+  renderAlbumFilterBar(byPerson);
+  document.getElementById('albumPageDate').textContent = formatAlbumDate(album);
+  // 管理者: アイコン表示
+  document.getElementById('albumEditIcons').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('albumDeleteIcon').style.display = isAdmin ? 'inline' : 'none';
+  document.getElementById('albumTitleEditArea').style.display = 'none';
+  document.getElementById('albumPageAdmin').innerHTML = '';
+  // 写真グリッド
+  renderAlbumPhotoGrid();
+}
+
+// ===== アルバム写真フィルター =====
+let albumPhotoFilter = [];
+
+function renderAlbumFilterBar(byPerson) {
+  const bar = document.getElementById('albumFilterBar');
+  bar.innerHTML = '';
+  Object.entries(byPerson).forEach(([name, count]) => {
+    const active = albumPhotoFilter.includes(name);
+    bar.innerHTML += '<button class="album-filter-btn'+(active?'':' off')+'" onclick="toggleAlbumPhotoFilter(\''+name+'\')">👤'+name+' 📷'+count+'</button>';
+  });
+}
+
+function toggleAlbumPhotoFilter(name) {
+  if (albumPhotoFilter.includes(name)) {
+    albumPhotoFilter = albumPhotoFilter.filter(n=>n!==name);
+    if (albumPhotoFilter.length === 0) {
+      // 最低1人は選択状態を維持
+      const byPerson = {};
+      currentDetailAlbum.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+      albumPhotoFilter = Object.keys(byPerson);
+    }
+  } else {
+    albumPhotoFilter.push(name);
+  }
+  const byPerson = {};
+  currentDetailAlbum.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+  renderAlbumFilterBar(byPerson);
+  renderAlbumPhotoGrid();
+}
+
+function renderAlbumPhotoGrid() {
+  const allPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  const filtered = allPhotos.filter(p => albumPhotoFilter.includes(p.added_by||'?'));
+  const grid = document.getElementById('albumPhotoGrid');
+  grid.innerHTML = '';
+  filtered.forEach((p, i) => {
+    const ownerLabel = p.added_by ? '<span class="photo-owner">'+p.added_by+'</span>' : '';
+    // スライダー用にフィルター済み配列のインデックスを使う
+    grid.innerHTML += '<div class="album-photo-cell" onclick="openSliderFiltered('+i+')"><img src="'+p.url+'" loading="lazy">'+ownerLabel+'</div>';
+  });
+}
+
+function openSliderFiltered(idx) {
+  const allPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  sliderPhotos = allPhotos.filter(p => albumPhotoFilter.includes(p.added_by||'?'));
+  sliderIdx = idx;
+  renderSlider();
+  document.getElementById('sliderOverlay').classList.add('active');
+}
+
+function closeAlbumPage() {
+  document.getElementById('albumPageView').classList.remove('active');
+  document.getElementById('albumListView').style.display='block';
+  document.getElementById('albumAddBtn').style.display='inline';
+  hideAddPhotosUI();
+}
+
+// ===== 既存アルバムに写真追加 =====
+let addPhotoFiles = [];
+let addPhotoAuthor = '';
+
+function showAddPhotosUI() {
+  document.getElementById('addPhotosForm').style.display = 'block';
+  document.getElementById('albumAddPhotosArea').querySelector('button').style.display = 'none';
+}
+function hideAddPhotosUI() {
+  document.getElementById('addPhotosForm').style.display = 'none';
+  const areaBtn = document.getElementById('albumAddPhotosArea').querySelector('button');
+  if (areaBtn) areaBtn.style.display = '';
+  addPhotoFiles = []; addPhotoAuthor = '';
+  document.getElementById('addPhotoPreviews').innerHTML = '';
+  document.getElementById('addPhotoInput').value = '';
+  document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
+  updateAddPhotosBtn();
+}
+
+document.getElementById('addPhotoInput').addEventListener('change', e => {
+  Array.from(e.target.files).forEach(f => addPhotoFiles.push(f));
+  renderAddPhotoPreviews(); updateAddPhotosBtn();
+});
+
+document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    addPhotoAuthor = btn.dataset.author;
+    updateAddPhotosBtn();
+  });
+});
+
+function renderAddPhotoPreviews() {
+  const c = document.getElementById('addPhotoPreviews'); c.innerHTML = '';
+  addPhotoFiles.forEach((f,i) => { c.innerHTML += '<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="addPhotoFiles.splice('+i+',1);renderAddPhotoPreviews();updateAddPhotosBtn();">✕</button></div>'; });
+}
+function updateAddPhotosBtn() { document.getElementById('addPhotosBtn').disabled = !(addPhotoAuthor && addPhotoFiles.length > 0); }
+
+async function doAddPhotos() {
+  const btn = document.getElementById('addPhotosBtn'); btn.disabled=true; btn.textContent='追加中...';
+  try {
+    const album = currentDetailAlbum;
+    const existingCount = album.family_album_photos.length;
+    for (let i=0; i<addPhotoFiles.length; i++) {
+      const f = addPhotoFiles[i], ext = f.name.split('.').pop()||'jpg';
+      const path = `album/${album.id}/${Date.now()}_${i}.${ext}`;
+      const { error:uErr } = await client.storage.from(STORAGE_BUCKET).upload(path, f, { contentType:f.type });
+      if (uErr) throw uErr;
+      const { data:u } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      const { data:ph, error:pErr } = await client.from('family_album_photos').insert({ album_id:album.id, url:u.publicUrl, added_by:addPhotoAuthor, sort_order:existingCount+i }).select().single();
+      if (pErr) throw pErr;
+      album.family_album_photos.push(ph);
+    }
+    // グリッド再描画
+    const photos = album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+    const grid = document.getElementById('albumPhotoGrid'); grid.innerHTML='';
+    photos.forEach((p,i) => { grid.innerHTML += '<div class="album-photo-cell" onclick="openSlider('+i+')"><img src="'+p.url+'" loading="lazy"></div>'; });
+    hideAddPhotosUI();
+    alert('📷 写真を追加しました！');
+    location.reload();
+  } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
+  finally { btn.disabled=false; btn.textContent='追加する'; updateAddPhotosBtn(); }
+}
+
+async function saveAlbumTitle() {
+  const t=document.getElementById('editAlbumTitle').value.trim();
+  await client.from('family_albums').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailAlbum.id);
+  currentDetailAlbum.title=t;
+  document.getElementById('albumPageTitle').textContent=t;
+  document.getElementById('albumTitleEditArea').style.display='none';
+}
+function startEditAlbumTitle() {
+  document.getElementById('editAlbumTitle').value = currentDetailAlbum.title || '';
+  document.getElementById('albumTitleEditArea').style.display = 'block';
+  document.getElementById('editAlbumTitle').focus();
+}
+function cancelEditAlbumTitle() {
+  document.getElementById('albumTitleEditArea').style.display = 'none';
+}
+
+async function deleteAlbumFromPage() {
+  if(!confirm('このアルバムを削除しますか？'))return;
+  for(const p of currentDetailAlbum.family_album_photos){const path=p.url.split('/laq-photos/')[1];if(path)await client.storage.from(STORAGE_BUCKET).remove([path]);}
+  await client.from('family_albums').delete().eq('id',currentDetailAlbum.id);
+  closeAlbumPage(); loadAlbums();
+}
+
+// ===== フルスクリーンスライダー =====
+let sliderPhotos = [];
+let sliderIdx = 0;
+let touchStartX = 0;
+
+function openSlider(idx) {
+  sliderPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  sliderIdx = idx;
+  renderSlider();
+  document.getElementById('sliderOverlay').classList.add('active');
+}
+function closeSlider() { document.getElementById('sliderOverlay').classList.remove('active'); }
+function sliderNav(dir) { sliderIdx = (sliderIdx+dir+sliderPhotos.length)%sliderPhotos.length; renderSlider(); }
+function renderSlider() {
+  document.getElementById('sliderImg').src = sliderPhotos[sliderIdx].url;
+  document.getElementById('sliderCounter').textContent = (sliderIdx+1)+' / '+sliderPhotos.length;
+}
+
+// スワイプ対応
+document.getElementById('sliderContainer').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.getElementById('sliderContainer').addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 50) { sliderNav(diff < 0 ? 1 : -1); }
+});
+
+// ===== サムネイル選択共通 =====
+let thumbCb=null;
+function openThumbSelector(files, cb) {
+  thumbCb=cb; const g=document.getElementById('thumbGrid'); g.innerHTML=''; document.getElementById('thumbOkBtn').disabled=true; let sel=-1;
+  files.forEach((f,i)=>{ const d=document.createElement('div'); d.className='thumb-option'; d.innerHTML='<img src="'+URL.createObjectURL(f)+'">'; d.onclick=()=>{ g.querySelectorAll('.thumb-option').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); sel=i; document.getElementById('thumbOkBtn').disabled=false; }; g.appendChild(d); });
+  document.getElementById('thumbOkBtn').onclick=()=>{ document.getElementById('thumbOverlay').classList.remove('active'); if(thumbCb)thumbCb(sel); };
+  document.getElementById('thumbOverlay').classList.add('active');
+}
+function openThumbChangeModal(type) {
+  const g=document.getElementById('thumbChangeGrid'); g.innerHTML=''; document.getElementById('thumbChangeOkBtn').disabled=true; let selId=null;
+  const photos=type==='laq'?currentDetailWork.laq_photos:currentDetailAlbum.family_album_photos;
+  const cur=type==='laq'?currentDetailWork.thumbnail_photo_id:currentDetailAlbum.thumbnail_photo_id;
+  photos.forEach(p=>{ const d=document.createElement('div'); d.className='thumb-option'+(p.id===cur?' selected':''); d.innerHTML='<img src="'+p.url+'">'; d.onclick=()=>{ g.querySelectorAll('.thumb-option').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); selId=p.id; document.getElementById('thumbChangeOkBtn').disabled=false; }; g.appendChild(d); });
+  document.getElementById('thumbChangeOkBtn').onclick=async()=>{ if(!selId)return; if(type==='laq'){await client.from('laq_works').update({thumbnail_photo_id:selId}).eq('id',currentDetailWork.id);currentDetailWork.thumbnail_photo_id=selId;}else{await client.from('family_albums').update({thumbnail_photo_id:selId}).eq('id',currentDetailAlbum.id);currentDetailAlbum.thumbnail_photo_id=selId;} document.getElementById('thumbChangeOverlay').classList.remove('active'); alert('サムネイルを変更しました！'); };
   document.getElementById('thumbChangeOverlay').classList.add('active');
 }
 
-// --- 管理者: 作品削除（即時） ---
-async function deleteWork() {
-  if (!confirm('この作品を削除しますか？写真も全て削除されます。')) return;
+// オーバーレイ閉じる
+document.getElementById('detailOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeDetail(); });
+document.getElementById('thumbOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)e.currentTarget.classList.remove('active'); });
+document.getElementById('thumbChangeOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)e.currentTarget.classList.remove('active'); });
 
-  const photos = currentDetailWork.laq_photos;
-  for (const photo of photos) {
-    const path = photo.url.split('/laq-photos/')[1];
-    if (path) await client.storage.from(STORAGE_BUCKET).remove([path]);
-  }
-
-  const { error } = await client.from('laq_works').delete().eq('id', currentDetailWork.id);
-  if (error) { alert('エラー: ' + error.message); return; }
-
-  closeDetail();
-  loadGallery();
-}
-
-// --- ユーザー: 削除リクエスト ---
-async function requestDelete() {
-  if (!confirm('この作品の削除をリクエストしますか？\n管理者の承認後に削除されます。')) return;
-
-  const { error } = await client.from('laq_delete_requests').insert({
-    work_id: currentDetailWork.id,
-    requested_by: currentDetailWork.author
-  });
-  if (error) { alert('エラー: ' + error.message); return; }
-  alert('削除リクエストを送りました！\n管理者が確認します。');
-  closeDetail();
-}
-
-// --- オーバーレイ閉じる ---
-document.getElementById('detailOverlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeDetail();
-});
-document.getElementById('thumbOverlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) { document.getElementById('thumbOverlay').classList.remove('active'); }
-});
-document.getElementById('thumbChangeOverlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) { document.getElementById('thumbChangeOverlay').classList.remove('active'); }
-});
-
-// --- 初期読み込み ---
+// 初期読み込み
 loadGallery();
 </script>
 </body>
