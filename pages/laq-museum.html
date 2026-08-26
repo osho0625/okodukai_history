@@ -13,7 +13,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .header { background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 10; }
 .header h1 { font-size: 1.3em; }
 .header .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.2em; }
-.header .add-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.5em; cursor: pointer; display: none; }
+.header .add-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.5em; cursor: pointer; }
 .mode-tabs { display: flex; background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 9; }
 .mode-tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.95em; }
 .mode-tab.active { color: #6a1b9a; border-bottom-color: #6a1b9a; }
@@ -168,12 +168,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
   <span class="add-btn" id="albumAddBtn" onclick="showAlbumRegister()">＋</span>
 </div>
 <div class="mode-tabs">
-  <div class="mode-tab active" data-mode="laq">🧩 LaQ作品</div>
-  <div class="mode-tab" data-mode="album">📸 家族アルバム</div>
+  <div class="mode-tab active" data-mode="album">📸 家族アルバム</div>
+  <div class="mode-tab" data-mode="laq">🧩 LaQ作品</div>
 </div>
 
 <!-- LaQ作品 -->
-<div id="laqMode">
+<div id="laqMode" style="display:none;">
   <div class="sub-tabs">
     <div class="sub-tab active" data-view="gallery">LaQギャラリー</div>
     <div class="sub-tab" data-view="register">📷 登録</div>
@@ -199,7 +199,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 </div>
 
 <!-- 家族アルバム -->
-<div id="albumMode" style="display:none;">
+<div id="albumMode">
   <div class="view active" id="albumListView"><div class="loading">読み込み中...</div></div>
   <div class="view" id="albumRegisterView" style="display:none;">
     <div class="form-group"><label>誰が追加する？</label>
@@ -213,21 +213,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     </div>
     <div class="form-group"><label>アルバムのタイトル</label><input type="text" class="form-input" id="albumTitle" placeholder="例: 新潟旅行"></div>
     <div class="form-group"><label>📅 日付</label>
-      <div id="calendarDisplay" class="calendar-display" onclick="document.getElementById('calendarWidget').style.display='block'">
+      <div id="calendarDisplay" class="calendar-display" onclick="openCalendarDialog()">
         <span id="calendarText">タップして日付を選択</span>
-      </div>
-      <div id="calendarWidget" class="calendar-widget" style="display:none;">
-        <div class="cal-header">
-          <button class="cal-nav" onclick="calNav(-1)">‹</button>
-          <span id="calMonth"></span>
-          <button class="cal-nav" onclick="calNav(1)">›</button>
-        </div>
-        <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-        <div class="cal-grid" id="calGrid"></div>
-        <div class="cal-footer">
-          <button class="cal-clear" onclick="clearCalendar()">クリア</button>
-          <button class="cal-done" onclick="document.getElementById('calendarWidget').style.display='none'">閉じる</button>
-        </div>
       </div>
       <input type="hidden" id="albumDateStart">
       <input type="hidden" id="albumDateEnd">
@@ -260,7 +247,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
       <div style="display:flex; gap:8px;"><input type="text" class="form-input" id="editAlbumTitle" style="flex:1;"><button onclick="saveAlbumTitle()" style="padding:8px 14px; background:#6a1b9a; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">保存</button><button onclick="cancelEditAlbumTitle()" style="padding:8px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer;">取消</button></div>
     </div>
     <div id="albumPageAdmin"></div>
-    <div class="album-filter-bar" id="albumFilterBar"></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+      <div class="album-filter-bar" id="albumFilterBar" style="flex:1; margin-bottom:0;"></div>
+      <button onclick="showAddPhotosUI()" style="padding:6px 12px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:8px; color:#6a1b9a; font-weight:600; cursor:pointer; font-size:0.8em; white-space:nowrap;">＋ 写真追加</button>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+      <div class="size-toggle" id="albumPageSizeToggle"></div>
+    </div>
     <div class="album-photo-grid" id="albumPhotoGrid"></div>
     <!-- 写真追加エリア -->
     <div id="albumAddPhotosArea" style="margin-top:16px; text-align:center;">
@@ -298,6 +291,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
   <div class="slider-counter" id="sliderCounter"></div>
 </div>
 
+<!-- カレンダーダイアログ -->
+<div class="overlay" id="calendarOverlay">
+  <div class="modal" style="max-width:340px;">
+    <h2>📅 日付を選択</h2>
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <span id="calMonth"></span>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-clear" onclick="clearCalendar()">クリア</button>
+      <button class="cal-done" onclick="closeCalendarDialog()">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- サムネイル選択 -->
 <div class="overlay" id="thumbOverlay"><div class="modal"><h2>⭐ 一番いい写真を選んでね！</h2><div class="thumb-grid" id="thumbGrid"></div><button class="btn-ok" id="thumbOkBtn" disabled>これに決めた！</button></div></div>
 <!-- 詳細 -->
@@ -308,7 +319,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 <script>
 const STORAGE_BUCKET = 'laq-photos';
 const FAMILY_MEMBERS = ['めぐみ','りょうすけ','はるちか','いろは','かいせい'];
-let currentMode = 'laq';
+let currentMode = 'album';
 let selectedAuthor = '';
 let photoFiles = [];
 let selectedThumbIdx = -1;
@@ -496,6 +507,10 @@ function resetAlbumForm() { albumPhotoFiles=[]; albumSelectedAuthor=''; document
 let calYear, calMonth, calStart=null, calEnd=null;
 (function initCal() { const d=new Date(); calYear=d.getFullYear(); calMonth=d.getMonth(); renderCalendar(); })();
 
+function openCalendarDialog() { document.getElementById('calendarOverlay').classList.add('active'); renderCalendar(); }
+function closeCalendarDialog() { document.getElementById('calendarOverlay').classList.remove('active'); }
+document.getElementById('calendarOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeCalendarDialog(); });
+
 function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
 
 function renderCalendar() {
@@ -632,6 +647,7 @@ function openAlbumDetail(id) {
   document.getElementById('albumTitleEditArea').style.display = 'none';
   document.getElementById('albumPageAdmin').innerHTML = '';
   // 写真グリッド
+  renderAlbumPageSizeToggle();
   renderAlbumPhotoGrid();
 }
 
@@ -669,12 +685,21 @@ function renderAlbumPhotoGrid() {
   const allPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
   const filtered = allPhotos.filter(p => albumPhotoFilter.includes(p.added_by||'?'));
   const grid = document.getElementById('albumPhotoGrid');
+  // サイズに応じたグリッド列数
+  const cols = albumPagePhotoSize === 'large' ? 2 : albumPagePhotoSize === 'medium' ? 3 : 4;
+  grid.style.gridTemplateColumns = 'repeat('+cols+', 1fr)';
   grid.innerHTML = '';
   filtered.forEach((p, i) => {
     const ownerLabel = p.added_by ? '<span class="photo-owner">'+p.added_by+'</span>' : '';
-    // スライダー用にフィルター済み配列のインデックスを使う
     grid.innerHTML += '<div class="album-photo-cell" onclick="openSliderFiltered('+i+')"><img src="'+p.url+'" loading="lazy">'+ownerLabel+'</div>';
   });
+}
+
+let albumPagePhotoSize = localStorage.getItem('albumPagePhotoSize') || 'medium';
+function setAlbumPagePhotoSize(s) { albumPagePhotoSize=s; localStorage.setItem('albumPagePhotoSize',s); renderAlbumPageSizeToggle(); renderAlbumPhotoGrid(); }
+function renderAlbumPageSizeToggle() {
+  const el = document.getElementById('albumPageSizeToggle');
+  el.innerHTML = '<button class="'+(albumPagePhotoSize==='small'?'active':'')+'" onclick="setAlbumPagePhotoSize(\'small\')">小</button><button class="'+(albumPagePhotoSize==='medium'?'active':'')+'" onclick="setAlbumPagePhotoSize(\'medium\')">中</button><button class="'+(albumPagePhotoSize==='large'?'active':'')+'" onclick="setAlbumPagePhotoSize(\'large\')">大</button>';
 }
 
 function openSliderFiltered(idx) {
@@ -828,7 +853,7 @@ document.getElementById('thumbOverlay').addEventListener('click', e=>{ if(e.targ
 document.getElementById('thumbChangeOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)e.currentTarget.classList.remove('active'); });
 
 // 初期読み込み
-loadGallery();
+loadAlbums();
 </script>
 </body>
 </html>
