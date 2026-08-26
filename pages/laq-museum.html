@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#6a1b9a">
-<title>LaQ美術館</title>
+<title>美術館</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
 <style>
@@ -160,15 +160,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 <body>
 <div class="header">
   <a class="back" href="../index.html">🏠</a>
-  <h1>🏛️ LaQ美術館</h1>
+  <h1>🏛️ 美術館</h1>
   <span class="add-btn" id="albumAddBtn" onclick="showAlbumRegister()">＋</span>
 </div>
 <div class="mode-tabs">
-  <div class="mode-tab active" data-mode="laq">🧩 LaQ美術館</div>
+  <div class="mode-tab active" data-mode="laq">🧩 LaQ作品</div>
   <div class="mode-tab" data-mode="album">📸 家族アルバム</div>
 </div>
 
-<!-- LaQ美術館 -->
+<!-- LaQ作品 -->
 <div id="laqMode">
   <div class="sub-tabs">
     <div class="sub-tab active" data-view="gallery">LaQギャラリー</div>
@@ -389,15 +389,7 @@ async function doLaqRegister() {
     }
     await client.from('laq_works').update({ thumbnail_photo_id: ids[selectedThumbIdx]||ids[0] }).eq('id', work.id);
     alert('🎉 登録できたよ！');
-    selectedAuthor=''; photoFiles=[]; selectedThumbIdx=-1;
-    document.querySelectorAll('#laqAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
-    document.getElementById('workTitle').value=''; document.getElementById('photoPreviews').innerHTML='';
-    document.getElementById('addMoreArea').style.display='none';
-    document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('#laqMode > .view').forEach(v=>v.classList.remove('active'));
-    document.querySelector('[data-view="gallery"]').classList.add('active');
-    document.getElementById('galleryView').classList.add('active');
-    loadGallery();
+    location.reload();
   } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
   finally { btn.disabled=false; btn.textContent='登録する！'; updateRegisterBtn(); }
 }
@@ -572,7 +564,7 @@ async function doAlbumRegister(thumbIdx) {
     }
     await client.from('family_albums').update({ thumbnail_photo_id:ids[thumbIdx]||ids[0] }).eq('id',album.id);
     alert('🎉 アルバムを作成しました！');
-    hideAlbumRegister(); loadAlbums();
+    location.reload();
   } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
   finally { btn.disabled=false; btn.textContent='登録する！'; updateAlbumRegisterBtn(); }
 }
@@ -597,7 +589,7 @@ async function loadAlbums() {
     // 誰が何枚の集計
     const byPerson = {};
     album.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
-    const metaStr = Object.entries(byPerson).map(([k,v])=>k+':'+v+'枚').join(' ');
+    const metaStr = Object.entries(byPerson).map(([k,v])=>'👤'+k+'📷'+v).join(' ');
     html += '<div class="album-card size-'+albumThumbSize+'" onclick="openAlbumDetail(\''+album.id+'\')">'
       + '<div class="album-thumb"><img src="'+(tp?tp.url:'')+'" loading="lazy"></div>'
       + '<div class="album-info"><div class="album-date">'+formatAlbumDate(album)+'</div>'
@@ -626,7 +618,7 @@ function openAlbumDetail(id) {
   // 誰が何枚の集計
   const byPerson = {};
   album.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
-  const metaStr = Object.entries(byPerson).map(([k,v])=>k+':'+v+'枚').join('  ');
+  const metaStr = Object.entries(byPerson).map(([k,v])=>'👤'+k+'📷'+v).join('  ');
   document.getElementById('albumPageDate').textContent = formatAlbumDate(album) + (metaStr ? '　'+metaStr : '');
   // 管理者: アイコン表示
   document.getElementById('albumEditIcons').style.display = isAdmin ? 'flex' : 'none';
@@ -709,6 +701,7 @@ async function doAddPhotos() {
     photos.forEach((p,i) => { grid.innerHTML += '<div class="album-photo-cell" onclick="openSlider('+i+')"><img src="'+p.url+'" loading="lazy"></div>'; });
     hideAddPhotosUI();
     alert('📷 写真を追加しました！');
+    location.reload();
   } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
   finally { btn.disabled=false; btn.textContent='追加する'; updateAddPhotosBtn(); }
 }
