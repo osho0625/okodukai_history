@@ -212,6 +212,66 @@ h2 { margin-bottom: 12px; color: #333; }
 }
 .dow-label input:checked + * { color: #ff9800; }
 .dow-label:has(input:checked) { background: #fff3e0; border: 1px solid #ff9800; }
+
+/* 枚コンプリート演出 */
+.sheet-complete-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); z-index: 1000;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.5s;
+}
+.sheet-complete-overlay.show { opacity: 1; }
+.sheet-complete-overlay.fadeout { opacity: 0; }
+.sheet-complete-title {
+  font-size: 2.5em; font-weight: 900; color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
+  transform: scale(0); opacity: 0;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+}
+.sheet-complete-title.show { transform: scale(1); opacity: 1; }
+.sheet-complete-sub {
+  font-size: 1.2em; color: #fff; margin-top: 12px; opacity: 0;
+  transition: opacity 0.5s; transition-delay: 0.4s;
+}
+.sheet-complete-sub.show { opacity: 1; }
+.ticket-award-card {
+  margin-top: 24px; background: linear-gradient(135deg, #fdf6e3 0%, #f5e6c8 100%);
+  border-radius: 16px; padding: 20px 32px; border: 2px solid #d4a017;
+  box-shadow: 0 6px 24px rgba(212,160,23,0.4);
+  transform: scale(0) rotate(-10deg); opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  text-align: center;
+}
+.ticket-award-card.show { transform: scale(1) rotate(0deg); opacity: 1; }
+.ticket-award-icon { font-size: 2.5em; margin-bottom: 8px; }
+.ticket-award-text { font-size: 1.1em; font-weight: 700; color: #5a3e1b; }
+.ticket-award-detail { font-size: 0.9em; color: #8b7355; margin-top: 4px; }
+
+/* 次の枚への遷移演出 */
+.sheet-transition-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #f5f5f5; z-index: 900;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.4s;
+}
+.sheet-transition-overlay.show { opacity: 1; }
+.sheet-transition-overlay.fadeout { opacity: 0; }
+.sheet-transition-text {
+  font-size: 2em; font-weight: 900; color: #4caf50;
+  transform: translateY(20px); opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+}
+.sheet-transition-text.show { transform: translateY(0); opacity: 1; }
+.sheet-transition-sub {
+  font-size: 1em; color: #888; margin-top: 8px; opacity: 0;
+  transition: opacity 0.4s; transition-delay: 0.3s;
+}
+.sheet-transition-sub.show { opacity: 1; }
+@keyframes ticketFloat {
+  0% { transform: translateY(60px) rotate(-20deg) scale(0.3); opacity: 0; }
+  50% { transform: translateY(-10px) rotate(5deg) scale(1.1); opacity: 1; }
+  100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -1074,7 +1134,12 @@ function showPointsAnimation(addedPts, choreNames, onDone) {
 
   function stampNext() {
     if (stamped >= cellsToStamp) {
-      // 完了
+      // 完了 — 枚コンプリート判定
+      const lastStampedCell = emptyCells[stamped - 1];
+      const allGridCells2 = grid.querySelectorAll('.grid-cell');
+      const lastIdx = lastStampedCell ? Array.from(allGridCells2).indexOf(lastStampedCell) : -1;
+      const pageCompleted = (lastIdx === 399); // 400番目のセル
+
       setTimeout(() => {
         choreLabel.style.opacity = '0';
         setTimeout(() => {
@@ -1085,7 +1150,18 @@ function showPointsAnimation(addedPts, choreNames, onDone) {
             const current = parseInt(totalEl.textContent) || 0;
             totalEl.textContent = current + addedPts;
           }
-          if (onDone) onDone();
+          if (pageCompleted) {
+            // 枚コンプリート演出 → 次の枚遷移演出 → onDone
+            const sheetEl = document.getElementById('sheetNum');
+            const completedSheet = sheetEl ? parseInt(sheetEl.textContent) || 1 : 1;
+            const TICKET_OWNERS_ANIM = ['かいせい', 'はるちか', 'いろは'];
+            const ticketCount = (child && TICKET_OWNERS_ANIM.includes(child.name)) ? 2 : 0;
+            showSheetCompleteAnimation(completedSheet, ticketCount, () => {
+              if (onDone) onDone();
+            });
+          } else {
+            if (onDone) onDone();
+          }
         }, 300);
       }, 500);
       return;
@@ -1153,6 +1229,101 @@ function checkDepositAnimation() {
     showDepositOverlay(pendingDepEffect.oldBalance, child.balance, pendingDepEffect.totalAmount);
   }
 }
+
+// 枚コンプリート演出
+function showSheetCompleteAnimation(sheetNum, ticketCount, onDone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sheet-complete-overlay';
+
+  const title = document.createElement('div');
+  title.className = 'sheet-complete-title';
+  title.textContent = '🎉 ' + sheetNum + '枚目コンプリート！';
+
+  const sub = document.createElement('div');
+  sub.className = 'sheet-complete-sub';
+  sub.textContent = 'おめでとう！すごいがんばったね！';
+
+  overlay.appendChild(title);
+  overlay.appendChild(sub);
+
+  // チケット付与カード
+  if (ticketCount > 0) {
+    const card = document.createElement('div');
+    card.className = 'ticket-award-card';
+    card.innerHTML = '<div class="ticket-award-icon">🎫✨</div>'
+      + '<div class="ticket-award-text">あそびチケット 60分 × ' + ticketCount + '枚 GET!</div>'
+      + '<div class="ticket-award-detail">チケットページで使えるよ</div>';
+    overlay.appendChild(card);
+  }
+
+  document.body.appendChild(overlay);
+
+  // タップで早送り
+  let finished = false;
+  overlay.addEventListener('click', () => {
+    if (!finished) { finished = true; finishSheetComplete(); }
+  });
+
+  // 演出開始
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    setTimeout(() => title.classList.add('show'), 200);
+    setTimeout(() => sub.classList.add('show'), 600);
+    if (ticketCount > 0) {
+      const card = overlay.querySelector('.ticket-award-card');
+      setTimeout(() => { if (card) card.classList.add('show'); }, 1000);
+    }
+    // 紙吹雪
+    setTimeout(() => spawnConfetti(overlay), 400);
+  });
+
+  // 自動で終了（5秒後）
+  setTimeout(() => { if (!finished) { finished = true; finishSheetComplete(); } }, 5000);
+
+  function finishSheetComplete() {
+    overlay.classList.add('fadeout');
+    setTimeout(() => {
+      overlay.remove();
+      // 次の枚への遷移演出
+      showSheetTransition(sheetNum + 1, onDone);
+    }, 500);
+  }
+}
+
+// 次の枚への遷移演出
+function showSheetTransition(newSheetNum, onDone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sheet-transition-overlay';
+
+  const text = document.createElement('div');
+  text.className = 'sheet-transition-text';
+  text.textContent = '📖 ' + newSheetNum + '枚目スタート！';
+
+  const sub = document.createElement('div');
+  sub.className = 'sheet-transition-sub';
+  sub.textContent = 'あたらしいページだよ！がんばろう！';
+
+  overlay.appendChild(text);
+  overlay.appendChild(sub);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    setTimeout(() => text.classList.add('show'), 100);
+    setTimeout(() => sub.classList.add('show'), 300);
+  });
+
+  setTimeout(() => {
+    overlay.classList.add('fadeout');
+    setTimeout(() => {
+      overlay.remove();
+      // グリッドをリロードして新しい枚を表示
+      loadPointsGrid();
+      if (onDone) onDone();
+    }, 400);
+  }, 2000);
+}
+
 let popupEl = null;
 function showChorePopup(e, info) {
   e.stopPropagation();
@@ -1207,6 +1378,8 @@ async function addChorePoints() {
     if (totalAllowance > 0 && child) {
       await giveAllowance(totalAllowance);
     }
+    // 枚コンプリートチェック → チケット発行
+    const ticketsIssued = await issuePageCompleteTickets(child.name, totalAll, afterAll);
   }
 
   // admin即承認時もポイント演出データをSupabaseに保存（別端末のuser用）
@@ -1409,6 +1582,8 @@ async function approvePoint(id) {
       }
     }
     if (totalAllowance > 0 && child) await giveAllowance(totalAllowance);
+    // 枚コンプリートチェック → チケット発行
+    await issuePageCompleteTickets(child.name, totalBefore, totalAfter);
   }
 
   loadPendingApprovals();

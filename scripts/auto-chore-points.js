@@ -102,6 +102,7 @@ async function main() {
     const child = children.find(c => c.id === childId);
     if (!child) continue;
     await checkAndGiveAllowance(SUPABASE_URL, SUPABASE_KEY, child, children);
+    await checkAndIssuePageTickets(SUPABASE_URL, SUPABASE_KEY, child);
   }
 
   console.log('Done.');
@@ -234,6 +235,65 @@ async function insertTransaction(supabaseUrl, supabaseKey, childId, amount, memo
     },
     body: JSON.stringify({ child_id: childId, type: 'add', amount, memo })
   });
+}
+
+// ============================================================
+// 枚コンプリート時チケット発行チェック（リコンシリエーション）
+// ============================================================
+const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
+
+async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child) {
+  if (!TICKET_OWNERS.includes(child.name)) return;
+
+  // 合計承認済みポイントを取得
+  const ptsRes = await fetch(
+    `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
+    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+  );
+  if (!ptsRes.ok) return;
+  const ptsData = await ptsRes.json();
+  const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
+  const completedSheets = totalPts > 0 ? Math.floor(totalPts / 400) : 0;
+  if (completedSheets === 0) return;
+
+  // 枚コンプリートで発行されるべきチケット数（1枚完了につき60分×2枚）
+  const expectedTickets = completedSheets * 2;
+
+  // 実際に発行済みの60分チケット数を取得（memo/sourceがないので duration_minutes=60 のみでカウント）
+  // Note: ポーカーチップ交換でも60分チケットは発行されるため、完璧な区別は不可。
+  // ここでは発行済み60分チケットの総数が期待数以上なら何もしない簡易チェックのみ。
+  const ticketRes = await fetch(
+    `${supabaseUrl}/rest/v1/tickets?owner=eq.${encodeURIComponent(child.name)}&duration_minutes=eq.60&select=id`,
+    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+  );
+  if (!ticketRes.ok) return;
+  const ticketData = await ticketRes.json();
+  const actualTickets = ticketData.length;
+
+  if (actualTickets >= expectedTickets) {
+    console.log(`  ${child.name}: チケット正常（期待=${expectedTickets}枚, 実績=${actualTickets}枚）`);
+    return;
+  }
+
+  const deficit = expectedTickets - actualTickets;
+  console.log(`  ${child.name}: チケット不足 ${deficit}枚 を発行（期待=${expectedTickets}枚, 実績=${actualTickets}枚）`);
+
+  // 不足分を発行
+  const rows = [];
+  for (let i = 0; i < deficit; i++) {
+    rows.push({ owner: child.name, duration_minutes: 60 });
+  }
+  await fetch(`${supabaseUrl}/rest/v1/tickets`, {
+    method: 'POST',
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+  console.log(`    → +${deficit}枚 発行完了`);
 }
 
 // ============================================================
