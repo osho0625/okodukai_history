@@ -187,7 +187,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
         <button class="author-btn" data-author="はるちか">はるちか</button>
       </div>
     </div>
-    <div class="form-group"><label>作品の名前（後からでもOK）</label><input type="text" class="form-input" id="workTitle" placeholder="作品の名前"></div>
+    <div class="form-group"><label>作品の名前</label><input type="text" class="form-input" id="workTitle" placeholder="作品の名前"></div>
     <div class="form-group"><label>写真を撮ろう📸</label>
       <div class="photo-upload-area" id="photoUploadArea"><div class="icon">📷</div><div>タップしてカメラで撮影</div></div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
@@ -370,6 +370,7 @@ document.querySelectorAll('#laqAuthorBtns .author-btn').forEach(btn => {
 // ===== LaQ: 写真 =====
 document.getElementById('photoUploadArea').addEventListener('click', () => document.getElementById('photoInput').click());
 document.getElementById('addMoreBtn').addEventListener('click', () => document.getElementById('photoInput').click());
+document.getElementById('workTitle').addEventListener('input', () => updateRegisterBtn());
 document.getElementById('photoInput').addEventListener('change', (e) => {
   Array.from(e.target.files).forEach(f => photoFiles.push(f));
   renderPhotoPreviews(); updateRegisterBtn(); e.target.value = '';
@@ -379,7 +380,7 @@ function renderPhotoPreviews() {
   photoFiles.forEach((f, i) => { c.innerHTML += '<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="photoFiles.splice('+i+',1);renderPhotoPreviews();updateRegisterBtn();">✕</button></div>'; });
   document.getElementById('addMoreArea').style.display = photoFiles.length > 0 ? 'block' : 'none';
 }
-function updateRegisterBtn() { document.getElementById('registerBtn').disabled = !(selectedAuthor && photoFiles.length > 0); }
+function updateRegisterBtn() { document.getElementById('registerBtn').disabled = !(selectedAuthor && photoFiles.length > 0 && document.getElementById('workTitle').value.trim()); }
 
 // ===== LaQ: 登録 =====
 document.getElementById('registerBtn').addEventListener('click', () => {
