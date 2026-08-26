@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/26 v2.38.2
+最終更新: 2026/08/26 v2.38.3
 
 ## 🔴 Steering Files 運用ルール
 
@@ -50,7 +50,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v325, Push通知対応)
+├── sw.js               # Service Worker (v327, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -60,7 +60,7 @@ inclusion: auto
 ├── dict/               # kuromoji辞書ファイル（ひらがな変換用）
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 ├── scripts/            # Cron/ユーティリティスクリプト
-│   ├── auto-chore-points.js  # 自動お手伝いポイント付与
+│   ├── auto-chore-points.js  # 自動お手伝いポイント付与（りょうすけ: 食洗器回し4pt毎日+洗濯機9pt隔日 / めぐみ: 食洗器3pt隔日+料理10pt毎日）
 │   ├── auto-chore-tasks.js   # 定型業務の毎朝自動追加
 │   ├── reminder-notify.js    # リマインダーDiscord通知
 │   ├── news-notify.js        # ニュース差分Push通知
@@ -297,7 +297,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.38.2
+- 現在: v2.38.3
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -323,7 +323,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 | ブランチ | 状態 | 内容 |
 |----------|------|------|
-| main | 最新 | TSJ260826bまでマージ済み |
+| main | 最新 | TSJ260826dまでマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | マージ済み | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
 | TSJ260603 | マージ済み | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
