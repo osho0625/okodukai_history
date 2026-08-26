@@ -13,7 +13,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .header { background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 10; }
 .header h1 { font-size: 1.3em; }
 .header .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.2em; }
-.header .add-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.5em; cursor: pointer; display: none; }
+.header .add-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.5em; cursor: pointer; }
 .mode-tabs { display: flex; background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 9; }
 .mode-tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.95em; }
 .mode-tab.active { color: #6a1b9a; border-bottom-color: #6a1b9a; }
@@ -168,12 +168,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
   <span class="add-btn" id="albumAddBtn" onclick="showAlbumRegister()">＋</span>
 </div>
 <div class="mode-tabs">
-  <div class="mode-tab active" data-mode="laq">🧩 LaQ作品</div>
-  <div class="mode-tab" data-mode="album">📸 家族アルバム</div>
+  <div class="mode-tab active" data-mode="album">📸 家族アルバム</div>
+  <div class="mode-tab" data-mode="laq">🧩 LaQ作品</div>
 </div>
 
 <!-- LaQ作品 -->
-<div id="laqMode">
+<div id="laqMode" style="display:none;">
   <div class="sub-tabs">
     <div class="sub-tab active" data-view="gallery">LaQギャラリー</div>
     <div class="sub-tab" data-view="register">📷 登録</div>
@@ -199,7 +199,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 </div>
 
 <!-- 家族アルバム -->
-<div id="albumMode" style="display:none;">
+<div id="albumMode">
   <div class="view active" id="albumListView"><div class="loading">読み込み中...</div></div>
   <div class="view" id="albumRegisterView" style="display:none;">
     <div class="form-group"><label>誰が追加する？</label>
@@ -313,7 +313,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 <script>
 const STORAGE_BUCKET = 'laq-photos';
 const FAMILY_MEMBERS = ['めぐみ','りょうすけ','はるちか','いろは','かいせい'];
-let currentMode = 'laq';
+let currentMode = 'album';
 let selectedAuthor = '';
 let photoFiles = [];
 let selectedThumbIdx = -1;
@@ -837,7 +837,7 @@ document.getElementById('thumbOverlay').addEventListener('click', e=>{ if(e.targ
 document.getElementById('thumbChangeOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)e.currentTarget.classList.remove('active'); });
 
 // 初期読み込み
-loadGallery();
+loadAlbums();
 </script>
 </body>
 </html>
