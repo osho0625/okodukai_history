@@ -221,9 +221,19 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     <div class="album-page-header">
       <span class="back-album" onclick="closeAlbumPage()">←</span>
       <div class="album-page-title">
-        <h2 id="albumPageTitle"></h2>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h2 id="albumPageTitle" style="flex:1;"></h2>
+          <span id="albumEditIcons" style="display:none; font-size:1em; display:flex; gap:6px;">
+            <span onclick="startEditAlbumTitle()" style="cursor:pointer;" title="名前変更">✏️</span>
+            <span onclick="openThumbChangeModal('album')" style="cursor:pointer;" title="サムネ変更">🖼️</span>
+          </span>
+        </div>
         <div class="album-page-date" id="albumPageDate"></div>
       </div>
+      <span id="albumDeleteIcon" style="display:none; font-size:1.2em; cursor:pointer; margin-left:8px;" onclick="deleteAlbumFromPage()" title="アルバム削除">🗑️</span>
+    </div>
+    <div id="albumTitleEditArea" style="display:none; margin-bottom:12px;">
+      <div style="display:flex; gap:8px;"><input type="text" class="form-input" id="editAlbumTitle" style="flex:1;"><button onclick="saveAlbumTitle()" style="padding:8px 14px; background:#6a1b9a; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">保存</button><button onclick="cancelEditAlbumTitle()" style="padding:8px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer;">取消</button></div>
     </div>
     <div id="albumPageAdmin"></div>
     <div class="album-photo-grid" id="albumPhotoGrid"></div>
@@ -565,12 +575,11 @@ function openAlbumDetail(id) {
   page.classList.add('active');
   document.getElementById('albumPageTitle').textContent = album.title || '';
   document.getElementById('albumPageDate').textContent = formatAlbumDate(album) + (album.added_by ? '　👤 '+album.added_by : '');
-  // 管理者編集
-  let adminHtml = '';
-  if (isAdmin) {
-    adminHtml = '<div class="admin-edit" style="margin-bottom:12px;"><input type="text" id="editAlbumTitle" value="'+(album.title||'')+'" placeholder="タイトル"><div class="admin-btns"><button class="btn-save" onclick="saveAlbumTitle()">名前変更</button><button class="btn-thumb" onclick="openThumbChangeModal(\'album\')">サムネ変更</button><button class="btn-delete" onclick="deleteAlbumFromPage()">削除</button></div></div>';
-  }
-  document.getElementById('albumPageAdmin').innerHTML = adminHtml;
+  // 管理者: アイコン表示
+  document.getElementById('albumEditIcons').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('albumDeleteIcon').style.display = isAdmin ? 'inline' : 'none';
+  document.getElementById('albumTitleEditArea').style.display = 'none';
+  document.getElementById('albumPageAdmin').innerHTML = '';
   // 写真グリッド
   const photos = album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
   const grid = document.getElementById('albumPhotoGrid');
@@ -591,7 +600,15 @@ async function saveAlbumTitle() {
   await client.from('family_albums').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailAlbum.id);
   currentDetailAlbum.title=t;
   document.getElementById('albumPageTitle').textContent=t;
-  alert('変更しました！');
+  document.getElementById('albumTitleEditArea').style.display='none';
+}
+function startEditAlbumTitle() {
+  document.getElementById('editAlbumTitle').value = currentDetailAlbum.title || '';
+  document.getElementById('albumTitleEditArea').style.display = 'block';
+  document.getElementById('editAlbumTitle').focus();
+}
+function cancelEditAlbumTitle() {
+  document.getElementById('albumTitleEditArea').style.display = 'none';
 }
 
 async function deleteAlbumFromPage() {
