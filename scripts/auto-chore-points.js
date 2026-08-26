@@ -10,7 +10,7 @@
 // 設定: 自動付与ルール
 // ============================================================
 const AUTO_CHORE_RULES = [
-  { childName: 'りょうすけ', choreName: '食洗器', points: 3, everyNDays: 1 },
+  { childName: 'りょうすけ', choreName: '食洗器回し', points: 4, everyNDays: 1 },
   { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 2 },
   { childName: 'めぐみ', choreName: '食洗器', points: 3, everyNDays: 2 },
   { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
@@ -112,12 +112,15 @@ async function main() {
 // マイルストーンチェック＆お小遣い付与
 // ============================================================
 async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildren) {
+  // 全件取得用ヘッダー（Supabase REST APIデフォルト1000行制限を回避）
+  const allHeaders = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Range': '0-99999' };
+
   // 合計承認済みポイントを取得
   const ptsRes = await fetch(
     `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
-    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    { headers: allHeaders }
   );
-  if (!ptsRes.ok) return;
+  if (!ptsRes.ok && ptsRes.status !== 206) return;
   const ptsData = await ptsRes.json();
   const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
 
@@ -127,9 +130,9 @@ async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildre
   // 実際に入金されたお小遣い総額を取得（memo='ポイント表ご褒美'のtransactions合計）
   const txRes = await fetch(
     `${supabaseUrl}/rest/v1/transactions?child_id=eq.${child.id}&type=eq.add&memo=eq.ポイント表ご褒美&select=amount`,
-    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    { headers: allHeaders }
   );
-  if (!txRes.ok) return;
+  if (!txRes.ok && txRes.status !== 206) return;
   const txData = await txRes.json();
   const actualAllowance = txData.reduce((s, r) => s + r.amount, 0);
 
@@ -138,10 +141,10 @@ async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildre
   let repayAllowance = 0;
   if (repayChild) {
     const repayRes = await fetch(
-      `${supabaseUrl}/rest/v1/transactions?child_id=eq.${repayChild.id}&type=eq.add&memo=like.ポイント表ご褒美*&select=amount`,
-      { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+      `${supabaseUrl}/rest/v1/transactions?child_id=eq.${repayChild.id}&type=eq.add&memo=like.ポイント表ご褒美%&select=amount`,
+      { headers: allHeaders }
     );
-    if (repayRes.ok) {
+    if (repayRes.ok || repayRes.status === 206) {
       const repayData = await repayRes.json();
       repayAllowance = repayData.reduce((s, r) => s + r.amount, 0);
     }
@@ -245,12 +248,14 @@ const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
 async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child) {
   if (!TICKET_OWNERS.includes(child.name)) return;
 
+  const allHeaders = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Range': '0-99999' };
+
   // 合計承認済みポイントを取得
   const ptsRes = await fetch(
     `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
-    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    { headers: allHeaders }
   );
-  if (!ptsRes.ok) return;
+  if (!ptsRes.ok && ptsRes.status !== 206) return;
   const ptsData = await ptsRes.json();
   const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
   const completedSheets = totalPts > 0 ? Math.floor(totalPts / 400) : 0;
@@ -264,9 +269,9 @@ async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child) {
   // ここでは発行済み60分チケットの総数が期待数以上なら何もしない簡易チェックのみ。
   const ticketRes = await fetch(
     `${supabaseUrl}/rest/v1/tickets?owner=eq.${encodeURIComponent(child.name)}&duration_minutes=eq.60&select=id`,
-    { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    { headers: allHeaders }
   );
-  if (!ticketRes.ok) return;
+  if (!ticketRes.ok && ticketRes.status !== 206) return;
   const ticketData = await ticketRes.json();
   const actualTickets = ticketData.length;
 
