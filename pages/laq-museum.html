@@ -60,12 +60,33 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .work-card .date { font-size: 0.7em; color: #999; margin-top: 2px; }
 .album-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
 .album-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-.album-card .album-thumb { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
-.album-card .album-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.album-card .album-info { padding: 12px 14px; }
+.album-card .album-info { padding: 10px 12px 6px; }
 .album-card .album-date { font-size: 0.8em; color: #888; }
-.album-card .album-title { font-size: 1em; font-weight: 600; color: #333; margin-top: 2px; }
-.album-card .album-meta { font-size: 0.75em; color: #aaa; margin-top: 4px; display: flex; gap: 10px; }
+.album-card .album-title { font-size: 0.95em; font-weight: 600; color: #333; margin-top: 2px; }
+.album-card .album-meta { font-size: 0.75em; color: #aaa; margin-top: 3px; display: flex; gap: 10px; }
+.album-card .album-thumb { width: 100%; aspect-ratio: 2.5/1; overflow: hidden; }
+.album-card .album-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* アルバム詳細ページ */
+.album-page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+.album-page.active { display: block; }
+.album-page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.album-page-header .back-album { font-size: 1.3em; cursor: pointer; color: #6a1b9a; }
+.album-page-header .album-page-title { flex: 1; }
+.album-page-header .album-page-title h2 { font-size: 1em; font-weight: 700; color: #333; }
+.album-page-header .album-page-title .album-page-date { font-size: 0.8em; color: #888; }
+.album-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.album-photo-grid .album-photo-cell { aspect-ratio: 1; overflow: hidden; cursor: pointer; border-radius: 4px; }
+.album-photo-grid .album-photo-cell img { width: 100%; height: 100%; object-fit: cover; }
+/* フルスクリーンスライダー */
+.slider-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; }
+.slider-overlay.active { display: flex; }
+.slider-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%; font-size: 1.2em; cursor: pointer; z-index: 5; }
+.slider-container { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: pan-y; position: relative; }
+.slider-container img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+.slider-counter { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.8em; padding: 8px; }
+.slider-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 50%; font-size: 1.3em; cursor: pointer; }
+.slider-nav.prev { left: 8px; }
+.slider-nav.next { right: 8px; }
 .date-range { display: flex; align-items: center; gap: 8px; }
 .date-range input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; }
 .date-range span { color: #888; font-weight: 600; }
@@ -195,6 +216,29 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     <button class="btn-register" id="albumRegisterBtn" disabled>登録する！</button>
     <button style="width:100%; margin-top:8px; padding:12px; background:#eee; border:none; border-radius:10px; font-size:0.95em; cursor:pointer; color:#666;" onclick="hideAlbumRegister()">キャンセル</button>
   </div>
+  <!-- アルバム詳細ページ -->
+  <div class="album-page" id="albumPageView">
+    <div class="album-page-header">
+      <span class="back-album" onclick="closeAlbumPage()">←</span>
+      <div class="album-page-title">
+        <h2 id="albumPageTitle"></h2>
+        <div class="album-page-date" id="albumPageDate"></div>
+      </div>
+    </div>
+    <div id="albumPageAdmin"></div>
+    <div class="album-photo-grid" id="albumPhotoGrid"></div>
+  </div>
+</div>
+
+<!-- フルスクリーンスライダー -->
+<div class="slider-overlay" id="sliderOverlay">
+  <button class="slider-close" onclick="closeSlider()">✕</button>
+  <div class="slider-container" id="sliderContainer">
+    <button class="slider-nav prev" onclick="sliderNav(-1)">‹</button>
+    <img id="sliderImg" src="">
+    <button class="slider-nav next" onclick="sliderNav(1)">›</button>
+  </div>
+  <div class="slider-counter" id="sliderCounter"></div>
 </div>
 
 <!-- サムネイル選択 -->
@@ -362,11 +406,6 @@ function renderDetailInfo() {
     if (isAdmin) h+='<div class="admin-edit"><input type="text" id="editTitle" value="'+(currentDetailWork.title||'')+'" placeholder="作品名"><div class="admin-btns"><button class="btn-save" onclick="saveTitle()">名前変更</button><button class="btn-thumb" onclick="openThumbChangeModal(\'laq\')">サムネ変更</button><button class="btn-delete" onclick="deleteWork()">削除</button></div></div>';
     else h+='<div class="user-actions"><button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button></div>';
     info.innerHTML=h;
-  } else {
-    const photos=currentDetailAlbum.family_album_photos;
-    let h='<div class="detail-title">'+(currentDetailAlbum.title||'')+'</div><div class="detail-author">👤 '+(currentDetailAlbum.added_by||'')+'</div><div class="detail-date">📅 '+formatAlbumDate(currentDetailAlbum)+'</div><div class="detail-counter">'+(currentPhotoIdx+1)+' / '+photos.length+'</div>';
-    if (isAdmin) h+='<div class="admin-edit"><input type="text" id="editAlbumTitle" value="'+(currentDetailAlbum.title||'')+'" placeholder="タイトル"><div class="admin-btns"><button class="btn-save" onclick="saveAlbumTitle()">名前変更</button><button class="btn-thumb" onclick="openThumbChangeModal(\'album\')">サムネ変更</button><button class="btn-delete" onclick="deleteAlbum()">削除</button></div></div>';
-    info.innerHTML=h;
   }
 }
 
@@ -502,11 +541,11 @@ async function loadAlbums() {
   filtered.forEach(album => {
     const tp = album.family_album_photos.find(p=>p.id===album.thumbnail_photo_id)||album.family_album_photos[0];
     html += '<div class="album-card" onclick="openAlbumDetail(\''+album.id+'\')">'
-      + '<div class="album-thumb"><img src="'+(tp?tp.url:'')+'" loading="lazy"></div>'
       + '<div class="album-info"><div class="album-date">'+formatAlbumDate(album)+'</div>'
       + '<div class="album-title">'+(album.title||'')+'</div>'
-      + '<div class="album-meta"><span>👤 '+(album.added_by||'')+'</span><span>📷 '+album.family_album_photos.length+'枚</span></div>'
-      + '</div></div>';
+      + '<div class="album-meta"><span>👤 '+(album.added_by||'')+'</span><span>📷 '+album.family_album_photos.length+'枚</span></div></div>'
+      + '<div class="album-thumb"><img src="'+(tp?tp.url:'')+'" loading="lazy"></div>'
+      + '</div>';
   });
   html += '</div>';
   c.innerHTML = html;
@@ -518,14 +557,74 @@ function formatAlbumDate(a) { if(!a.date_start)return''; const s=a.date_start.re
 function openAlbumDetail(id) {
   const album = allAlbums.find(a=>a.id===id);
   if (!album) return;
-  currentDetailAlbum=album; detailType='album';
-  const photos=album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
-  const ti=photos.findIndex(p=>p.id===album.thumbnail_photo_id);
-  currentPhotoIdx=ti>=0?ti:0;
-  renderDetail(); document.getElementById('detailOverlay').classList.add('active');
+  currentDetailAlbum=album;
+  // アルバムページを表示
+  document.getElementById('albumListView').style.display='none';
+  document.getElementById('albumAddBtn').style.display='none';
+  const page = document.getElementById('albumPageView');
+  page.classList.add('active');
+  document.getElementById('albumPageTitle').textContent = album.title || '';
+  document.getElementById('albumPageDate').textContent = formatAlbumDate(album) + (album.added_by ? '　👤 '+album.added_by : '');
+  // 管理者編集
+  let adminHtml = '';
+  if (isAdmin) {
+    adminHtml = '<div class="admin-edit" style="margin-bottom:12px;"><input type="text" id="editAlbumTitle" value="'+(album.title||'')+'" placeholder="タイトル"><div class="admin-btns"><button class="btn-save" onclick="saveAlbumTitle()">名前変更</button><button class="btn-thumb" onclick="openThumbChangeModal(\'album\')">サムネ変更</button><button class="btn-delete" onclick="deleteAlbumFromPage()">削除</button></div></div>';
+  }
+  document.getElementById('albumPageAdmin').innerHTML = adminHtml;
+  // 写真グリッド
+  const photos = album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  const grid = document.getElementById('albumPhotoGrid');
+  grid.innerHTML = '';
+  photos.forEach((p, i) => {
+    grid.innerHTML += '<div class="album-photo-cell" onclick="openSlider('+i+')"><img src="'+p.url+'" loading="lazy"></div>';
+  });
 }
-async function saveAlbumTitle() { const t=document.getElementById('editAlbumTitle').value.trim(); await client.from('family_albums').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailAlbum.id); currentDetailAlbum.title=t; renderDetailInfo(); alert('変更しました！'); }
-async function deleteAlbum() { if(!confirm('このアルバムを削除しますか？'))return; for(const p of currentDetailAlbum.family_album_photos){const path=p.url.split('/laq-photos/')[1];if(path)await client.storage.from(STORAGE_BUCKET).remove([path]);} await client.from('family_albums').delete().eq('id',currentDetailAlbum.id); closeDetail(); loadAlbums(); }
+
+function closeAlbumPage() {
+  document.getElementById('albumPageView').classList.remove('active');
+  document.getElementById('albumListView').style.display='block';
+  document.getElementById('albumAddBtn').style.display='inline';
+}
+
+async function saveAlbumTitle() {
+  const t=document.getElementById('editAlbumTitle').value.trim();
+  await client.from('family_albums').update({title:t,updated_at:new Date().toISOString()}).eq('id',currentDetailAlbum.id);
+  currentDetailAlbum.title=t;
+  document.getElementById('albumPageTitle').textContent=t;
+  alert('変更しました！');
+}
+
+async function deleteAlbumFromPage() {
+  if(!confirm('このアルバムを削除しますか？'))return;
+  for(const p of currentDetailAlbum.family_album_photos){const path=p.url.split('/laq-photos/')[1];if(path)await client.storage.from(STORAGE_BUCKET).remove([path]);}
+  await client.from('family_albums').delete().eq('id',currentDetailAlbum.id);
+  closeAlbumPage(); loadAlbums();
+}
+
+// ===== フルスクリーンスライダー =====
+let sliderPhotos = [];
+let sliderIdx = 0;
+let touchStartX = 0;
+
+function openSlider(idx) {
+  sliderPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  sliderIdx = idx;
+  renderSlider();
+  document.getElementById('sliderOverlay').classList.add('active');
+}
+function closeSlider() { document.getElementById('sliderOverlay').classList.remove('active'); }
+function sliderNav(dir) { sliderIdx = (sliderIdx+dir+sliderPhotos.length)%sliderPhotos.length; renderSlider(); }
+function renderSlider() {
+  document.getElementById('sliderImg').src = sliderPhotos[sliderIdx].url;
+  document.getElementById('sliderCounter').textContent = (sliderIdx+1)+' / '+sliderPhotos.length;
+}
+
+// スワイプ対応
+document.getElementById('sliderContainer').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.getElementById('sliderContainer').addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 50) { sliderNav(diff < 0 ? 1 : -1); }
+});
 
 // ===== サムネイル選択共通 =====
 let thumbCb=null;
