@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6a1b9a">
+<title>LaQ美術館</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100vh; padding-bottom: 80px; }
+.header { background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 10; }
+.header h1 { font-size: 1.3em; }
+.header .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #fff; text-decoration: none; font-size: 1.2em; }
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 9; }
+.tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+.tab.active { color: #6a1b9a; border-bottom-color: #6a1b9a; }
+.view { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+.view.active { display: block; }
+
+/* 登録フォーム */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.9em; }
+.author-btns { display: flex; gap: 8px; }
+.author-btn { flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; font-size: 1em; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; }
+.author-btn.selected { border-color: #6a1b9a; background: #f3e5f5; color: #6a1b9a; }
+.form-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
+.photo-upload-area { border: 2px dashed #ce93d8; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; color: #888; background: #fce4ec08; transition: 0.2s; }
+.photo-upload-area:hover { border-color: #6a1b9a; background: #f3e5f510; }
+.photo-upload-area .icon { font-size: 2em; margin-bottom: 8px; }
+.photo-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.photo-preview { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+.photo-preview .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; font-size: 0.7em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-register { width: 100%; padding: 14px; background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-register:hover { opacity: 0.9; }
+.btn-register:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* サムネイル選択モーダル */
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+.overlay.active { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal h2 { text-align: center; margin-bottom: 16px; color: #333; font-size: 1.1em; }
+.thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.thumb-option { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
+.thumb-option.selected { border-color: #6a1b9a; box-shadow: 0 0 0 2px #ce93d8; }
+.thumb-option img { width: 100%; height: 100%; object-fit: cover; }
+.btn-ok { width: 100%; padding: 12px; background: #6a1b9a; color: #fff; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; }
+.btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ギャラリー */
+.author-section { margin-bottom: 24px; }
+.author-header { font-size: 1.1em; font-weight: 700; color: #6a1b9a; padding: 8px 0; border-bottom: 2px solid #ce93d8; margin-bottom: 12px; }
+.author-header .count { font-size: 0.8em; color: #888; font-weight: 400; margin-left: 8px; }
+.works-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.work-card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: 0.2s; }
+.work-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.work-card .thumb { aspect-ratio: 1; overflow: hidden; }
+.work-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.work-card .info { padding: 8px 10px; }
+.work-card .title { font-size: 0.85em; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.work-card .date { font-size: 0.7em; color: #999; margin-top: 2px; }
+
+/* 作品詳細モーダル */
+.detail-modal { background: #fff; border-radius: 16px; padding: 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.detail-photos { position: relative; }
+.detail-photos img { width: 100%; display: block; }
+.detail-photos .photo-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; background: rgba(0,0,0,0.4); color: #fff; border: none; border-radius: 50%; font-size: 1.2em; cursor: pointer; }
+.detail-photos .photo-nav.prev { left: 8px; }
+.detail-photos .photo-nav.next { right: 8px; }
+.detail-info { padding: 16px; }
+.detail-info .detail-title { font-size: 1.2em; font-weight: 700; color: #333; margin-bottom: 4px; }
+.detail-info .detail-author { font-size: 0.9em; color: #6a1b9a; margin-bottom: 4px; }
+.detail-info .detail-date { font-size: 0.8em; color: #999; }
+.detail-info .detail-counter { font-size: 0.75em; color: #bbb; text-align: center; margin-top: 8px; }
+.admin-edit { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
+.admin-edit input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em; margin-bottom: 8px; }
+.admin-edit .admin-btns { display: flex; gap: 8px; }
+.admin-edit .admin-btns button { flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
+.admin-edit .btn-save { background: #6a1b9a; color: #fff; }
+.admin-edit .btn-thumb { background: #ff9800; color: #fff; }
+.admin-edit .btn-delete { background: #e53935; color: #fff; }
+.close-btn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 50%; font-size: 1.1em; cursor: pointer; z-index: 5; }
+
+.empty-msg { text-align: center; color: #999; padding: 40px 20px; font-size: 0.95em; }
+.loading { text-align: center; color: #999; padding: 40px; }
+
+@media (max-width: 400px) {
+  .works-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .photo-previews { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back" href="../index.html">←</a>
+  <h1>🎨 LaQ美術館</h1>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-view="gallery">🖼️ ギャラリー</div>
+  <div class="tab" data-view="register">📷 とうろく</div>
+</div>
+
+<!-- ギャラリー -->
+<div class="view active" id="galleryView">
+  <div class="loading">読み込み中...</div>
+</div>
+
+<!-- 登録 -->
+<div class="view" id="registerView">
+  <div class="form-group">
+    <label>だれの作品？</label>
+    <div class="author-btns">
+      <button class="author-btn" data-author="かいせい">かいせい</button>
+      <button class="author-btn" data-author="いろは">いろは</button>
+      <button class="author-btn" data-author="はるちか">はるちか</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>作品のなまえ（あとからでもOK）</label>
+    <input type="text" class="form-input" id="workTitle" placeholder="さくひんのなまえ">
+  </div>
+  <div class="form-group">
+    <label>写真をとろう📸</label>
+    <div class="photo-upload-area" id="photoUploadArea">
+      <div class="icon">📷</div>
+      <div>タップして写真をえらぶ</div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none;">
+    <div class="photo-previews" id="photoPreviews"></div>
+  </div>
+  <button class="btn-register" id="registerBtn" disabled>とうろくする！</button>
+</div>
+
+<!-- サムネイル選択モーダル -->
+<div class="overlay" id="thumbOverlay">
+  <div class="modal">
+    <h2>⭐ いちばんいい写真をえらんでね！</h2>
+    <div class="thumb-grid" id="thumbGrid"></div>
+    <button class="btn-ok" id="thumbOkBtn" disabled>これにきめた！</button>
+  </div>
+</div>
+
+<!-- 作品詳細モーダル -->
+<div class="overlay" id="detailOverlay">
+  <div class="detail-modal" id="detailModal">
+    <div class="detail-photos" id="detailPhotos">
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="detail-info" id="detailInfo"></div>
+  </div>
+</div>
+
+<!-- サムネイル変更モーダル（管理者） -->
+<div class="overlay" id="thumbChangeOverlay">
+  <div class="modal">
+    <h2>📷 サムネイルを変更</h2>
+    <div class="thumb-grid" id="thumbChangeGrid"></div>
+    <button class="btn-ok" id="thumbChangeOkBtn" disabled>変更する</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_BUCKET = 'laq-photos';
+let selectedAuthor = '';
+let photoFiles = [];
+let selectedThumbIdx = -1;
+let allWorks = [];
+let currentDetailWork = null;
+let currentPhotoIdx = 0;
+
+// --- タブ切り替え ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.view + 'View').classList.add('active');
+    if (tab.dataset.view === 'gallery') loadGallery();
+  });
+});
+
+// --- 作者選択 ---
+document.querySelectorAll('.author-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.author-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedAuthor = btn.dataset.author;
+    updateRegisterBtn();
+  });
+});
+
+// --- 写真選択 ---
+document.getElementById('photoUploadArea').addEventListener('click', () => {
+  document.getElementById('photoInput').click();
+});
+
+document.getElementById('photoInput').addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  files.forEach(f => photoFiles.push(f));
+  renderPhotoPreviews();
+  updateRegisterBtn();
+});
+
+function renderPhotoPreviews() {
+  const container = document.getElementById('photoPreviews');
+  container.innerHTML = '';
+  photoFiles.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-preview';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    const btn = document.createElement('button');
+    btn.className = 'remove';
+    btn.textContent = '✕';
+    btn.onclick = () => { photoFiles.splice(i, 1); renderPhotoPreviews(); updateRegisterBtn(); };
+    div.appendChild(img);
+    div.appendChild(btn);
+    container.appendChild(div);
+  });
+}
+
+function updateRegisterBtn() {
+  document.getElementById('registerBtn').disabled = !(selectedAuthor && photoFiles.length > 0);
+}
+
+// --- 登録ボタン → サムネイル選択へ ---
+document.getElementById('registerBtn').addEventListener('click', () => {
+  if (photoFiles.length === 1) {
+    selectedThumbIdx = 0;
+    doRegister();
+  } else {
+    openThumbSelector();
+  }
+});
+
+function openThumbSelector() {
+  const grid = document.getElementById('thumbGrid');
+  grid.innerHTML = '';
+  selectedThumbIdx = -1;
+  document.getElementById('thumbOkBtn').disabled = true;
+
+  photoFiles.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'thumb-option';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    div.appendChild(img);
+    div.onclick = () => {
+      grid.querySelectorAll('.thumb-option').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedThumbIdx = i;
+      document.getElementById('thumbOkBtn').disabled = false;
+    };
+    grid.appendChild(div);
+  });
+  document.getElementById('thumbOverlay').classList.add('active');
+}
+
+document.getElementById('thumbOkBtn').addEventListener('click', () => {
+  document.getElementById('thumbOverlay').classList.remove('active');
+  doRegister();
+});
+
+// --- 登録処理 ---
+async function doRegister() {
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  btn.textContent = 'とうろく中...';
+
+  try {
+    const title = document.getElementById('workTitle').value.trim();
+    // 1. 作品レコード作成
+    const { data: work, error: workErr } = await client.from('laq_works').insert({
+      title: title || '',
+      author: selectedAuthor
+    }).select().single();
+    if (workErr) throw workErr;
+
+    // 2. 写真アップロード
+    const photoIds = [];
+    for (let i = 0; i < photoFiles.length; i++) {
+      const file = photoFiles[i];
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${work.id}/${Date.now()}_${i}.${ext}`;
+      const { error: upErr } = await client.storage.from(STORAGE_BUCKET).upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+
+      const { data: urlData } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      const { data: photo, error: phErr } = await client.from('laq_photos').insert({
+        work_id: work.id,
+        url: urlData.publicUrl,
+        sort_order: i
+      }).select().single();
+      if (phErr) throw phErr;
+      photoIds.push(photo.id);
+    }
+
+    // 3. サムネイル設定
+    const thumbId = photoIds[selectedThumbIdx] || photoIds[0];
+    await client.from('laq_works').update({ thumbnail_photo_id: thumbId }).eq('id', work.id);
+
+    // 完了
+    alert('🎉 とうろくできたよ！');
+    resetForm();
+    // ギャラリーに切り替え
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelector('[data-view="gallery"]').classList.add('active');
+    document.getElementById('galleryView').classList.add('active');
+    loadGallery();
+  } catch (e) {
+    console.error(e);
+    alert('エラーが発生しました: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'とうろくする！';
+    updateRegisterBtn();
+  }
+}
+
+function resetForm() {
+  selectedAuthor = '';
+  photoFiles = [];
+  selectedThumbIdx = -1;
+  document.querySelectorAll('.author-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('workTitle').value = '';
+  document.getElementById('photoPreviews').innerHTML = '';
+  document.getElementById('photoInput').value = '';
+  updateRegisterBtn();
+}
+
+// --- ギャラリー読み込み ---
+async function loadGallery() {
+  const container = document.getElementById('galleryView');
+  container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+  const { data: works, error } = await client.from('laq_works')
+    .select('*, laq_photos(*)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+    return;
+  }
+
+  allWorks = works || [];
+
+  if (allWorks.length === 0) {
+    container.innerHTML = '<div class="empty-msg">まだ作品がないよ！<br>📷 とうろくタブから作品を追加しよう</div>';
+    return;
+  }
+
+  // 作者ごとにグループ化
+  const byAuthor = {};
+  allWorks.forEach(w => {
+    if (!byAuthor[w.author]) byAuthor[w.author] = [];
+    byAuthor[w.author].push(w);
+  });
+
+  // 作品数が多い順にソート
+  const sortedAuthors = Object.keys(byAuthor).sort((a, b) => byAuthor[b].length - byAuthor[a].length);
+
+  container.innerHTML = '';
+  sortedAuthors.forEach(author => {
+    const section = document.createElement('div');
+    section.className = 'author-section';
+
+    const header = document.createElement('div');
+    header.className = 'author-header';
+    header.innerHTML = `${author}の作品<span class="count">${byAuthor[author].length}てん</span>`;
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'works-grid';
+
+    byAuthor[author].forEach(work => {
+      const card = document.createElement('div');
+      card.className = 'work-card';
+      card.onclick = () => openDetail(work);
+
+      // サムネイル取得
+      const thumbPhoto = work.laq_photos.find(p => p.id === work.thumbnail_photo_id) || work.laq_photos[0];
+      const thumbUrl = thumbPhoto ? thumbPhoto.url : '';
+
+      card.innerHTML = `
+        <div class="thumb"><img src="${thumbUrl}" alt="${work.title || 'LaQ作品'}" loading="lazy"></div>
+        <div class="info">
+          <div class="title">${work.title || '（なまえなし）'}</div>
+          <div class="date">${new Date(work.created_at).toLocaleDateString('ja-JP')}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+// --- 作品詳細 ---
+function openDetail(work) {
+  currentDetailWork = work;
+  currentPhotoIdx = 0;
+  renderDetailPhotos();
+  renderDetailInfo();
+  document.getElementById('detailOverlay').classList.add('active');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('active');
+  currentDetailWork = null;
+}
+
+function renderDetailPhotos() {
+  const container = document.getElementById('detailPhotos');
+  const photos = currentDetailWork.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
+  const photo = photos[currentPhotoIdx];
+  container.innerHTML = `
+    <button class="close-btn" onclick="closeDetail()">✕</button>
+    <img src="${photo ? photo.url : ''}" alt="作品写真" style="width:100%; display:block;">
+    ${photos.length > 1 ? `
+      <button class="photo-nav prev" onclick="navPhoto(-1)">‹</button>
+      <button class="photo-nav next" onclick="navPhoto(1)">›</button>
+    ` : ''}
+  `;
+}
+
+function navPhoto(dir) {
+  const photos = currentDetailWork.laq_photos;
+  currentPhotoIdx = (currentPhotoIdx + dir + photos.length) % photos.length;
+  renderDetailPhotos();
+  renderDetailInfo();
+}
+
+function renderDetailInfo() {
+  const info = document.getElementById('detailInfo');
+  const photos = currentDetailWork.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
+  let html = `
+    <div class="detail-title">${currentDetailWork.title || '（なまえなし）'}</div>
+    <div class="detail-author">👤 ${currentDetailWork.author}</div>
+    <div class="detail-date">📅 ${new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')}</div>
+    <div class="detail-counter">${currentPhotoIdx + 1} / ${photos.length}</div>
+  `;
+
+  // 管理者のみ編集可能
+  if (isAdmin) {
+    html += `
+      <div class="admin-edit">
+        <input type="text" id="editTitle" value="${currentDetailWork.title || ''}" placeholder="作品名を入力">
+        <div class="admin-btns">
+          <button class="btn-save" onclick="saveTitle()">名前変更</button>
+          <button class="btn-thumb" onclick="openThumbChange()">サムネ変更</button>
+          <button class="btn-delete" onclick="deleteWork()">削除</button>
+        </div>
+      </div>
+    `;
+  }
+  info.innerHTML = html;
+}
+
+// --- 管理者: 名前変更 ---
+async function saveTitle() {
+  const newTitle = document.getElementById('editTitle').value.trim();
+  const { error } = await client.from('laq_works').update({ title: newTitle, updated_at: new Date().toISOString() }).eq('id', currentDetailWork.id);
+  if (error) { alert('エラー: ' + error.message); return; }
+  currentDetailWork.title = newTitle;
+  renderDetailInfo();
+  alert('名前を変更しました！');
+}
+
+// --- 管理者: サムネイル変更 ---
+function openThumbChange() {
+  const grid = document.getElementById('thumbChangeGrid');
+  grid.innerHTML = '';
+  document.getElementById('thumbChangeOkBtn').disabled = true;
+  let selectedId = null;
+
+  currentDetailWork.laq_photos.forEach(photo => {
+    const div = document.createElement('div');
+    div.className = 'thumb-option' + (photo.id === currentDetailWork.thumbnail_photo_id ? ' selected' : '');
+    const img = document.createElement('img');
+    img.src = photo.url;
+    div.appendChild(img);
+    div.onclick = () => {
+      grid.querySelectorAll('.thumb-option').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedId = photo.id;
+      document.getElementById('thumbChangeOkBtn').disabled = false;
+    };
+    grid.appendChild(div);
+  });
+
+  document.getElementById('thumbChangeOkBtn').onclick = async () => {
+    if (!selectedId) return;
+    const { error } = await client.from('laq_works').update({ thumbnail_photo_id: selectedId }).eq('id', currentDetailWork.id);
+    if (error) { alert('エラー: ' + error.message); return; }
+    currentDetailWork.thumbnail_photo_id = selectedId;
+    document.getElementById('thumbChangeOverlay').classList.remove('active');
+    alert('サムネイルを変更しました！');
+  };
+
+  document.getElementById('thumbChangeOverlay').classList.add('active');
+}
+
+// --- 管理者: 作品削除 ---
+async function deleteWork() {
+  if (!confirm('この作品を削除しますか？写真も全て削除されます。')) return;
+
+  // Storage上の写真も削除
+  const photos = currentDetailWork.laq_photos;
+  for (const photo of photos) {
+    const path = photo.url.split('/laq-photos/')[1];
+    if (path) await client.storage.from(STORAGE_BUCKET).remove([path]);
+  }
+
+  const { error } = await client.from('laq_works').delete().eq('id', currentDetailWork.id);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  closeDetail();
+  loadGallery();
+}
+
+// --- オーバーレイ閉じる ---
+document.getElementById('detailOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeDetail();
+});
+document.getElementById('thumbOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) { document.getElementById('thumbOverlay').classList.remove('active'); }
+});
+document.getElementById('thumbChangeOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) { document.getElementById('thumbChangeOverlay').classList.remove('active'); }
+});
+
+// --- 初期読み込み ---
+loadGallery();
+</script>
+</body>
+</html>
