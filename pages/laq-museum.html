@@ -32,7 +32,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .photo-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
 .photo-preview { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
 .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
-.photo-preview .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; font-size: 0.7em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.photo-preview .remove { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: rgba(220,50,50,0.85); color: #fff; border: none; border-radius: 50%; font-size: 0.8em; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .btn-register { width: 100%; padding: 14px; background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: #fff; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: 0.2s; }
 .btn-register:hover { opacity: 0.9; }
 .btn-register:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -76,11 +76,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .detail-info .detail-counter { font-size: 0.75em; color: #bbb; text-align: center; margin-top: 8px; }
 .admin-edit { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
 .admin-edit input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em; margin-bottom: 8px; }
-.admin-edit .admin-btns { display: flex; gap: 8px; }
-.admin-edit .admin-btns button { flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
+.admin-edit .admin-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-edit .admin-btns button { flex: 1; min-width: 80px; padding: 8px; border: none; border-radius: 6px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
 .admin-edit .btn-save { background: #6a1b9a; color: #fff; }
 .admin-edit .btn-thumb { background: #ff9800; color: #fff; }
 .admin-edit .btn-delete { background: #e53935; color: #fff; }
+.user-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; }
+.btn-request-delete { padding: 10px 20px; background: #ffebee; color: #e53935; border: 1px solid #e53935; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
+.btn-request-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 .close-btn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 50%; font-size: 1.1em; cursor: pointer; z-index: 5; }
 
 .empty-msg { text-align: center; color: #999; padding: 40px 20px; font-size: 0.95em; }
@@ -101,7 +104,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 
 <div class="tabs">
   <div class="tab active" data-view="gallery">🖼️ ギャラリー</div>
-  <div class="tab" data-view="register">📷 とうろく</div>
+  <div class="tab" data-view="register">📷 登録</div>
 </div>
 
 <!-- ギャラリー -->
@@ -112,7 +115,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 <!-- 登録 -->
 <div class="view" id="registerView">
   <div class="form-group">
-    <label>だれの作品？</label>
+    <label>誰の作品？</label>
     <div class="author-btns">
       <button class="author-btn" data-author="かいせい">かいせい</button>
       <button class="author-btn" data-author="いろは">いろは</button>
@@ -120,27 +123,30 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     </div>
   </div>
   <div class="form-group">
-    <label>作品のなまえ（あとからでもOK）</label>
-    <input type="text" class="form-input" id="workTitle" placeholder="さくひんのなまえ">
+    <label>作品の名前（後からでもOK）</label>
+    <input type="text" class="form-input" id="workTitle" placeholder="作品の名前">
   </div>
   <div class="form-group">
-    <label>写真をとろう📸</label>
+    <label>写真を撮ろう📸</label>
     <div class="photo-upload-area" id="photoUploadArea">
       <div class="icon">📷</div>
-      <div>タップして写真をえらぶ</div>
+      <div>タップしてカメラで撮影</div>
     </div>
-    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none;">
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
     <div class="photo-previews" id="photoPreviews"></div>
+    <div id="addMoreArea" style="display:none; margin-top:8px; text-align:center;">
+      <button id="addMoreBtn" style="padding:8px 16px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:8px; color:#6a1b9a; font-weight:600; cursor:pointer;">＋ もう1枚撮る</button>
+    </div>
   </div>
-  <button class="btn-register" id="registerBtn" disabled>とうろくする！</button>
+  <button class="btn-register" id="registerBtn" disabled>登録する！</button>
 </div>
 
 <!-- サムネイル選択モーダル -->
 <div class="overlay" id="thumbOverlay">
   <div class="modal">
-    <h2>⭐ いちばんいい写真をえらんでね！</h2>
+    <h2>⭐ 一番いい写真を選んでね！</h2>
     <div class="thumb-grid" id="thumbGrid"></div>
-    <button class="btn-ok" id="thumbOkBtn" disabled>これにきめた！</button>
+    <button class="btn-ok" id="thumbOkBtn" disabled>これに決めた！</button>
   </div>
 </div>
 
@@ -193,8 +199,11 @@ document.querySelectorAll('.author-btn').forEach(btn => {
   });
 });
 
-// --- 写真選択 ---
+// --- 写真撮影（カメラ直接起動） ---
 document.getElementById('photoUploadArea').addEventListener('click', () => {
+  document.getElementById('photoInput').click();
+});
+document.getElementById('addMoreBtn').addEventListener('click', () => {
   document.getElementById('photoInput').click();
 });
 
@@ -203,6 +212,8 @@ document.getElementById('photoInput').addEventListener('change', (e) => {
   files.forEach(f => photoFiles.push(f));
   renderPhotoPreviews();
   updateRegisterBtn();
+  // inputをリセットして同じファイルも再選択可能に
+  e.target.value = '';
 });
 
 function renderPhotoPreviews() {
@@ -221,6 +232,8 @@ function renderPhotoPreviews() {
     div.appendChild(btn);
     container.appendChild(div);
   });
+  // 写真があれば「もう1枚撮る」ボタンを表示
+  document.getElementById('addMoreArea').style.display = photoFiles.length > 0 ? 'block' : 'none';
 }
 
 function updateRegisterBtn() {
@@ -269,7 +282,7 @@ document.getElementById('thumbOkBtn').addEventListener('click', () => {
 async function doRegister() {
   const btn = document.getElementById('registerBtn');
   btn.disabled = true;
-  btn.textContent = 'とうろく中...';
+  btn.textContent = '登録中...';
 
   try {
     const title = document.getElementById('workTitle').value.trim();
@@ -304,7 +317,7 @@ async function doRegister() {
     await client.from('laq_works').update({ thumbnail_photo_id: thumbId }).eq('id', work.id);
 
     // 完了
-    alert('🎉 とうろくできたよ！');
+    alert('🎉 登録できたよ！');
     resetForm();
     // ギャラリーに切り替え
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -317,7 +330,7 @@ async function doRegister() {
     alert('エラーが発生しました: ' + (e.message || e));
   } finally {
     btn.disabled = false;
-    btn.textContent = 'とうろくする！';
+    btn.textContent = '登録する！';
     updateRegisterBtn();
   }
 }
@@ -329,6 +342,7 @@ function resetForm() {
   document.querySelectorAll('.author-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('workTitle').value = '';
   document.getElementById('photoPreviews').innerHTML = '';
+  document.getElementById('addMoreArea').style.display = 'none';
   document.getElementById('photoInput').value = '';
   updateRegisterBtn();
 }
@@ -350,7 +364,7 @@ async function loadGallery() {
   allWorks = works || [];
 
   if (allWorks.length === 0) {
-    container.innerHTML = '<div class="empty-msg">まだ作品がないよ！<br>📷 とうろくタブから作品を追加しよう</div>';
+    container.innerHTML = '<div class="empty-msg">まだ作品がないよ！<br>📷 登録タブから作品を追加しよう</div>';
     return;
   }
 
@@ -371,7 +385,7 @@ async function loadGallery() {
 
     const header = document.createElement('div');
     header.className = 'author-header';
-    header.innerHTML = `${author}の作品<span class="count">${byAuthor[author].length}てん</span>`;
+    header.innerHTML = `${author}の作品<span class="count">${byAuthor[author].length}点</span>`;
     section.appendChild(header);
 
     const grid = document.createElement('div');
@@ -389,7 +403,7 @@ async function loadGallery() {
       card.innerHTML = `
         <div class="thumb"><img src="${thumbUrl}" alt="${work.title || 'LaQ作品'}" loading="lazy"></div>
         <div class="info">
-          <div class="title">${work.title || '（なまえなし）'}</div>
+          <div class="title">${work.title || '（名前なし）'}</div>
           <div class="date">${new Date(work.created_at).toLocaleDateString('ja-JP')}</div>
         </div>
       `;
@@ -440,13 +454,13 @@ function renderDetailInfo() {
   const info = document.getElementById('detailInfo');
   const photos = currentDetailWork.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
   let html = `
-    <div class="detail-title">${currentDetailWork.title || '（なまえなし）'}</div>
+    <div class="detail-title">${currentDetailWork.title || '（名前なし）'}</div>
     <div class="detail-author">👤 ${currentDetailWork.author}</div>
     <div class="detail-date">📅 ${new Date(currentDetailWork.created_at).toLocaleDateString('ja-JP')}</div>
     <div class="detail-counter">${currentPhotoIdx + 1} / ${photos.length}</div>
   `;
 
-  // 管理者のみ編集可能
+  // 管理者: 編集・削除
   if (isAdmin) {
     html += `
       <div class="admin-edit">
@@ -456,6 +470,13 @@ function renderDetailInfo() {
           <button class="btn-thumb" onclick="openThumbChange()">サムネ変更</button>
           <button class="btn-delete" onclick="deleteWork()">削除</button>
         </div>
+      </div>
+    `;
+  } else {
+    // 一般ユーザー: 削除リクエスト
+    html += `
+      <div class="user-actions">
+        <button class="btn-request-delete" onclick="requestDelete()">🗑️ この作品を消したい</button>
       </div>
     `;
   }
@@ -506,11 +527,10 @@ function openThumbChange() {
   document.getElementById('thumbChangeOverlay').classList.add('active');
 }
 
-// --- 管理者: 作品削除 ---
+// --- 管理者: 作品削除（即時） ---
 async function deleteWork() {
   if (!confirm('この作品を削除しますか？写真も全て削除されます。')) return;
 
-  // Storage上の写真も削除
   const photos = currentDetailWork.laq_photos;
   for (const photo of photos) {
     const path = photo.url.split('/laq-photos/')[1];
@@ -522,6 +542,19 @@ async function deleteWork() {
 
   closeDetail();
   loadGallery();
+}
+
+// --- ユーザー: 削除リクエスト ---
+async function requestDelete() {
+  if (!confirm('この作品の削除をリクエストしますか？\n管理者の承認後に削除されます。')) return;
+
+  const { error } = await client.from('laq_delete_requests').insert({
+    work_id: currentDetailWork.id,
+    requested_by: currentDetailWork.author
+  });
+  if (error) { alert('エラー: ' + error.message); return; }
+  alert('削除リクエストを送りました！\n管理者が確認します。');
+  closeDetail();
 }
 
 // --- オーバーレイ閉じる ---
