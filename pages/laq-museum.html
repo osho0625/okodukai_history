@@ -69,6 +69,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .date-range { display: flex; align-items: center; gap: 8px; }
 .date-range input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; }
 .date-range span { color: #888; font-weight: 600; }
+.calendar-display { padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; color: #666; font-size: 0.95em; background: #fff; }
+.calendar-widget { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-top: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; color: #333; }
+.cal-nav { background: none; border: none; font-size: 1.4em; cursor: pointer; padding: 4px 10px; color: #6a1b9a; }
+.cal-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.75em; color: #999; font-weight: 600; margin-bottom: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.85em; border-radius: 50%; cursor: pointer; transition: 0.15s; color: #333; }
+.cal-cell:hover { background: #f3e5f5; }
+.cal-cell.empty { cursor: default; }
+.cal-cell.empty:hover { background: none; }
+.cal-cell.start { background: #6a1b9a; color: #fff; font-weight: 700; }
+.cal-cell.end { background: #6a1b9a; color: #fff; font-weight: 700; }
+.cal-cell.in-range { background: #e1bee7; color: #4a148c; }
+.cal-cell.today { border: 2px solid #ce93d8; }
+.cal-footer { display: flex; justify-content: space-between; margin-top: 8px; }
+.cal-clear, .cal-done { padding: 6px 14px; border: none; border-radius: 6px; font-size: 0.85em; font-weight: 600; cursor: pointer; }
+.cal-clear { background: #ffebee; color: #e53935; }
+.cal-done { background: #6a1b9a; color: #fff; }
 .detail-modal { background: #fff; border-radius: 16px; padding: 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
 .detail-photos { position: relative; }
 .detail-photos img { width: 100%; display: block; }
@@ -150,7 +168,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     </div>
     <div class="form-group"><label>アルバムのタイトル</label><input type="text" class="form-input" id="albumTitle" placeholder="例: 新潟旅行"></div>
     <div class="form-group"><label>📅 日付</label>
-      <div class="date-range"><input type="date" id="albumDateStart"><span>〜</span><input type="date" id="albumDateEnd"></div>
+      <div id="calendarDisplay" class="calendar-display" onclick="document.getElementById('calendarWidget').style.display='block'">
+        <span id="calendarText">タップして日付を選択</span>
+      </div>
+      <div id="calendarWidget" class="calendar-widget" style="display:none;">
+        <div class="cal-header">
+          <button class="cal-nav" onclick="calNav(-1)">‹</button>
+          <span id="calMonth"></span>
+          <button class="cal-nav" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-footer">
+          <button class="cal-clear" onclick="clearCalendar()">クリア</button>
+          <button class="cal-done" onclick="document.getElementById('calendarWidget').style.display='none'">閉じる</button>
+        </div>
+      </div>
+      <input type="hidden" id="albumDateStart">
+      <input type="hidden" id="albumDateEnd">
     </div>
     <div class="form-group"><label>写真を選ぶ📸</label>
       <div class="photo-upload-area" id="albumPhotoUploadArea"><div class="icon">🖼️</div><div>タップして写真を選択（複数OK）</div></div>
@@ -364,7 +399,58 @@ function renderAlbumPreviews() {
   albumPhotoFiles.forEach((f,i)=>{ c.innerHTML+='<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="albumPhotoFiles.splice('+i+',1);renderAlbumPreviews();updateAlbumRegisterBtn();">✕</button></div>'; });
 }
 function updateAlbumRegisterBtn() { document.getElementById('albumRegisterBtn').disabled = !(albumSelectedAuthor && albumPhotoFiles.length > 0); }
-function resetAlbumForm() { albumPhotoFiles=[]; albumSelectedAuthor=''; document.querySelectorAll('#albumAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('albumTitle').value=''; document.getElementById('albumDateStart').value=''; document.getElementById('albumDateEnd').value=''; document.getElementById('albumPhotoPreviews').innerHTML=''; document.getElementById('albumPhotoInput').value=''; updateAlbumRegisterBtn(); }
+function resetAlbumForm() { albumPhotoFiles=[]; albumSelectedAuthor=''; document.querySelectorAll('#albumAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('albumTitle').value=''; document.getElementById('albumDateStart').value=''; document.getElementById('albumDateEnd').value=''; document.getElementById('albumPhotoPreviews').innerHTML=''; document.getElementById('albumPhotoInput').value=''; clearCalendar(); updateAlbumRegisterBtn(); }
+
+// ===== カスタムカレンダー =====
+let calYear, calMonth, calStart=null, calEnd=null;
+(function initCal() { const d=new Date(); calYear=d.getFullYear(); calMonth=d.getMonth(); renderCalendar(); })();
+
+function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+
+function renderCalendar() {
+  document.getElementById('calMonth').textContent = calYear+'年'+(calMonth+1)+'月';
+  const grid=document.getElementById('calGrid'); grid.innerHTML='';
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date(); const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  for(let i=0;i<firstDay;i++) grid.innerHTML+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=daysInMonth;d++) {
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    let cls='cal-cell';
+    if(dateStr===todayStr) cls+=' today';
+    if(calStart && dateStr===calStart) cls+=' start';
+    if(calEnd && dateStr===calEnd) cls+=' end';
+    if(calStart && calEnd && dateStr>calStart && dateStr<calEnd) cls+=' in-range';
+    if(calStart && !calEnd && dateStr===calStart) cls+=' start';
+    grid.innerHTML+='<div class="'+cls+'" data-date="'+dateStr+'" onclick="selectCalDate(\''+dateStr+'\')">'+d+'</div>';
+  }
+}
+
+function selectCalDate(dateStr) {
+  if (!calStart || (calStart && calEnd)) {
+    // 1回目のタップ or リセット後
+    calStart=dateStr; calEnd=null;
+  } else {
+    // 2回目のタップ
+    if (dateStr < calStart) { calEnd=calStart; calStart=dateStr; }
+    else if (dateStr === calStart) { calEnd=null; }
+    else { calEnd=dateStr; }
+  }
+  document.getElementById('albumDateStart').value=calStart||'';
+  document.getElementById('albumDateEnd').value=calEnd||calStart||'';
+  updateCalendarDisplay();
+  renderCalendar();
+}
+
+function updateCalendarDisplay() {
+  const el=document.getElementById('calendarText');
+  if (!calStart) { el.textContent='タップして日付を選択'; return; }
+  const s=calStart.replace(/-/g,'/');
+  if (!calEnd || calEnd===calStart) { el.textContent=s; }
+  else { el.textContent=s+'〜'+calEnd.replace(/-/g,'/'); }
+}
+
+function clearCalendar() { calStart=null; calEnd=null; document.getElementById('albumDateStart').value=''; document.getElementById('albumDateEnd').value=''; updateCalendarDisplay(); renderCalendar(); }
 
 document.getElementById('albumRegisterBtn').addEventListener('click', ()=>{
   if (albumPhotoFiles.length===1) doAlbumRegister(0);
