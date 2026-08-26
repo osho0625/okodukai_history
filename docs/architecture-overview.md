@@ -34,6 +34,7 @@ graph TB
             SCP[scp-archive.html<br/>今日のSCP]
             TICKET[ticket.html<br/>あそびチケット]
             NOTES[family-notes.html<br/>家族ノート]
+            LAQ[laq-museum.html<br/>LaQ美術館]
         end
         
         subgraph "ナースコール"
