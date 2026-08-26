@@ -95,8 +95,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
 .album-page-header .album-page-title h2 { font-size: 1em; font-weight: 700; color: #333; }
 .album-page-header .album-page-title .album-page-date { font-size: 0.8em; color: #888; }
 .album-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.album-photo-grid .album-photo-cell { aspect-ratio: 1; overflow: hidden; cursor: pointer; border-radius: 4px; }
+.album-photo-grid .album-photo-cell { aspect-ratio: 1; overflow: hidden; cursor: pointer; border-radius: 4px; position: relative; }
 .album-photo-grid .album-photo-cell img { width: 100%; height: 100%; object-fit: cover; }
+.album-photo-cell .photo-owner { position: absolute; bottom: 2px; right: 3px; font-size: 0.55em; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 4px; border-radius: 3px; pointer-events: none; }
+.album-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.album-filter-btn { padding: 5px 10px; border: 1px solid #ce93d8; border-radius: 14px; background: #6a1b9a; color: #fff; font-size: 0.75em; font-weight: 600; cursor: pointer; }
+.album-filter-btn.off { background: #fff; color: #999; border-color: #ddd; }
 /* フルスクリーンスライダー */
 .slider-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; }
 .slider-overlay.active { display: flex; }
@@ -256,6 +260,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
       <div style="display:flex; gap:8px;"><input type="text" class="form-input" id="editAlbumTitle" style="flex:1;"><button onclick="saveAlbumTitle()" style="padding:8px 14px; background:#6a1b9a; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">保存</button><button onclick="cancelEditAlbumTitle()" style="padding:8px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer;">取消</button></div>
     </div>
     <div id="albumPageAdmin"></div>
+    <div class="album-filter-bar" id="albumFilterBar"></div>
     <div class="album-photo-grid" id="albumPhotoGrid"></div>
     <!-- 写真追加エリア -->
     <div id="albumAddPhotosArea" style="margin-top:16px; text-align:center;">
@@ -615,23 +620,69 @@ function openAlbumDetail(id) {
   const page = document.getElementById('albumPageView');
   page.classList.add('active');
   document.getElementById('albumPageTitle').textContent = album.title || '';
-  // 誰が何枚の集計
+  // 誰が何枚の集計 → フィルターバー
   const byPerson = {};
   album.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
-  const metaStr = Object.entries(byPerson).map(([k,v])=>'👤'+k+'📷'+v).join('  ');
-  document.getElementById('albumPageDate').textContent = formatAlbumDate(album) + (metaStr ? '　'+metaStr : '');
+  albumPhotoFilter = Object.keys(byPerson); // デフォルト全員選択
+  renderAlbumFilterBar(byPerson);
+  document.getElementById('albumPageDate').textContent = formatAlbumDate(album);
   // 管理者: アイコン表示
   document.getElementById('albumEditIcons').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('albumDeleteIcon').style.display = isAdmin ? 'inline' : 'none';
   document.getElementById('albumTitleEditArea').style.display = 'none';
   document.getElementById('albumPageAdmin').innerHTML = '';
   // 写真グリッド
-  const photos = album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  renderAlbumPhotoGrid();
+}
+
+// ===== アルバム写真フィルター =====
+let albumPhotoFilter = [];
+
+function renderAlbumFilterBar(byPerson) {
+  const bar = document.getElementById('albumFilterBar');
+  bar.innerHTML = '';
+  Object.entries(byPerson).forEach(([name, count]) => {
+    const active = albumPhotoFilter.includes(name);
+    bar.innerHTML += '<button class="album-filter-btn'+(active?'':' off')+'" onclick="toggleAlbumPhotoFilter(\''+name+'\')">👤'+name+' 📷'+count+'</button>';
+  });
+}
+
+function toggleAlbumPhotoFilter(name) {
+  if (albumPhotoFilter.includes(name)) {
+    albumPhotoFilter = albumPhotoFilter.filter(n=>n!==name);
+    if (albumPhotoFilter.length === 0) {
+      // 最低1人は選択状態を維持
+      const byPerson = {};
+      currentDetailAlbum.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+      albumPhotoFilter = Object.keys(byPerson);
+    }
+  } else {
+    albumPhotoFilter.push(name);
+  }
+  const byPerson = {};
+  currentDetailAlbum.family_album_photos.forEach(p => { byPerson[p.added_by||'?'] = (byPerson[p.added_by||'?']||0)+1; });
+  renderAlbumFilterBar(byPerson);
+  renderAlbumPhotoGrid();
+}
+
+function renderAlbumPhotoGrid() {
+  const allPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  const filtered = allPhotos.filter(p => albumPhotoFilter.includes(p.added_by||'?'));
   const grid = document.getElementById('albumPhotoGrid');
   grid.innerHTML = '';
-  photos.forEach((p, i) => {
-    grid.innerHTML += '<div class="album-photo-cell" onclick="openSlider('+i+')"><img src="'+p.url+'" loading="lazy"></div>';
+  filtered.forEach((p, i) => {
+    const ownerLabel = p.added_by ? '<span class="photo-owner">'+p.added_by+'</span>' : '';
+    // スライダー用にフィルター済み配列のインデックスを使う
+    grid.innerHTML += '<div class="album-photo-cell" onclick="openSliderFiltered('+i+')"><img src="'+p.url+'" loading="lazy">'+ownerLabel+'</div>';
   });
+}
+
+function openSliderFiltered(idx) {
+  const allPhotos = currentDetailAlbum.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+  sliderPhotos = allPhotos.filter(p => albumPhotoFilter.includes(p.added_by||'?'));
+  sliderIdx = idx;
+  renderSlider();
+  document.getElementById('sliderOverlay').classList.add('active');
 }
 
 function closeAlbumPage() {
