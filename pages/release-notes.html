@@ -36,6 +36,82 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.38.4</span><span class="date">2026/08/26</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 脱毛周期管理: マップUIを刷新 — シングルタップで情報表示＋「記録する」ボタンに変更</li>
+    <li><span class="tag tag-fix">fix</span> 脱毛周期管理: スワイプ/ドラッグ選択・選択バーUIを廃止（シンプル操作に統一）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.38.3</span><span class="date">2026/08/26</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: りょうすけのルール変更（食洗器回し4pt毎日 + 洗濯機9pt 2日1回）</li>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: Supabase REST API 1000行制限回避（Rangeヘッダー追加）</li>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: likeワイルドカードバグ修正（返済用アカウント集計）</li>
+    <li><span class="tag tag-fix">fix</span> りょうすけ: リセット前の古いtransactionsによるお小遣い未入金問題を修正（不足分3,980円補填）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.38.2</span><span class="date">2026/08/26</span></div>
+  <ul>
+    <li><span class="tag tag-infra">infra</span> バックアップ: DB全62テーブルをバックアップ対象に追加（漏れ13テーブル追加含む）</li>
+    <li><span class="tag tag-infra">infra</span> バックアップ: Supabase Storage（recipe-photos, laq-photos）のバックアップ追加</li>
+    <li><span class="tag tag-infra">infra</span> バックアップ: LaQ美術館・家族アルバム5テーブル追加（laq_works, laq_photos, laq_delete_requests, family_albums, family_album_photos）</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v326</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.38.1</span><span class="date">2026/08/26</span></div>
+  <ul>
+    <li><span class="tag tag-feat">NEW</span> ポイント表: 枚コンプリート時にあそびチケット60分×2枚を自動発行（かいせい/はるちか/いろは対象）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント表: 枚コンプリート演出（フルスクリーン祝福＋紙吹雪＋チケットGET表示）</li>
+    <li><span class="tag tag-feat">feat</span> ポイント表: 次の枚への遷移演出（新ページスタート表示＋グリッドリロード）</li>
+    <li><span class="tag tag-feat">feat</span> 演出デモページ追加（pages/demo-animation.html）</li>
+    <li><span class="tag tag-infra">infra</span> auto-chore-points.js: チケット発行リコンシリエーション追加（不足分自動補填）</li>
+    <li><span class="tag tag-infra">infra</span> js/common.js: issuePageCompleteTickets()共通関数追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.38.0</span><span class="date">2026/08/26</span></div>
+  <ul>
+    <li><span class="tag tag-feat">NEW</span> LaQ美術館: LaQ作品を写真で記録・ギャラリー鑑賞する機能を追加</li>
+    <li><span class="tag tag-feat">feat</span> LaQ美術館: 作者選択（かいせい/いろは/はるちか）・複数写真登録・サムネイル選択</li>
+    <li><span class="tag tag-feat">feat</span> LaQ美術館: 作者ごとに作品数順でギャラリー表示</li>
+    <li><span class="tag tag-feat">feat</span> LaQ美術館: 管理者のみ作品名変更・サムネイル変更・削除が可能</li>
+    <li><span class="tag tag-infra">infra</span> Supabase: laq_works / laq_photos テーブル追加、laq-photos Storageバケット</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v324: laq-museum.html キャッシュ追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.37.7</span><span class="date">2026/08/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 洗濯通知: スマホでキャッシュが古く通知セットできない問題を修正（SW cache version更新）</li>
+    <li><span class="tag tag-fix">fix</span> 洗濯通知: 時刻未選択時のエラーガード追加</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.37.6</span><span class="date">2026/08/25</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 洗濯通知: 通知登録失敗時のエラー表示を改善（具体的なエラー内容を表示）</li>
+    <li><span class="tag tag-infra">infra</span> バックアップ: レシピ・脱毛・精算・ゲーム系テーブルをバックアップ対象に追加</li>
+    <li><span class="tag tag-infra">infra</span> レシピ: 全テーブル整合性確保SQL追加（recipe_ensure_all_tables.sql）</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.37.5</span><span class="date">2026/08/25</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> あそびチケット: りょうすけの個人ページにチケット発行UIを追加（発行先選択・30分単位の時間指定・枚数指定）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.37.4</span><span class="date">2026/08/25</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> 脱毛周期管理: 部位選択UIをシングルタップトグルに統一（長押し判定ロジックを完全削除）</li>

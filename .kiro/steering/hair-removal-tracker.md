@@ -31,9 +31,9 @@ fileMatchPattern: "*hair-removal*"
 |--------------|------|
 | Color Calculator | HSL補間ヒートマップ色計算（純粋関数） |
 | Storage Manager | CRUD/設定/インポート/エクスポート/マージ/リセット |
-| BodyMapRenderer | SVG描画/タップ選択・解除/ツールチップ/色更新 |
-| TreatmentModal | 施術記録入力UI（単一/バッチ/写真添付） |
-| MultiSelectManager | 複数選択モード管理 |
+| BodyMapRenderer | SVG描画/タップ情報表示/ツールチップ/色更新 |
+| TreatmentModal | 施術記録入力UI（単一/写真添付） |
+| MultiSelectManager | （廃止：スワイプ選択廃止のため未使用） |
 | Statistics Engine | 月別/Top5/平均強度/カバー率/強度分布（純粋関数） |
 | PhotoCompressor | Canvas API圧縮/サイズ計算 |
 | Filter/Sort | 日付ソート/ゾーンフィルタ/日付範囲フィルタ（純粋関数） |
@@ -81,6 +81,7 @@ fileMatchPattern: "*hair-removal*"
 ## 注意点
 
 - 色計算: `hue = 120 * (1 - elapsed/threshold)`、HSL(120→0, 60%, 50%)
-- タップで選択/解除（長押し廃止）— touchstart/mousedownでは選択せず、touchend/mouseupで移動なし判定時にトグル
+- タップで情報表示（選択状態にしない）→ 情報パネル内「記録する」ボタンでモーダルを開く
+- スワイプ/ドラッグ選択は廃止（何も起きない）
 - ページネーション: 履歴100件/ページ
 - 統計キャッシュ: レコード変更時に `invalidateStatsCache()` で破棄
