@@ -53,7 +53,41 @@ CREATE INDEX IF NOT EXISTS idx_laq_delete_requests_status ON laq_delete_requests
 CREATE INDEX IF NOT EXISTS idx_laq_delete_requests_work_id ON laq_delete_requests (work_id);
 
 -- ============================================================
--- 4. Storage バケット（laq-photos）
+-- 4. family_albums テーブル（家族アルバム）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS family_albums (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL DEFAULT '',
+  date_start DATE,
+  date_end DATE,
+  added_by TEXT NOT NULL DEFAULT '',
+  thumbnail_photo_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE family_albums DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_family_albums_created_at ON family_albums (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_family_albums_added_by ON family_albums (added_by);
+
+-- ============================================================
+-- 5. family_album_photos テーブル（家族アルバム写真）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS family_album_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  album_id UUID NOT NULL REFERENCES family_albums(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE family_album_photos DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_family_album_photos_album_id ON family_album_photos (album_id);
+
+-- ============================================================
+-- 6. Storage バケット（laq-photos）
 -- ============================================================
 -- Supabaseダッシュボードの Storage > Create bucket から手動作成:
 --   バケット名: laq-photos
