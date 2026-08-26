@@ -179,12 +179,13 @@ const ALL_ICONS = [
   { id: 'settlement', emoji: '💰', label: '家庭内精算', href: 'pages/settlement.html', position: 'bottom', adminOnly: true },
   { id: 'poker-chips', emoji: '🪙', label: 'ポーカーチップ', href: 'pages/poker-chips.html', position: 'bottom', adminOnly: false },
   { id: 'hair-removal', emoji: '🪒', label: '脱毛管理', href: 'pages/hair-removal-tracker.html', position: 'bottom', adminOnly: true },
+  { id: 'laq-museum', emoji: '🎨', label: 'LaQ美術館', href: 'pages/laq-museum.html', position: 'top', adminOnly: false },
   { id: 'settings', emoji: '⚙️', label: '設定', href: '#', position: 'bottom', adminOnly: false, isSettings: true }
 ];
 
 // デフォルトで表示するアイコンID
-const DEFAULT_VISIBLE = ['arcade','chores','recipe','news','garden','nurse','notes','poker-chips','settings'];
-const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','settings'];
+const DEFAULT_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','nurse','notes','poker-chips','settings'];
+const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','settings'];
 
 function getVisibleIcons() {
   const isAdmin = localStorage.getItem('deviceRole') === 'admin';

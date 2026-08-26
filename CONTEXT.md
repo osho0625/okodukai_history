@@ -27,6 +27,7 @@
 
 | `family-news.md` | `*news*` ファイルを開いた時 | ファミリーニュース |
 | `laundry-notification.md` | `*laundry*` ファイルを開いた時 | 洗濯通知アプリ |
+| `laq-museum.md` | `*laq*` ファイルを開いた時 | LaQ美術館 |
 | `travel-plans.md` | `*travel*,*trip*` ファイルを開いた時 | 旅行計画（新婚旅行・家族鉄道旅行） |
 
 ## 機能一覧
@@ -49,6 +50,7 @@
 | 脱毛周期管理 | pages/hair-removal-tracker.html | Body Map（前面15/背面13ゾーン）・シングルタップ選択トグル・ヒートマップ・施術記録・統計・写真管理 |
 | ファミリーニュース | pages/news.html | RSSニュースアグリゲーター（テック・ゲーム・おでかけ） |
 | 旅行計画 | .kiro/specs/family-notes/docs/honeymoon-trip.md, .kiro/specs/family-notes/docs/family-train-trip.md | 新婚旅行（台湾/沖縄）・家族寝台特急旅行（サンライズ瀬戸） |
+| LaQ美術館 | pages/laq-museum.html | LaQ作品の写真記録・ギャラリー |
 
 ## CSS構成
 
