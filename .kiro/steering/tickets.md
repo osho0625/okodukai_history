@@ -8,8 +8,11 @@ fileMatchPattern: "*ticket*"
 ## ファイル構成
 
 - `pages/ticket.html` — あそびチケット（一覧・使用・履歴）
+- `pages/demo-animation.html` — 枚コンプリート＆チケット付与演出デモ
+- `js/common.js` — issuePageCompleteTickets()（枚コンプリート時のチケット自動発行）
 - `sql/create_tickets_table.sql` — ticketsテーブルマイグレーション
 - `sql/alter_tickets_reservation.sql` — 予約機能ALTER
+- `scripts/auto-chore-points.js` — チケット発行リコンシリエーション（不足分自動補填）
 
 ## 概要
 
@@ -18,6 +21,7 @@ fileMatchPattern: "*ticket*"
 - child.htmlの🎫アイコンからアクセス（?owner=名前）
 - admin/user両方閲覧・予約可能（ownerパラメータで表示対象を決定）
 - りょうすけの個人ページ（?owner=りょうすけ）にはチケット発行UIを表示
+- ポイント表1枚（400pt）コンプリート時に60分チケット×2枚を自動発行
 
 ## 機能詳細
 
@@ -45,6 +49,17 @@ fileMatchPattern: "*ticket*"
 - RLS無効（deviceRole制御のみ）
 - 予約フロー: unused→pending(予約申請)→approved(承認)→used(予約日時到来で自動消化)
 - 却下/取消: pending→unused / approved→unused（予約日時前のみ）
+
+## 自動発行（枚コンプリート）
+
+ポイント表が400pt到達（1枚コンプリート）するたびに、その子に60分あそびチケット×2枚を自動発行。
+
+- 対象: かいせい、はるちか、いろは（TICKET_OWNERS）
+- 発行タイミング: addChorePoints(admin即承認時)、approvePoint(承認フロー)、approveFromTop(トップ画面承認)
+- 共通関数: `issuePageCompleteTickets(ownerName, totalBefore, totalAfter)` in js/common.js
+- 演出: 枚コンプリート演出（showSheetCompleteAnimation）→ チケットGETカード表示 → 次の枚遷移演出（showSheetTransition）
+- リコンシリエーション: scripts/auto-chore-points.jsのcronで期待枚数と実際の60分チケット数を比較、不足分を補填
+- Discord通知 + Push通知（全端末）
 
 ## localStorage キー
 

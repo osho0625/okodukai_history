@@ -418,7 +418,10 @@ async function loadGallery() {
 // --- 作品詳細 ---
 function openDetail(work) {
   currentDetailWork = work;
-  currentPhotoIdx = 0;
+  // サムネイル写真を最初に表示
+  const photos = work.laq_photos.sort((a, b) => a.sort_order - b.sort_order);
+  const thumbIdx = photos.findIndex(p => p.id === work.thumbnail_photo_id);
+  currentPhotoIdx = thumbIdx >= 0 ? thumbIdx : 0;
   renderDetailPhotos();
   renderDetailInfo();
   document.getElementById('detailOverlay').classList.add('active');
