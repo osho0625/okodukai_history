@@ -476,6 +476,47 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/tetris_rankings?select=*" \
             -o backups/tetris_rankings_$(date +%Y%m%d).json
 
+      # --- LaQ美術館・家族アルバム ---
+      - name: Backup laq_works table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/laq_works?select=*" \
+            -o backups/laq_works_$(date +%Y%m%d).json
+
+      - name: Backup laq_photos table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/laq_photos?select=*" \
+            -o backups/laq_photos_$(date +%Y%m%d).json
+
+      - name: Backup laq_delete_requests table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/laq_delete_requests?select=*" \
+            -o backups/laq_delete_requests_$(date +%Y%m%d).json
+
+      - name: Backup family_albums table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/family_albums?select=*" \
+            -o backups/family_albums_$(date +%Y%m%d).json
+
+      - name: Backup family_album_photos table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/family_album_photos?select=*" \
+            -o backups/family_album_photos_$(date +%Y%m%d).json
+
       # --- Supabase Storage バックアップ ---
       - name: Backup recipe-photos storage
         run: |
