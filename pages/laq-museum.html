@@ -213,21 +213,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     </div>
     <div class="form-group"><label>アルバムのタイトル</label><input type="text" class="form-input" id="albumTitle" placeholder="例: 新潟旅行"></div>
     <div class="form-group"><label>📅 日付</label>
-      <div id="calendarDisplay" class="calendar-display" onclick="document.getElementById('calendarWidget').style.display='block'">
+      <div id="calendarDisplay" class="calendar-display" onclick="openCalendarDialog()">
         <span id="calendarText">タップして日付を選択</span>
-      </div>
-      <div id="calendarWidget" class="calendar-widget" style="display:none;">
-        <div class="cal-header">
-          <button class="cal-nav" onclick="calNav(-1)">‹</button>
-          <span id="calMonth"></span>
-          <button class="cal-nav" onclick="calNav(1)">›</button>
-        </div>
-        <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-        <div class="cal-grid" id="calGrid"></div>
-        <div class="cal-footer">
-          <button class="cal-clear" onclick="clearCalendar()">クリア</button>
-          <button class="cal-done" onclick="document.getElementById('calendarWidget').style.display='none'">閉じる</button>
-        </div>
       </div>
       <input type="hidden" id="albumDateStart">
       <input type="hidden" id="albumDateEnd">
@@ -296,6 +283,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     <button class="slider-nav next" onclick="sliderNav(1)">›</button>
   </div>
   <div class="slider-counter" id="sliderCounter"></div>
+</div>
+
+<!-- カレンダーダイアログ -->
+<div class="overlay" id="calendarOverlay">
+  <div class="modal" style="max-width:340px;">
+    <h2>📅 日付を選択</h2>
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <span id="calMonth"></span>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-days-header"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-clear" onclick="clearCalendar()">クリア</button>
+      <button class="cal-done" onclick="closeCalendarDialog()">OK</button>
+    </div>
+  </div>
 </div>
 
 <!-- サムネイル選択 -->
@@ -495,6 +500,10 @@ function resetAlbumForm() { albumPhotoFiles=[]; albumSelectedAuthor=''; document
 // ===== カスタムカレンダー =====
 let calYear, calMonth, calStart=null, calEnd=null;
 (function initCal() { const d=new Date(); calYear=d.getFullYear(); calMonth=d.getMonth(); renderCalendar(); })();
+
+function openCalendarDialog() { document.getElementById('calendarOverlay').classList.add('active'); renderCalendar(); }
+function closeCalendarDialog() { document.getElementById('calendarOverlay').classList.remove('active'); }
+document.getElementById('calendarOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeCalendarDialog(); });
 
 function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
 
