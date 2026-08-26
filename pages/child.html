@@ -1911,6 +1911,15 @@ load().then(() => {
       }
     } catch(e) {}
   })();
+
+  // デモモード: ?demo=1 で枚コンプリート＆チケット付与演出をテスト表示
+  if (params.get('demo') === '1') {
+    setTimeout(() => {
+      showSheetCompleteAnimation(3, 2, () => {
+        // 遷移演出の後は何もしない（デモ終了）
+      });
+    }, 1000);
+  }
 });
 </script>
 <script src="../js/child-charts.js"></script>
