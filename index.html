@@ -191,7 +191,17 @@ function getVisibleIcons() {
   const isAdmin = localStorage.getItem('deviceRole') === 'admin';
   const saved = localStorage.getItem('top_visible_icons');
   if (saved) {
-    try { return JSON.parse(saved); } catch(e) {}
+    try {
+      const ids = JSON.parse(saved);
+      // 新アイコン自動追加マイグレーション
+      const newIcons = ['laq-museum'];
+      let updated = false;
+      newIcons.forEach(id => {
+        if (!ids.includes(id)) { ids.splice(ids.length - 1, 0, id); updated = true; }
+      });
+      if (updated) localStorage.setItem('top_visible_icons', JSON.stringify(ids));
+      return ids;
+    } catch(e) {}
   }
   return isAdmin ? DEFAULT_ADMIN_VISIBLE : DEFAULT_VISIBLE;
 }
@@ -1070,6 +1080,11 @@ async function approveFromTop(pointId, childId) {
   if (totalAllowance > 0) {
     const targetChild = allChildren.find(c => c.id === pt.child_id);
     if (targetChild) await giveAllowanceFromTop(targetChild, totalAllowance);
+  }
+  // 枚コンプリートチェック → チケット発行
+  {
+    const targetChild = allChildren.find(c => c.id === pt.child_id);
+    if (targetChild) await issuePageCompleteTickets(targetChild.name, totalBefore, totalAfter);
   }
 
   // UIから削除
