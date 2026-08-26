@@ -2128,42 +2128,28 @@
       var svg = container.querySelector('svg');
       if (!svg) return;
 
-      var _swipeMoved = false;
-      var _swipeStartZoneId = null;
+      var _touchStartZoneId = null;
+      var _touchMoved = false;
 
-      // Touch events - シングルタップで選択/解除トグル、スワイプで複数選択
+      // Touch events - シングルタップで情報表示のみ
       svg.addEventListener('touchstart', function(e) {
         e.preventDefault(); // 合成mouseイベント・300msタップ遅延を防止
         _touchHandled = true;
-        _swipeSelecting = true;
-        _swipeMoved = false;
+        _touchMoved = false;
         var path = getZonePathFromPoint(svg, e.touches[0]);
-        _swipeStartZoneId = path ? path.getAttribute('data-zone-id') : null;
+        _touchStartZoneId = path ? path.getAttribute('data-zone-id') : null;
       }, { passive: false });
 
       svg.addEventListener('touchmove', function(e) {
-        if (!_swipeSelecting) return;
-        e.preventDefault(); // スクロール防止
-        var path = getZonePathFromPoint(svg, e.touches[0]);
-        if (path) {
-          var moveZoneId = path.getAttribute('data-zone-id');
-          if (moveZoneId !== _swipeStartZoneId) _swipeMoved = true;
-          if (_swipeMoved) addToSwipeSelection(path);
-        }
-      }, { passive: false });
+        _touchMoved = true;
+      }, { passive: true });
 
       svg.addEventListener('touchend', function(e) {
-        if (!_swipeMoved && _swipeStartZoneId) {
-          // シングルタップ → トグル（選択 or 解除）
-          toggleSwipeSelection(_swipeStartZoneId);
-        } else if (_swipeMoved && _swipeStartZoneId) {
-          // スワイプ開始地点も選択に含める
-          var startPath = document.querySelector('.body-map-container svg path[data-zone-id="' + _swipeStartZoneId + '"]');
-          if (startPath) addToSwipeSelection(startPath);
+        if (!_touchMoved && _touchStartZoneId) {
+          showZoneInfoPanel(_touchStartZoneId);
         }
-        _swipeSelecting = false;
-        _swipeStartZoneId = null;
-        updateSwipeSelectBar();
+        _touchStartZoneId = null;
+        _touchMoved = false;
 
         // タッチ後の合成mouseイベントを500msブロック
         clearTimeout(_touchHandledTimer);
@@ -2171,69 +2157,21 @@
       });
 
       svg.addEventListener('touchcancel', function() {
-        _swipeSelecting = false;
-        _swipeStartZoneId = null;
+        _touchStartZoneId = null;
+        _touchMoved = false;
         clearTimeout(_touchHandledTimer);
         _touchHandledTimer = setTimeout(function() { _touchHandled = false; }, 500);
       });
 
-      // Mouse events for desktop - シングルクリックで選択/解除トグル、ドラッグで複数選択
-      var _mouseSwipeMoved = false;
-      var _mouseStartZoneId = null;
-
-      svg.addEventListener('mousedown', function(e) {
-        if (_touchHandled) return; // タッチ後の合成イベントを無視
-        _swipeSelecting = true;
-        _mouseSwipeMoved = false;
-        var path = getZonePathFromMouse(e);
-        _mouseStartZoneId = path ? path.getAttribute('data-zone-id') : null;
-      });
-
-      svg.addEventListener('mousemove', function(e) {
+      // Mouse events for desktop - シングルクリックで情報表示のみ
+      svg.addEventListener('click', function(e) {
         if (_touchHandled) return;
-        if (!_swipeSelecting) return;
         var path = getZonePathFromMouse(e);
         if (path) {
-          var moveZoneId = path.getAttribute('data-zone-id');
-          if (moveZoneId !== _mouseStartZoneId) _mouseSwipeMoved = true;
-          if (_mouseSwipeMoved) addToSwipeSelection(path);
-        }
-      });
-
-      svg.addEventListener('mouseup', function(e) {
-        if (_touchHandled) return; // タッチ後の合成イベントを無視
-        if (!_mouseSwipeMoved && _mouseStartZoneId) {
-          // シングルクリック → トグル（選択 or 解除）
-          toggleSwipeSelection(_mouseStartZoneId);
-        } else if (_mouseSwipeMoved && _mouseStartZoneId) {
-          // ドラッグ開始地点も選択に含める
-          var startPath = document.querySelector('.body-map-container svg path[data-zone-id="' + _mouseStartZoneId + '"]');
-          if (startPath) addToSwipeSelection(startPath);
-        }
-        _swipeSelecting = false;
-        _mouseStartZoneId = null;
-        updateSwipeSelectBar();
-      });
-
-      svg.addEventListener('mouseleave', function() {
-        if (_touchHandled) return;
-        if (_swipeSelecting) {
-          _swipeSelecting = false;
-          _mouseStartZoneId = null;
-          updateSwipeSelectBar();
+          showZoneInfoPanel(path.getAttribute('data-zone-id'));
         }
       });
     });
-
-    // 選択バーのイベント
-    var clearBtn = document.getElementById('swipe-select-clear');
-    var recordBtn = document.getElementById('swipe-select-record');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function() { clearSwipeSelection(); });
-    }
-    if (recordBtn) {
-      recordBtn.addEventListener('click', function() { openRecordFromSwipeSelection(); });
-    }
   }
 
   function getZonePathFromPoint(svg, touch) {
@@ -2344,7 +2282,20 @@
       }
     }
 
+    // 記録するボタン
+    html += '<button class="zone-info-record-btn" data-zone-id="' + zoneId + '" data-zone-name="' + zoneName + '">📝 記録する</button>';
+
     panel.innerHTML = html;
+
+    // ボタンイベント
+    var recordBtn = panel.querySelector('.zone-info-record-btn');
+    if (recordBtn) {
+      recordBtn.addEventListener('click', function() {
+        var zId = this.getAttribute('data-zone-id');
+        var zName = this.getAttribute('data-zone-name');
+        TreatmentModal.open(zId, zName);
+      });
+    }
   }
 
   function updateSwipeSelectBar() {

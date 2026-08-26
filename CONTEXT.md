@@ -47,7 +47,7 @@
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
 | チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |
-| 脱毛周期管理 | pages/hair-removal-tracker.html | Body Map（前面15/背面13ゾーン）・シングルタップ選択トグル・ヒートマップ・施術記録・統計・写真管理 |
+| 脱毛周期管理 | pages/hair-removal-tracker.html | Body Map（前面15/背面13ゾーン）・タップ情報表示＋記録ボタン・ヒートマップ・施術記録・統計・写真管理 |
 | ファミリーニュース | pages/news.html | RSSニュースアグリゲーター（テック・ゲーム・おでかけ） |
 | 旅行計画 | .kiro/specs/family-notes/docs/honeymoon-trip.md, .kiro/specs/family-notes/docs/family-train-trip.md | 新婚旅行（台湾/沖縄）・家族寝台特急旅行（サンライズ瀬戸） |
 | LaQ美術館 | pages/laq-museum.html | LaQ作品の写真記録・ギャラリー |
