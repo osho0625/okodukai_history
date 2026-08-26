@@ -244,6 +244,28 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3e5f5; min-height: 100
     </div>
     <div id="albumPageAdmin"></div>
     <div class="album-photo-grid" id="albumPhotoGrid"></div>
+    <!-- 写真追加エリア -->
+    <div id="albumAddPhotosArea" style="margin-top:16px; text-align:center;">
+      <button onclick="showAddPhotosUI()" style="padding:10px 20px; background:#f3e5f5; border:1px solid #ce93d8; border-radius:10px; color:#6a1b9a; font-weight:600; cursor:pointer; font-size:0.9em;">＋ 写真を追加</button>
+    </div>
+    <div id="addPhotosForm" style="display:none; margin-top:12px; padding:12px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <div class="form-group"><label>誰が追加する？</label>
+        <div class="author-btns" id="addPhotoAuthorBtns">
+          <button class="author-btn" data-author="めぐみ">めぐみ</button>
+          <button class="author-btn" data-author="りょうすけ">りょうすけ</button>
+          <button class="author-btn" data-author="はるちか">はるちか</button>
+          <button class="author-btn" data-author="いろは">いろは</button>
+          <button class="author-btn" data-author="かいせい">かいせい</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="photo-upload-area" onclick="document.getElementById('addPhotoInput').click()"><div class="icon">🖼️</div><div>タップして写真を選択</div></div>
+        <input type="file" id="addPhotoInput" accept="image/*" multiple style="display:none;">
+        <div class="photo-previews" id="addPhotoPreviews"></div>
+      </div>
+      <button class="btn-register" id="addPhotosBtn" disabled onclick="doAddPhotos()">追加する</button>
+      <button style="width:100%; margin-top:6px; padding:10px; background:#eee; border:none; border-radius:8px; cursor:pointer; color:#666; font-size:0.9em;" onclick="hideAddPhotosUI()">キャンセル</button>
+    </div>
   </div>
 </div>
 
@@ -280,7 +302,6 @@ let albumSelectedAuthor = '';
 let albumPhotoFiles = [];
 let allAlbums = [];
 let currentDetailAlbum = null;
-let albumFilter = '';
 
 // ===== モード切替 =====
 document.querySelectorAll('.mode-tab').forEach(tab => {
@@ -551,18 +572,13 @@ async function loadAlbums() {
   allAlbums = data || [];
   if (!allAlbums.length) { c.innerHTML='<div class="empty-msg">まだアルバムがないよ！<br>右上の＋ボタンから追加しよう</div>'; return; }
 
-  // フィルターバー + サイズ切替
+  // サイズ切替
   let html = '<div style="padding:16px; max-width:600px; margin:0 auto;">';
-  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
-  html += '<div class="filter-bar" style="margin-bottom:0;"><button class="filter-btn'+(albumFilter===''?' active':'')+'" onclick="setAlbumFilter(\'\')">全員</button>';
-  FAMILY_MEMBERS.forEach(m => { html += '<button class="filter-btn'+(albumFilter===m?' active':'')+'" onclick="setAlbumFilter(\''+m+'\')">'+m+'</button>'; });
-  html += '</div>';
+  html += '<div style="display:flex; justify-content:flex-end; margin-bottom:10px;">';
   html += '<div class="size-toggle"><button class="'+(albumThumbSize==='small'?'active':'')+'" onclick="setAlbumSize(\'small\')">小</button><button class="'+(albumThumbSize==='medium'?'active':'')+'" onclick="setAlbumSize(\'medium\')">中</button><button class="'+(albumThumbSize==='large'?'active':'')+'" onclick="setAlbumSize(\'large\')">大</button></div>';
   html += '</div>';
 
-  const filtered = albumFilter ? allAlbums.filter(a=>a.added_by===albumFilter) : allAlbums;
-  if (!filtered.length) { html += '<div class="empty-msg">該当するアルバムがありません</div>'; }
-  filtered.forEach(album => {
+  allAlbums.forEach(album => {
     const tp = album.family_album_photos.find(p=>p.id===album.thumbnail_photo_id)||album.family_album_photos[0];
     html += '<div class="album-card size-'+albumThumbSize+'" onclick="openAlbumDetail(\''+album.id+'\')">'
       + '<div class="album-info"><div class="album-date">'+formatAlbumDate(album)+'</div>'
@@ -577,7 +593,6 @@ async function loadAlbums() {
 
 let albumThumbSize = localStorage.getItem('albumThumbSize') || 'medium';
 function setAlbumSize(s) { albumThumbSize=s; localStorage.setItem('albumThumbSize',s); loadAlbums(); }
-function setAlbumFilter(f) { albumFilter=f; loadAlbums(); }
 function formatAlbumDate(a) { if(!a.date_start)return''; const s=a.date_start.replace(/-/g,'/'); if(!a.date_end||a.date_end===a.date_start)return s; return s+'〜'+a.date_end.replace(/-/g,'/'); }
 
 function openAlbumDetail(id) {
@@ -609,6 +624,71 @@ function closeAlbumPage() {
   document.getElementById('albumPageView').classList.remove('active');
   document.getElementById('albumListView').style.display='block';
   document.getElementById('albumAddBtn').style.display='inline';
+  hideAddPhotosUI();
+}
+
+// ===== 既存アルバムに写真追加 =====
+let addPhotoFiles = [];
+let addPhotoAuthor = '';
+
+function showAddPhotosUI() {
+  document.getElementById('addPhotosForm').style.display = 'block';
+  document.getElementById('albumAddPhotosArea').querySelector('button').style.display = 'none';
+}
+function hideAddPhotosUI() {
+  document.getElementById('addPhotosForm').style.display = 'none';
+  const areaBtn = document.getElementById('albumAddPhotosArea').querySelector('button');
+  if (areaBtn) areaBtn.style.display = '';
+  addPhotoFiles = []; addPhotoAuthor = '';
+  document.getElementById('addPhotoPreviews').innerHTML = '';
+  document.getElementById('addPhotoInput').value = '';
+  document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
+  updateAddPhotosBtn();
+}
+
+document.getElementById('addPhotoInput').addEventListener('change', e => {
+  Array.from(e.target.files).forEach(f => addPhotoFiles.push(f));
+  renderAddPhotoPreviews(); updateAddPhotosBtn();
+});
+
+document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#addPhotoAuthorBtns .author-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    addPhotoAuthor = btn.dataset.author;
+    updateAddPhotosBtn();
+  });
+});
+
+function renderAddPhotoPreviews() {
+  const c = document.getElementById('addPhotoPreviews'); c.innerHTML = '';
+  addPhotoFiles.forEach((f,i) => { c.innerHTML += '<div class="photo-preview"><img src="'+URL.createObjectURL(f)+'"><button class="remove" onclick="addPhotoFiles.splice('+i+',1);renderAddPhotoPreviews();updateAddPhotosBtn();">✕</button></div>'; });
+}
+function updateAddPhotosBtn() { document.getElementById('addPhotosBtn').disabled = !(addPhotoAuthor && addPhotoFiles.length > 0); }
+
+async function doAddPhotos() {
+  const btn = document.getElementById('addPhotosBtn'); btn.disabled=true; btn.textContent='追加中...';
+  try {
+    const album = currentDetailAlbum;
+    const existingCount = album.family_album_photos.length;
+    for (let i=0; i<addPhotoFiles.length; i++) {
+      const f = addPhotoFiles[i], ext = f.name.split('.').pop()||'jpg';
+      const path = `album/${album.id}/${Date.now()}_${i}.${ext}`;
+      const { error:uErr } = await client.storage.from(STORAGE_BUCKET).upload(path, f, { contentType:f.type });
+      if (uErr) throw uErr;
+      const { data:u } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      const { data:ph, error:pErr } = await client.from('family_album_photos').insert({ album_id:album.id, url:u.publicUrl, added_by:addPhotoAuthor, sort_order:existingCount+i }).select().single();
+      if (pErr) throw pErr;
+      album.family_album_photos.push(ph);
+    }
+    // グリッド再描画
+    const photos = album.family_album_photos.sort((a,b)=>a.sort_order-b.sort_order);
+    const grid = document.getElementById('albumPhotoGrid'); grid.innerHTML='';
+    photos.forEach((p,i) => { grid.innerHTML += '<div class="album-photo-cell" onclick="openSlider('+i+')"><img src="'+p.url+'" loading="lazy"></div>'; });
+    hideAddPhotosUI();
+    alert('📷 写真を追加しました！');
+  } catch(e) { console.error(e); alert('エラー: '+(e.message||e)); }
+  finally { btn.disabled=false; btn.textContent='追加する'; updateAddPhotosBtn(); }
 }
 
 async function saveAlbumTitle() {
