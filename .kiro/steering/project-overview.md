@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/26 v2.38.1
+最終更新: 2026/08/26 v2.38.2
 
 ## 🔴 Steering Files 運用ルール
 
@@ -29,6 +29,9 @@ inclusion: auto
 | 精算、settlement、精算機能 | `.kiro/steering/family-settlement.md` |
 | レシピ、recipe、料理 | `.kiro/steering/recipe.md` |
 | 脱毛、hair-removal、Body Map | `.kiro/steering/hair-removal-tracker.md` |
+| ニュース、news | `.kiro/steering/family-news.md` |
+| 洗濯、laundry | `.kiro/steering/laundry-notification.md` |
+| LaQ、美術館、laq、アルバム | `.kiro/steering/laq-museum.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -74,6 +77,16 @@ inclusion: auto
 ├── docs/               # 開発者ドキュメント
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, reminder-notify, news-notify)
 ```
+
+## バックアップ構成
+
+- スケジュール: 毎日AM3:00 JST（GitHub Actions cron）
+- 対象テーブル: 全62テーブル（`?select=*` で全カラム取得）
+- 対象ストレージ: recipe-photos, laq-photos（全ファイル差分管理）
+- 保存先: `backups/` フォルダにコミット
+- テーブルJSON保持期間: 14日ローテーション
+- ストレージ: 累積保存（削除されたファイルもバックアップ側に残る）
+- 完了通知: Discord webhook
 
 ## Supabaseテーブル構成
 
@@ -151,6 +164,29 @@ inclusion: auto
 ### poker_chips_exchanges（チップ交換履歴）
 - id: UUID (PK), player_name: TEXT, prize_name: TEXT, cost: INT, created_at: TIMESTAMPTZ
 - INDEX: idx_poker_chips_exchanges_player (player_name, created_at DESC)
+- RLS無効
+
+### laq_works（LaQ作品）
+- id: UUID (PK), title: TEXT, author: TEXT, thumbnail_photo_id: UUID (FK→laq_photos), created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
+- INDEX: idx_laq_works_author, idx_laq_works_created_at
+- RLS無効
+
+### laq_photos（LaQ作品写真）
+- id: UUID (PK), work_id: UUID (FK→laq_works ON DELETE CASCADE), url: TEXT, sort_order: INT, created_at: TIMESTAMPTZ
+- INDEX: idx_laq_photos_work_id
+- RLS無効
+
+### laq_delete_requests（LaQ削除リクエスト）
+- id: UUID (PK), work_id: UUID (FK→laq_works ON DELETE CASCADE), requested_by: TEXT, status: TEXT ('pending'/'approved'/'rejected'), created_at: TIMESTAMPTZ
+- RLS無効
+
+### family_albums（家族アルバム）
+- id: UUID (PK), title: TEXT, date_start: DATE, date_end: DATE, added_by: TEXT, thumbnail_photo_id: UUID (FK→family_album_photos), created_at: TIMESTAMPTZ, updated_at: TIMESTAMPTZ
+- RLS無効
+
+### family_album_photos（家族アルバム写真）
+- id: UUID (PK), album_id: UUID (FK→family_albums ON DELETE CASCADE), url: TEXT, added_by: TEXT, sort_order: INT, created_at: TIMESTAMPTZ
+- INDEX: idx_family_album_photos_album_id
 - RLS無効
 
 ## 主要機能
@@ -261,7 +297,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.38.1
+- 現在: v2.38.2
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -287,7 +323,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 
 | ブランチ | 状態 | 内容 |
 |----------|------|------|
-| main | 最新 | TSJ260826までマージ済み |
+| main | 最新 | TSJ260826bまでマージ済み |
 | TSJ260512 | マージ済み | すいかHTML5移植、ぷよHard拡張、けんかチャット等 |
 | TSJ260519 | マージ済み | あそびチケット機能、算数オリンピック実装完了、ぴくぴく対戦追加、リマインダー機能、Web Push通知 |
 | TSJ260603 | マージ済み | Discord通知トリガーにWeb Push通知キュー追加、自動お手伝いポイント付与cron追加、サイエンス/SCP日付判定JST修正、SCP管理者指定Supabase化 |
@@ -333,3 +369,6 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `family-settlement.md` — 家庭内精算機能
 - `recipe.md` — 家族レシピ管理
 - `hair-removal-tracker.md` — 脱毛周期管理アプリ
+- `family-news.md` — ファミリーニュース
+- `laundry-notification.md` — 洗濯通知アプリ
+- `laq-museum.md` — LaQ美術館・家族アルバム
