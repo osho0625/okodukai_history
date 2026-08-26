@@ -476,6 +476,66 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/tetris_rankings?select=*" \
             -o backups/tetris_rankings_$(date +%Y%m%d).json
 
+      # --- Supabase Storage バックアップ ---
+      - name: Backup recipe-photos storage
+        run: |
+          mkdir -p backups/storage/recipe-photos
+          # ファイル一覧取得
+          FILES=$(curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/storage/v1/object/list/recipe-photos" \
+            -H "Content-Type: application/json" \
+            -d '{"prefix":"","limit":10000}')
+          # 各ファイルをダウンロード（フォルダ内のファイルも再帰的に取得）
+          echo "$FILES" | jq -r '.. | .name? // empty' | while read -r name; do
+            [ -z "$name" ] && continue
+            # フォルダ内のファイルをリスト
+            SUBFILES=$(curl -s \
+              -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+              "${{ secrets.SUPABASE_URL }}/storage/v1/object/list/recipe-photos" \
+              -H "Content-Type: application/json" \
+              -d "{\"prefix\":\"$name\",\"limit\":10000}")
+            echo "$SUBFILES" | jq -r '.[] | .name // empty' | while read -r subname; do
+              [ -z "$subname" ] && continue
+              mkdir -p "backups/storage/recipe-photos/$name"
+              curl -s \
+                -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+                -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+                "${{ secrets.SUPABASE_URL }}/storage/v1/object/recipe-photos/$name/$subname" \
+                -o "backups/storage/recipe-photos/$name/$subname"
+            done
+          done
+
+      - name: Backup laq-photos storage
+        run: |
+          mkdir -p backups/storage/laq-photos
+          FILES=$(curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/storage/v1/object/list/laq-photos" \
+            -H "Content-Type: application/json" \
+            -d '{"prefix":"","limit":10000}')
+          echo "$FILES" | jq -r '.. | .name? // empty' | while read -r name; do
+            [ -z "$name" ] && continue
+            SUBFILES=$(curl -s \
+              -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+              "${{ secrets.SUPABASE_URL }}/storage/v1/object/list/laq-photos" \
+              -H "Content-Type: application/json" \
+              -d "{\"prefix\":\"$name\",\"limit\":10000}")
+            echo "$SUBFILES" | jq -r '.[] | .name // empty' | while read -r subname; do
+              [ -z "$subname" ] && continue
+              mkdir -p "backups/storage/laq-photos/$name"
+              curl -s \
+                -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+                -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+                "${{ secrets.SUPABASE_URL }}/storage/v1/object/laq-photos/$name/$subname" \
+                -o "backups/storage/laq-photos/$name/$subname"
+            done
+          done
+
       - name: Delete backups older than 14 days
         run: |
           find backups/ -name "*.json" -mtime +14 -delete 2>/dev/null || true
