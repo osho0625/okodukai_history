@@ -52,6 +52,24 @@ async function queuePushMessage(title, body, targetRole) {
 }
 
 // ============================================================
+// デフォルトポイント表（Alexaスキル内定義）
+// ============================================================
+
+const DEFAULT_POINTS = {
+  '洗濯機回し': 1,
+  '洗濯機畳み': 8,
+  '料理': 3,
+  '掃除機': 2,
+  'ゴミ出し': 2,
+  'ゴミまとめ': 2,
+  '片付け': 2,
+  'トイレ掃除': 6,
+  '生ごみ': 1,
+  '牛乳パック開き': 1,
+  'その他': 1
+};
+
+// ============================================================
 // Intent Handlers
 // ============================================================
 
@@ -76,12 +94,13 @@ const RequestChorePointsIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const childName = slots.childName?.value;
-    const choreName = slots.choreName?.value;
+    const choreName = slots.choreName?.value || 'その他';
+    const pointsCount = slots.pointsCount?.value ? parseInt(slots.pointsCount.value, 10) : null;
 
-    if (!childName || !choreName) {
+    if (!childName) {
       return handlerInput.responseBuilder
-        .speak('名前と家事が聞き取れませんでした。もう一度言ってください。')
-        .reprompt('誰の、何のお手伝いですか？')
+        .speak('名前が聞き取れませんでした。もう一度言ってください。')
+        .reprompt('誰のお手伝いですか？')
         .getResponse();
     }
 
@@ -95,9 +114,16 @@ const RequestChorePointsIntentHandler = {
       }
       const child = children[0];
 
-      // 家事マスタからポイント数を取得
-      const choreTypes = await supabaseGet(`chore_types?name=eq.${encodeURIComponent(choreName)}&select=name,default_points`);
-      const points = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
+      // ポイント数決定: 発話指定 > デフォルトポイント表 > 家事マスタDB > 1pt
+      let points;
+      if (pointsCount && pointsCount > 0 && pointsCount <= 100) {
+        points = pointsCount;
+      } else if (DEFAULT_POINTS[choreName] !== undefined) {
+        points = DEFAULT_POINTS[choreName];
+      } else {
+        const choreTypes = await supabaseGet(`chore_types?name=eq.${encodeURIComponent(choreName)}&select=name,default_points`);
+        points = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
+      }
 
       // chore_points に INSERT (status=pending)
       await supabasePost('chore_points', {
