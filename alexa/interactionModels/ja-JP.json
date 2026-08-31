@@ -26,16 +26,19 @@
             "{childName} に {pointsCount} ポイント {choreName}",
             "{childName} の {choreName} {pointsCount} ポイント",
             "{childName} が {choreName} {pointsCount} ポイント",
+            "{childName} に {choreName} で {pointsCount} ポイント",
+            "{childName} に {choreName} を {pointsCount} ポイント",
             "{childName} の {choreName}",
             "{childName} が {choreName} した",
             "{childName} が {choreName} やった",
             "{childName} の {choreName} 申請",
             "{childName} {choreName}",
             "ポイント申請 {childName} {choreName}",
-            "{childName} の {choreName} ポイント",
             "{childName} が {choreName} したよ",
             "{childName} が {choreName} 終わった",
-            "{childName} が {choreName} できた"
+            "{childName} が {choreName} できた",
+            "{childName} に {choreName}",
+            "{childName} に {choreName} 追加"
           ]
         },
         {
@@ -50,7 +53,8 @@
             "{childName} の残高",
             "{childName} の お小遣い",
             "{childName} いくら",
-            "{childName} のポイント"
+            "{childName} の残高確認",
+            "{childName} の残高教えて"
           ]
         },
         {
@@ -94,6 +98,7 @@
             { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } },
             { "name": { "value": "生ごみ", "synonyms": ["なまごみ", "生ゴミ"] } },
             { "name": { "value": "牛乳パック開き", "synonyms": ["牛乳パック", "ぎゅうにゅうパック", "パック開き"] } },
+            { "name": { "value": "タオル畳み", "synonyms": ["タオルたたみ", "たおる畳み"] } },
             { "name": { "value": "その他", "synonyms": ["そのた", "その他のお手伝い"] } }
           ]
         }
