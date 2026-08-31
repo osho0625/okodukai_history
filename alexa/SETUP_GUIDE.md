@@ -337,6 +337,8 @@ exports.handler = Alexa.SkillBuilders.custom()
 | ゴミまとめ | 2pt |
 | 片付け | 2pt |
 | トイレ掃除 | 6pt |
+| 生ごみ | 1pt |
+| 牛乳パック開き | 1pt |
 | その他 | 1pt |
 
 ※ ポイント数を発話で指定した場合はそちらが優先されます
