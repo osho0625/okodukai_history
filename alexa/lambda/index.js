@@ -77,6 +77,7 @@ const RequestChorePointsIntentHandler = {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const childName = slots.childName?.value;
     const choreName = slots.choreName?.value;
+    const pointsCount = slots.pointsCount?.value ? parseInt(slots.pointsCount.value, 10) : null;
 
     if (!childName || !choreName) {
       return handlerInput.responseBuilder
@@ -95,9 +96,10 @@ const RequestChorePointsIntentHandler = {
       }
       const child = children[0];
 
-      // 家事マスタからポイント数を取得
+      // 家事マスタからポイント数を取得（発話でポイント数指定があればそちらを優先）
       const choreTypes = await supabaseGet(`chore_types?name=eq.${encodeURIComponent(choreName)}&select=name,default_points`);
-      const points = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
+      const defaultPoints = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
+      const points = (pointsCount && pointsCount > 0 && pointsCount <= 100) ? pointsCount : defaultPoints;
 
       // chore_points に INSERT (status=pending)
       await supabasePost('chore_points', {

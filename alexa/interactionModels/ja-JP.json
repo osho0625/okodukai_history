@@ -13,9 +13,19 @@
             {
               "name": "choreName",
               "type": "CHORE_NAME"
+            },
+            {
+              "name": "pointsCount",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
+            "{childName} に {choreName} の {pointsCount} ポイント追加",
+            "{childName} に {choreName} の {pointsCount} ポイント",
+            "{childName} に {choreName} {pointsCount} ポイント",
+            "{childName} に {pointsCount} ポイント {choreName}",
+            "{childName} の {choreName} {pointsCount} ポイント",
+            "{childName} が {choreName} {pointsCount} ポイント",
             "{childName} の {choreName}",
             "{childName} が {choreName} した",
             "{childName} が {choreName} やった",
@@ -65,7 +75,10 @@
           "name": "CHILD_NAME",
           "values": [
             { "name": { "value": "りょうすけ" } },
-            { "name": { "value": "めぐみ" } }
+            { "name": { "value": "めぐみ" } },
+            { "name": { "value": "はるちか" } },
+            { "name": { "value": "かいせい" } },
+            { "name": { "value": "いろは" } }
           ]
         },
         {
