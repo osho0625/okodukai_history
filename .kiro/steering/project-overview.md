@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/31 v2.40.0
+最終更新: 2026/08/31 v2.40.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -77,6 +77,7 @@ inclusion: auto
 ├── tests/hair-removal-tracker/  # 脱毛周期管理テスト（12ファイル/161テスト）
 ├── docs/               # 開発者ドキュメント
 ├── alexa/              # Alexa お小遣い帳スキル（対話モデル + Lambda コード + セットアップガイド）
+├── raspi/              # Raspberry Pi おうちブロードキャスト（読み上げサービス + セットアップ）
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, reminder-notify, news-notify)
 ```
 

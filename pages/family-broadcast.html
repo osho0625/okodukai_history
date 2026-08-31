@@ -15,10 +15,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; 
 .back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
 .back:hover { opacity: 0.6; }
 h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
-
 .section { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
 .section-title { font-weight: 600; color: #555; margin-bottom: 12px; font-size: 0.95em; }
-
 .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .preset-btn {
   padding: 14px 10px; border: 2px solid #e0e0e0; border-radius: 10px;
@@ -29,7 +27,6 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
 .preset-btn:active { transform: scale(0.96); }
 .preset-btn.sending { opacity: 0.5; pointer-events: none; }
 .preset-btn.sent { border-color: #4caf50; background: #e8f5e9; }
-
 .custom-row { display: flex; gap: 8px; margin-top: 12px; }
 .custom-input {
   flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
@@ -43,39 +40,19 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
 }
 .send-btn:hover { background: #1e88e5; }
 .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .time-input { padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
-
-.history-item {
-  padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.85em;
-}
+.history-item { padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.85em; }
 .history-item.to-alexa { background: #e3f2fd; }
 .history-item.from-alexa { background: #fff3e0; }
 .history-meta { font-size: 0.75em; color: #999; margin-top: 2px; }
 .history-reply { font-size: 0.8em; color: #4caf50; margin-top: 2px; }
-
 .status-msg {
   text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 12px;
   font-size: 0.85em; font-weight: 600; display: none;
 }
 .status-msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
 .status-msg.error { display: block; background: #ffebee; color: #c62828; }
-
-.setup-section { background: #fff8e1; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-.setup-section input {
-  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;
-  font-size: 0.9em; margin-bottom: 8px;
-}
-.setup-section button {
-  width: 100%; padding: 10px; border: none; border-radius: 8px;
-  background: #ff9800; color: #fff; font-weight: 600; cursor: pointer;
-}
-
-.badge-new {
-  display: inline-block; background: #e53935; color: #fff; font-size: 0.65em;
-  padding: 1px 6px; border-radius: 6px; margin-left: 4px; vertical-align: middle;
-}
 </style>
 </head>
 <body>
@@ -85,37 +62,20 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
 
 <div id="statusMsg" class="status-msg"></div>
 
-<!-- Voice Monkey未設定時の初期設定 -->
-<div id="setupSection" class="setup-section" style="display:none;">
-  <div class="section-title">⚙️ 初期設定（Voice Monkey APIトークン）</div>
-  <p style="font-size:0.8em; color:#666; margin-bottom:8px;">
-    Voice MonkeyのコンソールからAPIトークンを取得して入力してください。
-    <a href="https://console.voicemonkey.io" target="_blank" style="color:#1976d2;">コンソールを開く</a>
-  </p>
-  <input type="text" id="vmTokenInput" placeholder="Voice Monkey APIトークン">
-  <input type="text" id="vmDeviceInput" placeholder="スピーカーデバイス名（例: living-room）">
-  <button onclick="saveVmConfig()">保存</button>
-</div>
-
-<!-- 定型文ボタン -->
 <div class="section">
   <div class="section-title">📋 定型メッセージ</div>
-
   <div class="time-row">
     <span style="font-size:0.85em;">⏰</span>
     <input type="time" id="timeInput" class="time-input">
     <span style="font-size:0.8em; color:#888;">（時間付きメッセージ用）</span>
   </div>
-
   <div class="preset-grid" id="presetGrid"></div>
-
   <div class="custom-row">
     <input type="text" id="customMsg" class="custom-input" placeholder="自由メッセージを入力..." maxlength="100">
     <button class="send-btn" id="customSendBtn" onclick="sendCustom()">送信</button>
   </div>
 </div>
 
-<!-- 返事履歴 -->
 <div class="section">
   <div class="section-title">💬 やりとり履歴</div>
   <div id="historyList">
@@ -124,7 +84,6 @@ h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
 </div>
 
 <script>
-// --- 定型メッセージ定義 ---
 const PRESETS = [
   { emoji: '🍚', template: '{time}までにご飯炊いて', needsTime: true },
   { emoji: '🏓', text: '今日はピックル', needsTime: false },
@@ -136,35 +95,6 @@ const PRESETS = [
   { emoji: '🛒', text: '買い物行ってくるね', needsTime: false },
 ];
 
-// --- Voice Monkey設定 ---
-const VM_TOKEN_KEY = 'vm_api_token';
-const VM_DEVICE_KEY = 'vm_device_name';
-
-function getVmConfig() {
-  return {
-    token: localStorage.getItem(VM_TOKEN_KEY) || '',
-    device: localStorage.getItem(VM_DEVICE_KEY) || ''
-  };
-}
-
-function saveVmConfig() {
-  const token = document.getElementById('vmTokenInput').value.trim();
-  const device = document.getElementById('vmDeviceInput').value.trim();
-  if (!token || !device) { showStatus('トークンとデバイス名を入力してください', 'error'); return; }
-  localStorage.setItem(VM_TOKEN_KEY, token);
-  localStorage.setItem(VM_DEVICE_KEY, device);
-  document.getElementById('setupSection').style.display = 'none';
-  showStatus('設定を保存しました', 'success');
-}
-
-function checkSetup() {
-  const cfg = getVmConfig();
-  if (!cfg.token || !cfg.device) {
-    document.getElementById('setupSection').style.display = 'block';
-  }
-}
-
-// --- プリセットボタン描画 ---
 function renderPresets() {
   const grid = document.getElementById('presetGrid');
   grid.innerHTML = '';
@@ -179,16 +109,12 @@ function renderPresets() {
   });
 }
 
-// --- メッセージ送信 ---
 async function sendPreset(index, btnEl) {
   const preset = PRESETS[index];
   let msg;
   if (preset.needsTime) {
     const timeVal = document.getElementById('timeInput').value;
-    if (!timeVal) {
-      showStatus('⏰ 時間を設定してください', 'error');
-      return;
-    }
+    if (!timeVal) { showStatus('⏰ 時間を設定してください', 'error'); return; }
     const [h, m] = timeVal.split(':');
     const timeStr = parseInt(h) + '時' + (parseInt(m) > 0 ? parseInt(m) + '分' : '');
     msg = preset.template.replace('{time}', timeStr);
@@ -202,52 +128,24 @@ async function sendCustom() {
   const input = document.getElementById('customMsg');
   const msg = input.value.trim();
   if (!msg) return;
-  const btn = document.getElementById('customSendBtn');
-  await broadcast(msg, btn);
+  await broadcast(msg, document.getElementById('customSendBtn'));
   input.value = '';
 }
 
 async function broadcast(message, btnEl) {
   if (btnEl) { btnEl.classList.add('sending'); btnEl.disabled = true; }
-
   try {
-    // 1. Voice Monkey APIで読み上げ
-    const cfg = getVmConfig();
-    if (!cfg.token || !cfg.device) {
-      showStatus('⚙️ Voice Monkey設定が必要です', 'error');
-      document.getElementById('setupSection').style.display = 'block';
-      return;
-    }
-
-    const vmRes = await fetch('https://api-v3.voicemonkey.io/announcement', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + cfg.token
-      },
-      body: JSON.stringify({
-        device: cfg.device,
-        text: message
-      })
-    });
-
-    if (!vmRes.ok) {
-      const errText = await vmRes.text();
-      throw new Error('Voice Monkey API エラー: ' + vmRes.status + ' ' + errText);
-    }
-
-    // 2. DBに記録
-    await client.from('alexa_messages').insert({
+    // DBに記録 → ラズパイがRealtimeで拾って即座に読み上げ
+    const { error } = await client.from('alexa_messages').insert({
       direction: 'to_alexa',
       message: message
     });
+    if (error) throw error;
 
-    // 3. Discord通知
     await notifyDiscord('📢 ブロードキャスト: ' + message);
 
     showStatus('📢 送信しました: ' + message, 'success');
     if (btnEl) { btnEl.classList.remove('sending'); btnEl.classList.add('sent'); btnEl.disabled = false; setTimeout(() => btnEl.classList.remove('sent'), 2000); }
-
     loadHistory();
   } catch (e) {
     console.error('broadcast error:', e);
@@ -256,52 +154,39 @@ async function broadcast(message, btnEl) {
   }
 }
 
-// --- 履歴読み込み ---
 async function loadHistory() {
   const list = document.getElementById('historyList');
   try {
     const { data, error } = await client.from('alexa_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(30);
-
+      .select('*').order('created_at', { ascending: false }).limit(30);
     if (error) throw error;
     if (!data || data.length === 0) {
       list.innerHTML = '<div style="text-align:center; color:#999; font-size:0.85em;">まだやりとりはありません</div>';
       return;
     }
-
     list.innerHTML = '';
     data.forEach(item => {
       const div = document.createElement('div');
       div.className = 'history-item ' + (item.direction === 'to_alexa' ? 'to-alexa' : 'from-alexa');
-
       const icon = item.direction === 'to_alexa' ? '📢' : '🗣️';
-      const label = item.direction === 'to_alexa' ? 'あなた → Alexa' : 'Alexa → あなた';
-
+      const label = item.direction === 'to_alexa' ? 'あなた → おうち' : 'おうち → あなた';
       let html = '<div>' + icon + ' <strong>' + label + '</strong></div>';
       html += '<div style="margin-top:4px;">' + escapeHtml(item.message) + '</div>';
-
       if (item.direction === 'to_alexa' && item.replied) {
         html += '<div class="history-reply">✅ 返事: ' + escapeHtml(item.reply_text || '了解') + '</div>';
       } else if (item.direction === 'to_alexa' && !item.replied) {
         html += '<div style="font-size:0.75em; color:#ff9800; margin-top:2px;">⏳ 未返事</div>';
       }
-
       const dt = new Date(item.created_at);
-      const timeStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      html += '<div class="history-meta">' + timeStr + '</div>';
-
+      html += '<div class="history-meta">' + dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div>';
       div.innerHTML = html;
       list.appendChild(div);
     });
   } catch (e) {
-    console.error('loadHistory error:', e);
     list.innerHTML = '<div style="text-align:center; color:#e53935; font-size:0.85em;">読み込みエラー</div>';
   }
 }
 
-// --- ステータス表示 ---
 function showStatus(msg, type) {
   const el = document.getElementById('statusMsg');
   el.textContent = msg;
@@ -315,26 +200,13 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-// --- Realtime購読（返事が来たらリロード） ---
 function subscribeRealtime() {
   client.channel('alexa-replies')
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'alexa_messages',
-      filter: 'direction=eq.to_alexa'
-    }, () => { loadHistory(); })
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'alexa_messages',
-      filter: 'direction=eq.from_alexa'
-    }, () => { loadHistory(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'alexa_messages', filter: 'direction=eq.to_alexa' }, () => loadHistory())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alexa_messages', filter: 'direction=eq.from_alexa' }, () => loadHistory())
     .subscribe();
 }
 
-// --- 初期化 ---
-checkSetup();
 renderPresets();
 loadHistory();
 subscribeRealtime();
