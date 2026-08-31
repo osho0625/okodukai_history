@@ -383,4 +383,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `laundry-notification.md` — 洗濯通知アプリ
 - `laq-museum.md` — LaQ美術館・家族アルバム
 - `alexa-chore-points.md` — Alexaスキル: お手伝いポイント申請
-- `family-broadcast.md` — おうちブロードキャスト（Alexa読み上げ + 返事通知）
+- `family-broadcast.md` — おうちブロードキャスト（ラズパイ読み上げ + Alexa返事通知）

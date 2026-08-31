@@ -53,8 +53,8 @@
 | ファミリーニュース | pages/news.html | RSSニュースアグリゲーター（テック・ゲーム・おでかけ） |
 | 旅行計画 | .kiro/specs/family-notes/docs/honeymoon-trip.md, .kiro/specs/family-notes/docs/family-train-trip.md | 新婚旅行（台湾/沖縄）・家族寝台特急旅行（サンライズ瀬戸） |
 | LaQ美術館 | pages/laq-museum.html | LaQ作品の写真記録・ギャラリー |
-| Alexa連携 | alexa/ | 音声でポイント申請・残高確認・ブロードキャスト返事（Alexa-hosted スキル + Voice Monkey） |
-| おうちブロードキャスト | pages/family-broadcast.html | アプリ→Alexa読み上げ（Voice Monkey）、Alexa返事→admin通知 |
+| Alexa連携 | alexa/ | 音声でポイント申請・残高確認・ブロードキャスト返事（Alexa-hosted スキル） |
+| おうちブロードキャスト | pages/family-broadcast.html, raspi/ | アプリ→ラズパイ読み上げ（gTTS）、Alexa返事→admin通知 |
 
 ## CSS構成
 
