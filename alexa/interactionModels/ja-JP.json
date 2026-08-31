@@ -84,14 +84,15 @@
         {
           "name": "CHORE_NAME",
           "values": [
-            { "name": { "value": "お風呂掃除", "synonyms": ["風呂掃除", "お風呂"] } },
-            { "name": { "value": "食洗器", "synonyms": ["食洗機", "しょくせんき"] } },
-            { "name": { "value": "洗濯機", "synonyms": ["洗濯", "せんたくき"] } },
-            { "name": { "value": "料理", "synonyms": ["ごはん", "りょうり"] } },
+            { "name": { "value": "洗濯機回し", "synonyms": ["洗濯回し", "洗濯機まわし", "せんたくきまわし"] } },
+            { "name": { "value": "洗濯機畳み", "synonyms": ["洗濯畳み", "洗濯たたみ", "せんたくきたたみ"] } },
+            { "name": { "value": "料理", "synonyms": ["ごはん", "りょうり", "ご飯作り"] } },
             { "name": { "value": "掃除機", "synonyms": ["そうじき", "掃除"] } },
             { "name": { "value": "ゴミ出し", "synonyms": ["ゴミ捨て", "ごみ出し"] } },
+            { "name": { "value": "ゴミまとめ", "synonyms": ["ごみまとめ", "ゴミ集め"] } },
             { "name": { "value": "片付け", "synonyms": ["かたづけ", "お片付け"] } },
-            { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } }
+            { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } },
+            { "name": { "value": "その他", "synonyms": ["そのた", "その他のお手伝い"] } }
           ]
         }
       ]

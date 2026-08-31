@@ -52,6 +52,22 @@ async function queuePushMessage(title, body, targetRole) {
 }
 
 // ============================================================
+// デフォルトポイント表（Alexaスキル内定義）
+// ============================================================
+
+const DEFAULT_POINTS = {
+  '洗濯機回し': 1,
+  '洗濯機畳み': 8,
+  '料理': 3,
+  '掃除機': 2,
+  'ゴミ出し': 2,
+  'ゴミまとめ': 2,
+  '片付け': 2,
+  'トイレ掃除': 6,
+  'その他': 1
+};
+
+// ============================================================
 // Intent Handlers
 // ============================================================
 
@@ -96,10 +112,16 @@ const RequestChorePointsIntentHandler = {
       }
       const child = children[0];
 
-      // 家事マスタからポイント数を取得（発話でポイント数指定があればそちらを優先）
-      const choreTypes = await supabaseGet(`chore_types?name=eq.${encodeURIComponent(choreName)}&select=name,default_points`);
-      const defaultPoints = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
-      const points = (pointsCount && pointsCount > 0 && pointsCount <= 100) ? pointsCount : defaultPoints;
+      // ポイント数決定: 発話指定 > デフォルトポイント表 > 家事マスタDB > 1pt
+      let points;
+      if (pointsCount && pointsCount > 0 && pointsCount <= 100) {
+        points = pointsCount;
+      } else if (DEFAULT_POINTS[choreName] !== undefined) {
+        points = DEFAULT_POINTS[choreName];
+      } else {
+        const choreTypes = await supabaseGet(`chore_types?name=eq.${encodeURIComponent(choreName)}&select=name,default_points`);
+        points = choreTypes.length > 0 ? choreTypes[0].default_points : 1;
+      }
 
       // chore_points に INSERT (status=pending)
       await supabasePost('chore_points', {
