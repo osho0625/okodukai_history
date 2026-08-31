@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/31 v2.39.0
+最終更新: 2026/08/31 v2.40.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -32,7 +32,7 @@ inclusion: auto
 | ニュース、news | `.kiro/steering/family-news.md` |
 | 洗濯、laundry | `.kiro/steering/laundry-notification.md` |
 | LaQ、美術館、laq、アルバム | `.kiro/steering/laq-museum.md` |
-| Alexa、alexa、スキル | `.kiro/steering/alexa-chore-points.md` |
+| Alexa、alexa、スキル、ブロードキャスト、broadcast | `.kiro/steering/alexa-chore-points.md`, `.kiro/steering/family-broadcast.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -162,6 +162,13 @@ inclusion: auto
 - RLS無効（既存テーブルと同様）
 - soft delete方式: 削除時はdeleted_atにUTCタイムスタンプを設定
 - 通知タイミング: memo/event=07:50,17:30、repeat=前日22:00（Push通知のみ）、yearly=7日前から07:50,17:30
+
+### alexa_messages（おうちブロードキャスト）
+- id: UUID (PK), direction: TEXT ('to_alexa'/'from_alexa'), message: TEXT
+- replied: BOOLEAN (default false), reply_text: TEXT (nullable), replied_at: TIMESTAMPTZ (nullable)
+- created_at: TIMESTAMPTZ
+- INDEX: idx_alexa_messages_pending (direction, replied, created_at DESC WHERE replied=false)
+- RLS無効
 
 ### poker_chips_exchanges（チップ交換履歴）
 - id: UUID (PK), player_name: TEXT, prize_name: TEXT, cost: INT, created_at: TIMESTAMPTZ
@@ -299,7 +306,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.38.3
+- 現在: v2.40.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -375,3 +382,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `laundry-notification.md` — 洗濯通知アプリ
 - `laq-museum.md` — LaQ美術館・家族アルバム
 - `alexa-chore-points.md` — Alexaスキル: お手伝いポイント申請
+- `family-broadcast.md` — おうちブロードキャスト（Alexa読み上げ + 返事通知）

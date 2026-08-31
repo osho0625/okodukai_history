@@ -32,6 +32,8 @@ Alexa-hosted (Node.js) でホスティング。申請は `status: 'pending'` で
 |--------|---------|------|
 | `RequestChorePointsIntent` | childName (CHILD_NAME), choreName (CHORE_NAME), pointsCount (AMAZON.NUMBER) | ポイント申請 |
 | `CheckBalanceIntent` | childName (CHILD_NAME) | 残高確認 |
+| `CheckBroadcastIntent` | - | 未読メッセージ確認（おうちブロードキャスト） |
+| `ReplyOkIntent` | - | メッセージに返事（了解等） |
 | `AMAZON.HelpIntent` | - | 使い方説明 |
 | `AMAZON.StopIntent` / `AMAZON.CancelIntent` | - | 終了 |
 | `AMAZON.FallbackIntent` | - | 聞き取れなかった時 |
@@ -120,6 +122,8 @@ children テーブルの name に対応。
 | はるちかにゴミ捨て2ポイント | ゴミ出し 2pt 申請 |
 | かいせいに5ポイント | その他 5pt 申請 |
 | めぐみの残高 | 残高読み上げ |
+| メッセージ確認 | 未読ブロードキャスト読み上げ |
+| 分かった / 了解 / OK | 最新メッセージに返事（admin通知） |
 
 ## 新しいスキルを追加する際のテンプレート
 

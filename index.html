@@ -183,12 +183,13 @@ const ALL_ICONS = [
   { id: 'poker-chips', emoji: '🪙', label: 'ポーカーチップ', href: 'pages/poker-chips.html', position: 'bottom', adminOnly: false },
   { id: 'hair-removal', emoji: '🪒', label: '脱毛管理', href: 'pages/hair-removal-tracker.html', position: 'bottom', adminOnly: true },
   { id: 'laq-museum', emoji: '🏛️', label: 'LaQ美術館', href: 'pages/laq-museum.html', position: 'top', adminOnly: false },
+  { id: 'broadcast', emoji: '📢', label: 'おうちブロードキャスト', href: 'pages/family-broadcast.html', position: 'bottom', adminOnly: true },
   { id: 'settings', emoji: '⚙️', label: '設定', href: '#', position: 'bottom', adminOnly: false, isSettings: true }
 ];
 
 // デフォルトで表示するアイコンID
 const DEFAULT_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','nurse','notes','poker-chips','settings'];
-const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','settings'];
+const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','broadcast','settings'];
 
 function getVisibleIcons() {
   const isAdmin = localStorage.getItem('deviceRole') === 'admin';
@@ -197,7 +198,7 @@ function getVisibleIcons() {
     try {
       const ids = JSON.parse(saved);
       // 新アイコン自動追加マイグレーション
-      const newIcons = ['laq-museum'];
+      const newIcons = ['laq-museum', 'broadcast'];
       let updated = false;
       newIcons.forEach(id => {
         if (!ids.includes(id)) { ids.splice(ids.length - 1, 0, id); updated = true; }
@@ -1559,7 +1560,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.39.0</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.40.0</a></div>
 
 </body>
 </html>
