@@ -13,19 +13,34 @@
             {
               "name": "choreName",
               "type": "CHORE_NAME"
+            },
+            {
+              "name": "pointsCount",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
+            "{childName} に {choreName} の {pointsCount} ポイント追加",
+            "{childName} に {choreName} の {pointsCount} ポイント",
+            "{childName} に {choreName} {pointsCount} ポイント",
+            "{childName} に {pointsCount} ポイント {choreName}",
+            "{childName} の {choreName} {pointsCount} ポイント",
+            "{childName} が {choreName} {pointsCount} ポイント",
+            "{childName} に {choreName} で {pointsCount} ポイント",
+            "{childName} に {choreName} を {pointsCount} ポイント",
             "{childName} の {choreName}",
             "{childName} が {choreName} した",
             "{childName} が {choreName} やった",
             "{childName} の {choreName} 申請",
             "{childName} {choreName}",
             "ポイント申請 {childName} {choreName}",
-            "{childName} の {choreName} ポイント",
             "{childName} が {choreName} したよ",
             "{childName} が {choreName} 終わった",
-            "{childName} が {choreName} できた"
+            "{childName} が {choreName} できた",
+            "{childName} に {choreName}",
+            "{childName} に {choreName} 追加",
+            "{childName} に {pointsCount} ポイント",
+            "{childName} に {pointsCount} ポイント追加"
           ]
         },
         {
@@ -40,7 +55,8 @@
             "{childName} の残高",
             "{childName} の お小遣い",
             "{childName} いくら",
-            "{childName} のポイント"
+            "{childName} の残高確認",
+            "{childName} の残高教えて"
           ]
         },
         {
@@ -65,20 +81,27 @@
           "name": "CHILD_NAME",
           "values": [
             { "name": { "value": "りょうすけ" } },
-            { "name": { "value": "めぐみ" } }
+            { "name": { "value": "めぐみ" } },
+            { "name": { "value": "はるちか" } },
+            { "name": { "value": "かいせい" } },
+            { "name": { "value": "いろは" } }
           ]
         },
         {
           "name": "CHORE_NAME",
           "values": [
-            { "name": { "value": "お風呂掃除", "synonyms": ["風呂掃除", "お風呂"] } },
-            { "name": { "value": "食洗器", "synonyms": ["食洗機", "しょくせんき"] } },
-            { "name": { "value": "洗濯機", "synonyms": ["洗濯", "せんたくき"] } },
-            { "name": { "value": "料理", "synonyms": ["ごはん", "りょうり"] } },
+            { "name": { "value": "洗濯機回し", "synonyms": ["洗濯回し", "洗濯機まわし", "せんたくきまわし"] } },
+            { "name": { "value": "洗濯機畳み", "synonyms": ["洗濯畳み", "洗濯たたみ", "せんたくきたたみ"] } },
+            { "name": { "value": "料理", "synonyms": ["ごはん", "りょうり", "ご飯作り"] } },
             { "name": { "value": "掃除機", "synonyms": ["そうじき", "掃除"] } },
             { "name": { "value": "ゴミ出し", "synonyms": ["ゴミ捨て", "ごみ出し"] } },
+            { "name": { "value": "ゴミまとめ", "synonyms": ["ごみまとめ", "ゴミ集め"] } },
             { "name": { "value": "片付け", "synonyms": ["かたづけ", "お片付け"] } },
-            { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } }
+            { "name": { "value": "トイレ掃除", "synonyms": ["トイレ"] } },
+            { "name": { "value": "生ごみ", "synonyms": ["なまごみ", "生ゴミ"] } },
+            { "name": { "value": "牛乳パック開き", "synonyms": ["牛乳パック", "ぎゅうにゅうパック", "パック開き"] } },
+            { "name": { "value": "タオル畳み", "synonyms": ["タオルたたみ", "たおる畳み"] } },
+            { "name": { "value": "その他", "synonyms": ["そのた", "その他のお手伝い"] } }
           ]
         }
       ]

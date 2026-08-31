@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/08/26 v2.38.3
+最終更新: 2026/08/31 v2.39.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -32,6 +32,7 @@ inclusion: auto
 | ニュース、news | `.kiro/steering/family-news.md` |
 | 洗濯、laundry | `.kiro/steering/laundry-notification.md` |
 | LaQ、美術館、laq、アルバム | `.kiro/steering/laq-museum.md` |
+| Alexa、alexa、スキル | `.kiro/steering/alexa-chore-points.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -50,7 +51,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v327, Push通知対応)
+├── sw.js               # Service Worker (v328, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -75,6 +76,7 @@ inclusion: auto
 ├── .kiro/specs/hair-removal-tracker/ # 脱毛周期管理アプリspec
 ├── tests/hair-removal-tracker/  # 脱毛周期管理テスト（12ファイル/161テスト）
 ├── docs/               # 開発者ドキュメント
+├── alexa/              # Alexa お小遣い帳スキル（対話モデル + Lambda コード + セットアップガイド）
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, reminder-notify, news-notify)
 ```
 
@@ -372,3 +374,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `family-news.md` — ファミリーニュース
 - `laundry-notification.md` — 洗濯通知アプリ
 - `laq-museum.md` — LaQ美術館・家族アルバム
+- `alexa-chore-points.md` — Alexaスキル: お手伝いポイント申請
