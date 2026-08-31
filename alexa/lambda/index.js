@@ -94,13 +94,13 @@ const RequestChorePointsIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const childName = slots.childName?.value;
-    const choreName = slots.choreName?.value;
+    const choreName = slots.choreName?.value || 'その他';
     const pointsCount = slots.pointsCount?.value ? parseInt(slots.pointsCount.value, 10) : null;
 
-    if (!childName || !choreName) {
+    if (!childName) {
       return handlerInput.responseBuilder
-        .speak('名前と家事が聞き取れませんでした。もう一度言ってください。')
-        .reprompt('誰の、何のお手伝いですか？')
+        .speak('名前が聞き取れませんでした。もう一度言ってください。')
+        .reprompt('誰のお手伝いですか？')
         .getResponse();
     }
 

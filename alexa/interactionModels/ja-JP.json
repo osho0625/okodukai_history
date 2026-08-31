@@ -38,7 +38,9 @@
             "{childName} が {choreName} 終わった",
             "{childName} が {choreName} できた",
             "{childName} に {choreName}",
-            "{childName} に {choreName} 追加"
+            "{childName} に {choreName} 追加",
+            "{childName} に {pointsCount} ポイント",
+            "{childName} に {pointsCount} ポイント追加"
           ]
         },
         {
