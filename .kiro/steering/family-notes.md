@@ -80,7 +80,11 @@ fileMatchPattern: "*family-notes*,*family_notes*"
   { "title": "🎮 Scratchでゲームをつくろう！", "file": "scratch-guide.md" },
   { "title": "🪀 けん玉ロードマップ", "file": "kendama-roadmap.md" },
   { "title": "🪀 けん玉チャレンジ！", "file": "kendama-kids.md" },
-  { "title": "💪 筋トレマイルストーン", "file": "bodymaking-plan.md" }
+  { "title": "💪 筋トレマイルストーン", "file": "bodymaking-plan.md" },
+  { "title": "💪 懸垂バー選定", "file": "chinning-bar-selection.md" },
+  { "title": "🚂 家族寝台特急旅行計画", "file": "family-train-trip.md" },
+  { "title": "💒 新婚旅行計画", "file": "honeymoon-trip.md" },
+  { "title": "🍓 Raspberry Pi セットアップガイド", "file": "raspi-setup-guide.md" }
 ]
 ```
 

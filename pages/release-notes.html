@@ -36,6 +36,31 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.40.1</span><span class="date">2026/08/31</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> おうちブロードキャスト: Voice Monkey依存を除去、Raspberry Pi直接読み上げ方式に変更</li>
+    <li><span class="tag tag-feat">feat</span> Raspberry Pi: gTTS読み上げサービス追加（Supabase Realtime購読 → 日本語TTS → スピーカー再生）</li>
+    <li><span class="tag tag-infra">infra</span> raspi/ フォルダ追加（セットアップスクリプト・読み上げサービス・ガイド）</li>
+    <li><span class="tag tag-feat">feat</span> 家族メモ帳: 🍓 Raspberry Pi セットアップガイド ドキュメント追加</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v330</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.40.0</span><span class="date">2026/08/31</span></div>
+  <ul>
+    <li><span class="tag tag-feat">NEW</span> おうちブロードキャスト: アプリからAlexaにメッセージ読み上げ（Voice Monkey連携）</li>
+    <li><span class="tag tag-feat">feat</span> おうちブロードキャスト: 定型文8種（時間付き4種＋固定4種）＋自由メッセージ送信</li>
+    <li><span class="tag tag-feat">feat</span> Alexa返事機能: 「分かった」「了解」等でadminにPush通知＋Discord通知</li>
+    <li><span class="tag tag-feat">feat</span> Alexa: 「メッセージ確認」で未読連絡の読み上げ</li>
+    <li><span class="tag tag-feat">feat</span> やりとり履歴: Realtime購読で返事が来たら自動更新</li>
+    <li><span class="tag tag-infra">infra</span> Supabase: alexa_messages テーブル追加</li>
+    <li><span class="tag tag-infra">infra</span> Alexa対話モデル: CheckBroadcastIntent / ReplyOkIntent 追加</li>
+    <li><span class="tag tag-infra">infra</span> Service Worker v329</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.39.0</span><span class="date">2026/08/31</span></div>
   <ul>
     <li><span class="tag tag-feat">NEW</span> Alexa連携: お小遣い帳スキル追加（音声でポイント申請・残高確認）</li>

@@ -33,6 +33,20 @@ async function supabasePost(path, body) {
   if (!res.ok) throw new Error(`Supabase POST failed: ${res.status}`);
 }
 
+async function supabasePatch(path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Supabase PATCH failed: ${res.status}`);
+}
+
 async function sendDiscord(message) {
   if (!DISCORD_WEBHOOK) return;
   await fetch(DISCORD_WEBHOOK, {
@@ -78,10 +92,10 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const speech = 'お小遣い帳です。「○○のお風呂掃除」のように、名前と家事を言ってください。';
+    const speech = 'お小遣い帳です。ポイント申請は「○○のお風呂掃除」、連絡確認は「メッセージ確認」と言ってね。';
     return handlerInput.responseBuilder
       .speak(speech)
-      .reprompt('誰の、何のお手伝いですか？')
+      .reprompt('何をしますか？ポイント申請、残高確認、メッセージ確認ができます。')
       .getResponse();
   }
 };
@@ -191,13 +205,126 @@ const CheckBalanceIntentHandler = {
   }
 };
 
+// ============================================================
+// ブロードキャスト関連 Intent Handlers
+// ============================================================
+
+const CheckBroadcastIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+      && Alexa.getIntentName(handlerInput.requestEnvelope) === 'CheckBroadcastIntent';
+  },
+  async handle(handlerInput) {
+    try {
+      // 未返事のメッセージを取得（新しい順）
+      const messages = await supabaseGet(
+        'alexa_messages?direction=eq.to_alexa&replied=eq.false&order=created_at.desc&limit=5'
+      );
+
+      if (messages.length === 0) {
+        return handlerInput.responseBuilder
+          .speak('新しい連絡はありません。')
+          .getResponse();
+      }
+
+      // 最新メッセージを読み上げ、返事を待つ
+      const latest = messages[0];
+      const count = messages.length;
+      const countText = count > 1 ? `${count}件の連絡があります。最新のメッセージです。` : '1件連絡があります。';
+
+      // セッション属性にメッセージIDを保存（返事用）
+      const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+      sessionAttributes.pendingMessageId = latest.id;
+      sessionAttributes.pendingMessage = latest.message;
+      handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+      const speech = `${countText}「${latest.message}」。分かったら「了解」と言ってね。`;
+      return handlerInput.responseBuilder
+        .speak(speech)
+        .reprompt('「了解」と言うか、他のことを聞いてね。')
+        .getResponse();
+
+    } catch (err) {
+      console.error('CheckBroadcast error:', err);
+      return handlerInput.responseBuilder
+        .speak('連絡の確認に失敗しました。')
+        .getResponse();
+    }
+  }
+};
+
+const ReplyOkIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+      && Alexa.getIntentName(handlerInput.requestEnvelope) === 'ReplyOkIntent';
+  },
+  async handle(handlerInput) {
+    try {
+      const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+      const messageId = sessionAttributes.pendingMessageId;
+
+      if (!messageId) {
+        // セッションにメッセージがない場合、最新の未返事を取得して返事
+        const messages = await supabaseGet(
+          'alexa_messages?direction=eq.to_alexa&replied=eq.false&order=created_at.desc&limit=1'
+        );
+        if (messages.length === 0) {
+          return handlerInput.responseBuilder
+            .speak('返事する連絡がありません。')
+            .getResponse();
+        }
+        // 最新メッセージに返事
+        await supabasePatch(
+          `alexa_messages?id=eq.${messages[0].id}`,
+          { replied: true, reply_text: '了解', replied_at: new Date().toISOString() }
+        );
+
+        // 通知送信
+        await sendDiscord(`✅ Alexa返事: 「${messages[0].message}」に了解`);
+        await queuePushMessage('✅ Alexa返事', `「${messages[0].message}」に了解しました`, 'admin');
+
+        return handlerInput.responseBuilder
+          .speak(`「${messages[0].message}」に了解しました。伝えておくね！`)
+          .getResponse();
+      }
+
+      // セッション内のメッセージに返事
+      await supabasePatch(
+        `alexa_messages?id=eq.${messageId}`,
+        { replied: true, reply_text: '了解', replied_at: new Date().toISOString() }
+      );
+
+      const originalMsg = sessionAttributes.pendingMessage || 'メッセージ';
+
+      // 通知送信
+      await sendDiscord(`✅ Alexa返事: 「${originalMsg}」に了解`);
+      await queuePushMessage('✅ Alexa返事', `「${originalMsg}」に了解しました`, 'admin');
+
+      // セッション属性クリア
+      delete sessionAttributes.pendingMessageId;
+      delete sessionAttributes.pendingMessage;
+      handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+      return handlerInput.responseBuilder
+        .speak(`了解！「${originalMsg}」に返事しておいたよ。`)
+        .getResponse();
+
+    } catch (err) {
+      console.error('ReplyOk error:', err);
+      return handlerInput.responseBuilder
+        .speak('返事の送信に失敗しました。もう一回言ってみて。')
+        .getResponse();
+    }
+  }
+};
+
 const HelpIntentHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speech = '「りょうすけのお風呂掃除」のように名前と家事を言うと、ポイント申請できます。「めぐみの残高」で残高確認もできます。';
+    const speech = '「りょうすけのお風呂掃除」でポイント申請、「めぐみの残高」で残高確認、「メッセージ確認」で連絡を聞けます。了解って言えば返事もできるよ。';
     return handlerInput.responseBuilder
       .speak(speech)
       .reprompt('何をしますか？')
@@ -249,6 +376,8 @@ exports.handler = Alexa.SkillBuilders.custom()
     LaunchRequestHandler,
     RequestChorePointsIntentHandler,
     CheckBalanceIntentHandler,
+    CheckBroadcastIntentHandler,
+    ReplyOkIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     FallbackIntentHandler

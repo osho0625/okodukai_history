@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>おうちブロードキャスト - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; max-width: 480px; margin: 0 auto; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 1.3em; }
+.section { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
+.section-title { font-weight: 600; color: #555; margin-bottom: 12px; font-size: 0.95em; }
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.preset-btn {
+  padding: 14px 10px; border: 2px solid #e0e0e0; border-radius: 10px;
+  background: #fff; font-size: 0.9em; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; text-align: center; line-height: 1.3;
+}
+.preset-btn:hover { border-color: #42a5f5; background: #e3f2fd; }
+.preset-btn:active { transform: scale(0.96); }
+.preset-btn.sending { opacity: 0.5; pointer-events: none; }
+.preset-btn.sent { border-color: #4caf50; background: #e8f5e9; }
+.custom-row { display: flex; gap: 8px; margin-top: 12px; }
+.custom-input {
+  flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 0.95em; outline: none;
+}
+.custom-input:focus { border-color: #42a5f5; }
+.send-btn {
+  padding: 10px 16px; border: none; border-radius: 8px;
+  background: #42a5f5; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;
+  white-space: nowrap;
+}
+.send-btn:hover { background: #1e88e5; }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.time-input { padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
+.history-item { padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.85em; }
+.history-item.to-alexa { background: #e3f2fd; }
+.history-item.from-alexa { background: #fff3e0; }
+.history-meta { font-size: 0.75em; color: #999; margin-top: 2px; }
+.history-reply { font-size: 0.8em; color: #4caf50; margin-top: 2px; }
+.status-msg {
+  text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 12px;
+  font-size: 0.85em; font-weight: 600; display: none;
+}
+.status-msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
+.status-msg.error { display: block; background: #ffebee; color: #c62828; }
+</style>
+</head>
+<body>
+<a class="back" onclick="history.back()">&#x2190;</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>📢 おうちブロードキャスト</h1>
+
+<div id="statusMsg" class="status-msg"></div>
+
+<div class="section">
+  <div class="section-title">📋 定型メッセージ</div>
+  <div class="time-row">
+    <span style="font-size:0.85em;">⏰</span>
+    <input type="time" id="timeInput" class="time-input">
+    <span style="font-size:0.8em; color:#888;">（時間付きメッセージ用）</span>
+  </div>
+  <div class="preset-grid" id="presetGrid"></div>
+  <div class="custom-row">
+    <input type="text" id="customMsg" class="custom-input" placeholder="自由メッセージを入力..." maxlength="100">
+    <button class="send-btn" id="customSendBtn" onclick="sendCustom()">送信</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">💬 やりとり履歴</div>
+  <div id="historyList">
+    <div style="text-align:center; color:#999; font-size:0.85em;">読み込み中...</div>
+  </div>
+</div>
+
+<script>
+const PRESETS = [
+  { emoji: '🍚', template: '{time}までにご飯炊いて', needsTime: true },
+  { emoji: '🏓', text: '今日はピックル', needsTime: false },
+  { emoji: '🚗', template: '{time}から出かけるよ', needsTime: true },
+  { emoji: '🍽️', text: '今日は外食', needsTime: false },
+  { emoji: '🛁', template: '{time}までにお風呂入って', needsTime: true },
+  { emoji: '📚', text: '宿題やった？', needsTime: false },
+  { emoji: '🏠', template: '{time}に帰るよ', needsTime: true },
+  { emoji: '🛒', text: '買い物行ってくるね', needsTime: false },
+];
+
+function renderPresets() {
+  const grid = document.getElementById('presetGrid');
+  grid.innerHTML = '';
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.dataset.index = i;
+    const label = p.text || p.template.replace('{time}', '○○時');
+    btn.textContent = p.emoji + ' ' + label;
+    btn.onclick = () => sendPreset(i, btn);
+    grid.appendChild(btn);
+  });
+}
+
+async function sendPreset(index, btnEl) {
+  const preset = PRESETS[index];
+  let msg;
+  if (preset.needsTime) {
+    const timeVal = document.getElementById('timeInput').value;
+    if (!timeVal) { showStatus('⏰ 時間を設定してください', 'error'); return; }
+    const [h, m] = timeVal.split(':');
+    const timeStr = parseInt(h) + '時' + (parseInt(m) > 0 ? parseInt(m) + '分' : '');
+    msg = preset.template.replace('{time}', timeStr);
+  } else {
+    msg = preset.text;
+  }
+  await broadcast(msg, btnEl);
+}
+
+async function sendCustom() {
+  const input = document.getElementById('customMsg');
+  const msg = input.value.trim();
+  if (!msg) return;
+  await broadcast(msg, document.getElementById('customSendBtn'));
+  input.value = '';
+}
+
+async function broadcast(message, btnEl) {
+  if (btnEl) { btnEl.classList.add('sending'); btnEl.disabled = true; }
+  try {
+    // DBに記録 → ラズパイがRealtimeで拾って即座に読み上げ
+    const { error } = await client.from('alexa_messages').insert({
+      direction: 'to_alexa',
+      message: message
+    });
+    if (error) throw error;
+
+    await notifyDiscord('📢 ブロードキャスト: ' + message);
+
+    showStatus('📢 送信しました: ' + message, 'success');
+    if (btnEl) { btnEl.classList.remove('sending'); btnEl.classList.add('sent'); btnEl.disabled = false; setTimeout(() => btnEl.classList.remove('sent'), 2000); }
+    loadHistory();
+  } catch (e) {
+    console.error('broadcast error:', e);
+    showStatus('送信に失敗しました: ' + e.message, 'error');
+    if (btnEl) { btnEl.classList.remove('sending'); btnEl.disabled = false; }
+  }
+}
+
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  try {
+    const { data, error } = await client.from('alexa_messages')
+      .select('*').order('created_at', { ascending: false }).limit(30);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div style="text-align:center; color:#999; font-size:0.85em;">まだやりとりはありません</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'history-item ' + (item.direction === 'to_alexa' ? 'to-alexa' : 'from-alexa');
+      const icon = item.direction === 'to_alexa' ? '📢' : '🗣️';
+      const label = item.direction === 'to_alexa' ? 'あなた → おうち' : 'おうち → あなた';
+      let html = '<div>' + icon + ' <strong>' + label + '</strong></div>';
+      html += '<div style="margin-top:4px;">' + escapeHtml(item.message) + '</div>';
+      if (item.direction === 'to_alexa' && item.replied) {
+        html += '<div class="history-reply">✅ 返事: ' + escapeHtml(item.reply_text || '了解') + '</div>';
+      } else if (item.direction === 'to_alexa' && !item.replied) {
+        html += '<div style="font-size:0.75em; color:#ff9800; margin-top:2px;">⏳ 未返事</div>';
+      }
+      const dt = new Date(item.created_at);
+      html += '<div class="history-meta">' + dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div>';
+      div.innerHTML = html;
+      list.appendChild(div);
+    });
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center; color:#e53935; font-size:0.85em;">読み込みエラー</div>';
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  setTimeout(() => { el.className = 'status-msg'; }, 4000);
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function subscribeRealtime() {
+  client.channel('alexa-replies')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'alexa_messages', filter: 'direction=eq.to_alexa' }, () => loadHistory())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alexa_messages', filter: 'direction=eq.from_alexa' }, () => loadHistory())
+    .subscribe();
+}
+
+renderPresets();
+loadHistory();
+subscribeRealtime();
+</script>
+</body>
+</html>
