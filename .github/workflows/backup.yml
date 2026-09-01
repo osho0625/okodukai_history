@@ -364,13 +364,18 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/pending_effects?select=*" \
             -o backups/pending_effects_$(date +%Y%m%d).json
 
-      - name: Backup app_config table
+      - name: Backup app_config table (secrets masked)
         run: |
+          # app_config は key/value 構造で、APIキー等のシークレットを含む。
+          # key名に api_key/key/token/secret/password を含む行の value を
+          # マスクしてからバックアップする（GitHub Push Protection対策）
           curl -s \
             -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
             "${{ secrets.SUPABASE_URL }}/rest/v1/app_config?select=*" \
-            -o backups/app_config_$(date +%Y%m%d).json
+          | jq 'map(if (.key // "" | test("api_key|key|token|secret|password"; "i"))
+                    then .value = "***REDACTED***" else . end)' \
+            > backups/app_config_$(date +%Y%m%d).json
 
       - name: Backup activity_log table
         run: |
