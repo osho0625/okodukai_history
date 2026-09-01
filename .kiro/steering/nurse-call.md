@@ -8,7 +8,7 @@ fileMatchPattern: "*nurse*"
 ## 概要
 
 病気で隔離中の子供が親を即座に呼び出せるリアルタイム通知・通話・チャットシステム。
-Supabase Edge Functionによる即時Push配信 + WebRTC音声通話 + Realtime Broadcastチャット。
+Supabase Edge Functionによる即時Push配信 + WebRTC音声/ビデオ通話 + Realtime Broadcastチャット。
 
 ## ファイル構成
 
@@ -71,6 +71,37 @@ Supabase Edge Functionによる即時Push配信 + WebRTC音声通話 + Realtime 
 - ringing リトライ: 3秒間隔×20回（1分間）、タイムアウトで自動切断
 - 子供側: 着信時自動応答（マイク取得→acceptCall→PeerConnection作成）
 - ICE構成: game_settings.nurse_call_ice_servers（デフォルト: Google STUN）
+
+### 音声/ビデオ通話（js/nurse-call-voice.js）
+
+通話は音声で開始し、通話中に任意でビデオを追加できる方式。
+
+- **音声**: 発信/応答時に `getUserMedia({ audio: true })` でマイク取得
+- **ビデオ追加**: `toggleVideo()` で `getUserMedia({ video: { facingMode: 'user' } })` のトラックを `pc.addTrack()` で追加
+- **renegotiation**: `onnegotiationneeded` で通話中の映像追加時に自動でoffer/answer再交換
+- **映像受信**: `pc.ontrack` で `track.kind === 'video'` を判定し、role別のvideo要素に表示
+  - 親（admin）: `parentRemoteVideo` / `parentLocalVideo`
+  - 子供（user）: `voiceRemoteVideo` / `voiceLocalVideo`
+- **音声受信**: `parentRemoteAudio` / `voiceRemoteAudio`
+- **ICE candidateキュー**: PeerConnection作成前に届いたcandidateは `pendingIceCandidates` にバッファ
+- **バックグラウンド維持**: Screen Wake Lock API + 無音オーディオループ（タブサスペンド防止）
+- 公開API: `NurseCallVoice.{ init, startCall, acceptCall, endCall, toggleVideo, getState, onStateChange, destroy }`
+
+## ビデオ通話のラズパイ流用について
+
+このWebRTC実装（音声+ビデオ、renegotiation対応）は、おうちブロードキャストのラズパイ
+ビデオ通話にそのまま流用可能。ラズパイ側はChromiumキオスクモードで通話ページを常時表示し、
+着信を自動応答する構成を想定。
+
+### 外出先からの接続（親が外→家の子供）
+
+- **STUNのみでは接続不可のケースが多い**: モバイル回線（4G/5G CGNAT）と自宅NAT間はSTUNだけだと
+  ホールパンチできず接続失敗することが多い
+- **TURNサーバーが必須**: 外出先からの接続には中継用TURNサーバーが必要
+  - 選択肢: 自前TURN（coturnをVPS等に構築）、Cloudflare Calls、Twilio TURN、metered.ca等の有料/従量TURN
+  - `game_settings.nurse_call_ice_servers` にTURN構成を追加すれば既存コードで対応可能
+    （例: `[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:xxx","username":"u","credential":"p"}]`）
+- 同一Wi-Fi内（家の中の別部屋同士）ならSTUNのみで接続可能
 
 ## Push通知
 

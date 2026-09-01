@@ -106,3 +106,27 @@ sudo systemctl start broadcast
 ```
 
 詳細は `raspi/README.md` を参照。
+
+## ビデオ通話（将来フェーズ・未実装）
+
+ラズパイをリビングのビデオ通話端末にする構想。想定シナリオは「親が外出先から家の子供に」。
+
+### 流用可能な既存資産
+- ナースコールのWebRTC実装（`js/nurse-call-voice.js`）は音声+ビデオ両対応済み
+- シグナリング（Supabase Realtime Broadcast）、renegotiation、ICEキューも実装済み
+- 詳細は `.kiro/steering/nurse-call.md` の「通話（WebRTC）の仕組み」参照
+
+### 実装に必要な作業
+1. ビデオ通話ページ作成（`pages/video-call.html`）— ナースコールのvoice.jsを流用
+2. ラズパイのChromiumキオスクモード自動起動設定（起動時に通話ページを全画面表示）
+3. ラズパイ側の着信自動応答（カメラ+マイク取得 → acceptCall）
+4. **TURNサーバー構築（必須）** — 外出先モバイル回線↔自宅NAT間はSTUNのみでは接続不可
+
+### TURNサーバーの選択肢
+- 自前: coturn を VPS に構築（月数百円〜）
+- マネージド: Cloudflare Calls、Twilio TURN、metered.ca 等（従量課金）
+- `game_settings.nurse_call_ice_servers` にTURN構成を追加すれば既存コードで対応可能
+
+### ハードウェア
+- USBウェブカメラ（マイク内蔵）+ テレビ（HDMI）+ スピーカー
+- Pi 5 (2GB) で720pビデオ通話は実用範囲
