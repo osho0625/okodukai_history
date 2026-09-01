@@ -37,6 +37,9 @@ Alexa-hosted (Node.js) でホスティング。申請は `status: 'pending'` で
 | `AMAZON.HelpIntent` | - | 使い方説明 |
 | `AMAZON.StopIntent` / `AMAZON.CancelIntent` | - | 終了 |
 | `AMAZON.FallbackIntent` | - | 聞き取れなかった時 |
+| `AMAZON.NavigateHomeIntent` | - | Alexa標準（自動追加分と一致させるため定義） |
+| `CheckBroadcastIntent` | - | メッセージ確認（ブロードキャスト） |
+| `ReplyOkIntent` | - | 了解返事（ブロードキャスト） |
 
 ## カスタムスロット
 
