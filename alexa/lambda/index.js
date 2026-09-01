@@ -101,6 +101,27 @@ async function queuePushMessage(title, body, targetRole) {
 // デフォルトポイント表（Alexaスキル内定義）
 // ============================================================
 
+// ============================================================
+// 子供名の正規化（音声誤認識の補正）
+// ============================================================
+
+// 誤認識されやすい音 → 正しい名前 のマッピング
+const CHILD_NAME_ALIASES = {
+  'しゅんちか': 'はるちか',
+  'しゅんおや': 'はるちか',
+  'はるおや': 'はるちか',
+  'はるちゃん': 'はるちか',
+  'かいちゃん': 'かいせい',
+  'いろちゃん': 'いろは',
+  'めぐみちゃん': 'めぐみ',
+  'りょうすけくん': 'りょうすけ'
+};
+
+function normalizeChildName(name) {
+  if (!name) return name;
+  return CHILD_NAME_ALIASES[name] || name;
+}
+
 const DEFAULT_POINTS = {
   '洗濯機回し': 1,
   '洗濯機畳み': 8,
@@ -139,7 +160,7 @@ const RequestChorePointsIntentHandler = {
   },
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots || {};
-    const childName = slots.childName && slots.childName.value;
+    const childName = normalizeChildName(slots.childName && slots.childName.value);
     const choreName = (slots.choreName && slots.choreName.value) || 'その他';
     const pointsCount = (slots.pointsCount && slots.pointsCount.value) ? parseInt(slots.pointsCount.value, 10) : null;
 
@@ -208,7 +229,7 @@ const CheckBalanceIntentHandler = {
   },
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots || {};
-    const childName = slots.childName && slots.childName.value;
+    const childName = normalizeChildName(slots.childName && slots.childName.value);
 
     if (!childName) {
       return handlerInput.responseBuilder
