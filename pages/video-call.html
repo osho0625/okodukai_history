@@ -113,6 +113,7 @@ body.raspi #vcLocalVideo { width: 160px; }
   <div id="vcStatus" class="vc-status"></div>
   <div id="vcTimer" style="display:none;">0:00</div>
   <button id="vcCallBtn" class="vc-btn" style="background:#4caf50;">📞 でんわする</button>
+  <button id="vcAcceptBtn" class="vc-btn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 でんわにでる</button>
   <button id="vcEndBtn" class="vc-btn" style="display:none; background:#e53935;">切る</button>
 </div>
 
@@ -137,6 +138,7 @@ body.raspi #vcLocalVideo { width: 160px; }
     await BroadcastVideo.init(role, isRaspi);
 
     document.getElementById('vcCallBtn').addEventListener('click', () => BroadcastVideo.startCall());
+    document.getElementById('vcAcceptBtn').addEventListener('click', () => BroadcastVideo.acceptCall());
     document.getElementById('vcEndBtn').addEventListener('click', () => BroadcastVideo.endCall());
 
     if (isRaspi) {

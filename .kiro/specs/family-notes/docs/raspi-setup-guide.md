@@ -165,6 +165,9 @@ Supabase Dashboard → Settings → API → Realtime で `alexa_messages` テー
 - USBウェブカメラ（マイク内蔵）が接続済み（Step 1で接続したもの）
 - Supabaseの `game_settings.broadcast_ice_servers` にTURN設定済み（外出先接続に必須）
   - 設定手順は `docs/video-call-turn-setup.md`（metered.ca 無料20GB/月）
+- **合言葉認証の設定が必須**（`game_settings.broadcast_call_secret`）
+  - 未設定だとラズパイはフェイルセーフで着信を一切自動応答しない（安全側の設計）
+  - 設定手順は `docs/video-call-turn-setup.md` の「合言葉認証」参照
 
 ### デバイス確認
 
@@ -208,7 +211,7 @@ EOF
 ### トラブルシューティング（ビデオ通話）
 
 - **カメラが認識されない**: `v4l2-ctl --list-devices` で確認、USB差し直し
-- **着信しても応答しない**: URLに `?mode=raspi` が付いているか、シグナリングチャネルは `broadcast-video-call`
+- **着信しても応答しない**: URLに `?mode=raspi` が付いているか、シグナリングチャネルは `broadcast-video-call`、**合言葉（`broadcast_call_secret`）が発信側と一致しているか**（未設定/不一致だと自動応答しない仕様）
 - **外出先から繋がらない**: `broadcast_ice_servers`（TURN）を確認、`chrome://webrtc-internals` で `relay` candidate が出るか確認
 
 詳細は `raspi/README.md` の「おうちビデオ通話」セクション参照。
