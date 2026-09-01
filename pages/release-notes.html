@@ -36,6 +36,16 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.42.1</span><span class="date">2026/09/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> ビデオ通話: 合言葉認証を追加（第三者の発信でラズパイのカメラが起動しないよう対策）</li>
+    <li><span class="tag tag-fix">fix</span> ラズパイは合言葉一致の着信のみ自動応答（未設定/不一致はフェイルセーフで無視）</li>
+    <li><span class="tag tag-feat">feat</span> 親側に手動応答ボタン（でんわにでる）を追加</li>
+    <li><span class="tag tag-infra">infra</span> 合言葉は game_settings.broadcast_call_secret に保存、SW v335</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.42.0</span><span class="date">2026/09/01</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> メモ帳: 「🤖 AIといっしょにアプリを作ろう！」子供向けドキュメント追加（企画書→AIへの依頼→小さく作って試す→家族に使ってもらう）</li>

@@ -67,3 +67,46 @@ where id = 1;
 | 自前 coturn (VPS) | VPS代のみ（月数百円〜） | Oracle Cloud無料枠等に構築可能・帯域に注意 |
 
 いずれの場合も、取得した ICE 構成を上記 `broadcast_ice_servers` に入れるだけでコード改修不要。
+
+---
+
+## 5. 合言葉認証（セキュリティ・重要）
+
+リビングにカメラを常設するため、第三者の発信で勝手にカメラが起動しないよう **合言葉認証** を必須にしている。
+
+- 発信側は発信時に合言葉を載せる
+- ラズパイ受信端末は **合言葉が一致した着信のみ自動応答**（不一致・未設定の着信は完全に無視＝カメラを起動しない）
+- 合言葉はコードに直書きせず `game_settings.broadcast_call_secret` に置く
+
+### カラム追加（1回だけ）
+
+```sql
+alter table game_settings add column if not exists broadcast_call_secret text;
+```
+
+### 合言葉を設定（推測されにくいランダム文字列にする）
+
+```sql
+update game_settings
+set broadcast_call_secret = 'ここに長めのランダム文字列'
+where id = 1;
+```
+
+例のランダム文字列生成（ローカルで実行、出力値を上のSQLに貼る）:
+
+```bash
+# いずれか
+openssl rand -hex 24
+# または
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+```
+
+### 動作
+
+- `broadcast_call_secret` 未設定のままだと、**ラズパイはフェイルセーフで一切自動応答しない**（安全側に倒す設計）
+- 親スマホ・ラズパイの両方が同じ `game_settings`(id=1) を読むので、設定は1箇所でOK
+- 合言葉が漏れたと思ったら、上のUPDATEで新しい値に変えるだけでよい
+
+### 補足: 物理カメラカバーの併用を推奨
+
+ソフト側の合言葉認証に加え、通話しない時間帯はレンズカバー付きウェブカメラを閉じる/USBを抜くと、万一の際も物理的に映像が出ない。合言葉認証（ソフト）＋物理カバー（ハード）の二重が最も安心。

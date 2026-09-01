@@ -124,8 +124,15 @@ sudo systemctl start broadcast
 - 公開API: `window.BroadcastVideo.{ init, startCall, acceptCall, endCall, getState, onStateChange, destroy }`
 - video/audio要素ID: `vcRemoteVideo` / `vcLocalVideo` / `vcRemoteAudio`
 
+### セキュリティ（合言葉認証）
+- リビング常設カメラの乗っ取り対策として合言葉認証が必須
+- 発信側は ringing 時に `game_settings.broadcast_call_secret` を載せる
+- ラズパイは合言葉が一致した着信のみ `acceptCall()`。**未設定/不一致はフェイルセーフで完全無視（カメラ起動しない）**
+- 親側など非ラズパイ端末は合言葉一致時に手動応答ボタン（`vcAcceptBtn` → `acceptCall()`）で応答
+- 合言葉は `game_settings.broadcast_call_secret`（コード直書き禁止）。設定手順は `docs/video-call-turn-setup.md`
+
 ### ラズパイ受信端末（`?mode=raspi`）
-- 着信検知で無条件に `acceptCall()`（子供操作不要でテレビに親が映る）
+- 合言葉一致の着信のみ自動応答（子供操作不要でテレビに親が映る）
 - Chromiumキオスク: `--kiosk --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream`
 - 自動起動は autostart か systemd(--user)（`raspi/video-call-kiosk.sh` 下部コメント参照）
 

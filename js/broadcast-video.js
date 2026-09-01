@@ -60,6 +60,9 @@
     // 外出先接続には game_settings.broadcast_ice_servers にTURNを登録する。
     // 無料TURN推奨: metered.ca Open Relay（無料20GB/月）。setup手順は docs/video-call-turn-setup.md 参照。
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    // 合言葉（認証）。game_settings.broadcast_call_secret から取得。
+    // ラズパイは合言葉が一致した着信だけ自動応答する（第三者の発信ではカメラを起動しない）。
+    secret: null,
     senderId: Math.random().toString(36).slice(2, 10)
   };
 
@@ -80,15 +83,18 @@
     vcState.role = role;
     vcState.isRaspi = !!isRaspi;
 
-    // ICE設定をgame_settingsから取得（broadcast_ice_servers優先、無ければnurse_call_ice_servers流用）
+    // ICE設定 + 合言葉を game_settings から取得
     try {
       const { data } = await client.from('game_settings')
-        .select('broadcast_ice_servers, nurse_call_ice_servers')
+        .select('broadcast_ice_servers, nurse_call_ice_servers, broadcast_call_secret')
         .eq('id', 1).single();
       if (data?.broadcast_ice_servers) {
         vcState.iceServers = data.broadcast_ice_servers;
       } else if (data?.nurse_call_ice_servers) {
         vcState.iceServers = data.nurse_call_ice_servers;
+      }
+      if (data?.broadcast_call_secret) {
+        vcState.secret = data.broadcast_call_secret;
       }
     } catch (e) {}
 
@@ -323,12 +329,26 @@
 
   function handleCallStateEvent(data) {
     if (data.state === 'ringing' && vcState.stateMachine.getState() === 'idle') {
-      vcState.stateMachine.transition('ringing');
-      showStatus('でんわがきているよ！', 'info');
-      updateUI();
-      // ラズパイ受信端末は自動応答
+      const secretMatches = vcState.secret && data.secret === vcState.secret;
+
       if (vcState.isRaspi) {
+        // ラズパイ受信端末: 合言葉が一致した着信のみ自動応答。
+        // フェイルセーフ: 合言葉未設定 or 不一致の着信は完全に無視（カメラを起動しない）。
+        if (!secretMatches) {
+          return;
+        }
+        vcState.stateMachine.transition('ringing');
+        showStatus('でんわがきているよ！', 'info');
+        updateUI();
         acceptCall();
+      } else {
+        // 親側など手動応答する端末: 合言葉が設定されていれば照合し、不一致は無視。
+        if (vcState.secret && !secretMatches) {
+          return;
+        }
+        vcState.stateMachine.transition('ringing');
+        showStatus('でんわがきているよ！', 'info');
+        updateUI();
       }
     }
 
@@ -360,10 +380,13 @@
 
   function broadcastCallState(state) {
     if (vcState.channel) {
+      const payload = { state, sender: vcState.senderId };
+      // 発信(ringing)時のみ合言葉を載せる。ラズパイ側で照合する。
+      if (state === 'ringing' && vcState.secret) payload.secret = vcState.secret;
       vcState.channel.send({
         type: 'broadcast',
         event: 'call_state',
-        payload: { state, sender: vcState.senderId }
+        payload
       }).catch(() => {});
     }
   }
@@ -477,11 +500,14 @@
   function updateUI() {
     const state = vcState.stateMachine.getState();
     const callBtn = document.getElementById('vcCallBtn');
+    const acceptBtn = document.getElementById('vcAcceptBtn');
     const endBtn = document.getElementById('vcEndBtn');
     const timerEl = document.getElementById('vcTimer');
 
     // ラズパイモードは操作ボタン非表示（自動応答）
     if (callBtn) callBtn.style.display = (!vcState.isRaspi && state === 'idle') ? 'block' : 'none';
+    // 手動応答ボタン: 非ラズパイ端末が着信中(ringing)のときだけ表示
+    if (acceptBtn) acceptBtn.style.display = (!vcState.isRaspi && state === 'ringing') ? 'block' : 'none';
     if (endBtn) endBtn.style.display = (!vcState.isRaspi && (state === 'ringing' || state === 'connected')) ? 'block' : 'none';
     if (timerEl) timerEl.style.display = (state === 'connected') ? 'block' : 'none';
   }
