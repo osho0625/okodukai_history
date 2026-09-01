@@ -1,9 +1,9 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "*broadcast*,*raspi*"
+fileMatchPattern: "*broadcast*,*raspi*,*video-call*"
 ---
 
-# おうちブロードキャスト
+# おうちブロードキャスト / おうちビデオ通話
 
 ## 概要
 
