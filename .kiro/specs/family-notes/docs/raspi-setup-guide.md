@@ -152,3 +152,63 @@ Supabase Dashboard → Settings → API → Realtime で `alexa_messages` テー
 ### テレビに映像が出ない
 - HDMIケーブルを差し直す
 - テレビの入力切替を確認（HDMI1 or HDMI2）
+
+---
+
+## Step 7: おうちビデオ通話 受信端末セットアップ（任意・10分）
+
+親が外出先からビデオ通話をかけると、ラズパイが自動応答してテレビに親の顔を映す。
+読み上げサービスと同じラズパイで共存できる（別プロセス）。
+
+### 前提
+
+- USBウェブカメラ（マイク内蔵）が接続済み（Step 1で接続したもの）
+- Supabaseの `game_settings.broadcast_ice_servers` にTURN設定済み（外出先接続に必須）
+  - 設定手順は `docs/video-call-turn-setup.md`（metered.ca 無料20GB/月）
+
+### デバイス確認
+
+```bash
+v4l2-ctl --list-devices   # ウェブカメラ（無ければ: sudo apt install v4l-utils）
+arecord -l                # マイク
+aplay -l                  # スピーカー
+```
+
+### キオスク起動（手動テスト）
+
+```bash
+cd ~/okodukai_history/raspi
+chmod +x video-call-kiosk.sh
+./video-call-kiosk.sh
+```
+
+`pages/video-call.html?mode=raspi` が全画面表示され、着信を自動応答する。
+
+### 自動起動（常時受信端末にする）
+
+```bash
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/video-call-kiosk.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=VideoCallKiosk
+Exec=/home/pi/okodukai_history/raspi/video-call-kiosk.sh
+X-GNOME-Autostart-enabled=true
+EOF
+```
+
+### テスト
+
+1. 先にPC/スマホ2台で確認すると楽:
+   - 親役: `pages/video-call.html` → 「でんわする」
+   - 子役: `pages/video-call.html?mode=raspi` → 自動応答で繋がる
+2. ラズパイでキオスク起動 → 親スマホから発信 → テレビに親が映ればOK
+3. 外出先想定: 親スマホをモバイル回線（Wi-Fi OFF）にして発信
+
+### トラブルシューティング（ビデオ通話）
+
+- **カメラが認識されない**: `v4l2-ctl --list-devices` で確認、USB差し直し
+- **着信しても応答しない**: URLに `?mode=raspi` が付いているか、シグナリングチャネルは `broadcast-video-call`
+- **外出先から繋がらない**: `broadcast_ice_servers`（TURN）を確認、`chrome://webrtc-internals` で `relay` candidate が出るか確認
+
+詳細は `raspi/README.md` の「おうちビデオ通話」セクション参照。

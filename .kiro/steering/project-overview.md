@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/09/01 v2.40.4
+最終更新: 2026/09/01 v2.41.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -33,6 +33,7 @@ inclusion: auto
 | 洗濯、laundry | `.kiro/steering/laundry-notification.md` |
 | LaQ、美術館、laq、アルバム | `.kiro/steering/laq-museum.md` |
 | Alexa、alexa、スキル、ブロードキャスト、broadcast | `.kiro/steering/alexa-chore-points.md`, `.kiro/steering/family-broadcast.md` |
+| ビデオ通話、video-call、ラズパイ、raspi、WebRTC、TURN | `.kiro/steering/family-broadcast.md` |
 
 対象ファイルがエディタで開かれていれば自動で読み込まれますが、チャットのみの場合は上記テーブルを参照して自分で読み込んでください。
 
@@ -51,7 +52,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v333, Push通知対応)
+├── sw.js               # Service Worker (v334, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -77,7 +78,7 @@ inclusion: auto
 ├── tests/hair-removal-tracker/  # 脱毛周期管理テスト（12ファイル/161テスト）
 ├── docs/               # 開発者ドキュメント
 ├── alexa/              # Alexa お小遣い帳スキル（対話モデル + Lambda コード + セットアップガイド + テストJSON）
-├── raspi/              # Raspberry Pi おうちブロードキャスト（読み上げサービス + セットアップ）
+├── raspi/              # Raspberry Pi（おうちブロードキャスト読み上げ + ビデオ通話キオスク受信端末）
 └── .github/workflows/  # GitHub Actions (auto-chore-points, auto-chore-tasks, backup, reminder-notify, news-notify)
 ```
 
@@ -307,7 +308,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.40.0
+- 現在: v2.41.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -384,4 +385,4 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - `laundry-notification.md` — 洗濯通知アプリ
 - `laq-museum.md` — LaQ美術館・家族アルバム
 - `alexa-chore-points.md` — Alexaスキル: お手伝いポイント申請
-- `family-broadcast.md` — おうちブロードキャスト（ラズパイ読み上げ + Alexa返事通知）
+- `family-broadcast.md` — おうちブロードキャスト（ラズパイ読み上げ + Alexa返事通知）+ おうちビデオ通話（WebRTC/TURN/ラズパイ受信端末）

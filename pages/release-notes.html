@@ -36,6 +36,17 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.41.0</span><span class="date">2026/09/01</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> おうちビデオ通話: 外出先の親スマホからリビングのラズパイ端末へWebRTCビデオ通話</li>
+    <li><span class="tag tag-feat">feat</span> ビデオ通話ページ追加（発信/切断、リモート大画面+ローカルPinP、通話タイマー）</li>
+    <li><span class="tag tag-feat">feat</span> ?mode=raspi で着信自動応答（ラズパイChromiumキオスク受信端末モード）</li>
+    <li><span class="tag tag-infra">infra</span> シグナリングをナースコールと分離（broadcast-video-callチャネル）、TURN対応（broadcast_ice_servers）</li>
+    <li><span class="tag tag-infra">infra</span> raspi/video-call-kiosk.sh 追加、Service Worker v334</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.40.4</span><span class="date">2026/09/01</span></div>
   <ul>
     <li><span class="tag tag-infra">infra</span> Alexa対話モデル: AMAZON.NavigateHomeIntent追加（Console自動追加分と一致）</li>

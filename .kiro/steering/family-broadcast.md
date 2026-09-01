@@ -1,9 +1,9 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "*broadcast*,*raspi*"
+fileMatchPattern: "*broadcast*,*raspi*,*video-call*"
 ---
 
-# おうちブロードキャスト
+# おうちブロードキャスト / おうちビデオ通話
 
 ## 概要
 
@@ -107,25 +107,34 @@ sudo systemctl start broadcast
 
 詳細は `raspi/README.md` を参照。
 
-## ビデオ通話（将来フェーズ・未実装）
+## ビデオ通話（実装済み）
 
-ラズパイをリビングのビデオ通話端末にする構想。想定シナリオは「親が外出先から家の子供に」。
+ラズパイをリビングのビデオ通話端末にする機能。想定シナリオは「親が外出先から家の子供に」。
 
-### 流用可能な既存資産
-- ナースコールのWebRTC実装（`js/nurse-call-voice.js`）は音声+ビデオ両対応済み
-- シグナリング（Supabase Realtime Broadcast）、renegotiation、ICEキューも実装済み
-- 詳細は `.kiro/steering/nurse-call.md` の「通話（WebRTC）の仕組み」参照
+### 構成ファイル
+- `pages/video-call.html` — 通話ページ（親発信UI / `?mode=raspi` で受信端末モード）
+- `js/broadcast-video.js` — WebRTC通話モジュール（nurse-call-voice.jsを流用した独立版）
+- `raspi/video-call-kiosk.sh` — ラズパイChromiumキオスク起動スクリプト
+- TOP画面アイコン: `video-call`（adminOnly）
 
-### 実装に必要な作業
-1. ビデオ通話ページ作成（`pages/video-call.html`）— ナースコールのvoice.jsを流用
-2. ラズパイのChromiumキオスクモード自動起動設定（起動時に通話ページを全画面表示）
-3. ラズパイ側の着信自動応答（カメラ+マイク取得 → acceptCall）
-4. **TURNサーバー構築（必須）** — 外出先モバイル回線↔自宅NAT間はSTUNのみでは接続不可
+### 仕組み
+- シグナリング: Supabase Realtime Broadcast、チャネル名 `broadcast-video-call`（ナースコールの `nurse-voice-call` と分離）
+- 通話開始時から音声+映像を両方有効（`getUserMedia({ audio:true, video:{facingMode:'user'} })`）
+- 状態機械 idle→ringing→connected→ended、renegotiation・ICEキュー・Wake Lock はnurse-callと同等
+- 公開API: `window.BroadcastVideo.{ init, startCall, acceptCall, endCall, getState, onStateChange, destroy }`
+- video/audio要素ID: `vcRemoteVideo` / `vcLocalVideo` / `vcRemoteAudio`
 
-### TURNサーバーの選択肢
-- 自前: coturn を VPS に構築（月数百円〜）
-- マネージド: Cloudflare Calls、Twilio TURN、metered.ca 等（従量課金）
-- `game_settings.nurse_call_ice_servers` にTURN構成を追加すれば既存コードで対応可能
+### ラズパイ受信端末（`?mode=raspi`）
+- 着信検知で無条件に `acceptCall()`（子供操作不要でテレビに親が映る）
+- Chromiumキオスク: `--kiosk --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream`
+- 自動起動は autostart か systemd(--user)（`raspi/video-call-kiosk.sh` 下部コメント参照）
+
+### TURNサーバー（外出先接続に必須）
+- 外出先モバイル回線↔自宅NAT間はSTUNのみでは接続不可 → TURN必須
+- ICE構成は `game_settings.broadcast_ice_servers`（JSONB）を優先、無ければ `nurse_call_ice_servers` を流用
+- 推奨: **metered.ca Open Relay（無料20GB/月）**。他に Cloudflare Calls / 自前coturn(VPS) / Twilio
+- 例: `[{ "urls":"stun:stun.l.google.com:19302" }, { "urls":"turn:HOST:443", "username":"U", "credential":"P" }]`
+- **設定手順は `docs/video-call-turn-setup.md` 参照**
 
 ### ハードウェア
 - USBウェブカメラ（マイク内蔵）+ テレビ（HDMI）+ スピーカー
