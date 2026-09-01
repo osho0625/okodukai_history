@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okozukai-v331';
+const CACHE_NAME = 'okozukai-v332';
 const ASSETS = [
   './',
   './index.html',
@@ -50,6 +50,8 @@ const ASSETS = [
   './js/common.js',
   './pages/laq-museum.html',
   './pages/family-broadcast.html',
+  './pages/video-call.html',
+  './js/broadcast-video.js',
   './js/olimar-scenario.js',
   './js/trpg-poisoned-soup-scenario.js',
   './manifest.json',

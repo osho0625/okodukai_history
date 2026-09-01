@@ -55,6 +55,7 @@
 | LaQ美術館 | pages/laq-museum.html | LaQ作品の写真記録・ギャラリー |
 | Alexa連携 | alexa/ | 音声でポイント申請・残高確認・ブロードキャスト返事（Alexa-hosted スキル） |
 | おうちブロードキャスト | pages/family-broadcast.html, raspi/ | アプリ→ラズパイ読み上げ（gTTS）、Alexa返事→admin通知 |
+| おうちビデオ通話 | pages/video-call.html, js/broadcast-video.js, raspi/video-call-kiosk.sh | 親スマホ→ラズパイ端末へWebRTCビデオ通話（?mode=raspi自動応答、TURN対応） |
 
 ## CSS構成
 
