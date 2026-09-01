@@ -43,7 +43,7 @@
 | レシピ | pages/recipe.html | 家族レシピ管理（6タブ: レシピ/素材検索/献立/買い物/設定） |
 | 家庭内精算 | pages/settlement.html | 固定費折半・立替精算（5タブ） |
 | お手伝いリスト | pages/chores.html | 家事タスク管理・ポイント連携 |
-| 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント |
+| 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント（育成ロードマップ / Scratch・AI開発ガイド等の子供向けドキュメント含む） |
 | ナースコール | pages/nurse-call.html | 体温記録・通話 |
 | ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
