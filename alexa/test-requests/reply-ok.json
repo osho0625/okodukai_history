@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": false,
+    "sessionId": "amzn1.echo-api.session.test",
+    "application": { "applicationId": "amzn1.ask.skill.915d14f9-4d31-40cd-90f3-3db18fb2cb10" },
+    "user": { "userId": "amzn1.ask.account.test" },
+    "attributes": {
+      "pendingMessageId": "ここに実際のalexa_messagesのidを入れる",
+      "pendingMessage": "テストメッセージ"
+    }
+  },
+  "context": {
+    "System": {
+      "application": { "applicationId": "amzn1.ask.skill.915d14f9-4d31-40cd-90f3-3db18fb2cb10" },
+      "user": { "userId": "amzn1.ask.account.test" }
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.test",
+    "timestamp": "2026-09-01T00:00:00Z",
+    "locale": "ja-JP",
+    "intent": {
+      "name": "ReplyOkIntent",
+      "confirmationStatus": "NONE",
+      "slots": {}
+    }
+  }
+}

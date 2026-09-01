@@ -2,58 +2,90 @@
 // 環境変数: SUPABASE_URL, SUPABASE_KEY, DISCORD_WEBHOOK
 
 const Alexa = require('ask-sdk-core');
+const https = require('https');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 
 // ============================================================
+// HTTP ヘルパー（Node.js httpsモジュール使用、fetch不要）
+// ============================================================
+
+function httpRequest(urlStr, options, bodyStr) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlStr);
+    const reqOptions = {
+      hostname: url.hostname,
+      path: url.pathname + url.search,
+      method: (options && options.method) || 'GET',
+      headers: (options && options.headers) || {}
+    };
+    const req = https.request(reqOptions, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        resolve({ statusCode: res.statusCode, body: data });
+      });
+    });
+    req.on('error', reject);
+    if (bodyStr) req.write(bodyStr);
+    req.end();
+  });
+}
+
+// ============================================================
 // Supabase ヘルパー
 // ============================================================
 
 async function supabaseGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const res = await httpRequest(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
   });
-  if (!res.ok) throw new Error(`Supabase GET failed: ${res.status}`);
-  return res.json();
+  if (res.statusCode < 200 || res.statusCode >= 300) throw new Error(`Supabase GET failed: ${res.statusCode}`);
+  return JSON.parse(res.body);
 }
 
 async function supabasePost(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const bodyStr = JSON.stringify(body);
+  const res = await httpRequest(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: 'POST',
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(`Supabase POST failed: ${res.status}`);
+      'Prefer': 'return=minimal',
+      'Content-Length': Buffer.byteLength(bodyStr)
+    }
+  }, bodyStr);
+  if (res.statusCode < 200 || res.statusCode >= 300) throw new Error(`Supabase POST failed: ${res.statusCode}`);
 }
 
 async function supabasePatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const bodyStr = JSON.stringify(body);
+  const res = await httpRequest(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: 'PATCH',
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(`Supabase PATCH failed: ${res.status}`);
+      'Prefer': 'return=minimal',
+      'Content-Length': Buffer.byteLength(bodyStr)
+    }
+  }, bodyStr);
+  if (res.statusCode < 200 || res.statusCode >= 300) throw new Error(`Supabase PATCH failed: ${res.statusCode}`);
 }
 
 async function sendDiscord(message) {
   if (!DISCORD_WEBHOOK) return;
-  await fetch(DISCORD_WEBHOOK, {
+  const bodyStr = JSON.stringify({ content: message });
+  await httpRequest(DISCORD_WEBHOOK, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: message })
-  });
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(bodyStr)
+    }
+  }, bodyStr);
 }
 
 async function queuePushMessage(title, body, targetRole) {
@@ -106,10 +138,10 @@ const RequestChorePointsIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RequestChorePointsIntent';
   },
   async handle(handlerInput) {
-    const slots = handlerInput.requestEnvelope.request.intent.slots;
-    const childName = slots.childName?.value;
-    const choreName = slots.choreName?.value || 'その他';
-    const pointsCount = slots.pointsCount?.value ? parseInt(slots.pointsCount.value, 10) : null;
+    const slots = handlerInput.requestEnvelope.request.intent.slots || {};
+    const childName = slots.childName && slots.childName.value;
+    const choreName = (slots.choreName && slots.choreName.value) || 'その他';
+    const pointsCount = (slots.pointsCount && slots.pointsCount.value) ? parseInt(slots.pointsCount.value, 10) : null;
 
     if (!childName) {
       return handlerInput.responseBuilder
@@ -175,8 +207,8 @@ const CheckBalanceIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'CheckBalanceIntent';
   },
   async handle(handlerInput) {
-    const slots = handlerInput.requestEnvelope.request.intent.slots;
-    const childName = slots.childName?.value;
+    const slots = handlerInput.requestEnvelope.request.intent.slots || {};
+    const childName = slots.childName && slots.childName.value;
 
     if (!childName) {
       return handlerInput.responseBuilder
