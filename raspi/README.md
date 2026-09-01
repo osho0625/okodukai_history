@@ -106,3 +106,99 @@ nslookup ynecezxnltigplrfzzoh.supabase.co
 cd ~/broadcast
 ./venv/bin/python broadcast-listener.py
 ```
+
+---
+
+# おうちビデオ通話 - Raspberry Pi 受信端末セットアップ
+
+親が外出先からビデオ通話を発信すると、ラズパイが自動応答してテレビに親の顔を映す機能。
+読み上げサービス（broadcast）とは別プロセスなので共存できる。
+
+## 必要なもの（追加）
+
+- USBウェブカメラ（マイク内蔵推奨）
+- テレビ（HDMI接続）
+- スピーカー（読み上げ用と共用可）
+
+## デバイス確認
+
+```bash
+# ウェブカメラ
+v4l2-ctl --list-devices      # 無ければ: sudo apt install v4l-utils
+# マイク（録音デバイス）
+arecord -l
+# スピーカー（再生デバイス）
+aplay -l
+```
+
+## キオスク起動（手動テスト）
+
+```bash
+cd ~/okodukai_history/raspi
+chmod +x video-call-kiosk.sh
+./video-call-kiosk.sh
+```
+
+- `pages/video-call.html?mode=raspi` を全画面表示し、着信を自動応答する
+- カメラ/マイク権限は `--use-fake-ui-for-media-stream` で自動許可
+- 終了は `Alt+F4` または SSH から `pkill chromium`
+
+## 自動起動設定（常時受信端末にする）
+
+### 方法A: autostart（デスクトップ環境・簡単）
+
+```bash
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/video-call-kiosk.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=VideoCallKiosk
+Exec=/home/pi/okodukai_history/raspi/video-call-kiosk.sh
+X-GNOME-Autostart-enabled=true
+EOF
+```
+
+### 方法B: systemd (--user)
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/video-call-kiosk.service <<'EOF'
+[Unit]
+Description=Video Call Kiosk
+After=graphical-session.target
+[Service]
+ExecStart=/home/pi/okodukai_history/raspi/video-call-kiosk.sh
+Restart=on-failure
+[Install]
+WantedBy=default.target
+EOF
+systemctl --user enable --now video-call-kiosk.service
+```
+
+## テスト手順
+
+1. まずPC/スマホ2台で先に確認すると切り分けが楽:
+   - 親役: `pages/video-call.html` を開いて「でんわする」
+   - 子役: `pages/video-call.html?mode=raspi` を開く → 自動応答で繋がる
+2. ラズパイでキオスク起動 → 親スマホから発信 → テレビに親が映ればOK
+3. 外出先想定: 親スマホをモバイル回線（Wi-Fi OFF）にして発信
+   - TURN（metered.ca）は Supabase の `game_settings.broadcast_ice_servers` に設定済みが前提
+   - 詳細は `docs/video-call-turn-setup.md`
+
+## トラブルシューティング
+
+### カメラが認識されない
+- `v4l2-ctl --list-devices` でデバイスが出るか確認、USBを差し直す
+- 複数カメラがある場合はブラウザが別のを選ぶことがある → 不要なカメラを外す
+
+### 映像は出るが音が出ない / マイクが拾わない
+- `arecord -l` / `aplay -l` でデバイス確認
+- HDMI音声とUSBスピーカーが競合する場合は出力先を明示（`amixer` / PulseAudio設定）
+
+### 着信しても自動応答しない
+- URLに `?mode=raspi` が付いているか確認（キオスクスクリプトは付与済み）
+- Supabase Realtimeに繋がっているか（`ping supabase`）、シグナリングチャネルは `broadcast-video-call`
+
+### 外出先から繋がらない（同一Wi-Fiでは繋がる）
+- TURN未設定/認証エラーの可能性 → `broadcast_ice_servers` を確認
+- Chromeの `chrome://webrtc-internals` で candidate に `relay` が出るか確認
