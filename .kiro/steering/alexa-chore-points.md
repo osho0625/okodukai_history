@@ -112,6 +112,43 @@ children テーブルの name に対応。
 - Alexa-hosted では環境変数が使えないため、Alexa Console 上では直書きに変更する
 - `lambda/package.json` は Alexa-hosted のデフォルトのまま触らない（壊れる原因）
 - 対話モデル変更後は「モデルを保存」→「モデルをビルド」を忘れない
+- コード変更後は「Deploy」ボタンを押す（ビルドとは別、コード反映に必須）
+
+### 🔴 Node.js 旧ランタイム制約（重要）
+
+Alexa-hosted の Node.js ランタイムは古い（Node 16系）ため、以下が使えない:
+- オプショナルチェイニング `?.` → `&&` で書く（`slots.x && slots.x.value`）
+- Null合体 `??` → 使わない
+- グローバル `fetch` → 使えない。`https` モジュールで自前実装（`httpRequest` ヘルパー参照）
+
+これらを使うとデプロイは成功するが Lambda 起動時に構文エラー → `No resource endpoint found` になり、全発話が「お役に立てません」になる。
+
+## テスト方法
+
+### JSONエディタ経由（推奨・ネットワーク制限回避）
+
+会社VPN/プロキシ下では Alexaシミュレータ（音声）が `avs-alexa-fe.amazon.com` へのCORSでブロックされ動かない。
+その場合は テストタブ →「JSONエディタ」に `alexa/test-requests/*.json` を貼って送信することで Lambda を直接テスト可能。
+
+| ファイル | 内容 |
+|----------|------|
+| `alexa/test-requests/launch.json` | スキル起動（疎通確認） |
+| `alexa/test-requests/chore-points.json` | ポイント申請 |
+| `alexa/test-requests/chore-points-default.json` | デフォルトpt申請 |
+| `alexa/test-requests/check-balance.json` | 残高確認 |
+| `alexa/test-requests/check-broadcast.json` | メッセージ確認 |
+| `alexa/test-requests/reply-ok.json` | 了解返事 |
+
+### 実機Echo
+
+同じAmazonアカウントのEchoなら開発中スキルが自動で使える。自宅WiFiならネットワーク制限なく音声で動作。
+
+## ブロードキャスト機能（メッセージ確認・了解返事）
+
+親からの音声メッセージへの返事機能。`alexa_messages` テーブルを使用。
+- `CheckBroadcastIntent`: 未返事メッセージを読み上げ（direction=to_alexa, replied=false）
+- `ReplyOkIntent`: 「了解」で返事（replied=true に更新 + Discord/Push通知）
+- テーブルが未作成の場合、これらのIntentのみエラー（ポイント申請には影響なし）
 
 ## 発話例
 
