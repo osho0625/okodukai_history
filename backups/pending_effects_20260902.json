@@ -1,0 +1,5 @@
+[{"id":"13d8b8b7-41b7-46fc-9411-9fbf97a5b472","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"points","data":{"chores": ["その他"], "addedPoints": 1},"created_at":"2026-08-26T01:59:17.501784+00:00"}, 
+ {"id":"a5d4f9e5-086f-4f83-b15a-07f903d818c6","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"points","data":{"chores": ["洗濯機回し", "洗濯物干し", "洗濯機回し"], "addedPoints": 10},"created_at":"2026-06-10T02:19:53.301078+00:00"}, 
+ {"id":"840dfb19-7104-4cac-aa9c-aaf08364a47a","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"deposit","data":{"newBalance": 80, "oldBalance": 40, "totalAmount": 93},"created_at":"2026-06-10T03:03:20.573123+00:00"}, 
+ {"id":"1ab1e517-4895-4b99-9301-56ef3e554863","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"points","data":{"chores": ["ゴミまとめ", "洗濯機回し", "タオル畳み"], "addedPoints": 8},"created_at":"2026-09-02T10:26:57.269065+00:00"}, 
+ {"id":"79d3c415-56c2-4201-8f18-fb4df9c0714c","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"points","data":{"chores": ["牛乳パック開き"], "addedPoints": 3},"created_at":"2026-08-24T03:47:26.103133+00:00"}]
