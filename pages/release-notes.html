@@ -36,6 +36,15 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.42.3</span><span class="date">2026/09/01</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> セキュリティ: Discord Webhook URLをフロントから除去し、Edge Function経由に変更（URL秘匿化）</li>
+    <li><span class="tag tag-infra">infra</span> Edge Function discord-notify 追加（content検証・2000字トリム）</li>
+    <li><span class="tag tag-infra">infra</span> notifyDiscord/notifyDiscordGame をEdge Function呼び出しに統一、SW v337</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.42.2</span><span class="date">2026/09/01</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> Alexaスキル: 通知（Discord/Push）失敗時もポイント申請自体は成功扱いに（握りつぶし）</li>

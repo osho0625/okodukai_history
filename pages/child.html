@@ -466,10 +466,7 @@ async function doChildTx(type) {
 
   const emoji = type === 'add' ? '\u{1F4B0}' : '\u{1F4B8}';
   const action = type === 'add' ? '入金' : '出金';
-  try {
-    await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ content: emoji + ' **' + child.name + '** ' + amount.toLocaleString() + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円' }) });
-  } catch(e) {}
+  notifyDiscord(emoji + ' **' + child.name + '** ' + amount.toLocaleString() + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円');
 
   // Push通知
   queuePushNotification(emoji + ' ' + action, child.name + ' ' + amount.toLocaleString() + '円 ' + action + '（残高: ' + newBal.toLocaleString() + '円）', 'all');
@@ -1400,7 +1397,7 @@ async function addChorePoints() {
   try {
     let content = '⭐ **' + child.name + '** が「' + chore.name + '」で ' + currentPts + 'ポイント獲得！（合計: ' + afterAll + '）';
     if (milestones.length > 0) content += '\n💰 お小遣い発生！ ' + milestones.map(m => m.pts + 'pt→' + m.amt + '円').join(', ');
-    await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) });
+    notifyDiscord(content);
   } catch(e) {}
 
   // Push通知
@@ -1765,17 +1762,7 @@ async function submitReminder() {
   } else {
     discordMsg = '🔔 リマインダー登録\n📅 [' + child.name + '] ' + message + '（' + eventDate + '）';
   }
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 3000);
-    await fetch(DISCORD_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: discordMsg }),
-      signal: ctrl.signal
-    });
-    clearTimeout(tid);
-  } catch (e) {}
+  notifyDiscord(discordMsg);
 
   // Push通知
   let pushBody;

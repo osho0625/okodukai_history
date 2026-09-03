@@ -2,13 +2,17 @@
 const SUPABASE_URL = "https://ynecezxnltigplrfzzoh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
 
 const isAdmin = localStorage.getItem('deviceRole') === 'admin';
 
+// Discord通知はEdge Function経由で送る（Webhook URLはサーバー側に隠蔽）
 async function notifyDiscord(content) {
   try {
-    await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
+    await fetch(`${SUPABASE_URL}/functions/v1/discord-notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ content })
+    });
   } catch (e) {}
 }
 
