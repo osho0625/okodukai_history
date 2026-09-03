@@ -610,13 +610,7 @@ async function loadTodayScp() {
 
 
 
-// --- パスワード読み込み（Supabase） ---
-async function loadPasswords() {
-  try {
-    const { data } = await client.from('game_settings').select('admin_password').eq('id', 1).maybeSingle();
-    adminPassword = (data && data.admin_password) || null;
-  } catch(e) {}
-}
+// 管理者パスワードはapp_secretsに隔離。フロントは値を保持せずverifySecret()で照合する。
 
 // --- ベル揺れ演出 ---
 function ringBell(e, el) {
@@ -932,11 +926,15 @@ function goAdmin() {
   setTimeout(() => document.getElementById('adminPwInput').focus(), 100);
 }
 
-function submitAdminPw() {
+async function submitAdminPw() {
   const input = document.getElementById('adminPwInput').value;
-  if (adminPassword && input === adminPassword) {
+  // サーバー側(verify-secret)で照合。パスワードの値はクライアントに保持しない。
+  const ok = await verifySecret('admin_password', input);
+  if (ok) {
     adminFailCount = 0;
     document.getElementById('adminOverlay').classList.remove('active');
+    // admin.htmlのset-secret認可用に一時保存
+    localStorage.setItem('admin_auth_pw', input);
     notifyDiscord('🔧 管理者ページにログインしました');
     queuePushNotification('🔧 管理者ログイン', '管理者ページにログインしました', 'admin');
     window.location.href = 'pages/admin.html';
@@ -1519,7 +1517,6 @@ autoConsumeTickets();
 load();
 loadReminders();
 loadPuyoCounts();
-loadPasswords();
 loadTodayScience();
 loadTodayScp();
 
@@ -1561,7 +1558,7 @@ if (localStorage.getItem('deviceRole') === 'admin') {
 <script src="js/neko-infection.js"></script>
 <script src="js/neko-meme-warning.js"></script>
 
-<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.42.3</a></div>
+<div style="position:fixed; bottom:4px; right:8px; font-size:0.6em; color:#ccc;"><a href="pages/release-notes.html" style="color:#ccc; text-decoration:none;">v2.43.0</a></div>
 
 </body>
 </html>

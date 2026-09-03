@@ -1606,24 +1606,7 @@ async function submitReview() {
 }
 
 // === AI Grading ===
-let aiApiKeys = null;
-
-async function loadAiApiKeys() {
-  if (aiApiKeys) return aiApiKeys;
-  try {
-    const { data, error } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key']);
-    if (error) throw error;
-    aiApiKeys = {};
-    if (data) data.forEach(row => {
-      if (row.key === 'gemini_api_key') aiApiKeys.gemini_api_key = row.value;
-      if (row.key === 'groq_api_key') aiApiKeys.groq_api_key = row.value;
-    });
-    return aiApiKeys;
-  } catch (e) {
-    console.error('APIキー読み込み失敗:', e);
-    return {};
-  }
-}
+// APIキーはEdge Function(ai-proxy)側に隔離。フロントはcallAiProxy()を使う。
 
 async function aiGrade() {
   const btn = document.getElementById('ai-grade-btn');
@@ -1644,7 +1627,6 @@ async function aiGrade() {
   }
   if (!problem) { status.textContent = '問題が見つかりません'; btn.disabled = false; return; }
 
-  const keys = await loadAiApiKeys();
   const prompt = `あなたは小学生向け算数コンテストの採点官です。以下の問題と解答を採点してください。
 あなた自身で問題を解いて正解を導き出し、それと受験者の解答を比較して採点してください。
 
@@ -1673,33 +1655,12 @@ ${review.answer_text}
 点数: X
 コメント: （最初に正解！/惜しい！/残念…から始める採点コメント）`;
 
-  let result = null;
-
-  // Try Gemini first
-  if (keys.gemini_api_key) {
-    try {
-      result = await callGemini(keys.gemini_api_key, prompt);
-      if (result) status.textContent = '✅ Gemini';
-    } catch (e) {
-      console.error('Gemini採点失敗:', e);
-      status.textContent = 'Gemini失敗、Groq試行中...';
-    }
-  }
-
-  // Fallback to Groq
-  if (!result && keys.groq_api_key) {
-    try {
-      result = await callGroq(keys.groq_api_key, prompt);
-      status.textContent = '✅ Groq';
-    } catch (e) {
-      status.textContent = '❌ AI採点失敗';
-      btn.disabled = false;
-      return;
-    }
-  }
-
-  if (!result) {
-    status.textContent = '❌ APIキー未設定';
+  // AI呼び出しはEdge Function経由（APIキーはサーバー側に隔離）
+  let result = await callAiProxy(prompt, { mode: 'grade' });
+  if (result) {
+    status.textContent = '✅ AI採点';
+  } else {
+    status.textContent = '❌ AI採点失敗';
     btn.disabled = false;
     return;
   }
@@ -1730,54 +1691,6 @@ ${review.answer_text}
   showAiChat(result);
 
   btn.disabled = false;
-}
-
-async function callGemini(apiKey, prompt) {
-  // Try gemini-2.0-flash first, fallback to 2.5-flash-lite
-  const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite'];
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const body = model.includes('2.5') 
-        ? { contents: [{ parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }
-        : { contents: [{ parts: [{ text: prompt }] }] };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) {
-        console.warn('Gemini ' + model + ' failed:', res.status);
-        continue;
-      }
-      const data = await res.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      const textPart = parts.find(p => p.text !== undefined);
-      if (textPart?.text) return textPart.text;
-    } catch (e) {
-      console.warn('Gemini ' + model + ' error:', e);
-      continue;
-    }
-  }
-  throw new Error('All Gemini models failed');
-}
-
-async function callGroq(apiKey, prompt) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3
-    })
-  });
-  if (!res.ok) throw new Error('Groq API error: ' + res.status);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
 }
 
 // AI Chat conversation
@@ -1813,8 +1726,6 @@ async function sendAiChat() {
   aiChatHistory.push({ role: 'user', content: msg });
   renderAiChatMessages();
 
-  const keys = await loadAiApiKeys();
-  
   // Build context for the conversation
   const review = pendingReviews.find(r => r.id === currentReviewId) ||
     reviewedAnswersList.find(r => r.id === currentReviewId);
@@ -1838,29 +1749,9 @@ async function sendAiChat() {
   const fullPrompt = systemContext + '\n\n会話履歴:\n' + 
     aiChatHistory.map(m => (m.role === 'user' ? '管理者: ' : 'AI: ') + m.content).join('\n');
 
-  let reply = '';
-  try {
-    if (keys.gemini_api_key) {
-      reply = await callGemini(keys.gemini_api_key, fullPrompt);
-    }
-    if (!reply && keys.groq_api_key) {
-      reply = await callGroq(keys.groq_api_key, fullPrompt);
-    }
-    if (!reply) {
-      reply = 'APIキーが設定されていません';
-    }
-  } catch (e) {
-    // Gemini失敗時にGroqフォールバック
-    if (keys.groq_api_key) {
-      try {
-        reply = await callGroq(keys.groq_api_key, fullPrompt);
-      } catch (e2) {
-        reply = 'エラーが発生しました: ' + e2.message;
-      }
-    } else {
-      reply = 'エラーが発生しました: ' + e.message;
-    }
-  }
+  // AI呼び出しはEdge Function経由（APIキーはサーバー側に隔離）
+  let reply = await callAiProxy(fullPrompt, { mode: 'grade' });
+  if (!reply) reply = 'AIの応答を取得できませんでした';
 
   aiChatHistory.push({ role: 'assistant', content: reply });
   renderAiChatMessages();

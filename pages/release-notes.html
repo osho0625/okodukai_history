@@ -36,6 +36,17 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.43.0</span><span class="date">2026/09/03</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> セキュリティ: 秘密情報(パスワード/合言葉/TURN認証/AIキー)をapp_secretsに隔離、RLSでanon直接アクセスを禁止</li>
+    <li><span class="tag tag-fix">fix</span> パスワード類はサーバー側照合(verify-secret)に変更、値をクライアントに渡さない</li>
+    <li><span class="tag tag-fix">fix</span> AI呼び出し(採点/相談/漢字画像)をai-proxy経由に変更、APIキーをフロントから完全除去</li>
+    <li><span class="tag tag-infra">infra</span> Edge Function追加: verify-secret / get-ice-servers / ai-proxy / set-secret、SW v338</li>
+    <li><span class="tag tag-infra">infra</span> RLS棚卸し表・隔離手順のドキュメント追加（docs/security-rls-inventory.md, docs/secrets-isolation-setup.md）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.42.3</span><span class="date">2026/09/01</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> セキュリティ: Discord Webhook URLをフロントから除去し、Edge Function経由に変更（URL秘匿化）</li>

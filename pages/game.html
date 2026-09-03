@@ -553,13 +553,19 @@ function showNightUnlock() {
 
 async function submitNightPw() {
   var input = document.getElementById('nightPwInput').value;
-  var correctPw = '299792458';
+  // サーバー側(verify-secret)で照合。パスワードの値はクライアントに渡さない。
+  var matched = false;
   try {
-    var res = await sbClient.from('game_settings').select('night_password').eq('id', 1).maybeSingle();
-    if (res.data && res.data.night_password) correctPw = res.data.night_password;
+    var res = await fetch("https://ynecezxnltigplrfzzoh.supabase.co/functions/v1/verify-secret", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': 'sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4' },
+      body: JSON.stringify({ key: 'night_password', value: input })
+    });
+    var vd = await res.json();
+    matched = !!vd.match;
   } catch(e) {}
 
-  if (input === correctPw) {
+  if (matched) {
     localStorage.setItem('nightUnlocked', 'true');
     nightAttempts = 0; nightLocked = false; nightPwAttempts = 0;
     var modal = document.getElementById('nightPwModal');

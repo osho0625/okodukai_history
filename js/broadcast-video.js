@@ -82,21 +82,16 @@
 
     vcState.role = role;
     vcState.isRaspi = !!isRaspi;
+    // 発信側は端末ローカルに保存した合言葉を使う（admin端末で1回設定。DBの秘密は直接読めない）
+    vcState.secret = localStorage.getItem('broadcast_call_secret') || null;
 
-    // ICE設定 + 合言葉を game_settings から取得
+    // ICE設定はEdge Function経由で取得（TURN認証を隠蔽）
     try {
-      const { data } = await client.from('game_settings')
-        .select('broadcast_ice_servers, nurse_call_ice_servers, broadcast_call_secret')
-        .eq('id', 1).single();
-      if (data?.broadcast_ice_servers) {
-        vcState.iceServers = data.broadcast_ice_servers;
-      } else if (data?.nurse_call_ice_servers) {
-        vcState.iceServers = data.nurse_call_ice_servers;
-      }
-      if (data?.broadcast_call_secret) {
-        vcState.secret = data.broadcast_call_secret;
+      if (typeof getIceServers === 'function') {
+        vcState.iceServers = await getIceServers();
       }
     } catch (e) {}
+    // 合言葉はクライアントに保持せず、着信時にverifySecretでサーバー照合する（下記handleCallStateEvent）
 
     vcState.channel = client.channel(CHANNEL_NAME);
 
@@ -327,25 +322,25 @@
     } catch (e) {}
   }
 
-  function handleCallStateEvent(data) {
+  async function handleCallStateEvent(data) {
     if (data.state === 'ringing' && vcState.stateMachine.getState() === 'idle') {
-      const secretMatches = vcState.secret && data.secret === vcState.secret;
-
       if (vcState.isRaspi) {
-        // ラズパイ受信端末: 合言葉が一致した着信のみ自動応答。
-        // フェイルセーフ: 合言葉未設定 or 不一致の着信は完全に無視（カメラを起動しない）。
-        if (!secretMatches) {
-          return;
+        // ラズパイ受信端末: 着信の合言葉をサーバー側(verify-secret)で照合。
+        // フェイルセーフ: 合言葉なし or 不一致は完全に無視（カメラを起動しない）。
+        const candidate = typeof data.secret === 'string' ? data.secret : '';
+        let ok = false;
+        if (candidate && typeof verifySecret === 'function') {
+          ok = await verifySecret('broadcast_call_secret', candidate);
         }
+        if (!ok) return;
+        // 照合中に状態が変わっていないか再確認
+        if (vcState.stateMachine.getState() !== 'idle') return;
         vcState.stateMachine.transition('ringing');
         showStatus('でんわがきているよ！', 'info');
         updateUI();
         acceptCall();
       } else {
-        // 親側など手動応答する端末: 合言葉が設定されていれば照合し、不一致は無視。
-        if (vcState.secret && !secretMatches) {
-          return;
-        }
+        // 親側など手動応答する端末: 着信表示のみ（応答は手動ボタン）
         vcState.stateMachine.transition('ringing');
         showStatus('でんわがきているよ！', 'info');
         updateUI();
