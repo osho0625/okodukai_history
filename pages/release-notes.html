@@ -36,6 +36,16 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.44.0</span><span class="date">2026/09/03</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 家庭内精算: 立替・補助金の入力に「日付」を追加（清算前なら日付含め修正可能）</li>
+    <li><span class="tag tag-feat">feat</span> 立替一覧・ダッシュボードに日付(M/D)を表示、年月は日付から自動導出</li>
+    <li><span class="tag tag-infra">infra</span> temporary_expensesにexpense_date列を追加（既存データは各月の月末日で一括補完）、SW v341</li>
+    <li><span class="tag tag-fix">fix</span> 差額精算テストのpayer名を実データ（涼介）に統一しpayers明示、テスト61件グリーン</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.43.2</span><span class="date">2026/09/03</span></div>
   <ul>
     <li><span class="tag tag-infra">infra</span> ビデオ通話: UI文言を漢字表記に変更（発信/応答/切断/合言葉/接続状態）、SW v340</li>

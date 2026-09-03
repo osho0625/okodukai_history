@@ -23,8 +23,35 @@ function validateExpenseMaster(data) {
 }
 
 /**
+ * 日付(YYYY-MM-DD)から年月(YYYY-MM)を取り出す
+ * @param {string} dateStr - "YYYY-MM-DD"
+ * @returns {string} "YYYY-MM"（形式が不正なら空文字）
+ */
+function yearMonthFromDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return '';
+  }
+  return dateStr.slice(0, 7);
+}
+
+/**
+ * 年月(YYYY-MM)の月末日(YYYY-MM-DD)を返す
+ * @param {string} yearMonth - "YYYY-MM"
+ * @returns {string} "YYYY-MM-DD"（形式が不正なら空文字）
+ */
+function lastDayOfMonth(yearMonth) {
+  if (!yearMonth || typeof yearMonth !== 'string' || !/^\d{4}-\d{2}$/.test(yearMonth)) {
+    return '';
+  }
+  const [y, m] = yearMonth.split('-').map(Number);
+  // 翌月0日 = 当月末日（ローカルタイムでの日付部分のみ使用）
+  const d = new Date(y, m, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
  * Temporary_Expense バリデーション
- * @param {object} data - {title, payer, amount, year_month, beneficiaries?, note?}
+ * @param {object} data - {title, payer, amount, expense_date, year_month?, beneficiaries?, note?}
  * @returns {{valid: boolean, errors: string[]}}
  */
 function validateTemporaryExpense(data) {
@@ -38,8 +65,16 @@ function validateTemporaryExpense(data) {
   if (data.amount == null || !Number.isInteger(data.amount) || data.amount <= 0) {
     errors.push('金額は1以上の整数で入力してください');
   }
-  if (!data.year_month || typeof data.year_month !== 'string' || !/^\d{4}-\d{2}$/.test(data.year_month)) {
-    errors.push('年月はYYYY-MM形式で入力してください');
+  if (!data.expense_date || typeof data.expense_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.expense_date)) {
+    errors.push('日付はYYYY-MM-DD形式で入力してください');
+  }
+  // year_month が渡された場合は expense_date と整合しているか確認
+  if (data.year_month != null) {
+    if (typeof data.year_month !== 'string' || !/^\d{4}-\d{2}$/.test(data.year_month)) {
+      errors.push('年月はYYYY-MM形式で入力してください');
+    } else if (data.expense_date && /^\d{4}-\d{2}-\d{2}$/.test(data.expense_date) && yearMonthFromDate(data.expense_date) !== data.year_month) {
+      errors.push('年月と日付が一致していません');
+    }
   }
   if (data.beneficiaries && (!Array.isArray(data.beneficiaries) || data.beneficiaries.length === 0)) {
     errors.push('受益者は少なくとも1人選択してください');
@@ -336,6 +371,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     validateExpenseMaster,
     validateTemporaryExpense,
+    yearMonthFromDate,
+    lastDayOfMonth,
     generateMonthlyExpenses,
     calculateSettlement,
     shouldCreateSettlement,

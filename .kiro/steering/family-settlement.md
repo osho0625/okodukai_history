@@ -24,6 +24,7 @@ fileMatchPattern: "*settlement*"
 - `sql/alter_settlement_allow_multiple.sql` — 同月複数精算対応ALTER
 - `sql/alter_temporary_expenses_beneficiaries.sql` — beneficiaries列追加
 - `sql/alter_temporary_expenses_subsidy.sql` — expense_type列追加（補助金対応）
+- `sql/alter_temporary_expenses_add_date.sql` — expense_date列追加（立替日、既存は月末日で補完）
 - `tests/property-settlement.test.js` — プロパティベーステスト（17 Properties）
 - `tests/settlement-integration.test.js` — 統合テスト
 - `tests/settlement-deep-check.test.js` — 深層バグチェック
@@ -49,9 +50,12 @@ fileMatchPattern: "*settlement*"
 - RLS無効
 
 ### temporary_expenses（一時的な立替金）
-- id, title, payer, amount, beneficiaries (TEXT[], default ['めぐみ','涼介']), year_month, note, settled, expense_type, created_at
+- id, title, payer, amount, beneficiaries (TEXT[], default ['めぐみ','涼介']), expense_date (DATE, NOT NULL), year_month, note, settled, expense_type, created_at
+- expense_date: 立替日（YYYY-MM-DD）。入力は日付単位で行い、year_monthは日付から自動導出（先頭7文字）
+- year_month: 精算対象月（expense_dateと整合。既存データはexpense_dateを各月の月末日で補完）
 - beneficiaries: 受益者（誰の分を立て替えたか）。両方=折半、片方のみ=全額その人が返す
 - expense_type: 'expense'（立替金）/ 'subsidy'（補助金）。補助金の場合payerは受取人、折半して相手に半額渡す
+- 編集/削除は settled=false（清算前）のみ可能（canEdit/canDeleteTemporaryExpense）
 - RLS無効
 
 ### settlement_audit_log（操作ログ）
@@ -111,4 +115,11 @@ fileMatchPattern: "*settlement*"
 npx vitest run tests/property-settlement.test.js tests/settlement-integration.test.js tests/settlement-deep-check.test.js
 ```
 
-17 Properties + 統合テスト + 深層チェック = 計55テスト
+17 Properties + 統合テスト + 深層チェック = 計61テスト
+
+## 立替入力の日付対応（v2.44.0〜）
+
+- 入力モーダルは日付ピッカー（type="date"）。新規追加時は対象月の月末日を初期値、編集時は保存済みexpense_dateを初期値にする
+- year_monthはexpense_dateから自動導出（`yearMonthFromDate`）。月末日算出は`lastDayOfMonth`（settlement-utils.jsに追加、dual export）
+- `validateTemporaryExpense`はexpense_date必須・YYYY-MM-DD形式・year_monthとの月整合をチェック
+- 清算前（settled=false）なら日付を含めて修正可能

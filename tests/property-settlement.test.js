@@ -18,7 +18,8 @@ import {
   getDifferenceSettlementPeriod,
   getPeriodMonths,
   calculateDifferenceSettlement,
-  suggestBaseAmountAdjustments
+  suggestBaseAmountAdjustments,
+  lastDayOfMonth
 } from '../js/settlement-utils.js';
 
 // --- Arbitraries ---
@@ -119,7 +120,7 @@ describe('Property 10: Temporary_Expenseバリデーション', () => {
   it('有効な入力はvalid=trueを返す', () => {
     fc.assert(
       fc.property(validName, validPayer, validAmount, validYearMonth, (title, payer, amount, year_month) => {
-        const result = validateTemporaryExpense({ title, payer, amount, year_month });
+        const result = validateTemporaryExpense({ title, payer, amount, year_month, expense_date: lastDayOfMonth(year_month) });
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
       }),
