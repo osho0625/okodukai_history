@@ -16,6 +16,48 @@ async function notifyDiscord(content) {
   } catch (e) {}
 }
 
+// 秘密の照合（値はサーバー側にのみ存在。一致/不一致だけ返る）
+// key: 'night_password' | 'admin_password' | 'broadcast_call_secret'
+async function verifySecret(key, value) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-secret`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ key, value })
+    });
+    const data = await res.json();
+    return !!data.match;
+  } catch (e) { return false; }
+}
+
+// WebRTC用ICE(STUN/TURN)構成をEdge Function経由で取得（TURN認証を隠蔽）
+async function getIceServers() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/get-ice-servers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    return (data && Array.isArray(data.iceServers)) ? data.iceServers : [{ urls: 'stun:stun.l.google.com:19302' }];
+  } catch (e) { return [{ urls: 'stun:stun.l.google.com:19302' }]; }
+}
+
+// AI呼び出しをEdge Function経由で行う（APIキーを一切クライアントに渡さない）
+// 戻り値: 応答テキスト（失敗時は空文字）
+async function callAiProxy(prompt, opts) {
+  opts = opts || {};
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ mode: opts.mode || 'grade', prompt, system: opts.system || '', model: opts.model || '', image: opts.image || null })
+    });
+    const data = await res.json();
+    return (data && typeof data.text === 'string') ? data.text : '';
+  } catch (e) { return ''; }
+}
+
 /**
  * Push通知をキューに追加（cron jobが配信）
  * @param {string} title - 通知タイトル

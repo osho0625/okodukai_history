@@ -75,13 +75,10 @@
     voiceState.childId = childId;
     voiceState.role = role;
 
-    // ICE設定をgame_settingsから取得
+    // ICE設定はEdge Function経由で取得（TURN認証を隠蔽）
     try {
-      const { data } = await client.from('game_settings')
-        .select('nurse_call_ice_servers')
-        .eq('id', 1).single();
-      if (data?.nurse_call_ice_servers) {
-        voiceState.iceServers = data.nurse_call_ice_servers;
+      if (typeof getIceServers === 'function') {
+        voiceState.iceServers = await getIceServers();
       }
     } catch (e) {}
 

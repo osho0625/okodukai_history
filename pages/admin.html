@@ -1170,23 +1170,42 @@ function toggleNightLimit() {
   localStorage.setItem('nightLimitOff', !on); // OFF=制限なし
 }
 
+// 秘密はapp_secretsに隔離されており、フロントからは値を読み取れない（設定のみ可能）。
 async function loadNightPw() {
-  try {
-    const { data } = await client.from('game_settings').select('night_password, admin_password').eq('id', 1).maybeSingle();
-    const pw = (data && data.night_password) || '';
-    const el = document.getElementById('currentNightPw');
-    if (el) el.textContent = pw || '(未設定)';
-    const adPw = (data && data.admin_password) || '';
-    const adEl = document.getElementById('currentAdminPw');
-    if (adEl) adEl.textContent = adPw || '(未設定)';
-  } catch(e) {}
+  const el = document.getElementById('currentNightPw');
+  if (el) el.textContent = '(表示不可・設定のみ)';
+  const adEl = document.getElementById('currentAdminPw');
+  if (adEl) adEl.textContent = '(表示不可・設定のみ)';
+}
+
+// set-secret Edge Function経由で秘密を書き込む。認可に現在のadminPWを使う。
+async function setSecretViaFunction(key, value) {
+  const authPw = localStorage.getItem('admin_auth_pw') || '';
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/set-secret`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+    body: JSON.stringify({ key, value, auth_password: authPw })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    if (res.status === 401) {
+      const entered = prompt('現在の管理者パスワードを入力してください（認可用）');
+      if (entered) {
+        localStorage.setItem('admin_auth_pw', entered);
+        return setSecretViaFunction(key, value); // 1回リトライ
+      }
+    }
+    throw new Error(data.error || 'set_failed');
+  }
+  return true;
 }
 
 async function saveNightPw() {
   const pw = document.getElementById('nightPwInput').value.trim();
   if (!pw) return alert('パスワードを入力してください');
-  await client.from('game_settings').update({ night_password: pw }).eq('id', 1);
-  document.getElementById('currentNightPw').textContent = pw;
+  try {
+    await setSecretViaFunction('night_password', pw);
+  } catch (e) { return alert('保存に失敗しました: ' + e.message); }
   document.getElementById('nightPwInput').value = '';
   const msg = document.getElementById('nightPwMsg');
   msg.style.display = 'block';
@@ -1196,8 +1215,11 @@ async function saveNightPw() {
 async function saveAdminPw() {
   const pw = document.getElementById('adminPwChangeInput').value.trim();
   if (!pw) return alert('パスワードを入力してください');
-  await client.from('game_settings').update({ admin_password: pw }).eq('id', 1);
-  document.getElementById('currentAdminPw').textContent = pw;
+  try {
+    await setSecretViaFunction('admin_password', pw);
+    // 新しいadminPWを認可用に保存（次回のset-secret用）
+    localStorage.setItem('admin_auth_pw', pw);
+  } catch (e) { return alert('保存に失敗しました: ' + e.message); }
   document.getElementById('adminPwChangeInput').value = '';
   const msg = document.getElementById('adminPwMsg');
   msg.style.display = 'block';
@@ -1542,17 +1564,12 @@ async function issueTickets() {
 }
 
 // --- APIキー管理 ---
+// APIキーはapp_secretsに隔離。値は読み取れないため、入力欄はプレースホルダ表示のみ。
 async function loadApiKeysAdmin() {
-  try {
-    const { data } = await client.from('app_config').select('key, value').in('key', ['gemini_api_key', 'groq_api_key', 'openai_api_key']);
-    if (data) {
-      data.forEach(row => {
-        if (row.key === 'gemini_api_key') document.getElementById('geminiKeyInput').value = row.value || '';
-        if (row.key === 'groq_api_key') document.getElementById('groqKeyInput').value = row.value || '';
-        if (row.key === 'openai_api_key') document.getElementById('openaiKeyInput').value = row.value || '';
-      });
-    }
-  } catch(e) { console.warn('APIキー読み込み失敗:', e); }
+  ['geminiKeyInput', 'groqKeyInput', 'openaiKeyInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.placeholder = '設定済み（再入力で更新）'; }
+  });
 }
 
 function toggleKeyVisibility(inputId, btn) {
@@ -1562,28 +1579,23 @@ function toggleKeyVisibility(inputId, btn) {
 }
 
 async function saveApiKeys() {
+  // 空欄はスキップ（既存値を保持）。入力があったキーのみ set-secret 経由で更新。
   const keys = [
     { key: 'gemini_api_key', value: document.getElementById('geminiKeyInput').value.trim() },
     { key: 'groq_api_key', value: document.getElementById('groqKeyInput').value.trim() },
     { key: 'openai_api_key', value: document.getElementById('openaiKeyInput').value.trim() }
-  ];
+  ].filter(k => k.value);
 
+  const msg = document.getElementById('apiKeyMsg');
   try {
     for (const item of keys) {
-      const { data } = await client.from('app_config').select('key').eq('key', item.key).maybeSingle();
-      if (data) {
-        await client.from('app_config').update({ value: item.value }).eq('key', item.key);
-      } else {
-        await client.from('app_config').insert({ key: item.key, value: item.value });
-      }
+      await setSecretViaFunction(item.key, item.value);
     }
-    const msg = document.getElementById('apiKeyMsg');
     msg.style.display = 'block';
     msg.style.color = '#4caf50';
-    msg.textContent = '✓ 保存しました';
+    msg.textContent = keys.length ? '✓ 保存しました' : '（変更なし）';
     setTimeout(() => msg.style.display = 'none', 3000);
   } catch(e) {
-    const msg = document.getElementById('apiKeyMsg');
     msg.style.display = 'block';
     msg.style.color = '#e53935';
     msg.textContent = '❌ 保存に失敗しました: ' + e.message;
