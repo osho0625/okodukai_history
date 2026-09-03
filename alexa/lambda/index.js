@@ -193,6 +193,7 @@ const RequestChorePointsIntentHandler = {
       }
 
       // chore_points に INSERT (status=pending)
+      // ここが失敗したら申請失敗として扱う（本質的な処理）
       await supabasePost('chore_points', {
         child_id: child.id,
         chore_name: choreName,
@@ -200,15 +201,21 @@ const RequestChorePointsIntentHandler = {
         status: 'pending'
       });
 
-      // Discord 通知
-      await sendDiscord(`🎤 Alexa申請: ${childName}が「${choreName}」(${points}pt) を申請しました`);
-
-      // Push通知キュー (admin向け)
-      await queuePushMessage(
-        '🎤 Alexa ポイント申請',
-        `${childName}: ${choreName} (${points}pt)`,
-        'admin'
-      );
+      // 通知系は失敗しても申請自体は成功扱い（握りつぶす）
+      try {
+        await sendDiscord(`🎤 Alexa申請: ${childName}が「${choreName}」(${points}pt) を申請しました`);
+      } catch (e) {
+        console.error('Discord notify failed (non-fatal):', e);
+      }
+      try {
+        await queuePushMessage(
+          '🎤 Alexa ポイント申請',
+          `${childName}: ${choreName} (${points}pt)`,
+          'admin'
+        );
+      } catch (e) {
+        console.error('Push queue failed (non-fatal):', e);
+      }
 
       const speech = `${childName}の${choreName}、${points}ポイントを申請しました。承認待ちです。`;
       return handlerInput.responseBuilder.speak(speech).getResponse();
