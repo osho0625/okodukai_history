@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/09/01 v2.42.3
+最終更新: 2026/09/03 v2.43.0
 
 ## 🔴 Steering Files 運用ルール
 
@@ -52,7 +52,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v337, Push通知対応)
+├── sw.js               # Service Worker (v338, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -71,6 +71,10 @@ inclusion: auto
 │   ├── push-notify/    # Push通知配信
 │   ├── push-nurse-call/ # ナースコール通知
 │   ├── discord-notify/ # Discord通知中継（Webhook URLをサーバー側に隠蔽）
+│   ├── verify-secret/  # パスワード/合言葉のサーバー側照合（値を返さない）
+│   ├── get-ice-servers/ # WebRTC TURN構成の取得（TURN認証を隠蔽）
+│   ├── ai-proxy/       # AI(Gemini/Groq/OpenAI)呼び出し中継（APIキーを隠蔽）
+│   ├── set-secret/     # 管理者による秘密の書き込み（app_secrets）
 │   └── cors-proxy/     # ニュース用CORSプロキシ
 ├── sql/                # DBマイグレーション
 ├── backups/            # 自動バックアップJSON
@@ -127,10 +131,15 @@ inclusion: auto
 - 既存テーブル（変更なし）
 
 ### game_settings（各種設定、id=1の1行）
-- night_password: TEXT, night_limit_enabled: BOOLEAN
-- allowance_password: TEXT, admin_password: TEXT
+- night_limit_enabled: BOOLEAN
 - game_publish: JSONB (各ゲームの公開フラグ、例: {"game_pikupiku":true,"game_tetris":false,"game_math_olympiad":true,...})
 - chore_templates: JSONB (定型業務テンプレート配列、default '[]')
+- ⚠️ 秘密カラム(night_password/admin_password/allowance_password/broadcast_call_secret/*_ice_servers)は app_secrets へ移行済み。ここには置かない
+
+### app_secrets（秘密情報・RLSでanon禁止、Edge Function経由のみ）
+- key: TEXT (PK), value: JSONB, updated_at: TIMESTAMPTZ
+- 格納キー: night_password, admin_password, broadcast_call_secret, turn_ice_servers, gemini_api_key, groq_api_key, openai_api_key
+- アクセス: verify-secret / get-ice-servers / ai-proxy / set-secret（詳細は docs/secrets-isolation-setup.md）
 
 ### pending_effects（演出待ちデータ）
 - id: UUID (PK), child_id: UUID (FK→children), type: TEXT ('points'/'deposit'), data: JSONB, created_at: TIMESTAMPTZ
@@ -260,7 +269,7 @@ inclusion: auto
 - 🌱 ぷよ合計カウント（全端末のぷよカウント合計表示）
 - 📊 アクティビティログ
 - 🎫 チケット発行（あそびチケットの作成・管理）
-- 🔑 AIキー設定（Gemini/Groq/OpenAI APIキーの確認・保存・テスト、app_configテーブル管理）
+- 🔑 AIキー設定（Gemini/Groq/OpenAI APIキーの保存・テスト。app_secretsに隔離、set-secret経由で書き込み。値の表示は不可）
 - 💾 バックアップ（手動DL/GitHub復元/ファイル復元）
 - 🏥 ナースコール管理（通話履歴閲覧・設定）
 - 🔔 リマインダー管理（全リマインダー一覧、削除、スヌーズ設定、通知時間カスタマイズ）
@@ -309,7 +318,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.42.3
+- 現在: v2.43.0
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
@@ -321,7 +330,12 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 - **Supabase anon key（`sb_publishable_...`）は公開前提**。フロントに埋め込んでOK（隠せないし隠す意味がない）。守るのはRLSで行う。
 - **service_role key は絶対にフロント/コードに置かない**。Edge Functionの環境変数のみ（`SUPABASE_SERVICE_ROLE_KEY`）。
 - **Discord Webhook URLは秘密**。フロント直書き禁止。通知は Edge Function `discord-notify` 経由（URLは env `DISCORD_WEBHOOK` に隠蔽）。フロントは `notifyDiscord()` を使う。
-- ビデオ通話の合言葉（`broadcast_call_secret`）等、認証系のシークレットも game_settings に保存しコード直書きしない。
+- **秘密は app_secrets テーブルに集約**（RLSでanon禁止）。パスワード・合言葉・TURN認証・AIキーはここに保存し、`game_settings`/`app_config` には平文で置かない。
+  - 照合: `verifySecret(key, value)` → Edge Function verify-secret（値は返らない）
+  - TURN取得: `getIceServers()` → Edge Function get-ice-servers
+  - AI呼び出し: `callAiProxy(prompt, opts)` → Edge Function ai-proxy（APIキーはサーバー内のみ）
+  - 管理者による書き込み: set-secret（現在のadmin_password照合が認可）
+  - 詳細: `docs/secrets-isolation-setup.md`、棚卸し: `docs/security-rls-inventory.md`
 
 ### 🔴 毎回必ずやること（絶対に忘れないこと）
 

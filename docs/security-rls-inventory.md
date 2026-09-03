@@ -59,3 +59,21 @@ Supabase Auth未導入のため、RPC（DB関数, SECURITY DEFINER）または E
 - **TURN認証**: Edge Functionが動的に発行 or 返却（クライアントには通話時だけ渡す）
 
 詳細な実装手順は本ドキュメントの改訂で追記する。まずは合言葉・夜間PWの照合RPC化から着手する。
+
+
+---
+
+## 3. (A-2) 実装状況（2026/09/03 完了）
+
+`app_secrets` テーブル（RLSでanon禁止）を新設し、秘密を隔離した。取得・照合はEdge Function経由に統一。
+
+- ✅ night_password / admin_password / broadcast_call_secret → verify-secret（サーバー照合、値を返さない）
+- ✅ turn_ice_servers → get-ice-servers（取得）
+- ✅ gemini/groq/openai_api_key → ai-proxy（サーバー内でのみ使用、クライアントに渡らない）
+- ✅ 管理者の秘密書き込み → set-secret（現admin_password照合が認可）
+- ✅ フロント全ページ（index/admin/game/math-olympiad/math-battle/kenka-chat/kanji-test/broadcast-video/nurse-call-voice）を移行
+
+デプロイ・移行手順・クリーンアップは `docs/secrets-isolation-setup.md` 参照。
+
+### 残課題（今後）
+- children / transactions / temperature_logs 等の個人情報テーブルは依然RLS緩め。Supabase Auth未導入のため厳格化は保留（家庭内利用の割り切り）。将来Auth導入時に再設計。
