@@ -125,14 +125,14 @@
 
     // 合言葉が未設定だと相手（ラズパイ）が応答しないので発信を止める
     if (!vcState.secret) {
-      showStatus('先にあいことばを入れてね🔑', 'error');
+      showStatus('先に合言葉を入力してください🔑', 'error');
       return false;
     }
 
     try {
       vcState.localStream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS);
     } catch (e) {
-      showStatus('カメラ/マイクが使えないよ', 'error');
+      showStatus('カメラ/マイクが使用できません', 'error');
       return false;
     }
 
@@ -156,14 +156,14 @@
         if (vcState.stateMachine.getState() === 'ringing') {
           vcState.stateMachine.transition('ended');
           cleanup();
-          showStatus('つながらなかったよ', 'error');
+          showStatus('接続できませんでした', 'error');
           updateUI();
         }
         return;
       }
       broadcastCallState('ringing');
     }, 3000);
-    showStatus('よびだし中...', 'info');
+    showStatus('呼び出し中...', 'info');
     updateUI();
     return true;
   }
@@ -177,7 +177,7 @@
       try {
         vcState.localStream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS);
       } catch (e) {
-        showStatus('カメラ/マイクが使えないよ', 'error');
+        showStatus('カメラ/マイクが使用できません', 'error');
         vcState.stateMachine.transition('ended');
         broadcastCallState('ended');
         updateUI();
@@ -195,7 +195,7 @@
     attachLocalPreview();
     broadcastCallState('connected');
     await acquireWakeLock();
-    showStatus('つなげているよ...', 'info');
+    showStatus('接続中...', 'info');
     updateUI();
     startCallTimer();
     return true;
@@ -209,7 +209,7 @@
     vcState.stateMachine.transition('ended');
     broadcastCallState('ended');
     cleanup();
-    showStatus('つうわおわり', 'info');
+    showStatus('通話終了', 'info');
     updateUI();
   }
 
@@ -256,10 +256,10 @@
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
-        showStatus('つながったよ！', 'success');
+        showStatus('接続しました！', 'success');
       }
       if (pc.connectionState === 'failed') {
-        showStatus('きれちゃったよ', 'error');
+        showStatus('切断されました', 'error');
         endCall();
       }
       if (pc.connectionState === 'disconnected') {
@@ -342,13 +342,13 @@
         // 照合中に状態が変わっていないか再確認
         if (vcState.stateMachine.getState() !== 'idle') return;
         vcState.stateMachine.transition('ringing');
-        showStatus('でんわがきているよ！', 'info');
+        showStatus('着信中！', 'info');
         updateUI();
         acceptCall();
       } else {
         // 親側など手動応答する端末: 着信表示のみ（応答は手動ボタン）
         vcState.stateMachine.transition('ringing');
-        showStatus('でんわがきているよ！', 'info');
+        showStatus('着信中！', 'info');
         updateUI();
       }
     }
@@ -357,7 +357,7 @@
       // 発信側: 相手が接続完了 → offer送信
       vcState.stateMachine.transition('connected');
       const pc = createPeerConnection();
-      showStatus('つながったよ！', 'success');
+      showStatus('接続しました！', 'success');
       updateUI();
       startCallTimer();
       (async () => {
@@ -370,7 +370,7 @@
     if (data.state === 'ended') {
       vcState.stateMachine.transition('ended');
       cleanup();
-      showStatus('つうわおわり', 'info');
+      showStatus('通話終了', 'info');
       updateUI();
     }
   }

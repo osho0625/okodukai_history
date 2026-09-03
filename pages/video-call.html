@@ -115,18 +115,18 @@ body.raspi #vcLocalVideo { width: 160px; }
 
   <!-- 合言葉入力（発信側・未設定時のみ表示） -->
   <div id="vcSecretRow" style="display:none; width:100%; max-width:340px; text-align:center;">
-    <div style="font-size:0.9em; color:#aab; margin-bottom:6px;">🔑 あいことばを入れてね（最初の1回だけ）</div>
-    <input id="vcSecretInput" type="password" placeholder="あいことば" autocomplete="off"
+    <div style="font-size:0.9em; color:#aab; margin-bottom:6px;">🔑 合言葉を入力してください（初回のみ）</div>
+    <input id="vcSecretInput" type="password" placeholder="合言葉" autocomplete="off"
       style="width:100%; padding:14px; border-radius:12px; border:none; font-size:1.1em; text-align:center; margin-bottom:8px;">
-    <button id="vcSecretSaveBtn" class="vc-btn" style="background:#1976d2;">🔑 あいことばをほぞん</button>
+    <button id="vcSecretSaveBtn" class="vc-btn" style="background:#1976d2;">🔑 合言葉を保存</button>
   </div>
 
-  <button id="vcCallBtn" class="vc-btn" style="background:#4caf50;">📞 でんわする</button>
-  <button id="vcAcceptBtn" class="vc-btn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 でんわにでる</button>
-  <button id="vcEndBtn" class="vc-btn" style="display:none; background:#e53935;">切る</button>
+  <button id="vcCallBtn" class="vc-btn" style="background:#4caf50;">📞 発信</button>
+  <button id="vcAcceptBtn" class="vc-btn" style="display:none; background:#4caf50; animation:pulse 1.5s infinite;">📞 応答</button>
+  <button id="vcEndBtn" class="vc-btn" style="display:none; background:#e53935;">切断</button>
 
   <!-- 合言葉の変更（設定済みのとき小さく表示） -->
-  <button id="vcSecretChangeBtn" style="display:none; margin-top:4px; background:none; border:none; color:#5a6; font-size:0.8em; cursor:pointer; text-decoration:underline;">あいことばを変更</button>
+  <button id="vcSecretChangeBtn" style="display:none; margin-top:4px; background:none; border:none; color:#5a6; font-size:0.8em; cursor:pointer; text-decoration:underline;">合言葉を変更</button>
 </div>
 
 <script src="../js/broadcast-video.js"></script>
@@ -171,7 +171,7 @@ body.raspi #vcLocalVideo { width: 160px; }
     if (isRaspi) {
       // ラズパイ待受表示
       const st = document.getElementById('vcStatus');
-      if (st) { st.textContent = 'まちうけ中… 親からの着信を待っています'; st.className = 'vc-status info'; }
+      if (st) { st.textContent = '待受中… 親からの着信を待っています'; st.className = 'vc-status info'; }
       return;
     }
 
@@ -184,12 +184,12 @@ body.raspi #vcLocalVideo { width: 160px; }
     function saveSecret() {
       const val = (secretInput.value || '').trim();
       if (!val) {
-        if (st) { st.textContent = 'あいことばを入れてね'; st.className = 'vc-status error'; }
+        if (st) { st.textContent = '合言葉を入力してください'; st.className = 'vc-status error'; }
         return;
       }
       localStorage.setItem(SECRET_KEY, val);
       secretInput.value = '';
-      if (st) { st.textContent = 'あいことばを保存したよ📞'; st.className = 'vc-status success'; }
+      if (st) { st.textContent = '合言葉を保存しました📞'; st.className = 'vc-status success'; }
       // 保存した合言葉を即反映するため再初期化
       BroadcastVideo.init(role, isRaspi).then(refreshSecretUI);
     }
@@ -199,7 +199,7 @@ body.raspi #vcLocalVideo { width: 160px; }
     changeBtn.addEventListener('click', () => {
       localStorage.removeItem(SECRET_KEY);
       refreshSecretUI();
-      if (st) { st.textContent = '新しいあいことばを入れてね'; st.className = 'vc-status info'; }
+      if (st) { st.textContent = '新しい合言葉を入力してください'; st.className = 'vc-status info'; }
     });
 
     refreshSecretUI();
