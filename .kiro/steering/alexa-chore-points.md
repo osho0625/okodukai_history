@@ -120,7 +120,9 @@ children テーブルの name に対応。synonyms で読み仮名・漢字・�
 ## デプロイ時の注意
 
 - Git リポジトリの `alexa/lambda/index.js` は `process.env` で環境変数を参照
-- Alexa-hosted では環境変数が使えないため、Alexa Console 上では直書きに変更する
+- 🔴 Alexa-hosted では環境変数が使えない。**Console にコードを貼る度に、必ず先頭3行を直書きに変更すること**
+  - 直書き忘れると `SUPABASE_URL` が undefined → `new URL(undefined)` → `Invalid URL` で全申請がエラーになる
+  - `const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';` の形式
 - `lambda/package.json` は Alexa-hosted のデフォルトのまま触らない（壊れる原因）
 - 対話モデル変更後は「モデルを保存」→「モデルをビルド」を忘れない
 - コード変更後は「Deploy」ボタンを押す（ビルドとは別、コード反映に必須）
