@@ -69,6 +69,22 @@ amixer set Master 80%
 speaker-test -t wav -c 2 -l 1
 ```
 
+## 更新（最新のコードを取り込む）
+
+読み上げスクリプトを修正した後、ラズパイに反映してサービスを再起動する:
+
+```bash
+cd ~/okodukai_history/raspi
+git pull        # update.sh 内でも実行されるが念のため
+bash update.sh
+```
+
+`update.sh` は以下を自動で行う:
+1. `git pull`（リポジトリ内で実行された場合）
+2. `broadcast-listener.py` を `~/broadcast/` へ配置（既存は `.bak` にバックアップ）
+3. `speaker-test`（頭切れ対策で使用）が無ければ `alsa-utils` を導入
+4. `broadcast` サービスを再起動し、起動確認
+
 ## ファイル構成
 
 ```
