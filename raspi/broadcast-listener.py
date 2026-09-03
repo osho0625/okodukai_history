@@ -40,12 +40,28 @@ def speak(text):
     try:
         from gtts import gTTS
 
-        # チャイム音を先に再生（ファイルがあれば）
+        # スピーカー/オーディオ出力を先に起こしておくことで発話の頭切れを防ぐ
+        # （デバイスがスリープから復帰する前に発話が始まると先頭が欠けるため）
+        # チャイムがあればチャイムで起こす。無ければ短い無音で起こす。
         if os.path.exists(CHIME_FILE):
             subprocess.run([PLAYER_CMD, "-q", CHIME_FILE], timeout=5)
+        else:
+            try:
+                subprocess.run(
+                    ["speaker-test", "-t", "sine", "-f", "1", "-l", "1", "-p", "1"],
+                    timeout=2,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+            # speaker-test が使えない環境向けのフォールバック（0.3秒待ってデバイス安定を待つ）
+            time.sleep(0.3)
 
         # 音声合成
-        tts = gTTS(text=text, lang='ja', slow=False)
+        # 毎回「メッセージが1件あります。」を前置き。
+        # さらに先頭に読点を足して、前置きフレーズ自体の頭切れも吸収する。
+        # （読点はほぼ無音の間なので、ここが多少欠けても実害がない）
+        tts = gTTS(text="、、メッセージが1件あります。" + text, lang='ja', slow=False)
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
             tmp_path = f.name
             tts.save(tmp_path)
