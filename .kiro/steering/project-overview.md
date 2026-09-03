@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/09/03 v2.43.0
+最終更新: 2026/09/03 v2.43.1
 
 ## 🔴 Steering Files 運用ルール
 
@@ -52,7 +52,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v338, Push通知対応)
+├── sw.js               # Service Worker (v339, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -318,7 +318,7 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.43.0
+- 現在: v2.43.1
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述

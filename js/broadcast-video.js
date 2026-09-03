@@ -123,6 +123,12 @@
       return false;
     }
 
+    // 合言葉が未設定だと相手（ラズパイ）が応答しないので発信を止める
+    if (!vcState.secret) {
+      showStatus('先にあいことばを入れてね🔑', 'error');
+      return false;
+    }
+
     try {
       vcState.localStream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS);
     } catch (e) {

@@ -60,7 +60,8 @@ DELETE FROM app_config WHERE key IN ('gemini_api_key', 'groq_api_key', 'openai_a
 ## 補足・設計メモ
 
 - **admin認可**: set-secret は現在の admin_password を知っていることを認可条件とする（app_secretsのadmin_passwordと照合）。admin_password未設定の初回のみ認可なしで設定可能。
-- **ビデオ通話の合言葉**: 発信側(admin端末)は `localStorage['broadcast_call_secret']` に合言葉を保持して送信する。ラズパイは受信した合言葉を verify-secret でサーバー照合し、一致時のみ自動応答。
-  - admin端末で1回だけ設定: ブラウザのコンソール等で `localStorage.setItem('broadcast_call_secret', '<合言葉>')`
+- **ビデオ通話の合言葉**: 発信側(親スマホ)は video-call.html の「🔑 あいことば」入力欄で1回だけ入力→保存（`localStorage['broadcast_call_secret']` に保持）。以後は自動で使われる。ラズパイは受信した合言葉を verify-secret でサーバー照合し、一致時のみ自動応答。
+  - 合言葉を変えたいときは通話ページの「あいことばを変更」から再入力
+  - `app_secrets.broadcast_call_secret`（サーバー側の正解）と一致させること
 - **TURN/AIキーの限界**: WebRTCのICE構成はブラウザに渡す必要があるため値は最終的にクライアントに届く。ただし `app_secrets` の直接SELECTは塞げるので「テーブルを丸ごと抜かれる」ことは防げる。AIキーは ai-proxy 内でのみ使用しクライアントには渡らない（完全隔離）。
 - **anon key 自体**: 公開前提なので隔離対象外。守るのはRLSと秘密の隔離。
