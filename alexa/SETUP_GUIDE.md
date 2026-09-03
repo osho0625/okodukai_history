@@ -48,7 +48,7 @@ const Alexa = require('ask-sdk-core');
 
 const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4';
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1498552364905529355/6I3vultTaQcYNRjPP76ZtyyyGLG1JWdU7eX3IfMtpGCUWR3sdw2Gn3_pNxHgaS-z9iyG';
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/XXXXXXXX/YYYYYYYY'; // 実際のWebhook URLに置き換える（Discordサーバー設定→連携サービス→Webhook）
 
 // ============================================================
 // Supabase ヘルパー

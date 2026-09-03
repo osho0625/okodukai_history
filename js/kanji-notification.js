@@ -15,12 +15,11 @@ async function notifyTestCompleted(pendingTestId, rangeName, handwritingCount) {
   var body = '未採点テストがあります 範囲: ' + rangeName + ' 手書き回答: ' + handwritingCount + '件';
 
   try {
-    await fetch(DISCORD_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: title + '\n' + body }),
-    });
-  } catch (e) { console.warn('Discord Webhook送信失敗:', e); }
+    // Discord通知はEdge Function経由（common.jsのnotifyDiscord）
+    if (typeof notifyDiscord === 'function') {
+      await notifyDiscord(title + '\n' + body);
+    }
+  } catch (e) { console.warn('Discord通知送信失敗:', e); }
 
   try {
     await fetch(SUPABASE_URL + '/rest/v1/push_messages', {

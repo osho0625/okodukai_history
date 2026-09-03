@@ -123,7 +123,7 @@ async function doTransaction(type) {
     await client.from('children').update({ balance: debtNew }).eq('id', repaymentChild.id);
     await client.from('transactions').insert({ child_id: repaymentChild.id, type: 'add', amount: half, memo: (memo || '入金') + '（' + child.name + '分）' });
     child.balance = newBal; repaymentChild.balance = debtNew;
-    try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: '\u{1F4B0} **' + child.name + '** に ' + amount + '円\n→ ' + child.name + ': ' + remainder + '円 / 返済: ' + half + '円' }) }); } catch(e) {}
+    notifyDiscord('\u{1F4B0} **' + child.name + '** に ' + amount + '円\n→ ' + child.name + ': ' + remainder + '円 / 返済: ' + half + '円');
     queuePushNotification('💰 入金', child.name + ' に ' + amount + '円（' + child.name + ': ' + remainder + '円 / 返済: ' + half + '円）', 'all');
     showResult(child.name + ' に ' + amount + '円 入金', child.name + ': ' + newBal.toLocaleString() + '円 / 返済: ' + debtNew.toLocaleString() + '円');
   } else {
@@ -135,7 +135,7 @@ async function doTransaction(type) {
     child.balance = newBal;
     const emoji = type === 'add' ? '\u{1F4B0}' : '\u{1F4B8}';
     const action = type === 'add' ? '入金' : '出金';
-    try { await fetch(DISCORD_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: emoji + ' **' + child.name + '** ' + amount + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円' }) }); } catch(e) {}
+    notifyDiscord(emoji + ' **' + child.name + '** ' + amount + '円 ' + action + '\n残高: ' + newBal.toLocaleString() + '円');
     queuePushNotification(emoji + ' ' + action, child.name + ' ' + amount + '円 ' + action + '（残高: ' + newBal.toLocaleString() + '円）', 'all');
     showResult(child.name + ' に ' + amount + '円 ' + action, '残高: ' + newBal.toLocaleString() + '円');
   }

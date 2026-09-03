@@ -4,7 +4,7 @@ inclusion: auto
 
 # お小遣い手帳 - プロジェクト概要
 
-最終更新: 2026/09/01 v2.42.2
+最終更新: 2026/09/01 v2.42.3
 
 ## 🔴 Steering Files 運用ルール
 
@@ -52,7 +52,7 @@ inclusion: auto
 /
 ├── index.html          # TOPページ（アカウント一覧、admin用⚙️アイコン）
 ├── manifest.json       # PWA設定
-├── sw.js               # Service Worker (v336, Push通知対応)
+├── sw.js               # Service Worker (v337, Push通知対応)
 ├── css/                # スタイルシート（index.css, kanji-test.css, puyo-escape.css, texas-holdem.css, hair-removal-tracker.css）
 ├── pages/              # 各機能ページ
 ├── js/                 # JavaScript モジュール
@@ -70,6 +70,7 @@ inclusion: auto
 ├── supabase/functions/ # Supabase Edge Functions
 │   ├── push-notify/    # Push通知配信
 │   ├── push-nurse-call/ # ナースコール通知
+│   ├── discord-notify/ # Discord通知中継（Webhook URLをサーバー側に隠蔽）
 │   └── cors-proxy/     # ニュース用CORSプロキシ
 ├── sql/                # DBマイグレーション
 ├── backups/            # 自動バックアップJSON
@@ -308,12 +309,19 @@ localStorageに`deviceRole`を保存。管理者ページから設定。
 ## 開発ルール
 
 - バージョニング: x.y.z（構造変更=x、機能追加=y、小修正=z）
-- 現在: v2.42.1
+- 現在: v2.42.3
 - 修正のたびにindex.htmlのバージョン表示とrelease-notes.htmlを更新
 - リリースノートのタグ: feat(緑), fix(オレンジ), fun(紫), infra(グレー)
 - index.htmlの絵文字はHTMLエンティティで記述
 - パスワード類はすべてSupabase game_settingsに保存（ソースにハードコードしない）
 - 返済用アカウントは名前が「が返すお金」で終わるもの（汎用パターン）
+
+### 🔒 秘密情報の扱い（重要）
+
+- **Supabase anon key（`sb_publishable_...`）は公開前提**。フロントに埋め込んでOK（隠せないし隠す意味がない）。守るのはRLSで行う。
+- **service_role key は絶対にフロント/コードに置かない**。Edge Functionの環境変数のみ（`SUPABASE_SERVICE_ROLE_KEY`）。
+- **Discord Webhook URLは秘密**。フロント直書き禁止。通知は Edge Function `discord-notify` 経由（URLは env `DISCORD_WEBHOOK` に隠蔽）。フロントは `notifyDiscord()` を使う。
+- ビデオ通話の合言葉（`broadcast_call_secret`）等、認証系のシークレットも game_settings に保存しコード直書きしない。
 
 ### 🔴 毎回必ずやること（絶対に忘れないこと）
 
