@@ -1,1 +1,6 @@
 kc_pickleball_club_app/
+
+# Supabase CLI ローカル一時ファイル・リンク設定（機密含むためコミットしない）
+supabase/.temp/
+supabase/.branches/
+.branches/
