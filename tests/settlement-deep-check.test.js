@@ -60,40 +60,40 @@ describe('Bug: calculateSettlement with temporary expenses mixed', () => {
 
 describe('Bug: calculateDifferenceSettlement transfer direction', () => {
   it('差額が正の場合（実費>基準額）の精算方向が正しい', () => {
-    // りょうすけの項目: actual > planned → 差額プラス → りょうすけが多く払った
+    // 涼介の項目: actual > planned → 差額プラス → 涼介が多く払った
     const expenses = [
-      { expense_master_id: 'a', payer: 'りょうすけ', planned_amount: 20000, actual_amount: 25000, name: '電気' },
+      { expense_master_id: 'a', payer: '涼介', planned_amount: 20000, actual_amount: 25000, name: '電気' },
       { expense_master_id: 'b', payer: 'めぐみ', planned_amount: 3000, actual_amount: 3000, name: '水道' },
     ];
-    const result = calculateDifferenceSettlement(expenses);
-    // りょうすけの差額: 25000-20000 = +5000
+    const result = calculateDifferenceSettlement(expenses, ['めぐみ', '涼介']);
+    // 涼介の差額: 25000-20000 = +5000
     // めぐみの差額: 3000-3000 = 0
-    expect(result.payerDiffs['りょうすけ']).toBe(5000);
+    expect(result.payerDiffs['涼介']).toBe(5000);
     expect(result.payerDiffs['めぐみ']).toBe(0);
     // householdDiffTotal=5000, fairDiff=floor(5000/2)=2500
-    // payerFrom(少ない方)=めぐみ(0), payerTo(多い方)=りょうすけ(5000)
+    // payerFrom(少ない方)=めぐみ(0), payerTo(多い方)=涼介(5000)
     // amount = fairDiff - payerDiffs[payerFrom] = 2500 - 0 = 2500
     expect(result.transfers[0].from).toBe('めぐみ');
-    expect(result.transfers[0].to).toBe('りょうすけ');
+    expect(result.transfers[0].to).toBe('涼介');
     expect(result.transfers[0].amount).toBe(2500);
   });
 
   it('差額が負の場合（実費<基準額）の精算方向が正しい', () => {
-    // りょうすけの項目: actual < planned → 差額マイナス → りょうすけが少なく払った
+    // 涼介の項目: actual < planned → 差額マイナス → 涼介が少なく払った
     const expenses = [
-      { expense_master_id: 'a', payer: 'りょうすけ', planned_amount: 20000, actual_amount: 15000, name: '電気' },
+      { expense_master_id: 'a', payer: '涼介', planned_amount: 20000, actual_amount: 15000, name: '電気' },
       { expense_master_id: 'b', payer: 'めぐみ', planned_amount: 3000, actual_amount: 3000, name: '水道' },
     ];
-    const result = calculateDifferenceSettlement(expenses);
-    // りょうすけ: 15000-20000 = -5000
+    const result = calculateDifferenceSettlement(expenses, ['めぐみ', '涼介']);
+    // 涼介: 15000-20000 = -5000
     // めぐみ: 0
-    expect(result.payerDiffs['りょうすけ']).toBe(-5000);
+    expect(result.payerDiffs['涼介']).toBe(-5000);
     expect(result.payerDiffs['めぐみ']).toBe(0);
-    // householdDiffTotal=-5000, fairDiff=floor(-5000/2)=-2500 (Math.floorなので-3だが-5000/2は-2500ちょうど)
-    // sorted by payerDiffs ascending: りょうすけ(-5000), めぐみ(0)
-    // payerFrom=りょうすけ(-5000), payerTo=めぐみ(0)
+    // householdDiffTotal=-5000, fairDiff=floor(-5000/2)=-2500
+    // sorted by payerDiffs ascending: 涼介(-5000), めぐみ(0)
+    // payerFrom=涼介(-5000), payerTo=めぐみ(0)
     // amount = fairDiff - payerDiffs[payerFrom] = -2500 - (-5000) = 2500
-    expect(result.transfers[0].from).toBe('りょうすけ');
+    expect(result.transfers[0].from).toBe('涼介');
     expect(result.transfers[0].to).toBe('めぐみ');
     expect(result.transfers[0].amount).toBe(2500);
   });
@@ -134,18 +134,18 @@ describe('Bug: Math.floor vs Math.round in fairShare for negative totals', () =>
   it('差額精算でhouseholdDiffTotal=-1のとき fairDiff=floor(-0.5)=-1', () => {
     // 2人で差額合計-1 → fairDiff = floor(-1/2) = floor(-0.5) = -1
     const expenses = [
-      { expense_master_id: 'a', payer: 'りょうすけ', planned_amount: 20000, actual_amount: 19999, name: '電気' },
+      { expense_master_id: 'a', payer: '涼介', planned_amount: 20000, actual_amount: 19999, name: '電気' },
       { expense_master_id: 'b', payer: 'めぐみ', planned_amount: 3000, actual_amount: 3000, name: '水道' },
     ];
-    const result = calculateDifferenceSettlement(expenses);
-    // りょうすけ: 19999-20000=-1, めぐみ: 0
+    const result = calculateDifferenceSettlement(expenses, ['めぐみ', '涼介']);
+    // 涼介: 19999-20000=-1, めぐみ: 0
     // householdDiffTotal=-1, fairDiff=floor(-1/2)=floor(-0.5)=-1
-    expect(result.payerDiffs['りょうすけ']).toBe(-1);
+    expect(result.payerDiffs['涼介']).toBe(-1);
     const householdDiffTotal = -1;
     const fairDiff = Math.floor(householdDiffTotal / 2);
     expect(fairDiff).toBe(-1);
-    // sorted: りょうすけ(-1), めぐみ(0)
-    // payerFrom=りょうすけ, payerTo=めぐみ
+    // sorted: 涼介(-1), めぐみ(0)
+    // payerFrom=涼介, payerTo=めぐみ
     // amount = fairDiff - payerDiffs[payerFrom] = -1 - (-1) = 0
     // amount=0 → no transfer
     expect(result.transfers).toHaveLength(0);
@@ -159,6 +159,7 @@ describe('Bug: XSS prevention in escapeHtml (settlement-app.js pattern)', () => 
       title: '<script>alert(1)</script>',
       payer: 'test',
       amount: 100,
+      expense_date: '2026-07-31',
       year_month: '2026-07'
     });
     // XSS文字列でもバリデーションは通る（not empty check only）

@@ -21,6 +21,14 @@ function formatAmount(n) {
   return n.toLocaleString() + '円';
 }
 
+// "YYYY-MM-DD" → "M/D" 表示
+function formatDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return escapeHtml(dateStr);
+  return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+}
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -114,7 +122,7 @@ async function loadDashboard() {
 
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type')
+      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type, expense_date')
       .eq('year_month', yearMonth)
       .eq('settled', false);
     if (teErr) throw teErr;
@@ -216,7 +224,8 @@ async function loadDashboard() {
     if ((tempExpenses || []).length > 0) {
       html += '<ul style="list-style:none;padding:0;">';
       for (const t of tempExpenses) {
-        html += `<li style="padding:6px 0;border-bottom:1px solid #eee;">${escapeHtml(t.title)} (${escapeHtml(t.payer)}): ${formatAmount(t.amount)}${t.note ? ' - ' + escapeHtml(t.note) : ''}</li>`;
+        const dateStr = t.expense_date ? formatDate(t.expense_date) + ' ' : '';
+        html += `<li style="padding:6px 0;border-bottom:1px solid #eee;">${dateStr}${escapeHtml(t.title)} (${escapeHtml(t.payer)}): ${formatAmount(t.amount)}${t.note ? ' - ' + escapeHtml(t.note) : ''}</li>`;
       }
       html += '</ul>';
     } else {
@@ -585,7 +594,7 @@ async function loadMonthlySettlement(yearMonth) {
     // 3. Get temporary expenses for this month
     const { data: tempExpenses, error: teErr } = await client
       .from('temporary_expenses')
-      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type')
+      .select('id, title, payer, amount, beneficiaries, note, settled, expense_type, expense_date')
       .eq('year_month', yearMonth)
       .order('created_at', { ascending: true });
     if (teErr) throw teErr;
@@ -1058,8 +1067,9 @@ function renderTemporaryExpensesList(tempExpenses, isMonthSettled) {
     const settledBadge = t.settled ? '<span style="background:#4caf50;color:#fff;border-radius:4px;padding:2px 6px;font-size:0.75em;margin-left:6px;">精算済</span>' : '';
     html += `<li style="padding:10px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;">`;
     html += `<div>`;
+    const dateStr = t.expense_date ? formatDate(t.expense_date) : '';
     html += `<div style="font-weight:600;">${escapeHtml(t.title)} ${settledBadge}</div>`;
-    html += `<div style="color:#666;font-size:0.9em;">${escapeHtml(t.payer)}が${t.beneficiaries && t.beneficiaries.length === 1 ? escapeHtml(t.beneficiaries[0]) + 'の分' : 'みんなの分'}を立替 / ${formatAmount(t.amount)}${t.note ? ' / ' + escapeHtml(t.note) : ''}</div>`;
+    html += `<div style="color:#666;font-size:0.9em;">${dateStr ? dateStr + ' / ' : ''}${escapeHtml(t.payer)}が${t.beneficiaries && t.beneficiaries.length === 1 ? escapeHtml(t.beneficiaries[0]) + 'の分' : 'みんなの分'}を立替 / ${formatAmount(t.amount)}${t.note ? ' / ' + escapeHtml(t.note) : ''}</div>`;
     html += `</div>`;
     if (!t.settled) {
       html += `<div style="display:flex;gap:6px;">`;
@@ -1096,6 +1106,10 @@ async function showTemporaryExpenseModal(id, yearMonth) {
   }
 
   const ym = existing ? existing.year_month : (yearMonth || currentMonthlyYearMonth);
+  // 日付初期値: 既存はexpense_date(なければその月末日)、新規は対象月の月末日
+  const defaultDate = existing
+    ? (existing.expense_date || lastDayOfMonth(existing.year_month))
+    : lastDayOfMonth(ym);
   const existingBeneficiaries = existing && existing.beneficiaries ? existing.beneficiaries : ['めぐみ', '涼介'];
   const megumiBenef = existingBeneficiaries.includes('めぐみ');
   const ryosukeBenef = existingBeneficiaries.includes('涼介');
@@ -1139,8 +1153,8 @@ async function showTemporaryExpenseModal(id, yearMonth) {
         <input id="temp-amount" type="number" min="1" value="${existing ? existing.amount : ''}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <label style="display:block;margin-bottom:12px;">
-        <span style="font-weight:600;">年月</span>
-        <input id="temp-yearmonth" type="month" value="${ym}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
+        <span style="font-weight:600;">日付</span>
+        <input id="temp-date" type="date" value="${defaultDate}" style="display:block;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px;font-size:1em;">
       </label>
       <label style="display:block;margin-bottom:16px;">
         <span style="font-weight:600;">メモ（任意）</span>
@@ -1211,7 +1225,9 @@ async function saveTemporaryExpense(id) {
   const title = document.getElementById('temp-title').value;
   const payer = document.getElementById('temp-payer').value;
   const amount = parseInt(document.getElementById('temp-amount').value, 10);
-  const yearMonth = document.getElementById('temp-yearmonth').value;
+  const expenseDate = document.getElementById('temp-date').value;
+  // year_month は日付から導出（不正な日付なら空文字→バリデーションで弾く）
+  const yearMonth = yearMonthFromDate(expenseDate);
   const note = document.getElementById('temp-note').value || null;
   const expenseType = document.getElementById('temp-expense-type').value || 'expense';
 
@@ -1224,7 +1240,7 @@ async function saveTemporaryExpense(id) {
     }
   });
 
-  const data = { title, payer, amount: isNaN(amount) ? 0 : amount, year_month: yearMonth, beneficiaries, note };
+  const data = { title, payer, amount: isNaN(amount) ? 0 : amount, expense_date: expenseDate, year_month: yearMonth, beneficiaries, note };
   const validation = validateTemporaryExpense(data);
   if (!validation.valid) {
     document.getElementById('temp-errors').innerHTML = validation.errors.map(e => '<div>' + escapeHtml(e) + '</div>').join('');
@@ -1235,7 +1251,7 @@ async function saveTemporaryExpense(id) {
     if (id) {
       const { error } = await client
         .from('temporary_expenses')
-        .update({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note, expense_type: expenseType })
+        .update({ title: title.trim(), payer: payer.trim(), amount, expense_date: expenseDate, year_month: yearMonth, beneficiaries, note, expense_type: expenseType })
         .eq('id', id);
       if (error) throw error;
       showToast(expenseType === 'subsidy' ? '補助金を更新しました' : '立替金を更新しました');
@@ -1243,7 +1259,7 @@ async function saveTemporaryExpense(id) {
     } else {
       const { error } = await client
         .from('temporary_expenses')
-        .insert({ title: title.trim(), payer: payer.trim(), amount, year_month: yearMonth, beneficiaries, note, expense_type: expenseType });
+        .insert({ title: title.trim(), payer: payer.trim(), amount, expense_date: expenseDate, year_month: yearMonth, beneficiaries, note, expense_type: expenseType });
       if (error) throw error;
       showToast(expenseType === 'subsidy' ? '補助金を追加しました' : '立替金を追加しました');
       logSettlementAction('temp_add', 'temporary_expense', `${title.trim()} (${payer}) ${amount.toLocaleString()}円 追加`, yearMonth);

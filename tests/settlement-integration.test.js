@@ -6,6 +6,8 @@ import { describe, it, expect } from 'vitest';
 import {
   validateExpenseMaster,
   validateTemporaryExpense,
+  yearMonthFromDate,
+  lastDayOfMonth,
   generateMonthlyExpenses,
   calculateSettlement,
   shouldCreateSettlement,
@@ -171,23 +173,54 @@ describe('Edge Case: validateExpenseMaster edge values', () => {
 
 describe('Edge Case: validateTemporaryExpense year_month format', () => {
   it('YYYY-MM形式以外は無効', () => {
-    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, year_month: '2026-7' }).valid).toBe(false);
-    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, year_month: '202607' }).valid).toBe(false);
-    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, year_month: '2026/07' }).valid).toBe(false);
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-01', year_month: '2026-7' }).valid).toBe(false);
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-01', year_month: '202607' }).valid).toBe(false);
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-01', year_month: '2026/07' }).valid).toBe(false);
   });
 
   it('YYYY-MM形式は有効', () => {
-    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, year_month: '2026-07' }).valid).toBe(true);
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-15', year_month: '2026-07' }).valid).toBe(true);
+  });
+});
+
+describe('validateTemporaryExpense expense_date', () => {
+  it('expense_dateが無いと無効', () => {
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100 }).valid).toBe(false);
+  });
+  it('YYYY-MM-DD形式以外は無効', () => {
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07' }).valid).toBe(false);
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026/07/15' }).valid).toBe(false);
+  });
+  it('expense_dateのみ（year_month省略）でも有効', () => {
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-15' }).valid).toBe(true);
+  });
+  it('year_monthとexpense_dateの月が一致しないと無効', () => {
+    expect(validateTemporaryExpense({ title: 'a', payer: 'b', amount: 100, expense_date: '2026-07-15', year_month: '2026-08' }).valid).toBe(false);
+  });
+});
+
+describe('yearMonthFromDate / lastDayOfMonth', () => {
+  it('yearMonthFromDateは日付から年月を取り出す', () => {
+    expect(yearMonthFromDate('2026-07-15')).toBe('2026-07');
+    expect(yearMonthFromDate('2026-07')).toBe('');
+    expect(yearMonthFromDate('')).toBe('');
+  });
+  it('lastDayOfMonthは月末日を返す', () => {
+    expect(lastDayOfMonth('2026-07')).toBe('2026-07-31');
+    expect(lastDayOfMonth('2026-02')).toBe('2026-02-28');
+    expect(lastDayOfMonth('2024-02')).toBe('2024-02-29');
+    expect(lastDayOfMonth('2026-04')).toBe('2026-04-30');
+    expect(lastDayOfMonth('bad')).toBe('');
   });
 });
 
 describe('Edge Case: calculateDifferenceSettlement single payer', () => {
   it('1人だけの差額データでもクラッシュしない', () => {
     const expenses = [
-      { expense_master_id: 'a', payer: 'りょうすけ', planned_amount: 20000, actual_amount: 25000, name: '電気' },
+      { expense_master_id: 'a', payer: '涼介', planned_amount: 20000, actual_amount: 25000, name: '電気' },
     ];
-    const result = calculateDifferenceSettlement(expenses);
-    expect(result.payerDiffs['りょうすけ']).toBe(5000);
+    const result = calculateDifferenceSettlement(expenses, ['涼介']);
+    expect(result.payerDiffs['涼介']).toBe(5000);
     // 1人しかいないのでtransferは生成されない（payers.length < 2）
     expect(result.transfers).toHaveLength(0);
   });
