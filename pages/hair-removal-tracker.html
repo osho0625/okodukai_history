@@ -50,6 +50,14 @@
       <div class="zone-info-empty">ゾーンをタップすると情報を表示</div>
     </div>
   </div>
+  <!-- 記録モードバー（複数ゾーン選択時に表示） -->
+  <div id="record-mode-bar" class="record-mode-bar" style="display:none;">
+    <span class="record-mode-info">記録モード: <span id="record-mode-count">0</span>件選択中</span>
+    <div class="record-mode-actions">
+      <button type="button" id="record-mode-cancel" class="record-mode-cancel-btn">キャンセル</button>
+      <button type="button" id="record-mode-save" class="record-mode-save-btn">📝 まとめて記録</button>
+    </div>
+  </div>
   <div id="body-map-tooltip" class="body-map-tooltip"></div>
 </div>
 

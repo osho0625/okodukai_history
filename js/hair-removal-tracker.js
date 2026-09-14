@@ -1977,6 +1977,11 @@
       history.replaceState(null, '', newHash);
     }
 
+    // マップ以外へ移動したら記録モードを解除
+    if (tabName !== 'map' && _recordMode) {
+      exitRecordMode();
+    }
+
     // 履歴タブ切替時に描画
     if (tabName === 'history') {
       renderHistoryTab();
@@ -2112,6 +2117,7 @@
 
   var _swipeSelecting = false;
   var _swipeSelectedZones = []; // [{id, name}]
+  var _recordMode = false; // 記録モード（複数ゾーン選択中）
 
   function initSwipeSelection() {
     var containers = [
@@ -2146,7 +2152,11 @@
 
       svg.addEventListener('touchend', function(e) {
         if (!_touchMoved && _touchStartZoneId) {
-          showZoneInfoPanel(_touchStartZoneId);
+          if (_recordMode) {
+            toggleSwipeSelection(_touchStartZoneId);
+          } else {
+            showZoneInfoPanel(_touchStartZoneId);
+          }
         }
         _touchStartZoneId = null;
         _touchMoved = false;
@@ -2168,7 +2178,12 @@
         if (_touchHandled) return;
         var path = getZonePathFromMouse(e);
         if (path) {
-          showZoneInfoPanel(path.getAttribute('data-zone-id'));
+          var zoneId = path.getAttribute('data-zone-id');
+          if (_recordMode) {
+            toggleSwipeSelection(zoneId);
+          } else {
+            showZoneInfoPanel(zoneId);
+          }
         }
       });
     });
@@ -2198,18 +2213,6 @@
     return null;
   }
 
-  function addToSwipeSelection(pathEl) {
-    var zoneId = pathEl.getAttribute('data-zone-id');
-    var zoneName = pathEl.getAttribute('data-zone-name');
-    // 既に選択済みならスキップ（なぞり中は追加のみ）
-    for (var i = 0; i < _swipeSelectedZones.length; i++) {
-      if (_swipeSelectedZones[i].id === zoneId) return;
-    }
-    _swipeSelectedZones.push({ id: zoneId, name: zoneName });
-    pathEl.classList.add('body-zone-selected');
-    updateSwipeSelectBar();
-  }
-
   /**
    * タップでゾーン選択をトグル（未選択なら選択、選択済みなら解除）
    */
@@ -2218,20 +2221,19 @@
     for (var i = 0; i < _swipeSelectedZones.length; i++) {
       if (_swipeSelectedZones[i].id === zoneId) { idx = i; break; }
     }
+    // front/back両方のSVGから該当pathを取得
+    var pathEls = document.querySelectorAll('.body-map-container svg path[data-zone-id="' + zoneId + '"]');
     if (idx >= 0) {
       // 選択解除
       _swipeSelectedZones.splice(idx, 1);
-      var pathEl = document.querySelector('.body-map-container svg path[data-zone-id="' + zoneId + '"]');
-      if (pathEl) pathEl.classList.remove('body-zone-selected');
+      pathEls.forEach(function(p) { p.classList.remove('body-zone-selected'); });
     } else {
       // 未選択 → 選択に追加
-      var pathEl = document.querySelector('.body-map-container svg path[data-zone-id="' + zoneId + '"]');
-      if (pathEl) addToSwipeSelection(pathEl);
+      var zoneName = pathEls[0] ? pathEls[0].getAttribute('data-zone-name') : getZoneNameById(zoneId);
+      _swipeSelectedZones.push({ id: zoneId, name: zoneName });
+      pathEls.forEach(function(p) { p.classList.add('body-zone-selected'); });
     }
-
-    // タップされたゾーンの情報を表示
-    showZoneInfoPanel(zoneId);
-    updateSwipeSelectBar();
+    updateRecordModeBar();
   }
 
   /**
@@ -2292,22 +2294,48 @@
     if (recordBtn) {
       recordBtn.addEventListener('click', function() {
         var zId = this.getAttribute('data-zone-id');
-        var zName = this.getAttribute('data-zone-name');
-        TreatmentModal.open(zId, zName);
+        // 記録モードに入り、このゾーンを選択済みにする
+        enterRecordMode();
+        toggleSwipeSelection(zId);
       });
     }
   }
 
-  function updateSwipeSelectBar() {
-    var bar = document.getElementById('swipe-select-bar');
-    var count = document.getElementById('swipe-select-count');
+  /**
+   * 記録モードバーの表示・件数を更新する
+   */
+  function updateRecordModeBar() {
+    var bar = document.getElementById('record-mode-bar');
+    var count = document.getElementById('record-mode-count');
     if (!bar) return;
-    if (_swipeSelectedZones.length > 0) {
-      bar.style.display = 'flex';
-      if (count) count.textContent = _swipeSelectedZones.length;
-    } else {
-      bar.style.display = 'none';
+    bar.style.display = _recordMode ? 'flex' : 'none';
+    if (count) count.textContent = _swipeSelectedZones.length;
+  }
+
+  /**
+   * 記録モードを開始する
+   */
+  function enterRecordMode() {
+    _recordMode = true;
+    clearSwipeSelection();
+    var panel = document.getElementById('zone-info-panel');
+    if (panel) {
+      panel.innerHTML = '<div class="zone-info-empty">記録するゾーンをタップして選択してください</div>';
     }
+    updateRecordModeBar();
+  }
+
+  /**
+   * 記録モードを終了する
+   */
+  function exitRecordMode() {
+    _recordMode = false;
+    clearSwipeSelection();
+    var panel = document.getElementById('zone-info-panel');
+    if (panel) {
+      panel.innerHTML = '<div class="zone-info-empty">ゾーンをタップすると情報を表示</div>';
+    }
+    updateRecordModeBar();
   }
 
   function clearSwipeSelection() {
@@ -2315,11 +2343,17 @@
     var paths = document.querySelectorAll('.body-map-container svg path.body-zone-selected');
     paths.forEach(function(p) { p.classList.remove('body-zone-selected'); });
     _swipeSelectedZones = [];
-    updateSwipeSelectBar();
+    updateRecordModeBar();
   }
 
-  function openRecordFromSwipeSelection() {
-    if (_swipeSelectedZones.length === 0) return;
+  /**
+   * 選択中のゾーンをまとめて記録するモーダルを開く
+   */
+  function openRecordFromSelection() {
+    if (_swipeSelectedZones.length === 0) {
+      showToast('ゾーンが選択されていません', 'error');
+      return;
+    }
     if (_swipeSelectedZones.length === 1) {
       TreatmentModal.open(_swipeSelectedZones[0].id, _swipeSelectedZones[0].name);
     } else {
@@ -3102,8 +3136,19 @@
     // モーダル初期化
     TreatmentModal.init();
 
-    // 複数選択マネージャ初期化
-    MultiSelectManager.init();
+    // 記録モードバーのイベントバインド
+    var recordModeSaveBtn = document.getElementById('record-mode-save');
+    var recordModeCancelBtn = document.getElementById('record-mode-cancel');
+    if (recordModeSaveBtn) {
+      recordModeSaveBtn.addEventListener('click', function() {
+        openRecordFromSelection();
+      });
+    }
+    if (recordModeCancelBtn) {
+      recordModeCancelBtn.addEventListener('click', function() {
+        exitRecordMode();
+      });
+    }
 
     // タップ/長押しコールバックは不使用（なぞり選択に統一）
     // BodyMapRendererの_bindEventsのclickはcallbackがnullなので発火しない
@@ -3120,8 +3165,7 @@
         var result = await batchSaveRecords(zoneIds, data.date, data.intensity, data.memo, data.photo || null);
         if (result.success) {
           showToast(result.records.length + '件の施術記録を保存しました', 'success');
-          clearSwipeSelection();
-          MultiSelectManager.deactivate();
+          exitRecordMode();
           refreshColors();
         } else {
           showToast('保存に失敗しました', 'error');
@@ -3140,7 +3184,11 @@
         var saveResult = await StorageManager.saveRecord(record);
         if (saveResult.success) {
           showToast('施術記録を保存しました', 'success');
-          clearSwipeSelection();
+          if (_recordMode) {
+            exitRecordMode();
+          } else {
+            clearSwipeSelection();
+          }
           refreshColors();
         } else {
           showToast('保存に失敗しました: ' + (saveResult.error || ''), 'error');
