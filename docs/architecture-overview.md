@@ -305,3 +305,4 @@ graph LR
 | コリドール | quoridor.html | ボードゲーム（2人） | なし |
 | 神経衰弱 | memory-game.html | 記憶力カードゲーム | memory_rankings |
 | ブロックス | blokus.html | ボードゲーム（1-4人、CPU対戦） | blokus_rankings |
+| ことば落とし | kotoba-otoshi.html | パーティ（2-8人、正体隠匿・言葉当て） | なし |
