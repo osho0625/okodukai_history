@@ -1,5 +1,6 @@
 // auto-chore-points.js
-// GitHub Actions Cron（毎日1回）から実行される自動お手伝いポイント付与スクリプト
+// GitHub Actions Cron（毎時実行）から起動される自動お手伝いポイント付与スクリプト
+// game_settings.auto_chore_config.hour と現在のJST時刻が一致した時のみ付与を実行する
 // Node.js 20+ native fetch を使用
 //
 // 環境変数:
@@ -7,14 +8,44 @@
 //   SUPABASE_KEY   - Supabase anon/service key
 
 // ============================================================
-// 設定: 自動付与ルール
+// 設定: 自動付与ルール（デフォルト）
+// 管理者ページ (game_settings.auto_chore_config) で上書き可能。
+// DBに設定がない場合はこのデフォルトが使われる。
 // ============================================================
-const AUTO_CHORE_RULES = [
-  { childName: 'りょうすけ', choreName: '食洗器回し', points: 4, everyNDays: 1 },
-  { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 2 },
-  { childName: 'めぐみ', choreName: '食洗器', points: 3, everyNDays: 2 },
-  { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
-];
+const DEFAULT_AUTO_CHORE_CONFIG = {
+  hour: 7, // 付与を行うJST時刻（0-23）
+  rules: [
+    { childName: 'りょうすけ', choreName: '食洗器回し', points: 4, everyNDays: 1 },
+    { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 2 },
+    { childName: 'めぐみ', choreName: '食洗器', points: 3, everyNDays: 2 },
+    { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
+  ],
+};
+
+// game_settings から自動付与設定を取得（失敗時はデフォルト）
+async function fetchAutoChoreConfig(supabaseUrl, supabaseKey) {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/game_settings?id=eq.1&select=auto_chore_config`,
+      { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const cfg = data[0]?.auto_chore_config;
+      if (cfg && Array.isArray(cfg.rules)) {
+        return {
+          hour: typeof cfg.hour === 'number' ? cfg.hour : DEFAULT_AUTO_CHORE_CONFIG.hour,
+          rules: cfg.rules,
+        };
+      }
+    } else {
+      console.warn('game_settings fetch failed:', res.status);
+    }
+  } catch (e) {
+    console.warn('Failed to fetch auto_chore_config, using defaults:', e.message);
+  }
+  return DEFAULT_AUTO_CHORE_CONFIG;
+}
 
 // マイルストーン入金額（child.html / common.js と同一ロジック）
 function getAllowanceForMilestone(pts) {
@@ -43,8 +74,23 @@ async function main() {
   const jstDate = new Date(jstStr);
   const dayOfYear = getDayOfYear(jstDate);
   const dateStr = formatDate(jstDate);
+  const jstHour = jstDate.getHours();
 
-  console.log(`Auto chore points: ${dateStr} (day of year: ${dayOfYear})`);
+  // 自動付与設定を取得
+  const config = await fetchAutoChoreConfig(SUPABASE_URL, SUPABASE_KEY);
+  const AUTO_CHORE_RULES = config.rules;
+
+  console.log(`Auto chore points: ${dateStr} ${jstHour}:00 JST (day of year: ${dayOfYear}, target hour: ${config.hour})`);
+
+  // 設定された付与時刻でなければスキップ（cronは毎時実行される想定）
+  // FORCE_RUN=true（手動実行）の場合は時刻判定をスキップして即実行
+  const forceRun = process.env.FORCE_RUN === 'true';
+  if (!forceRun && jstHour !== config.hour) {
+    console.log(`Skip: current hour ${jstHour} != target hour ${config.hour}`);
+    console.log('Done.');
+    return;
+  }
+  if (forceRun) console.log('FORCE_RUN enabled: hour check skipped');
 
   // childrenテーブルから対象の子供を取得
   const childrenRes = await fetch(`${SUPABASE_URL}/rest/v1/children?select=id,name,balance`, {

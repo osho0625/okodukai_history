@@ -90,3 +90,31 @@
 |-------------|-----------|------|
 | ピックルボール練習日管理 | [kc_pickleball_club_app](https://github.com/osho0625/kc_pickleball_club_app) | 京セラピックルボールクラブの練習日程・出欠管理アプリ（GAS + スプレッドシート連携） |
 | Cline Skills Template | ai-agent-setup/cline-skills-template/ | AIエージェント向けドキュメント駆動開発テンプレート v2.0 |
+
+## Supabase 接続・SQL実行
+
+- プロジェクト: `osho0625's okodukai API`（ref: `ynecezxnltigplrfzzoh`、Northeast Asia / Seoul）
+- Supabase CLI がローカルにインストール済み。`supabase login` 済み・`supabase link` 済みであればリモートDBを直接操作できる
+
+### リモートDBへSQLを実行する（DDL含む）
+
+Management API 経由でリンク済みプロジェクトに直接クエリを流せる（Docker/ローカルDB不要）:
+
+```bash
+# SQL文字列を直接実行
+supabase db query --linked "ALTER TABLE game_settings ADD COLUMN IF NOT EXISTS foo JSONB;"
+
+# SQLファイルを実行
+supabase db query --linked -f sql/xxx.sql
+```
+
+注意点:
+- `--linked` を付けないとローカルDB（127.0.0.1:54322）へ繋ぎに行き、Docker未起動だと失敗する
+- REST API（anon/publishable キー）では `ALTER TABLE` 等のDDLは実行不可。DDLは上記CLIか Supabase ダッシュボードの SQL Editor を使う
+- マイグレーションSQLは `sql/` に置く。実行後もファイルは記録として残す（`sql/alter_game_settings_*.sql` が既存の慣例）
+
+### キー種別
+
+- フロント（公開）: anon / publishable キー（`SUPABASE_KEY`）。REST API の SELECT/INSERT 等に使用
+- 秘密情報: `app_secrets` テーブルに隔離し、service_role 権限の Edge Function 経由でのみ照合（`docs/secrets-isolation-setup.md` 参照）
+- GitHub Actions: `secrets.SUPABASE_URL` / `secrets.SUPABASE_KEY` を各ワークフローに注入

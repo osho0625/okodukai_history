@@ -19,7 +19,35 @@ fileMatchPattern: "*chore*"
 | `sql/alter_game_settings_chore_templates.sql` | 定型業務カラム追加SQL |
 | `scripts/auto-chore-tasks.js` | 毎朝自動追加スクリプト（GitHub Actions cron） |
 | `.github/workflows/auto-chore-tasks.yml` | cron設定（毎日9時JST） |
+| `scripts/auto-chore-points.js` | 自動ポイント付与スクリプト（GitHub Actions cron、毎時実行） |
+| `.github/workflows/auto-chore-points.yml` | cron設定（毎時0分実行、設定時刻をスクリプト判定） |
+| `sql/alter_game_settings_auto_chore.sql` | 自動付与設定カラム追加SQL |
 | `dict/` | kuromoji辞書ファイル（ひらがな変換用、約15MB） |
+
+## 自動ポイント付与設定（管理者ページ）
+
+管理者ページ「⏰ 自動ポイント付与設定」から、以下を編集可能：
+
+- **誰に**（childName / 子供アカウント選択）
+- **何のポイントを**（choreName / 付与時の家事名）
+- **何ポイント**（points）
+- **何日ごと**（everyNDays / 年間通算日 % N === 0 の日に付与）
+- **何時に**（hour / JST 0-23）
+
+設定は `game_settings.auto_chore_config`（JSONB）に保存：
+
+```json
+{
+  "hour": 7,
+  "rules": [
+    { "childName": "りょうすけ", "choreName": "食洗器回し", "points": 4, "everyNDays": 1 }
+  ]
+}
+```
+
+`scripts/auto-chore-points.js` が毎時cronで起動し、`jstHour === config.hour` の時のみ付与を実行。
+DBに設定が無い場合はスクリプト内 `DEFAULT_AUTO_CHORE_CONFIG` を使用。
+手動実行（workflow_dispatch）で `force=true` を指定すると時刻判定をスキップして即時付与。
 
 ## テーブル: chore_tasks
 
