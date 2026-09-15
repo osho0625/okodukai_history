@@ -481,6 +481,47 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/tetris_rankings?select=*" \
             -o backups/tetris_rankings_$(date +%Y%m%d).json
 
+      # --- 漢字合体ブラスト ---
+      - name: Backup kanji_master table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kanji_master?select=*" \
+            -o backups/kanji_master_$(date +%Y%m%d).json
+
+      - name: Backup kanji_recipes table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kanji_recipes?select=*" \
+            -o backups/kanji_recipes_$(date +%Y%m%d).json
+
+      - name: Backup kanji_players table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kanji_players?select=*" \
+            -o backups/kanji_players_$(date +%Y%m%d).json
+
+      - name: Backup kanji_inventory table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kanji_inventory?select=*" \
+            -o backups/kanji_inventory_$(date +%Y%m%d).json
+
+      - name: Backup kanji_dex table
+        run: |
+          curl -s \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/kanji_dex?select=*" \
+            -o backups/kanji_dex_$(date +%Y%m%d).json
+
       # --- LaQ美術館・家族アルバム ---
       - name: Backup laq_works table
         run: |

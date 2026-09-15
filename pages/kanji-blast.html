@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>💥 漢字合体ブラスト</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  color: #eee; padding: 12px; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.header { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 460px; margin-bottom: 10px; }
+.back { color: #eee; text-decoration: none; font-size: 1.6em; cursor: pointer; }
+.home { color: #eee; text-decoration: none; font-size: 1.4em; margin-left: auto; }
+h1 { font-size: 1.2em; font-weight: 700; }
+
+.btn { padding: 12px 26px; border: none; border-radius: 12px; font-size: 1.05em; font-weight: 600; cursor: pointer; transition: transform 0.1s; color: #fff; }
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: linear-gradient(135deg, #ff6b6b, #ee5a52); box-shadow: 0 4px 16px rgba(238,90,82,0.3); }
+.btn-secondary { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); }
+.btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.25); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.screen { display: none; width: 100%; max-width: 460px; }
+.screen.active { display: block; }
+
+/* --- プレイヤー選択 --- */
+#playerScreen { text-align: center; }
+#playerScreen h2 { margin: 24px 0 8px; }
+#playerScreen p { color: #aaa; font-size: 0.85em; margin-bottom: 20px; }
+.player-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.player-card { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; cursor: pointer; }
+.player-card:active { transform: scale(0.98); }
+.player-card .pc-name { font-size: 1.15em; font-weight: 700; flex: 1; text-align: left; }
+.player-card .pc-meta { font-size: 0.75em; color: #aaa; }
+.player-card .pc-del { color: #ff6b6b; font-size: 1.2em; padding: 4px 8px; }
+.new-player-row { display: flex; gap: 8px; }
+.new-player-row input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.25); color: #fff; font-size: 1em; }
+
+/* --- メニュー --- */
+#menuScreen { text-align: center; }
+.menu-title { font-size: 3em; margin: 10px 0; }
+.menu-sub { color: #aaa; font-size: 0.85em; margin-bottom: 6px; }
+.equip-row { display: flex; gap: 10px; margin: 14px 0; }
+.equip-slot { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; }
+.equip-slot .es-label { font-size: 0.7em; color: #aaa; }
+.equip-slot .es-char { font-size: 2em; font-weight: 700; min-height: 1.2em; }
+.equip-slot .es-pow { font-size: 0.75em; color: #f1fa8c; }
+.menu-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.stat-line { font-size: 0.8em; color: #8be9fd; margin: 8px 0; }
+
+/* --- STG --- */
+#stgScreen { text-align: center; }
+#stgWrap { position: relative; margin: 0 auto; }
+#stgCanvas { background: #05070f; border-radius: 12px; touch-action: none; display: block; margin: 0 auto; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.hud { display: flex; justify-content: space-between; font-size: 0.8em; padding: 6px 4px; }
+.hud .hp-bar { flex: 1; height: 10px; background: rgba(255,255,255,0.12); border-radius: 5px; margin: 4px 8px 0; overflow: hidden; }
+.hud .hp-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffa94d); width: 100%; transition: width 0.2s; }
+.special-btn { position: absolute; bottom: 14px; right: 14px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(255,107,107,0.25); color: #fff; font-size: 1.5em; font-weight: 700; }
+.special-btn:disabled { opacity: 0.3; }
+
+/* --- 合体/手持ち --- */
+#invScreen h2 { text-align: center; margin: 8px 0 4px; }
+.inv-hint { text-align: center; color: #aaa; font-size: 0.78em; margin-bottom: 10px; }
+.inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.kanji-cell { position: relative; aspect-ratio: 1; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+.kanji-cell.empty { border-style: dashed; opacity: 0.4; cursor: default; }
+.kanji-cell.selected { border-color: #ffa94d; background: rgba(255,169,77,0.18); }
+.kanji-cell .kc-char { font-size: 1.8em; font-weight: 700; }
+.kanji-cell .kc-pow { font-size: 0.6em; color: #f1fa8c; }
+.kanji-cell .kc-badge { position: absolute; top: 2px; right: 4px; font-size: 0.6em; }
+.inv-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+.recipe-preview { text-align: center; margin: 12px 0; font-size: 1.1em; min-height: 1.5em; color: #8be9fd; }
+
+/* --- 図鑑 --- */
+#dexScreen h2 { text-align: center; margin: 8px 0; }
+.dex-item { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.dex-head { display: flex; align-items: center; gap: 10px; }
+.dex-char { font-size: 2em; font-weight: 700; }
+.dex-info { flex: 1; }
+.dex-meta { font-size: 0.72em; color: #aaa; }
+.dex-readings { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.reading-chip { font-size: 0.75em; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
+.reading-chip.done { background: rgba(80,220,120,0.25); border-color: rgba(80,220,120,0.5); }
+.reading-input-row { display: flex; gap: 8px; margin-top: 8px; }
+.reading-input-row input { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.25); color: #fff; font-size: 1em; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.9em; z-index: 500; opacity: 0; transition: opacity 0.25s; pointer-events: none; text-align: center; }
+.toast.show { opacity: 1; }
+.loading { text-align: center; color: #aaa; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="goBack()">←</a>
+  <h1>💥 漢字合体ブラスト</h1>
+  <a class="home" href="../index.html">🏠</a>
+</div>
+
+<!-- プレイヤー選択 -->
+<div class="screen" id="playerScreen">
+  <h2>だれがあそぶ？</h2>
+  <p>なまえをえらぶか、あたらしくつくってね</p>
+  <div class="player-list" id="playerList"><div class="loading">読み込み中...</div></div>
+  <div class="new-player-row">
+    <input id="newPlayerName" placeholder="あたらしいなまえ" maxlength="12">
+    <button class="btn btn-secondary" onclick="createPlayer()">つくる</button>
+  </div>
+</div>
+
+<!-- メニュー -->
+<div class="screen" id="menuScreen">
+  <div class="menu-title">💥漢字合体</div>
+  <div class="menu-sub" id="menuPlayerName"></div>
+  <div class="stat-line" id="menuStats"></div>
+  <div class="equip-row">
+    <div class="equip-slot"><div class="es-label">🔫 ショット</div><div class="es-char" id="equipShotChar">-</div><div class="es-pow" id="equipShotPow"></div></div>
+    <div class="equip-slot"><div class="es-label">💥 ひっさつ</div><div class="es-char" id="equipSpecialChar">-</div><div class="es-pow" id="equipSpecialPow"></div></div>
+  </div>
+  <div class="menu-btns">
+    <button class="btn btn-primary" onclick="startStg()">🚀 しゅつげき！</button>
+    <button class="btn btn-secondary" onclick="showScreen('invScreen'); renderInventory();">🧩 合体・手持ち</button>
+    <button class="btn btn-secondary" onclick="showScreen('dexScreen'); renderDex();">📖 図鑑・読み仮名</button>
+    <button class="btn btn-ghost" onclick="showScreen('playerScreen'); loadPlayers();">👤 プレイヤーへんこう</button>
+  </div>
+</div>
+
+<!-- STG -->
+<div class="screen" id="stgScreen">
+  <div class="hud">
+    <span id="stgScore">SCORE 0</span>
+    <span id="stgStage">STAGE 1</span>
+  </div>
+  <div class="hud" style="align-items:center;">
+    <span>👾</span><div class="hp-bar"><div class="hp-fill" id="bossHp"></div></div>
+  </div>
+  <div id="stgWrap">
+    <canvas id="stgCanvas"></canvas>
+    <button class="special-btn" id="specialBtn" onclick="fireSpecial()">💥</button>
+  </div>
+</div>
+
+<!-- 合体/手持ち -->
+<div class="screen" id="invScreen">
+  <h2>🧩 手持ち（さいだい10）</h2>
+  <div class="inv-hint">2つえらんで「合体」、1つえらんで「分解」「そうび」「にがす」</div>
+  <div class="inv-grid" id="invGrid"></div>
+  <div class="recipe-preview" id="recipePreview"></div>
+  <div class="inv-actions">
+    <button class="btn btn-primary" id="btnMerge" onclick="doMerge()">合体</button>
+    <button class="btn btn-secondary" id="btnSplit" onclick="doSplit()">分解</button>
+    <button class="btn btn-secondary" id="btnEquipShot" onclick="doEquip('shot')">🔫装備</button>
+    <button class="btn btn-secondary" id="btnEquipSpecial" onclick="doEquip('special')">💥装備</button>
+    <button class="btn btn-ghost" id="btnRelease" onclick="doRelease()">にがす</button>
+  </div>
+  <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
+  </div>
+</div>
+
+<!-- 図鑑 -->
+<div class="screen" id="dexScreen">
+  <h2>📖 図鑑</h2>
+  <div class="inv-hint">よみがなを入力して図鑑に登録しよう（音・訓・とくべつな読み、送りがなもOK）</div>
+  <div id="dexList"></div>
+  <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/kanji-blast.js"></script>
+</body>
+</html>

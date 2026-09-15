@@ -73,7 +73,8 @@ crash, forest, sprout, pond, rock, cave, river, hill, swamp, ice, sky
 ## ゲームセンター（arcade.html）
 
 - TOP画面の🕹️アイコンからアクセス
-- ぷよ、テトミン、ピクミンブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス、SCP閲覧記録をカード形式で表示
+- ぷよ、テトミン、ピクミンブラスト、オリマーの冒険、すいかが食べたい、すいか原作Java版、算数オリンピック、漢字50問テスト、漢字合体ブラスト、クトゥルフTRPG、ごきぶりポーカー、クアルト、コリドール、神経衰弱、ブロックス、ことば落とし、SCP閲覧記録をカード形式で表示
+- 漢字合体ブラストの詳細仕様は `.kiro/steering/kanji-blast.md`（`*kanji-blast*` を開くと自動読込）
 - game_settings.game_publish で各ゲームの公開/非公開を制御
 - クトゥルフTRPGはadmin限定（data-admin-only属性で非admin時は非表示）
 

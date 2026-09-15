@@ -1,0 +1,102 @@
+---
+inclusion: fileMatch
+fileMatchPattern: "*kanji-blast*,*kanji_blast*"
+---
+
+# 漢字合体ブラスト（縦STG + 漢字合体パズル）
+
+漢字のパーツを集めて合体させ、より複雑で強い漢字を作る縦スクロールSTG。
+漢字の成り立ちと読み仮名を遊びながら学べる教育要素つき。対象は小学1・3・5年生
+（漢字範囲の縛りなし）。
+
+## ファイル構成
+
+- `pages/kanji-blast.html` — 画面（プレイヤー選択/メニュー/STG/合体・手持ち/図鑑）
+- `js/kanji-blast.js` — ゲームロジック全体（STG本体・合体/分解・読み判定・図鑑）
+- `sql/create_kanji_blast_tables.sql` — テーブル定義5つ
+- `sql/seed_kanji_blast_data.sql` — 漢字マスタ・合体レシピ初期データ
+
+## コアループ
+
+1. 縦STGで敵・ボスを倒す（自機ドラッグ移動＋自動連射、必殺技ボタン）
+2. ボス撃破で基本パーツ漢字がドロップ、取ると手持ち（最大10枠）に追加
+3. 合体パートでレシピに沿って漢字を合成（例: 口+十=田、木+木=林、日+月=明）
+4. 分解で合体漢字を素材2つに戻せる
+5. 不要な漢字は「にがす」で手持ちを空ける
+6. 漢字を「ショット」「必殺技」に1つずつ装備
+7. 読み仮名を入力→正解なら図鑑登録＆強化
+8. 図鑑の登録数が増えると全体が強くなる
+
+## 強さ計算式
+
+```
+漢字パワー = 画数 × 漢検級係数 × (1 + 解放読み数 × 0.1)
+全体ボーナス = 1 + 図鑑登録漢字の種類数 × 0.02
+最終パワー   = round(漢字パワー × 全体ボーナス)
+```
+
+- 漢検級係数（KENTEI_FACTOR）: 10級=1.0 … 5級=2.0 … 準1級=4.2 … 1級=5.0
+- ショット威力 = 装備ショットの漢字パワー（未装備は5）
+- 必殺威力 = 装備必殺の漢字パワー × 6（未装備は30）。全体攻撃＋敵弾消し、CD 5秒
+
+## 読み仮名の判定（js/kanji-blast.js の resolveReading）
+
+- readings は音・訓・特殊読みの配列。kana の「.」が送り仮名の境界（例: `う.まれる`）
+- display が図鑑に登録される正規形（例: 生まれる / いきる / セイ / ショウ）
+- 判定ルール:
+  - 音読み（送り仮名なし）: 完全一致のみ。ひらがな/カタカナ両対応（せい=セイ）
+  - 訓読み（送り仮名あり）: 「かな全体」または「漢字表記」の完全一致 → 正規形登録
+    （うまれる / 生まれる どちらもOK）
+  - 活用ゆらぎ: 語幹＋送り1文字以上を許容（うまれた/うまれ/うむ 等も正解）
+  - 最長語幹一致を優先（「うむ」→生む、「うまれる」→生まれる を区別）
+- 音・訓・特殊読みはすべて解放対象。送り仮名を含めて入力しても正解にする
+
+## データ分離と削除・バックアップ
+
+- プレイデータは **子供（player）ごと** に分離（kanji_players.id で紐付け）
+- 端末識別は `localStorage.push_device_id`（common.js と共用）を流用
+- 削除（プレイヤー削除・にがす等）は `created_by_device === この端末` の場合のみ
+  UIで許可（アプリ層で制御。DBは他ゲーム同様 RLS有効＋Allow all）
+- 5テーブルとも `.github/workflows/backup.yml` で毎日バックアップ（ロールバック可能）
+
+## DBテーブル（sql/create_kanji_blast_tables.sql）
+
+### kanji_master（漢字マスタ・共通）
+- char TEXT (PK), strokes INT, kentei_level TEXT, readings JSONB, is_part BOOLEAN
+- is_part=true が敵ドロップ対象の基本パーツ
+
+### kanji_recipes（合体レシピ・共通）
+- id UUID (PK), result_char / part_a / part_b（すべて kanji_master への FK）
+- UNIQUE(result_char)。合体・分解の双方向に使用
+
+### kanji_players（子供ごとのセーブ）
+- id UUID (PK), name, equipped_shot, equipped_special, best_score, max_stage, created_by_device
+
+### kanji_inventory（手持ち・最大10、同じ漢字を複数可）
+- id UUID (PK), player_id (FK, ON DELETE CASCADE), char (FK), created_by_device
+
+### kanji_dex（図鑑＝読み解放記録）
+- id UUID (PK), player_id (FK, ON DELETE CASCADE), char (FK), reading, created_by_device
+- UNIQUE(player_id, char, reading)。reading は正規形（display）
+
+## localStorage キー
+
+| キー | 用途 |
+|------|------|
+| kanjiblast_player_id | 最後に選んだプレイヤーID（次回自動選択） |
+| push_device_id | 端末識別（common.js と共用、削除制御に使用） |
+
+## 初期データ（seed）
+
+- 基本パーツ19（一/十/口/日/月/木/火/水/田/力/人/目/土/女/子/大/山/石/鳥）
+- 合体漢字13（林/森/炎/明/男/相/好/休/畑/岩/品/晶/鳴）
+- レシピ13（木+木=林、木+林=森、火+火=炎、日+月=明、田+力=男、木+目=相、
+  女+子=好、人+木=休、火+田=畑、山+石=岩、口+口=品、日+品=晶、口+鳥=鳴）
+- レシピの part_a/part_b/result_char は必ず kanji_master に存在させること（FK制約）
+
+## 注意点
+
+- 夜間制限（isNightTime）に対応。夜は「今日はおしまい」表示
+- arcade.html のカードは `data-game="game_kanji_blast"`。game_publish で公開制御
+- テーブル未作成時も白画面にならず「データがまだ準備できてない」トーストを出す
+- 実行順: create_kanji_blast_tables.sql → seed_kanji_blast_data.sql（Dashboard SQL Editor）
