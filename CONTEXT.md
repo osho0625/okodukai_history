@@ -14,7 +14,7 @@
 | `tickets.md` | `*ticket*` ファイルを開いた時 | あそびチケット |
 | `trpg.md` | `*trpg*` ファイルを開いた時 | クトゥルフTRPG |
 | `games-misc.md` | `*tetris*,*blast*,*olimar*,*arcade*` を開いた時 | テトミン・ピクミンブラスト・オリマー・ゲームセンター |
-| `board-games.md` | `*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*` を開いた時 | ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス |
+| `board-games.md` | `*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotoba-otoshi*` を開いた時 | ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス・ことば落とし |
 | `today-science.md` | `*science*` ファイルを開いた時 | 今日のサイエンス |
 | `today-scp.md` | `*scp*` ファイルを開いた時 | 今日のSCP |
 | `nurse-call.md` | `*nurse*` ファイルを開いた時 | ナースコール |

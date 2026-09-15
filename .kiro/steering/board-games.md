@@ -1,9 +1,9 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
+fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotoba-otoshi*"
 ---
 
-# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス）
+# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス・ことば落とし）
 
 ## ファイル構成
 
@@ -13,6 +13,7 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
 - `pages/quoridor.html` — コリドール（2人用壁配置ゲーム）
 - `pages/memory-game.html` — 神経衰弱（記憶力カードゲーム）
 - `pages/blokus.html` — ブロックス（陣取りボードゲーム）
+- `pages/kotoba-otoshi.html` — ことば落とし（正体隠匿・言葉当て心理戦、単一HTMLで完結）
 
 ## ごきぶりポーカー（cockroach-poker.html + js/cockroach-poker.js）
 
@@ -201,6 +202,19 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*"
 #### memory_rankings
 - id: UUID (PK), name: TEXT NOT NULL, score: INT NOT NULL (手数), difficulty: TEXT NOT NULL ('easy'|'normal'|'hard'), created_at: TIMESTAMPTZ
 - INDEX: idx_memory_rankings_score (difficulty, score ASC)
+
+## ことば落とし（kotoba-otoshi.html）
+
+- 2〜8人ローカル対面のパーティゲーム（正体隠匿＋言葉当ての心理戦）。DB不使用・CPUなし・単一HTMLで完結
+- 役職: 👑親（お題の言葉を雑談に自然に紛れ込ませる）／🤝サポート（親のなかま、言いやすい流れを作る）／🔍回答側（お題を知らず推理する）
+  - 3人以上のときのみサポートが1人登場。親＋サポート vs 回答側の構図
+- 流れ: 人数選択(2-8) → ジャンル選択 → スマホを1人ずつ回して役職確認（親・サポートのみお題表示、回答側は非表示） → 3分タイマーで雑談 → 推理タイム（候補3つまで入力） → 答え合わせ・勝敗判定
+- お題は5ジャンル（身の回り／たべもの／いきもの／学校／のりもの）から選択、`WORDS` 定数に定義
+- 候補判定はひらがな→カタカナ正規化で表記揺れを吸収（`normalize()`）
+- 勝敗は手動判定（当たり＝回答側の勝ち／はずれ＝親側の勝ち）
+- タイマーは3分固定＋30秒追加・一時停止対応
+- 夜間制限対応（`isNightTime()`）、ゲーム公開設定キー `game_kotoba_otoshi`（admin.html のトグル一覧に登録済み）
+- ランキングなし（対面ゲームのため）
 
 ## 共通仕様
 

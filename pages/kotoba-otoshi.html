@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>ことば落とし</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460); color: #eee; min-height: 100vh; }
+.header { display: flex; align-items: center; padding: 12px 16px; gap: 12px; max-width: 480px; margin: 0 auto; }
+.header .back { color: #eee; font-size: 1.6em; cursor: pointer; text-decoration: none; }
+.header h1 { flex: 1; text-align: center; font-size: 1.2em; font-weight: 700; }
+.header .home { color: #eee; font-size: 1.4em; cursor: pointer; text-decoration: none; }
+.screen { display: none; max-width: 480px; margin: 0 auto; padding: 0 16px 32px; }
+.screen.active { display: block; }
+.btn { display: inline-block; padding: 14px 28px; border-radius: 12px; font-size: 1.05em; font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s, opacity 0.2s; color: #fff; text-decoration: none; }
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg,#e94560,#ff6b81); }
+.btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22); }
+.btn-success { background: linear-gradient(135deg,#388e3c,#66bb6a); }
+.btn-block { display: block; width: 100%; margin-bottom: 12px; }
+/* Title */
+#titleScreen { text-align: center; padding-top: 48px; }
+#titleScreen .title-icon { font-size: 3.4em; margin-bottom: 12px; }
+#titleScreen h2 { font-size: 2em; margin-bottom: 8px; }
+#titleScreen .subtitle { color: #bbb; margin-bottom: 32px; line-height: 1.6; font-size: 0.95em; }
+.rule-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 18px; text-align: left; margin-bottom: 24px; font-size: 0.88em; line-height: 1.7; color: #ddd; }
+.rule-box b { color: #ff6b81; }
+/* Setup */
+.section-label { font-size: 0.9em; color: #bbb; margin: 20px 0 10px; font-weight: 600; }
+.count-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 8px; }
+.count-btn { padding: 16px 0; border-radius: 12px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 1.3em; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.count-btn.selected { border-color: #ff6b81; background: rgba(233,69,96,0.25); }
+.cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.cat-btn { padding: 10px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.cat-btn.selected { border-color: #ff6b81; background: rgba(233,69,96,0.25); }
+.hint { font-size: 0.8em; color: #999; line-height: 1.6; margin-top: 4px; }
+/* Pass / role reveal */
+#passScreen, #roleScreen { text-align: center; padding-top: 40px; }
+.pass-icon { font-size: 4em; margin-bottom: 16px; }
+#passScreen h2 { font-size: 1.6em; margin-bottom: 8px; }
+#passScreen .who { color: #ff6b81; font-size: 2em; font-weight: 800; margin: 12px 0; }
+#passScreen p { color: #bbb; margin-bottom: 28px; line-height: 1.6; }
+.role-card { border-radius: 18px; padding: 28px 20px; margin-bottom: 22px; }
+.role-card.oya { background: linear-gradient(135deg,#e94560,#b71540); }
+.role-card.support { background: linear-gradient(135deg,#f9a825,#f57f17); }
+.role-card.guesser { background: linear-gradient(135deg,#1976d2,#0d47a1); }
+.role-card .role-emoji { font-size: 3em; margin-bottom: 8px; }
+.role-card .role-name { font-size: 1.5em; font-weight: 800; margin-bottom: 6px; }
+.role-card .role-sub { font-size: 0.9em; opacity: 0.9; line-height: 1.6; }
+.word-reveal { background: rgba(0,0,0,0.35); border-radius: 14px; padding: 20px; margin-bottom: 22px; }
+.word-reveal .word-label { font-size: 0.85em; color: #ffd; margin-bottom: 6px; }
+.word-reveal .word { font-size: 2.2em; font-weight: 900; color: #fff; letter-spacing: 2px; }
+/* Play (timer) */
+#playScreen { text-align: center; padding-top: 30px; }
+#playScreen h2 { font-size: 1.3em; margin-bottom: 8px; color: #bbb; }
+.timer { font-size: 4.5em; font-weight: 900; margin: 16px 0; font-variant-numeric: tabular-nums; }
+.timer.warn { color: #ff6b81; }
+.timer-controls { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+.timer-controls .btn { padding: 12px 20px; }
+.play-note { color: #999; font-size: 0.85em; line-height: 1.7; margin-top: 16px; }
+/* Answer */
+#answerScreen { padding-top: 24px; }
+#answerScreen h2 { text-align: center; font-size: 1.3em; margin-bottom: 6px; }
+#answerScreen .ans-note { text-align: center; color: #bbb; font-size: 0.9em; margin-bottom: 20px; line-height: 1.6; }
+.guess-input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1.05em; margin-bottom: 10px; outline: none; }
+.guess-input:focus { border-color: #ff6b81; }
+/* Result */
+#resultScreen { text-align: center; padding-top: 36px; }
+#resultScreen .result-emoji { font-size: 4em; margin-bottom: 12px; }
+#resultScreen .result-title { font-size: 2em; font-weight: 900; margin-bottom: 8px; }
+#resultScreen .result-title.oya-win { color: #ff6b81; }
+#resultScreen .result-title.guesser-win { color: #42a5f5; }
+.answer-box { background: rgba(0,0,0,0.35); border-radius: 14px; padding: 20px; margin: 20px 0; }
+.answer-box .lbl { font-size: 0.85em; color: #bbb; margin-bottom: 6px; }
+.answer-box .ans-word { font-size: 2.2em; font-weight: 900; color: #fff; }
+.guesses-recap { text-align: left; margin: 16px 0; font-size: 0.9em; color: #ccc; line-height: 1.8; }
+.judge-btns { display: flex; gap: 10px; margin: 20px 0; }
+.judge-btns .btn { flex: 1; }
+/* Night */
+#nightOverlay { display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+#nightOverlay.active { display: flex; }
+#nightOverlay .moon { font-size: 4em; margin-bottom: 16px; }
+#nightOverlay p { color: #aaa; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="onBack()">←</a>
+  <h1>🕵️ ことば落とし</h1>
+  <a class="home" href="../index.html">🏠</a>
+</div>
+
+<!-- タイトル -->
+<div class="screen active" id="titleScreen">
+  <div class="title-icon">🕵️</div>
+  <h2>ことば落とし</h2>
+  <div class="subtitle">秘密の言葉を、雑談にこっそり紛れ込ませろ。<br>2〜8人・8歳以上・約5分</div>
+  <div class="rule-box">
+    <b>あそびかた</b><br>
+    ・遊ぶ人数を決めて、順番にスマホを回します。<br>
+    ・<b>親</b>と<b>サポート</b>だけが「秘密の言葉（お題）」を見られます。<br>
+    ・全員で3分間、ふつうに雑談。親はお題の言葉を<b>自然に</b>会話へ紛れ込ませます。<br>
+    ・サポートは親が言いやすい方向へ話を誘導。<br>
+    ・回答側は「今の会話あやしい？」と推理して、最後に候補を<b>3つまで</b>出します。<br>
+    ・当てられたら<b>回答側の勝ち</b>、バレなければ<b>親側の勝ち</b>。
+  </div>
+  <button class="btn btn-primary btn-block" onclick="goSetup()">はじめる</button>
+</div>
+
+<!-- セットアップ -->
+<div class="screen" id="setupScreen">
+  <div class="section-label">遊ぶ人数</div>
+  <div class="count-grid" id="countGrid"></div>
+  <div class="hint" id="roleHint"></div>
+
+  <div class="section-label">お題のジャンル</div>
+  <div class="cat-list" id="catList"></div>
+
+  <button class="btn btn-primary btn-block" style="margin-top:24px" onclick="startAssign()">役職を配る</button>
+  <button class="btn btn-secondary btn-block" onclick="showScreen('titleScreen')">もどる</button>
+</div>
+
+<!-- スマホを渡す -->
+<div class="screen" id="passScreen">
+  <div class="pass-icon">📱➡️</div>
+  <h2>スマホを渡してね</h2>
+  <div class="who" id="passWho">1人目</div>
+  <p>この人だけがボタンを押して<br>自分の役職を確認してください</p>
+  <button class="btn btn-primary btn-block" onclick="revealRole()">わたしの役職を見る</button>
+</div>
+
+<!-- 役職確認 -->
+<div class="screen" id="roleScreen">
+  <div class="role-card" id="roleCard">
+    <div class="role-emoji" id="roleEmoji">👑</div>
+    <div class="role-name" id="roleName">親</div>
+    <div class="role-sub" id="roleSub"></div>
+  </div>
+  <div class="word-reveal" id="wordReveal" style="display:none">
+    <div class="word-label">🤫 秘密の言葉（お題）</div>
+    <div class="word" id="wordText">ちりとり</div>
+  </div>
+  <button class="btn btn-success btn-block" onclick="nextPlayer()" id="roleNextBtn">確認した・次の人へ</button>
+</div>
+
+<!-- 雑談タイマー -->
+<div class="screen" id="playScreen">
+  <h2>3分間、ふつうに雑談！</h2>
+  <div class="timer" id="timer">3:00</div>
+  <div class="timer-controls">
+    <button class="btn btn-secondary" id="pauseBtn" onclick="toggleTimer()">⏸ 一時停止</button>
+    <button class="btn btn-secondary" onclick="addTime(30)">＋30秒</button>
+  </div>
+  <button class="btn btn-primary btn-block" onclick="goAnswer()">推理タイムへ（早めに終える）</button>
+  <div class="play-note">
+    親：お題の言葉をさりげなく会話に入れよう。<br>
+    サポート：親が言いやすい流れを作ろう。<br>
+    回答側：あやしい単語を覚えておこう。
+  </div>
+</div>
+
+<!-- 回答 -->
+<div class="screen" id="answerScreen">
+  <h2>🔍 推理タイム</h2>
+  <div class="ans-note">回答側で相談して、お題だと思う言葉を<br>最大3つまで書いてください</div>
+  <input class="guess-input" id="guess1" placeholder="候補①" autocomplete="off">
+  <input class="guess-input" id="guess2" placeholder="候補②（任意）" autocomplete="off">
+  <input class="guess-input" id="guess3" placeholder="候補③（任意）" autocomplete="off">
+  <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="showAnswer()">答え合わせ</button>
+</div>
+
+<!-- 結果 -->
+<div class="screen" id="resultScreen">
+  <div class="answer-box">
+    <div class="lbl">お題はこれでした</div>
+    <div class="ans-word" id="ansWord">ちりとり</div>
+  </div>
+  <div class="guesses-recap" id="guessRecap"></div>
+  <p style="color:#bbb;font-size:0.9em;margin-bottom:6px">候補の中に「お題」はあった？</p>
+  <div class="judge-btns">
+    <button class="btn btn-primary" onclick="judge(true)">当たり！<br>回答側の勝ち</button>
+    <button class="btn btn-secondary" onclick="judge(false)">はずれ<br>親側の勝ち</button>
+  </div>
+  <div id="judgeResult" style="display:none">
+    <div class="result-emoji" id="resultEmoji">🎉</div>
+    <div class="result-title" id="resultTitle">回答側の勝ち！</div>
+    <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="restart()">もう一回</button>
+    <button class="btn btn-secondary btn-block" onclick="location.href='arcade.html'">ゲームセンターに戻る</button>
+  </div>
+</div>
+
+<!-- 夜間オーバーレイ -->
+<div id="nightOverlay">
+  <div class="moon">🌙</div>
+  <h2>今日はおしまい！</h2>
+  <p>また明日ね</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script>
+// ===== お題データ =====
+const WORDS = {
+  '身の回り': ['ちりとり','せんぷうき','じゃぐち','かいだん','まくら','ものさし','ぞうきん','はんこ','かさたて','てぶくろ','めざましどけい','はしご','じょうろ','くつべら','せんたくばさみ'],
+  'たべもの': ['たまごやき','なっとう','からあげ','みそしる','おにぎり','プリン','たこやき','コロッケ','しゅうまい','わたあめ','ようかん','メロンパン','おでん','きなこ','マカロン'],
+  'いきもの': ['カピバラ','なまけもの','だんごむし','ペンギン','かたつむり','ハムスター','くらげ','こうもり','やもり','いるか','ありくい','てんとうむし','ふくろう','らくだ','かめれおん'],
+  '学校': ['ちょうれい','きゅうしょく','たいいくかん','くつばこ','うわばき','ほけんしつ','こくばん','じかんわり','せいそう','ずこう','うんどうかい','きゅうしょくとうばん','がっしょう','ひなんくんれん'],
+  'のりもの': ['しんかんせん','きゅうきゅうしゃ','いかだ','ききゅう','せんすいかん','ロープウェイ','しょうぼうしゃ','ゆうらんせん','じてんしゃ','モノレール','たがやすトラクター','しんごうき']
+};
+const CAT_NAMES = Object.keys(WORDS);
+
+// ===== 状態 =====
+let state = {
+  playerCount: 4,
+  categories: [...CAT_NAMES],
+  roles: [],        // 各プレイヤーの役職 'oya'|'support'|'guesser'
+  word: '',
+  category: '',
+  current: 0,       // 役職確認中のプレイヤーindex
+  timer: 180,
+  timerId: null,
+  timerRunning: false,
+  guesses: []
+};
+
+// ===== 画面切替 =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function onBack() {
+  const active = document.querySelector('.screen.active').id;
+  if (active === 'titleScreen') { history.back(); return; }
+  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+  showScreen('titleScreen');
+}
+
+// ===== セットアップUI =====
+function buildSetup() {
+  const cg = document.getElementById('countGrid');
+  cg.innerHTML = '';
+  for (let n = 2; n <= 8; n++) {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (n === state.playerCount ? ' selected' : '');
+    b.textContent = n;
+    b.onclick = () => { state.playerCount = n; buildSetup(); };
+    cg.appendChild(b);
+  }
+  updateRoleHint();
+  const cl = document.getElementById('catList');
+  cl.innerHTML = '';
+  CAT_NAMES.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'cat-btn' + (state.categories.includes(cat) ? ' selected' : '');
+    b.textContent = cat;
+    b.onclick = () => {
+      if (state.categories.includes(cat)) {
+        if (state.categories.length > 1) state.categories = state.categories.filter(c => c !== cat);
+      } else state.categories.push(cat);
+      buildSetup();
+    };
+    cl.appendChild(b);
+  });
+}
+function updateRoleHint() {
+  // サポートは3人以上のとき登場
+  const support = state.playerCount >= 3 ? 1 : 0;
+  const guesser = state.playerCount - 1 - support;
+  let txt = `👑 親 1人`;
+  if (support) txt += ` ＋ 🤝 サポート 1人`;
+  txt += ` vs 🔍 回答側 ${guesser}人`;
+  document.getElementById('roleHint').textContent = txt;
+}
+
+function goSetup() { buildSetup(); showScreen('setupScreen'); }
+
+// ===== 役職割り当て =====
+function startAssign() {
+  const pool = state.categories.length ? state.categories : CAT_NAMES;
+  state.category = pool[Math.floor(Math.random() * pool.length)];
+  const list = WORDS[state.category];
+  state.word = list[Math.floor(Math.random() * list.length)];
+
+  const roles = ['oya'];
+  if (state.playerCount >= 3) roles.push('support');
+  while (roles.length < state.playerCount) roles.push('guesser');
+  // シャッフル
+  for (let i = roles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [roles[i], roles[j]] = [roles[j], roles[i]];
+  }
+  state.roles = roles;
+  state.current = 0;
+  showPass();
+}
+
+function showPass() {
+  document.getElementById('passWho').textContent = `${state.current + 1}人目`;
+  showScreen('passScreen');
+}
+
+const ROLE_INFO = {
+  oya: { emoji: '👑', name: '親', cls: 'oya', sub: 'あなたが主役！雑談の中にお題の言葉をさりげなく紛れ込ませよう。バレなければ勝ち。', showWord: true },
+  support: { emoji: '🤝', name: 'サポート', cls: 'support', sub: '親のなかま。親がお題を言いやすい流れを作ろう。お題は下に表示。', showWord: true },
+  guesser: { emoji: '🔍', name: '回答側', cls: 'guesser', sub: 'あなたはお題を知りません。雑談を聞いて、あやしい言葉を推理しよう！', showWord: false }
+};
+
+function revealRole() {
+  const role = state.roles[state.current];
+  const info = ROLE_INFO[role];
+  const card = document.getElementById('roleCard');
+  card.className = 'role-card ' + info.cls;
+  document.getElementById('roleEmoji').textContent = info.emoji;
+  document.getElementById('roleName').textContent = info.name;
+  document.getElementById('roleSub').textContent = info.sub;
+  const wr = document.getElementById('wordReveal');
+  if (info.showWord) {
+    wr.style.display = '';
+    document.getElementById('wordText').textContent = state.word;
+  } else {
+    wr.style.display = 'none';
+  }
+  const btn = document.getElementById('roleNextBtn');
+  btn.textContent = (state.current === state.playerCount - 1) ? '確認した・雑談スタート！' : '確認した・次の人へ';
+  showScreen('roleScreen');
+}
+
+function nextPlayer() {
+  state.current++;
+  if (state.current >= state.playerCount) {
+    startTimer();
+  } else {
+    showPass();
+  }
+}
+
+// ===== タイマー =====
+function startTimer() {
+  state.timer = 180;
+  state.timerRunning = true;
+  updateTimerDisplay();
+  showScreen('playScreen');
+  document.getElementById('pauseBtn').textContent = '⏸ 一時停止';
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(tick, 1000);
+}
+function tick() {
+  if (!state.timerRunning) return;
+  state.timer--;
+  updateTimerDisplay();
+  if (state.timer <= 0) {
+    clearInterval(state.timerId); state.timerId = null;
+    goAnswer();
+  }
+}
+function updateTimerDisplay() {
+  const m = Math.floor(state.timer / 60);
+  const s = state.timer % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('warn', state.timer <= 30);
+}
+function toggleTimer() {
+  state.timerRunning = !state.timerRunning;
+  document.getElementById('pauseBtn').textContent = state.timerRunning ? '⏸ 一時停止' : '▶ 再開';
+}
+function addTime(sec) { state.timer += sec; updateTimerDisplay(); }
+
+// ===== 回答 =====
+function goAnswer() {
+  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+  ['guess1','guess2','guess3'].forEach(id => document.getElementById(id).value = '');
+  showScreen('answerScreen');
+}
+function normalize(s) {
+  return (s || '').trim().replace(/\s/g,'')
+    .replace(/[ぁ-ん]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)); // ひらがな→カタカナ
+}
+function showAnswer() {
+  state.guesses = ['guess1','guess2','guess3']
+    .map(id => document.getElementById(id).value.trim())
+    .filter(v => v);
+  document.getElementById('ansWord').textContent = state.word;
+  const nw = normalize(state.word);
+  const recap = document.getElementById('guessRecap');
+  if (state.guesses.length) {
+    recap.innerHTML = '出した候補：<br>' + state.guesses.map(g => {
+      const hit = normalize(g) === nw;
+      return `${hit ? '✅' : '❌'} ${g}`;
+    }).join('<br>');
+  } else {
+    recap.innerHTML = '（候補なし）';
+  }
+  document.getElementById('judgeResult').style.display = 'none';
+  // 自動判定のヒント：一致があれば当たりボタンを推奨（表示は手動判定に任せる）
+  showScreen('resultScreen');
+}
+function judge(guesserWin) {
+  const jr = document.getElementById('judgeResult');
+  jr.style.display = '';
+  if (guesserWin) {
+    document.getElementById('resultEmoji').textContent = '🔍🎉';
+    const t = document.getElementById('resultTitle');
+    t.textContent = '回答側の勝ち！';
+    t.className = 'result-title guesser-win';
+  } else {
+    document.getElementById('resultEmoji').textContent = '👑🎉';
+    const t = document.getElementById('resultTitle');
+    t.textContent = '親側の勝ち！';
+    t.className = 'result-title oya-win';
+  }
+  jr.scrollIntoView({ behavior: 'smooth' });
+}
+
+function restart() {
+  state.current = 0;
+  state.guesses = [];
+  goSetup();
+}
+
+// ===== 初期化・夜間制限 =====
+(function init() {
+  if (typeof isNightTime === 'function' && isNightTime()) {
+    document.getElementById('nightOverlay').classList.add('active');
+    return;
+  }
+  buildSetup();
+})();
+</script>
+</body>
+</html>
