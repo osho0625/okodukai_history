@@ -228,6 +228,37 @@ h2 .toggle.open { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- 自動ポイント付与設定 -->
+<h2 onclick="toggleSection('autoChoreSection', this)"><span class="toggle">&#x25B6;</span> &#x23F0; 自動ポイント付与設定</h2>
+<div class="section-body" id="autoChoreSection">
+  <div class="card">
+    <div style="font-size:0.85em; color:#999; margin-bottom:12px;">誰に・何のポイントを・何ポイント・何日ごとに・何時に自動付与するかを設定します（GitHub Actions cronで毎朝チェック）</div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+      <span style="font-weight:600;">付与時刻</span>
+      <select id="autoChoreHour" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.9em;"></select>
+      <span style="color:#999; font-size:0.85em;">時（JST）</span>
+    </div>
+    <div style="font-weight:600; margin-bottom:8px;">付与ルール</div>
+    <div id="autoChoreRuleList"></div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-top:12px;">
+      <div style="font-weight:600; margin-bottom:8px;">新しいルールを追加</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <select id="newAutoChild" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.85em;"></select>
+        <input type="text" id="newAutoChore" placeholder="ポイント名（例: 食洗器）" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.85em;">
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="number" id="newAutoPts" placeholder="pt" value="1" min="1" style="width:60px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.85em; text-align:center;">
+        <span style="font-size:0.85em; color:#666;">pt /</span>
+        <input type="number" id="newAutoDays" placeholder="日" value="1" min="1" style="width:60px; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:0.85em; text-align:center;">
+        <span style="font-size:0.85em; color:#666;">日ごと</span>
+        <button class="btn-sm btn-primary" onclick="addAutoChoreRule()" style="padding:8px 14px; margin-left:auto;">追加</button>
+      </div>
+    </div>
+    <button class="btn-add" onclick="saveAutoChoreConfig()" style="width:100%; margin-top:14px;">設定を保存</button>
+    <div class="msg" id="autoChoreMsg">&#x2713; 保存しました</div>
+  </div>
+</div>
+
 <!-- ポイント直接設定 -->
 <h2 onclick="toggleSection('pointsDirectSection', this)"><span class="toggle">&#x25B6;</span> &#x2B50; ポイント直接設定</h2>
 <div class="section-body" id="pointsDirectSection">
@@ -1303,6 +1334,107 @@ async function addChoreType() {
   loadChoreTypes();
 }
 
+// --- 自動ポイント付与設定 ---
+const DEFAULT_AUTO_CHORE_CONFIG = {
+  hour: 7,
+  rules: [
+    { childName: 'りょうすけ', choreName: '食洗器回し', points: 4, everyNDays: 1 },
+    { childName: 'りょうすけ', choreName: '洗濯機', points: 9, everyNDays: 2 },
+    { childName: 'めぐみ', choreName: '食洗器', points: 3, everyNDays: 2 },
+    { childName: 'めぐみ', choreName: '料理', points: 10, everyNDays: 1 },
+  ],
+};
+let autoChoreConfig = null;
+
+async function loadAutoChoreConfig() {
+  let cfg = null;
+  try {
+    const { data } = await client.from('game_settings').select('auto_chore_config').eq('id', 1).maybeSingle();
+    if (data && data.auto_chore_config) cfg = data.auto_chore_config;
+  } catch(e) {}
+  autoChoreConfig = cfg || JSON.parse(JSON.stringify(DEFAULT_AUTO_CHORE_CONFIG));
+  if (!Array.isArray(autoChoreConfig.rules)) autoChoreConfig.rules = [];
+  if (typeof autoChoreConfig.hour !== 'number') autoChoreConfig.hour = 7;
+
+  // 時刻セレクト
+  const hourSel = document.getElementById('autoChoreHour');
+  hourSel.innerHTML = '';
+  for (let h = 0; h < 24; h++) {
+    hourSel.innerHTML += `<option value="${h}" ${h === autoChoreConfig.hour ? 'selected' : ''}>${h}</option>`;
+  }
+  hourSel.onchange = () => { autoChoreConfig.hour = parseInt(hourSel.value) || 0; };
+
+  // 追加フォームの子供セレクト
+  const childSel = document.getElementById('newAutoChild');
+  childSel.innerHTML = '';
+  allChildren.filter(c => !c.name.endsWith('が返すお金')).forEach(c => {
+    childSel.innerHTML += `<option value="${c.name.replace(/"/g, '&quot;')}">${c.name}</option>`;
+  });
+
+  renderAutoChoreRules();
+}
+
+function renderAutoChoreRules() {
+  const list = document.getElementById('autoChoreRuleList');
+  if (!autoChoreConfig.rules.length) {
+    list.innerHTML = '<div style="color:#999; padding:8px 0;">ルールがありません</div>';
+    return;
+  }
+  list.innerHTML = '';
+  autoChoreConfig.rules.forEach((r, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:4px; padding:6px 0; border-bottom:1px solid #f0f0f0; flex-wrap:nowrap;';
+    row.innerHTML = `
+      <span style="flex:1; min-width:0; font-size:0.85em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <b>${escHtmlAC(r.childName)}</b> / ${escHtmlAC(r.choreName)}
+      </span>
+      <input type="number" value="${r.points}" min="1" onchange="updateAutoChoreRule(${idx},'points',this.value)" style="width:44px; padding:4px 2px; border:1px solid #ddd; border-radius:6px; font-size:0.8em; text-align:center;">
+      <span style="font-size:0.75em; color:#666;">pt/</span>
+      <input type="number" value="${r.everyNDays}" min="1" onchange="updateAutoChoreRule(${idx},'everyNDays',this.value)" style="width:44px; padding:4px 2px; border:1px solid #ddd; border-radius:6px; font-size:0.8em; text-align:center;">
+      <span style="font-size:0.75em; color:#666;">日</span>
+      <button class="btn-sm btn-danger" onclick="deleteAutoChoreRule(${idx})" style="padding:4px 8px; font-size:0.75em;">削除</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function escHtmlAC(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function updateAutoChoreRule(idx, field, value) {
+  if (!autoChoreConfig.rules[idx]) return;
+  const n = parseInt(value) || 1;
+  autoChoreConfig.rules[idx][field] = n < 1 ? 1 : n;
+}
+
+function deleteAutoChoreRule(idx) {
+  autoChoreConfig.rules.splice(idx, 1);
+  renderAutoChoreRules();
+}
+
+function addAutoChoreRule() {
+  const childName = document.getElementById('newAutoChild').value;
+  const choreName = document.getElementById('newAutoChore').value.trim();
+  const points = parseInt(document.getElementById('newAutoPts').value) || 1;
+  const everyNDays = parseInt(document.getElementById('newAutoDays').value) || 1;
+  if (!childName) return alert('付与先を選択してください');
+  if (!choreName) return alert('ポイント名を入力してください');
+  autoChoreConfig.rules.push({ childName, choreName, points: points < 1 ? 1 : points, everyNDays: everyNDays < 1 ? 1 : everyNDays });
+  document.getElementById('newAutoChore').value = '';
+  document.getElementById('newAutoPts').value = '1';
+  document.getElementById('newAutoDays').value = '1';
+  renderAutoChoreRules();
+}
+
+async function saveAutoChoreConfig() {
+  autoChoreConfig.hour = parseInt(document.getElementById('autoChoreHour').value) || 0;
+  await client.from('game_settings').update({ auto_chore_config: autoChoreConfig }).eq('id', 1);
+  const msg = document.getElementById('autoChoreMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
 // --- ポイント直接設定 ---
 let directChildId = null;
 
@@ -1448,6 +1580,7 @@ loadChoreTypes();
 setTimeout(() => {
   loadPointsChildren();
   loadPtsHistChildren();
+  loadAutoChoreConfig();
 }, 500);
 
 // --- ゲーム公開設定 ---

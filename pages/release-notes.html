@@ -55,6 +55,16 @@ h1 { margin-bottom: 24px; color: #333; }
 </div>
 
 <div class="release">
+  <div><span class="ver">v2.44.0</span><span class="date">2026/09/15</span></div>
+  <ul>
+    <li><span class="tag tag-feat">NEW</span> 管理者ページ: 自動ポイント付与設定を追加（誰に・何のポイント・何pt・何日ごと・何時に を編集可能）</li>
+    <li><span class="tag tag-infra">infra</span> auto-chore-points.js: 付与ルール/時刻を game_settings.auto_chore_config から読込（未設定時はデフォルト）</li>
+    <li><span class="tag tag-infra">infra</span> auto-chore-points.yml: cronを毎時実行に変更（設定時刻をスクリプト側で判定）、手動実行にforce即時付与オプション追加</li>
+    <li><span class="tag tag-infra">infra</span> sql/alter_game_settings_auto_chore.sql 追加（auto_chore_config カラム）、SW v342</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.43.1</span><span class="date">2026/09/03</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> ビデオ通話: 発信側(スマホ)で合言葉をUI入力できるように（初回1回のみ、以後自動）</li>
