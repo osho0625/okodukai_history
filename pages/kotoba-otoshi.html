@@ -33,6 +33,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .count-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 8px; }
 .count-btn { padding: 16px 0; border-radius: 12px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 1.3em; font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .count-btn.selected { border-color: #ff6b81; background: rgba(233,69,96,0.25); }
+/* Members */
+.member-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.member-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); transition: all 0.15s; }
+.member-row.selected { border-color: #ff6b81; background: rgba(233,69,96,0.2); }
+.member-pick { flex: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; }
+.member-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center; font-size: 0.9em; flex-shrink: 0; }
+.member-row.selected .member-check { background: #ff6b81; border-color: #ff6b81; }
+.member-name { font-size: 1.05em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.member-tag { font-size: 0.68em; padding: 2px 7px; border-radius: 10px; background: rgba(0,0,0,0.3); color: #ffb3bf; white-space: nowrap; }
+.member-cog { flex-shrink: 0; background: rgba(255,255,255,0.1); border: none; color: #eee; width: 34px; height: 34px; border-radius: 8px; font-size: 1.05em; cursor: pointer; }
+.member-cog:active { transform: scale(0.92); }
+.member-add { display: flex; gap: 8px; margin-bottom: 8px; }
+.member-add-input { flex: 1; padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1em; outline: none; }
+.member-add-input:focus { border-color: #ff6b81; }
+.member-add-btn { padding: 0 18px; border-radius: 10px; border: none; background: rgba(255,255,255,0.14); color: #eee; font-weight: 700; font-size: 0.95em; cursor: pointer; white-space: nowrap; }
+.member-add-btn:active { transform: scale(0.95); }
+/* Overlay modal */
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+.ov.active { display: flex; }
+.ov-modal { background: #1e2340; border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 24px 20px; width: 100%; max-width: 360px; }
+.ov-modal h3 { font-size: 1.3em; margin-bottom: 10px; text-align: center; }
+.ov-note { font-size: 0.85em; color: #bbb; line-height: 1.6; margin-bottom: 16px; text-align: center; }
+.rl-roles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.rl-role { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,0.06); font-size: 1em; cursor: pointer; }
+.rl-role input { width: 20px; height: 20px; accent-color: #ff6b81; }
+.rl-warn { color: #ffb74d; font-size: 0.8em; text-align: center; min-height: 1.2em; margin-bottom: 6px; }
+.ov-btns { display: flex; gap: 10px; }
+.ov-btns .btn { flex: 1; padding: 12px; }
 .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .cat-btn { padding: 10px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
 .cat-btn.selected { border-color: #ff6b81; background: rgba(233,69,96,0.25); }
@@ -100,7 +129,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="subtitle">秘密の言葉を、雑談にこっそり紛れ込ませろ。<br>2〜8人・8歳以上・約5分</div>
   <div class="rule-box">
     <b>あそびかた</b><br>
-    ・遊ぶ人数を決めて、順番にスマホを回します。<br>
+    ・参加者を選んで（2〜8人）、順番にスマホを回します。<br>
+    ・⚙️から「この人にやらせない役職」を設定できます（運転中や小さい子は「親」を外すと安心）。<br>
     ・<b>親</b>と<b>サポート</b>だけが「秘密の言葉（お題）」を見られます。<br>
     ・全員で3分間、ふつうに雑談。親はお題の言葉を<b>自然に</b>会話へ紛れ込ませます。<br>
     ・サポートは親が言いやすい方向へ話を誘導。<br>
@@ -112,8 +142,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <!-- セットアップ -->
 <div class="screen" id="setupScreen">
-  <div class="section-label">遊ぶ人数</div>
-  <div class="count-grid" id="countGrid"></div>
+  <div class="section-label">参加者を選ぶ <span style="color:#777;font-weight:400">（2〜8人）</span></div>
+  <div class="member-list" id="memberList"></div>
+  <div class="member-add">
+    <input class="member-add-input" id="newMemberInput" placeholder="新しい参加者の名前" autocomplete="off" maxlength="10">
+    <button class="member-add-btn" onclick="addMember()">＋追加</button>
+  </div>
   <div class="hint" id="roleHint"></div>
 
   <div class="section-label">お題のジャンル</div>
@@ -123,12 +157,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="btn btn-secondary btn-block" onclick="showScreen('titleScreen')">もどる</button>
 </div>
 
+<!-- 役職制限モーダル -->
+<div id="roleLimitOverlay" class="ov">
+  <div class="ov-modal">
+    <h3 id="rlName">なまえ</h3>
+    <p class="ov-note">この人に<b>やらせない役職</b>を選んでね<br><span style="color:#888">（運転中の人・小さい子は「親」を外すと安心）</span></p>
+    <div class="rl-roles">
+      <label class="rl-role"><input type="checkbox" data-role="oya"> 👑 親をやらせない</label>
+      <label class="rl-role"><input type="checkbox" data-role="support"> 🤝 サポートをやらせない</label>
+      <label class="rl-role"><input type="checkbox" data-role="guesser"> 🔍 回答側をやらせない</label>
+    </div>
+    <p class="rl-warn" id="rlWarn"></p>
+    <div class="ov-btns">
+      <button class="btn btn-secondary" onclick="deleteMember()">🗑 削除</button>
+      <button class="btn btn-primary" onclick="saveRoleLimit()">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- スマホを渡す -->
 <div class="screen" id="passScreen">
   <div class="pass-icon">📱➡️</div>
   <h2>スマホを渡してね</h2>
   <div class="who" id="passWho">1人目</div>
-  <p>この人だけがボタンを押して<br>自分の役職を確認してください</p>
+  <p><b id="passName"></b> さんだけがボタンを押して<br>自分の役職を確認してください</p>
   <button class="btn btn-primary btn-block" onclick="revealRole()">わたしの役職を見る</button>
 </div>
 
@@ -212,14 +264,42 @@ const WORDS = {
 };
 const CAT_NAMES = Object.keys(WORDS);
 
+// ===== 参加者管理 =====
+const MEMBERS_KEY = 'kotoba_otoshi_members';
+const DEFAULT_MEMBERS = [
+  { name: 'かいせい', exclude: [] },
+  { name: 'はるちか', exclude: [] },
+  { name: 'いろは', exclude: [] },
+  { name: 'めぐみ', exclude: [] },
+  { name: 'りょうすけ', exclude: [] }
+];
+let members = loadMembers();
+
+function loadMembers() {
+  try {
+    const raw = localStorage.getItem(MEMBERS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length) {
+        return arr.map(m => ({ name: String(m.name), exclude: Array.isArray(m.exclude) ? m.exclude : [] }));
+      }
+    }
+  } catch (e) {}
+  return DEFAULT_MEMBERS.map(m => ({ name: m.name, exclude: [...m.exclude] }));
+}
+function saveMembers() {
+  try { localStorage.setItem(MEMBERS_KEY, JSON.stringify(members)); } catch (e) {}
+}
+
 // ===== 状態 =====
 let state = {
-  playerCount: 4,
   categories: [...CAT_NAMES],
-  roles: [],        // 各プレイヤーの役職 'oya'|'support'|'guesser'
+  selected: [],     // 参加する member オブジェクトの配列（プレイ順）
+  roles: [],        // selected と同順の役職 'oya'|'support'|'guesser'
   word: '',
   category: '',
   current: 0,       // 役職確認中のプレイヤーindex
+  editIndex: -1,    // 役職制限モーダル編集対象
   timer: 180,
   timerId: null,
   timerRunning: false,
@@ -238,18 +318,52 @@ function onBack() {
   showScreen('titleScreen');
 }
 
+const ROLE_LABEL = { oya: '👑親', support: '🤝サポート', guesser: '🔍回答側' };
+
 // ===== セットアップUI =====
+function isSelected(name) { return state.selected.some(m => m.name === name); }
+
 function buildSetup() {
-  const cg = document.getElementById('countGrid');
-  cg.innerHTML = '';
-  for (let n = 2; n <= 8; n++) {
-    const b = document.createElement('button');
-    b.className = 'count-btn' + (n === state.playerCount ? ' selected' : '');
-    b.textContent = n;
-    b.onclick = () => { state.playerCount = n; buildSetup(); };
-    cg.appendChild(b);
-  }
+  const ml = document.getElementById('memberList');
+  ml.innerHTML = '';
+  members.forEach((m, idx) => {
+    const row = document.createElement('div');
+    row.className = 'member-row' + (isSelected(m.name) ? ' selected' : '');
+
+    const pick = document.createElement('div');
+    pick.className = 'member-pick';
+    pick.onclick = () => toggleMember(idx);
+    const check = document.createElement('div');
+    check.className = 'member-check';
+    check.textContent = isSelected(m.name) ? '✓' : '';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'member-name';
+    nameEl.textContent = m.name;
+    pick.appendChild(check);
+    pick.appendChild(nameEl);
+    if (m.exclude && m.exclude.length) {
+      const tags = document.createElement('div');
+      tags.className = 'member-tags';
+      m.exclude.forEach(r => {
+        const t = document.createElement('span');
+        t.className = 'member-tag';
+        t.textContent = ROLE_LABEL[r] + '×';
+        tags.appendChild(t);
+      });
+      pick.appendChild(tags);
+    }
+    row.appendChild(pick);
+
+    const cog = document.createElement('button');
+    cog.className = 'member-cog';
+    cog.textContent = '⚙️';
+    cog.onclick = (e) => { e.stopPropagation(); openRoleLimit(idx); };
+    row.appendChild(cog);
+
+    ml.appendChild(row);
+  });
   updateRoleHint();
+
   const cl = document.getElementById('catList');
   cl.innerHTML = '';
   CAT_NAMES.forEach(cat => {
@@ -265,40 +379,174 @@ function buildSetup() {
     cl.appendChild(b);
   });
 }
+
+function toggleMember(idx) {
+  const m = members[idx];
+  if (isSelected(m.name)) {
+    state.selected = state.selected.filter(s => s.name !== m.name);
+  } else {
+    if (state.selected.length >= 8) return;
+    state.selected.push(m);
+  }
+  buildSetup();
+}
+
 function updateRoleHint() {
-  // サポートは3人以上のとき登場
-  const support = state.playerCount >= 3 ? 1 : 0;
-  const guesser = state.playerCount - 1 - support;
-  let txt = `👑 親 1人`;
-  if (support) txt += ` ＋ 🤝 サポート 1人`;
-  txt += ` vs 🔍 回答側 ${guesser}人`;
+  const n = state.selected.length;
+  const hint = document.getElementById('roleHint');
+  if (n < 2) {
+    hint.textContent = `参加者を2〜8人選んでください（現在 ${n}人）`;
+    hint.style.color = '#ffb74d';
+    return;
+  }
+  hint.style.color = '';
+  const support = n >= 3 ? 1 : 0;
+  const guesser = n - 1 - support;
+  let txt = `${n}人：👑親 1人`;
+  if (support) txt += ` ＋ 🤝サポート 1人`;
+  txt += ` vs 🔍回答側 ${guesser}人`;
   document.getElementById('roleHint').textContent = txt;
 }
 
-function goSetup() { buildSetup(); showScreen('setupScreen'); }
+function goSetup() {
+  if (!state.selected.length) {
+    // 初回は参加者を選択済みにする（最大8人）
+    state.selected = members.slice(0, 8);
+  } else {
+    // 削除されたメンバーが残らないよう整合
+    state.selected = state.selected.filter(s => members.some(m => m.name === s.name))
+      .map(s => members.find(m => m.name === s.name));
+  }
+  buildSetup();
+  showScreen('setupScreen');
+}
+
+// ===== 参加者の追加・削除・役職制限 =====
+function addMember() {
+  const input = document.getElementById('newMemberInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (members.some(m => m.name === name)) { input.value = ''; return; }
+  members.push({ name, exclude: [] });
+  saveMembers();
+  input.value = '';
+  buildSetup();
+}
+
+function openRoleLimit(idx) {
+  state.editIndex = idx;
+  const m = members[idx];
+  document.getElementById('rlName').textContent = m.name;
+  document.querySelectorAll('#roleLimitOverlay input[data-role]').forEach(cb => {
+    cb.checked = m.exclude.includes(cb.getAttribute('data-role'));
+    cb.onchange = validateRoleLimit;
+  });
+  document.getElementById('rlWarn').textContent = '';
+  document.getElementById('roleLimitOverlay').classList.add('active');
+}
+function validateRoleLimit() {
+  const checked = [...document.querySelectorAll('#roleLimitOverlay input[data-role]:checked')];
+  const warn = document.getElementById('rlWarn');
+  if (checked.length >= 3) {
+    warn.textContent = '⚠️ 全部は外せません（やれる役職が無くなります）';
+    return false;
+  }
+  warn.textContent = '';
+  return true;
+}
+function saveRoleLimit() {
+  if (!validateRoleLimit()) return;
+  const m = members[state.editIndex];
+  m.exclude = [...document.querySelectorAll('#roleLimitOverlay input[data-role]:checked')]
+    .map(cb => cb.getAttribute('data-role'));
+  saveMembers();
+  closeRoleLimit();
+  buildSetup();
+}
+function deleteMember() {
+  const m = members[state.editIndex];
+  if (!confirm(`「${m.name}」を削除しますか？`)) return;
+  state.selected = state.selected.filter(s => s.name !== m.name);
+  members.splice(state.editIndex, 1);
+  saveMembers();
+  closeRoleLimit();
+  buildSetup();
+}
+function closeRoleLimit() {
+  document.getElementById('roleLimitOverlay').classList.remove('active');
+  state.editIndex = -1;
+}
 
 // ===== 役職割り当て =====
 function startAssign() {
+  const n = state.selected.length;
+  if (n < 2) { alert('参加者を2人以上選んでください'); return; }
+  if (n > 8) { alert('参加者は8人までです'); return; }
+
+  // 必要な役職セットを作る
+  const roleSet = ['oya'];
+  if (n >= 3) roleSet.push('support');
+  while (roleSet.length < n) roleSet.push('guesser');
+
+  const assignment = assignRoles(state.selected, roleSet);
+  if (!assignment) {
+    alert('役職制限の条件が厳しすぎて配れませんでした。\n誰かの制限を緩めるか、参加者を変えてください。');
+    return;
+  }
+  state.roles = assignment;
+
   const pool = state.categories.length ? state.categories : CAT_NAMES;
   state.category = pool[Math.floor(Math.random() * pool.length)];
   const list = WORDS[state.category];
   state.word = list[Math.floor(Math.random() * list.length)];
-
-  const roles = ['oya'];
-  if (state.playerCount >= 3) roles.push('support');
-  while (roles.length < state.playerCount) roles.push('guesser');
-  // シャッフル
-  for (let i = roles.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [roles[i], roles[j]] = [roles[j], roles[i]];
-  }
-  state.roles = roles;
   state.current = 0;
   showPass();
 }
 
+// 制限を尊重して役職を割り当て（バックトラッキング）。プレイ順(state.selected)に対応する役職配列を返す
+function assignRoles(players, roleSet) {
+  // 役職ごとの必要数
+  const need = {};
+  roleSet.forEach(r => need[r] = (need[r] || 0) + 1);
+
+  // 割り当て探索用にプレイヤーをシャッフル、ただし結果はプレイ順に戻す
+  const order = players.map((p, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+
+  const result = new Array(players.length).fill(null);
+  const remaining = { ...need };
+
+  function canAssign(pi, role) {
+    return remaining[role] > 0 && !players[pi].exclude.includes(role);
+  }
+  function backtrack(k) {
+    if (k === order.length) return true;
+    const pi = order[k];
+    // 候補役職をシャッフルして偏りを防ぐ
+    const roles = Object.keys(remaining).filter(r => remaining[r] > 0);
+    for (let i = roles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [roles[i], roles[j]] = [roles[j], roles[i]];
+    }
+    for (const role of roles) {
+      if (!canAssign(pi, role)) continue;
+      result[pi] = role;
+      remaining[role]--;
+      if (backtrack(k + 1)) return true;
+      remaining[role]++;
+      result[pi] = null;
+    }
+    return false;
+  }
+  return backtrack(0) ? result : null;
+}
+
 function showPass() {
   document.getElementById('passWho').textContent = `${state.current + 1}人目`;
+  document.getElementById('passName').textContent = state.selected[state.current].name;
   showScreen('passScreen');
 }
 
@@ -314,7 +562,7 @@ function revealRole() {
   const card = document.getElementById('roleCard');
   card.className = 'role-card ' + info.cls;
   document.getElementById('roleEmoji').textContent = info.emoji;
-  document.getElementById('roleName').textContent = info.name;
+  document.getElementById('roleName').textContent = state.selected[state.current].name + ' は…「' + info.name + '」';
   document.getElementById('roleSub').textContent = info.sub;
   const wr = document.getElementById('wordReveal');
   if (info.showWord) {
@@ -324,13 +572,13 @@ function revealRole() {
     wr.style.display = 'none';
   }
   const btn = document.getElementById('roleNextBtn');
-  btn.textContent = (state.current === state.playerCount - 1) ? '確認した・雑談スタート！' : '確認した・次の人へ';
+  btn.textContent = (state.current === state.selected.length - 1) ? '確認した・雑談スタート！' : '確認した・次の人へ';
   showScreen('roleScreen');
 }
 
 function nextPlayer() {
   state.current++;
-  if (state.current >= state.playerCount) {
+  if (state.current >= state.selected.length) {
     startTimer();
   } else {
     showPass();
@@ -427,6 +675,16 @@ function restart() {
     document.getElementById('nightOverlay').classList.add('active');
     return;
   }
+  // 既定で全参加者を選択状態にしておく（最大8人）
+  state.selected = members.slice(0, 8);
+  // モーダル背景クリックで閉じる
+  document.getElementById('roleLimitOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeRoleLimit();
+  });
+  // 追加入力でEnter対応
+  document.getElementById('newMemberInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addMember();
+  });
   buildSetup();
 })();
 </script>
