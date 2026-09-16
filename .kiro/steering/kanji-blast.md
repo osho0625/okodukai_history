@@ -30,14 +30,41 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 ## 強さ計算式
 
 ```
-漢字パワー = 画数 × 漢検級係数 × (1 + 解放読み数 × 0.1)
-全体ボーナス = 1 + 図鑑登録漢字の種類数 × 0.02
-最終パワー   = round(漢字パワー × 全体ボーナス)
+最終パワー = round(
+  画数 × 漢検級係数
+  × (1 + 解放読み数 × 0.1)
+  × (1 + 図鑑登録漢字の種類数 × 0.02)
+  × (1 + plus × 0.05)                 // +値（エンハンス）バフ
+)
 ```
 
 - 漢検級係数（KENTEI_FACTOR）: 10級=1.0 … 5級=2.0 … 準1級=4.2 … 1級=5.0
-- ショット威力 = 装備ショットの漢字パワー（未装備は5）
-- 必殺威力 = 装備必殺の漢字パワー × 6（未装備は30）。全体攻撃＋敵弾消し、CD 5秒
+- plus は漢字1枚ごとの強化値（+0〜plus_cap）。+1ごとに×1.05
+- ショット威力 = 装備ショットの最終パワー（未装備は5）
+- 必殺威力 = 装備必殺の最終パワー × 6（未装備は30）。全体攻撃＋敵弾消し、CD 5秒
+
+## +値（エンハンス）機構
+
+- 漢字1枚ごとに +0〜plus_cap の強化値を持つ（kanji_inventory.plus）
+- 合成: 結果の+ = 素材の+の合計 + 1。plus_cap で上限クリップ（超過分は切り捨て）
+  - 例: 林(+1) + 木(+1) → 森(+3) / 木(+2) + 林(+0) → 森(+3)
+- 分解: 各素材の+ = floor((結果の+ - 1) / 素材数)（端数切り捨て、0未満は0）
+  - 例: 森(+3) → 林(+1) + 木(+1) / 品(+2) → 口(+1)+口(+0)+口(+0)
+- plus_cap: デフォルト 3。フロアボス撃破ごとに +1（kanji_players.plus_cap）
+- 装備は char と +値の両方を保存（equipped_shot_plus / equipped_special_plus）
+
+## フロアボス
+
+- 5ステージごと（5,10,15…）にフロアボス（描画は紫「王」、HP約2.2倍）
+- 撃破で plus_cap +1
+- ドロップは合成漢字（is_part=false）。ステージが進むほど画数の高い漢字を落とす
+  （strokeCap = 6 + floor(stage/5)*4 以下から上位1/3を抽選）。ドロップは +1 付き
+- 通常ボスは基本パーツ（is_part=true）を +0 でドロップ
+
+## 合体の選択式
+
+- 同じ素材の組み合わせが複数の結果を持つ場合、合成時に番号入力で選ばせる
+  （例: 一+一 → 「二」or「十」）。RECIPE_BY_PARTS は結果の配列を保持
 
 ## 読み仮名の判定（js/kanji-blast.js の resolveReading）
 
@@ -75,10 +102,11 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
   （part_c=NULL 行は ON CONFLICT で重複検知できないため）
 
 ### kanji_players（子供ごとのセーブ）
-- id UUID (PK), name, equipped_shot, equipped_special, best_score, max_stage, created_by_device
+- id UUID (PK), name, equipped_shot, equipped_shot_plus, equipped_special,
+  equipped_special_plus, best_score, max_stage, plus_cap, created_by_device
 
 ### kanji_inventory（手持ち・最大10、同じ漢字を複数可）
-- id UUID (PK), player_id (FK, ON DELETE CASCADE), char (FK), created_by_device
+- id UUID (PK), player_id (FK, ON DELETE CASCADE), char (FK), plus, created_by_device
 
 ### kanji_dex（図鑑＝読み解放記録）
 - id UUID (PK), player_id (FK, ON DELETE CASCADE), char (FK), reading, created_by_device
@@ -93,11 +121,15 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 
 ## 初期データ（seed）
 
-- 基本パーツ19（一/十/口/日/月/木/火/水/田/力/人/目/土/女/子/大/山/石/鳥）
+- 基本パーツ27（一〜九の数字9 ＋ 口/日/月/木/火/水/田/力/人/目/土/女/子/大/山/石/鳥）
+  ※数字も is_part=true だが合成・分解の対象
 - 合体漢字14（林/森/炎/明/男/相/好/休/畑/岩/品/晶/鳴/唱）
-- 2素材レシピ: 一+一=十、口+一=日、木+木=林、木+林=森、火+火=炎、日+月=明、
-  田+力=男、木+目=相、女+子=好、人+木=休、火+田=畑、山+石=岩、口+鳥=鳴
-- 3素材レシピ: 口+口+口=品、日+日+日=晶、木+木+木=森、口+日+日=唱
+- 2素材レシピ: 一+一=十、一+一=二、二+一=三、口+八=四、口+一=日、木+木=林、
+  木+林=森、火+火=炎、日+月=明、田+力=男、木+目=相、女+子=好、人+木=休、
+  火+田=畑、山+石=岩、口+鳥=鳴
+- 3素材レシピ: 口+口+口=品、日+日+日=晶、木+木+木=森、口+日+日=唱、
+  一+一+一=三、一+一+八=六
+- 一+一 は「二」と「十」の両方を持つ → 合成時に選択式
 - レシピの part_a/part_b/part_c/result_char は必ず kanji_master に存在させること（FK制約）
 
 ## 注意点
@@ -105,4 +137,8 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 - 夜間制限（isNightTime）に対応。夜は「今日はおしまい」表示
 - arcade.html のカードは `data-game="game_kanji_blast"`。game_publish で公開制御
 - テーブル未作成時も白画面にならず「データがまだ準備できてない」トーストを出す
-- 実行順: create_kanji_blast_tables.sql → seed_kanji_blast_data.sql（Dashboard SQL Editor）
+- 実行順（新規DB）: create_kanji_blast_tables.sql → seed_kanji_blast_data.sql
+- 既存DBへの追加マイグレーション（Dashboard SQL Editor）:
+  1. alter_kanji_recipes_three_parts.sql（part_c追加・UNIQUE撤廃）
+  2. alter_kanji_plus_enhancement.sql（plus / 装備plus / plus_cap 追加）
+  3. seed_kanji_blast_data.sql を再実行（数字マスタ・レシピを反映）

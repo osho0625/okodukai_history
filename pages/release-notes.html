@@ -36,6 +36,17 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.47.0</span><span class="date">2026/09/15</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 数字1〜9を基本パーツに追加。数字も合成・分解できる（一+一=二、二+一=三、口+八=四 など、形の合成）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 同じ素材で複数の結果を作れる場合は選択式に（一+一 → 二 or 十）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: +値（強化値）を追加。合成すると+値が上がり（素材の合計+1）、分解すると分配される。+が多いほど少し強くなる（+1ごとに5%）</li>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 5ステージごとにフロアボス（王）。撃破で+値の上限が増え、フロアボスは合成漢字（+1付き）をドロップ。進むほど強い漢字が出る</li>
+    <li><span class="tag tag-infra">infra</span> kanji_inventory.plus / kanji_players に装備plus・plus_cap を追加。alter_kanji_plus_enhancement.sql 追加、数字マスタ・レシピを seed に追加、SW v347</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.46.1</span><span class="date">2026/09/15</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 3つの漢字を同時に合体できるように（口+口+口=品、日+日+日=晶、木+木+木=森、口+日+日=唱）。手持ちで2〜3つ選んで合体</li>

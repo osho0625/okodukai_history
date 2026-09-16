@@ -67,15 +67,18 @@ CREATE POLICY "Allow all" ON kanji_recipes FOR ALL USING (true) WITH CHECK (true
 --    created_by_device で「作った端末」を記録（削除制御用）。
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS kanji_players (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name              TEXT NOT NULL,           -- 子供の名前（表示用）
-  equipped_shot     TEXT,                    -- 装備中ショット漢字
-  equipped_special  TEXT,                    -- 装備中必殺技漢字
-  best_score        INT  NOT NULL DEFAULT 0, -- STGハイスコア
-  max_stage         INT  NOT NULL DEFAULT 1, -- 到達最大ステージ
-  created_by_device TEXT,                    -- 作成端末ID（push_device_id）
-  created_at        TIMESTAMPTZ DEFAULT now(),
-  updated_at        TIMESTAMPTZ DEFAULT now()
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name                  TEXT NOT NULL,           -- 子供の名前（表示用）
+  equipped_shot         TEXT,                    -- 装備中ショット漢字
+  equipped_shot_plus    INT  NOT NULL DEFAULT 0, -- 装備中ショットの+値
+  equipped_special      TEXT,                    -- 装備中必殺技漢字
+  equipped_special_plus INT  NOT NULL DEFAULT 0, -- 装備中必殺技の+値
+  best_score            INT  NOT NULL DEFAULT 0, -- STGハイスコア
+  max_stage             INT  NOT NULL DEFAULT 1, -- 到達最大ステージ
+  plus_cap              INT  NOT NULL DEFAULT 3, -- +値の上限（フロアボスで増加）
+  created_by_device     TEXT,                    -- 作成端末ID（push_device_id）
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
 );
 
 ALTER TABLE kanji_players ENABLE ROW LEVEL SECURITY;
@@ -90,6 +93,7 @@ CREATE TABLE IF NOT EXISTS kanji_inventory (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id         UUID NOT NULL REFERENCES kanji_players(id) ON DELETE CASCADE,
   char              TEXT NOT NULL REFERENCES kanji_master(char),
+  plus              INT  NOT NULL DEFAULT 0,  -- 強化値（+0〜plus_cap）
   created_by_device TEXT,
   created_at        TIMESTAMPTZ DEFAULT now()
 );
