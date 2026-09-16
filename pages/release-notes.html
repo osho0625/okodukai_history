@@ -36,6 +36,16 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.46.1</span><span class="date">2026/09/15</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 3つの漢字を同時に合体できるように（口+口+口=品、日+日+日=晶、木+木+木=森、口+日+日=唱）。手持ちで2〜3つ選んで合体</li>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 同じ漢字に複数の合体レシピを許可（森=木+林 でも 木+木+木 でも可）。分解は画数が大きいパーツを含むレシピを優先</li>
+    <li><span class="tag tag-feat">feat</span> 漢字合体ブラスト: 基本パーツ同士の合体レシピを追加（一+一=十、口+一=日）</li>
+    <li><span class="tag tag-infra">infra</span> kanji_recipes に part_c 列を追加、UNIQUE(result_char) を撤廃。sql/alter_kanji_recipes_three_parts.sql 追加、SW v346</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.46.0</span><span class="date">2026/09/15</span></div>
   <ul>
     <li><span class="tag tag-feat">NEW</span> ゲームセンターに「💥漢字合体ブラスト」追加。縦スクロールSTGでボスを倒すと漢字パーツがドロップ、集めた漢字をレシピで合体（口+十=田、木+木=林 等）・分解して育てる</li>

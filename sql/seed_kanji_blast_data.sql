@@ -50,14 +50,23 @@ INSERT INTO kanji_master (char, strokes, kentei_level, is_part, readings) VALUES
 ('岩', 8,  '9',  false, '[{"type":"音","kana":"ガン","display":"ガン"},{"type":"訓","kana":"いわ","display":"いわ"}]'),
 ('品', 9,  '9',  false, '[{"type":"音","kana":"ヒン","display":"ヒン"},{"type":"訓","kana":"しな","display":"しな"}]'),
 ('晶', 12, '準1', false, '[{"type":"音","kana":"ショウ","display":"ショウ"}]'),
-('鳴', 14, '8',  false, '[{"type":"音","kana":"メイ","display":"メイ"},{"type":"訓","kana":"な.く","display":"鳴く"},{"type":"訓","kana":"な.る","display":"鳴る"},{"type":"訓","kana":"な.らす","display":"鳴らす"}]')
+('鳴', 14, '8',  false, '[{"type":"音","kana":"メイ","display":"メイ"},{"type":"訓","kana":"な.く","display":"鳴く"},{"type":"訓","kana":"な.る","display":"鳴る"},{"type":"訓","kana":"な.らす","display":"鳴らす"}]'),
+('唱', 11, '5',  false, '[{"type":"音","kana":"ショウ","display":"ショウ"},{"type":"訓","kana":"とな.える","display":"唱える"}]')
 ON CONFLICT (char) DO NOTHING;
 
 -- ------------------------------------------------------------
--- 合体レシピ（part_a + part_b = result_char）
--- すべて上のマスタに存在する漢字で構成。
+-- 合体レシピ（part_a + part_b (+ part_c) = result_char）
+-- 2素材は part_c=NULL。同じ結果に複数レシピを許す（森=木+林 / 木+木+木）。
+-- すべて上のマスタに存在する漢字で構成すること（FK制約）。
 -- ------------------------------------------------------------
+-- レシピは共通マスタデータ。part_c=NULL 行は ON CONFLICT で重複検知できない
+-- （NULLは一意比較で不一致扱い）ため、冪等性確保のため一旦全削除して入れ直す。
+DELETE FROM kanji_recipes;
+
+-- 2素材レシピ
 INSERT INTO kanji_recipes (result_char, part_a, part_b) VALUES
+('十', '一', '一'),   -- 一＋一＝十
+('日', '口', '一'),   -- 口＋一＝日
 ('林', '木', '木'),   -- 木＋木＝林
 ('森', '木', '林'),   -- 木＋林＝森
 ('炎', '火', '火'),   -- 火＋火＝炎
@@ -68,7 +77,11 @@ INSERT INTO kanji_recipes (result_char, part_a, part_b) VALUES
 ('休', '人', '木'),   -- 人＋木＝休
 ('畑', '火', '田'),   -- 火＋田＝畑
 ('岩', '山', '石'),   -- 山＋石＝岩
-('品', '口', '口'),   -- 口＋口＝品
-('晶', '日', '品'),   -- 日＋品＝晶
-('鳴', '口', '鳥')    -- 口＋鳥＝鳴
-ON CONFLICT (result_char) DO NOTHING;
+('鳴', '口', '鳥');   -- 口＋鳥＝鳴
+
+-- 3素材レシピ
+INSERT INTO kanji_recipes (result_char, part_a, part_b, part_c) VALUES
+('品', '口', '口', '口'),   -- 口＋口＋口＝品
+('晶', '日', '日', '日'),   -- 日＋日＋日＝晶
+('森', '木', '木', '木'),   -- 木＋木＋木＝森（森=木+林 と併存）
+('唱', '口', '日', '日');   -- 口＋日＋日＝唱

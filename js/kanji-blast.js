@@ -23,8 +23,8 @@ const DEVICE_ID = getDeviceId();
 // --- グローバル状態 ---
 let MASTER = {};      // char -> {char, strokes, kentei_level, readings, is_part}
 let RECIPES = [];     // {result_char, part_a, part_b}
-let RECIPE_BY_RESULT = {}; // result_char -> recipe
-let RECIPE_BY_PARTS = {};  // "a|b"(sorted) -> result_char
+let RECIPE_BY_RESULT = {}; // result_char -> [ [parts...], ... ]（複数レシピ可）
+let RECIPE_BY_PARTS = {};  // "a|b|c"(sorted) -> result_char
 
 let player = null;    // 現在のプレイヤー行
 let hand = [];        // 手持ち [{id, char}]
@@ -75,13 +75,36 @@ async function loadMaster() {
     MASTER[k.char] = k;
   });
   RECIPES = r || [];
+  RECIPE_BY_RESULT = {};
+  RECIPE_BY_PARTS = {};
   RECIPES.forEach(rc => {
-    RECIPE_BY_RESULT[rc.result_char] = rc;
-    RECIPE_BY_PARTS[partKey(rc.part_a, rc.part_b)] = rc.result_char;
+    const parts = recipeParts(rc);
+    // 同じ結果に複数レシピを許す → 配列で保持
+    (RECIPE_BY_RESULT[rc.result_char] = RECIPE_BY_RESULT[rc.result_char] || []).push(parts);
+    RECIPE_BY_PARTS[partKey(parts)] = rc.result_char;
   });
 }
 
-function partKey(a, b) { return [a, b].sort().join('|'); }
+// レシピ行から素材配列を取り出す（part_c は任意）
+function recipeParts(rc) {
+  return [rc.part_a, rc.part_b, rc.part_c].filter(Boolean);
+}
+
+// 素材配列 → ソート済みキー（順不同で一致判定）
+function partKey(parts) { return parts.slice().sort().join('|'); }
+
+// パーツ配列に含まれる最大画数（分解の優先度に使用）
+function partsMaxStroke(parts) {
+  return parts.reduce((m, c) => Math.max(m, (MASTER[c] && MASTER[c].strokes) || 0), 0);
+}
+
+// result_char の分解先レシピを1つ選ぶ。
+// 「画数が大きいパーツを含むレシピ」を優先（例: 森 → 木+林 を 木+木+木 より優先）。
+function chooseSplitRecipe(char) {
+  const list = RECIPE_BY_RESULT[char];
+  if (!list || list.length === 0) return null;
+  return list.slice().sort((a, b) => partsMaxStroke(b) - partsMaxStroke(a))[0];
+}
 
 // ------------------------------------------------------------
 // 画面遷移
@@ -365,7 +388,7 @@ function toggleSelect(id) {
   const idx = selected.indexOf(id);
   if (idx >= 0) { selected.splice(idx, 1); }
   else {
-    if (selected.length >= 2) selected.shift(); // 最大2つ
+    if (selected.length >= 3) selected.shift(); // 最大3つ
     selected.push(id);
   }
   renderInventory();
@@ -378,15 +401,15 @@ function selectedChars() {
 function updateRecipePreview() {
   const pv = document.getElementById('recipePreview');
   const chars = selectedChars();
-  if (chars.length === 2) {
-    const result = RECIPE_BY_PARTS[partKey(chars[0], chars[1])];
+  if (chars.length >= 2) {
+    const result = RECIPE_BY_PARTS[partKey(chars)];
+    const joined = chars.join(' ＋ ');
     pv.textContent = result
-      ? (chars[0] + ' ＋ ' + chars[1] + ' → ' + result + '（⚔' + kanjiPower(result) + '）')
-      : (chars[0] + ' ＋ ' + chars[1] + ' → ？（レシピなし）');
+      ? (joined + ' → ' + result + '（⚔' + kanjiPower(result) + '）')
+      : (joined + ' → ？（レシピなし）');
   } else if (chars.length === 1) {
-    const c = chars[0];
-    const rc = RECIPE_BY_RESULT[c];
-    pv.textContent = rc ? (c + ' → ' + rc.part_a + ' ＋ ' + rc.part_b + ' に分解できる') : (c + '（これ以上分解できない）');
+    const rc = chooseSplitRecipe(chars[0]);
+    pv.textContent = rc ? (chars[0] + ' → ' + rc.join(' ＋ ') + ' に分解できる') : (chars[0] + '（これ以上分解できない）');
   } else {
     pv.textContent = '';
   }
@@ -394,10 +417,10 @@ function updateRecipePreview() {
 
 function updateInvButtons() {
   const chars = selectedChars();
-  const two = chars.length === 2;
+  const multi = chars.length >= 2;
   const one = chars.length === 1;
-  document.getElementById('btnMerge').disabled = !(two && RECIPE_BY_PARTS[partKey(chars[0], chars[1])]);
-  document.getElementById('btnSplit').disabled = !(one && RECIPE_BY_RESULT[chars[0]]);
+  document.getElementById('btnMerge').disabled = !(multi && RECIPE_BY_PARTS[partKey(chars)]);
+  document.getElementById('btnSplit').disabled = !(one && chooseSplitRecipe(chars[0]));
   document.getElementById('btnEquipShot').disabled = !one;
   document.getElementById('btnEquipSpecial').disabled = !one;
   document.getElementById('btnRelease').disabled = !one;
@@ -406,8 +429,8 @@ function updateInvButtons() {
 // 合体: 選択2つを消して結果1つを追加
 async function doMerge() {
   const chars = selectedChars();
-  if (chars.length !== 2) return;
-  const result = RECIPE_BY_PARTS[partKey(chars[0], chars[1])];
+  if (chars.length < 2) return;
+  const result = RECIPE_BY_PARTS[partKey(chars)];
   if (!result) { toast('このくみあわせは合体できないよ'); return; }
   const ids = selected.slice();
   await client.from('kanji_inventory').delete().in('id', ids);
@@ -425,17 +448,21 @@ async function doMerge() {
 async function doSplit() {
   const chars = selectedChars();
   if (chars.length !== 1) return;
-  const rc = RECIPE_BY_RESULT[chars[0]];
-  if (!rc) { toast('これ以上分解できないよ'); return; }
-  if (hand.length + 1 > MAX_HAND) { toast('手持ちがいっぱい。分解すると1つ増えるよ'); return; }
+  const parts = chooseSplitRecipe(chars[0]); // 画数が大きいパーツを含むレシピを優先
+  if (!parts) { toast('これ以上分解できないよ'); return; }
+  // 1つ消えて parts.length 個増える → 差分（parts.length - 1）ぶん空きが要る
+  if (hand.length - 1 + parts.length > MAX_HAND) {
+    toast('手持ちがいっぱい。分解すると' + (parts.length - 1) + 'つ増えるよ');
+    return;
+  }
   const id = selected[0];
   await client.from('kanji_inventory').delete().eq('id', id);
-  const rows = [rc.part_a, rc.part_b].map(c => ({ player_id: player.id, char: c, created_by_device: DEVICE_ID }));
+  const rows = parts.map(c => ({ player_id: player.id, char: c, created_by_device: DEVICE_ID }));
   const { data } = await client.from('kanji_inventory').insert(rows).select();
   hand = hand.filter(h => h.id !== id);
   (data || []).forEach(d => hand.push({ id: d.id, char: d.char }));
   selected = [];
-  toast('🔨 ' + rc.part_a + ' と ' + rc.part_b + ' にわけた');
+  toast('🔨 ' + parts.join(' と ') + ' にわけた');
   renderInventory();
 }
 
