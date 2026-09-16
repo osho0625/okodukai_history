@@ -24,7 +24,7 @@ const DEVICE_ID = getDeviceId();
 let MASTER = {};      // char -> {char, strokes, kentei_level, readings, is_part}
 let RECIPES = [];     // {result_char, part_a, part_b}
 let RECIPE_BY_RESULT = {}; // result_char -> [ [parts...], ... ]（複数レシピ可）
-let RECIPE_BY_PARTS = {};  // "a|b|c"(sorted) -> result_char
+let RECIPE_BY_PARTS = {};  // "a|b|c"(sorted) -> [result_char, ...]（選択式）
 
 let player = null;    // 現在のプレイヤー行
 let hand = [];        // 手持ち [{id, char}]
@@ -81,7 +81,10 @@ async function loadMaster() {
     const parts = recipeParts(rc);
     // 同じ結果に複数レシピを許す → 配列で保持
     (RECIPE_BY_RESULT[rc.result_char] = RECIPE_BY_RESULT[rc.result_char] || []).push(parts);
-    RECIPE_BY_PARTS[partKey(parts)] = rc.result_char;
+    // 同じ素材の組み合わせが複数結果を持つ場合がある（選択式）→ 配列で保持
+    const k = partKey(parts);
+    if (!RECIPE_BY_PARTS[k]) RECIPE_BY_PARTS[k] = [];
+    if (!RECIPE_BY_PARTS[k].includes(rc.result_char)) RECIPE_BY_PARTS[k].push(rc.result_char);
   });
 }
 
@@ -219,7 +222,7 @@ async function reloadPlayerData() {
     client.from('kanji_inventory').select('*').eq('player_id', player.id).order('created_at'),
     client.from('kanji_dex').select('*').eq('player_id', player.id)
   ]);
-  hand = (inv || []).map(r => ({ id: r.id, char: r.char }));
+  hand = (inv || []).map(r => ({ id: r.id, char: r.char, plus: r.plus || 0 }));
   dex = (dx || []).map(r => ({ char: r.char, reading: r.reading }));
   selected = [];
 }
@@ -255,12 +258,17 @@ function overallBonus() {
   return 1 + dexCharCount() * 0.02;
 }
 
-function kanjiPower(char) {
+// plus: 強化値（+値）。+1ごとに×1.05のバフ
+function kanjiPower(char, plus) {
   const m = MASTER[char];
   if (!m) return 0;
+  const p = plus || 0;
   const base = m.strokes * kenteiFactor(m.kentei_level) * (1 + unlockedReadingCount(char) * 0.1);
-  return Math.round(base * overallBonus());
+  return Math.round(base * overallBonus() * (1 + p * 0.05));
 }
+
+// +値の表示用（+0は空文字）
+function plusLabel(plus) { return (plus && plus > 0) ? ('+' + plus) : ''; }
 
 // ------------------------------------------------------------
 // 読み仮名の判定
@@ -345,13 +353,14 @@ function refreshMenu() {
   document.getElementById('menuPlayerName').textContent = '🧒 ' + player.name;
   document.getElementById('menuStats').textContent =
     'ハイスコア ' + (player.best_score || 0) + ' ／ 図鑑 ' + dexCharCount() + '種類 ／ 手持ち ' + hand.length + '/' + MAX_HAND;
-  setEquipDisplay('Shot', player.equipped_shot);
-  setEquipDisplay('Special', player.equipped_special);
+  setEquipDisplay('Shot', player.equipped_shot, player.equipped_shot_plus);
+  setEquipDisplay('Special', player.equipped_special, player.equipped_special_plus);
 }
 
-function setEquipDisplay(slot, char) {
-  document.getElementById('equip' + slot + 'Char').textContent = char || '-';
-  document.getElementById('equip' + slot + 'Pow').textContent = char ? ('⚔ ' + kanjiPower(char)) : '';
+function setEquipDisplay(slot, char, plus) {
+  const p = plus || 0;
+  document.getElementById('equip' + slot + 'Char').textContent = char ? (char + plusLabel(p)) : '-';
+  document.getElementById('equip' + slot + 'Pow').textContent = char ? ('⚔ ' + kanjiPower(char, p)) : '';
 }
 
 // ------------------------------------------------------------
@@ -370,12 +379,12 @@ function renderInventory() {
       const isSel = selected.includes(item.id);
       cell.className = 'kanji-cell' + (isSel ? ' selected' : '');
       const equipBadge =
-        (player.equipped_shot === item.char ? '🔫' : '') +
-        (player.equipped_special === item.char ? '💥' : '');
+        (player.equipped_shot === item.char && (player.equipped_shot_plus || 0) === item.plus ? '🔫' : '') +
+        (player.equipped_special === item.char && (player.equipped_special_plus || 0) === item.plus ? '💥' : '');
       cell.innerHTML =
         '<div class="kc-badge">' + equipBadge + '</div>' +
-        '<div class="kc-char">' + item.char + '</div>' +
-        '<div class="kc-pow">⚔' + kanjiPower(item.char) + '</div>';
+        '<div class="kc-char">' + item.char + '<span style="font-size:0.5em;color:#ffa94d;">' + plusLabel(item.plus) + '</span></div>' +
+        '<div class="kc-pow">⚔' + kanjiPower(item.char, item.plus) + '</div>';
       cell.onclick = () => toggleSelect(item.id);
     }
     grid.appendChild(cell);
@@ -398,18 +407,44 @@ function selectedChars() {
   return selected.map(id => (hand.find(h => h.id === id) || {}).char).filter(Boolean);
 }
 
+function selectedItems() {
+  return selected.map(id => hand.find(h => h.id === id)).filter(Boolean);
+}
+
+// 合成後の+値 = 素材の+合計 + 1、plus_cap で上限クリップ
+function mergedPlus(items) {
+  const sum = items.reduce((s, it) => s + (it.plus || 0), 0) + 1;
+  const cap = (player && player.plus_cap) || 3;
+  return Math.min(sum, cap);
+}
+
+// 分解時の各素材の+ = floor((結果の+ - 1) / 素材数)（端数切り捨て、0未満は0）
+function splitPlus(resultPlus, partCount) {
+  return Math.max(0, Math.floor(((resultPlus || 0) - 1) / partCount));
+}
+
 function updateRecipePreview() {
   const pv = document.getElementById('recipePreview');
-  const chars = selectedChars();
-  if (chars.length >= 2) {
-    const result = RECIPE_BY_PARTS[partKey(chars)];
-    const joined = chars.join(' ＋ ');
-    pv.textContent = result
-      ? (joined + ' → ' + result + '（⚔' + kanjiPower(result) + '）')
-      : (joined + ' → ？（レシピなし）');
-  } else if (chars.length === 1) {
+  const items = selectedItems();
+  const chars = items.map(it => it.char);
+  if (items.length >= 2) {
+    const results = RECIPE_BY_PARTS[partKey(chars)];
+    const joined = items.map(it => it.char + plusLabel(it.plus)).join(' ＋ ');
+    if (results && results.length) {
+      const np = mergedPlus(items);
+      const outs = results.map(r => r + plusLabel(np) + '（⚔' + kanjiPower(r, np) + '）').join(' / ');
+      pv.textContent = joined + ' → ' + outs + (results.length > 1 ? '（えらべる）' : '');
+    } else {
+      pv.textContent = joined + ' → ？（レシピなし）';
+    }
+  } else if (items.length === 1) {
     const rc = chooseSplitRecipe(chars[0]);
-    pv.textContent = rc ? (chars[0] + ' → ' + rc.join(' ＋ ') + ' に分解できる') : (chars[0] + '（これ以上分解できない）');
+    if (rc) {
+      const sp = splitPlus(items[0].plus, rc.length);
+      pv.textContent = chars[0] + plusLabel(items[0].plus) + ' → ' + rc.map(c => c + plusLabel(sp)).join(' ＋ ') + ' に分解できる';
+    } else {
+      pv.textContent = chars[0] + '（これ以上分解できない）';
+    }
   } else {
     pv.textContent = '';
   }
@@ -419,82 +454,111 @@ function updateInvButtons() {
   const chars = selectedChars();
   const multi = chars.length >= 2;
   const one = chars.length === 1;
-  document.getElementById('btnMerge').disabled = !(multi && RECIPE_BY_PARTS[partKey(chars)]);
+  const results = multi ? RECIPE_BY_PARTS[partKey(chars)] : null;
+  document.getElementById('btnMerge').disabled = !(results && results.length);
   document.getElementById('btnSplit').disabled = !(one && chooseSplitRecipe(chars[0]));
   document.getElementById('btnEquipShot').disabled = !one;
   document.getElementById('btnEquipSpecial').disabled = !one;
   document.getElementById('btnRelease').disabled = !one;
 }
 
-// 合体: 選択2つを消して結果1つを追加
+// 合体: 選択した素材（2〜3）を消して結果1つを追加。
+// 同じ組み合わせで複数結果がある場合は選択式。+値 = 素材+合計+1（上限クリップ）。
 async function doMerge() {
-  const chars = selectedChars();
-  if (chars.length < 2) return;
-  const result = RECIPE_BY_PARTS[partKey(chars)];
-  if (!result) { toast('このくみあわせは合体できないよ'); return; }
+  const items = selectedItems();
+  if (items.length < 2) return;
+  const chars = items.map(it => it.char);
+  const results = RECIPE_BY_PARTS[partKey(chars)];
+  if (!results || !results.length) { toast('このくみあわせは合体できないよ'); return; }
+
+  let result = results[0];
+  if (results.length > 1) {
+    result = pickMergeResult(results); // 選択UI
+    if (!result) return; // キャンセル
+  }
+  const np = mergedPlus(items);
   const ids = selected.slice();
   await client.from('kanji_inventory').delete().in('id', ids);
   const { data } = await client.from('kanji_inventory')
-    .insert({ player_id: player.id, char: result, created_by_device: DEVICE_ID })
+    .insert({ player_id: player.id, char: result, plus: np, created_by_device: DEVICE_ID })
     .select().single();
   hand = hand.filter(h => !ids.includes(h.id));
-  if (data) hand.push({ id: data.id, char: data.char });
+  if (data) hand.push({ id: data.id, char: data.char, plus: data.plus || 0 });
   selected = [];
-  toast('🎉 ' + result + ' ができた！');
+  toast('🎉 ' + result + plusLabel(np) + ' ができた！');
   renderInventory();
 }
 
-// 分解: 選択1つを素材2つに戻す
+// 複数結果からどれを作るか選ばせる（シンプルにconfirm連鎖 or prompt）
+function pickMergeResult(results) {
+  // 例: 「二」か「十」→ 数字で選択
+  const msg = 'どれを作る？\n' + results.map((r, i) => (i + 1) + ': ' + r).join('\n') + '\n\n番号を入力してね';
+  const ans = prompt(msg, '1');
+  if (ans === null) return null;
+  const idx = parseInt(ans, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= results.length) { toast('番号がちがうよ'); return null; }
+  return results[idx];
+}
+
+// 分解: 選択1つを素材（2〜3）に戻す。+値は (結果+ - 1)/素材数 を端数切り捨てで配分。
 async function doSplit() {
-  const chars = selectedChars();
-  if (chars.length !== 1) return;
-  const parts = chooseSplitRecipe(chars[0]); // 画数が大きいパーツを含むレシピを優先
+  const items = selectedItems();
+  if (items.length !== 1) return;
+  const src = items[0];
+  const parts = chooseSplitRecipe(src.char); // 画数が大きいパーツを含むレシピを優先
   if (!parts) { toast('これ以上分解できないよ'); return; }
   // 1つ消えて parts.length 個増える → 差分（parts.length - 1）ぶん空きが要る
   if (hand.length - 1 + parts.length > MAX_HAND) {
     toast('手持ちがいっぱい。分解すると' + (parts.length - 1) + 'つ増えるよ');
     return;
   }
-  const id = selected[0];
+  const sp = splitPlus(src.plus, parts.length);
+  const id = src.id;
   await client.from('kanji_inventory').delete().eq('id', id);
-  const rows = parts.map(c => ({ player_id: player.id, char: c, created_by_device: DEVICE_ID }));
+  const rows = parts.map(c => ({ player_id: player.id, char: c, plus: sp, created_by_device: DEVICE_ID }));
   const { data } = await client.from('kanji_inventory').insert(rows).select();
   hand = hand.filter(h => h.id !== id);
-  (data || []).forEach(d => hand.push({ id: d.id, char: d.char }));
+  (data || []).forEach(d => hand.push({ id: d.id, char: d.char, plus: d.plus || 0 }));
   selected = [];
-  toast('🔨 ' + parts.join(' と ') + ' にわけた');
+  toast('🔨 ' + parts.map(c => c + plusLabel(sp)).join(' と ') + ' にわけた');
   renderInventory();
 }
 
-// 装備
+// 装備（char と +値の両方を保存）
 async function doEquip(slot) {
-  const chars = selectedChars();
-  if (chars.length !== 1) return;
-  const char = chars[0];
+  const items = selectedItems();
+  if (items.length !== 1) return;
+  const it = items[0];
   const col = slot === 'shot' ? 'equipped_shot' : 'equipped_special';
-  const upd = {}; upd[col] = char;
+  const pcol = col + '_plus';
+  const upd = {}; upd[col] = it.char; upd[pcol] = it.plus || 0;
   await client.from('kanji_players').update(upd).eq('id', player.id);
-  player[col] = char;
-  toast((slot === 'shot' ? '🔫' : '💥') + ' ' + char + ' をそうびした');
+  player[col] = it.char; player[pcol] = it.plus || 0;
+  toast((slot === 'shot' ? '🔫' : '💥') + ' ' + it.char + plusLabel(it.plus) + ' をそうびした');
   renderInventory();
 }
 
 // にがす
 async function doRelease() {
-  const chars = selectedChars();
-  if (chars.length !== 1) return;
-  const id = selected[0];
-  const item = hand.find(h => h.id === id);
-  if (!confirm(item.char + ' をにがす？')) return;
+  const items = selectedItems();
+  if (items.length !== 1) return;
+  const item = items[0];
+  const id = item.id;
+  if (!confirm(item.char + plusLabel(item.plus) + ' をにがす？')) return;
   await client.from('kanji_inventory').delete().eq('id', id);
-  // 装備中なら外す
+  // 同じ char+plus の在庫がこれ1枚だけなら、装備からも外す
+  const sameStock = hand.filter(h => h.char === item.char && h.plus === item.plus).length;
   const upd = {};
-  if (player.equipped_shot === item.char && hand.filter(h => h.char === item.char).length <= 1) upd.equipped_shot = null;
-  if (player.equipped_special === item.char && hand.filter(h => h.char === item.char).length <= 1) upd.equipped_special = null;
+  if (player.equipped_shot === item.char && (player.equipped_shot_plus || 0) === item.plus && sameStock <= 1) {
+    upd.equipped_shot = null; upd.equipped_shot_plus = 0;
+  }
+  if (player.equipped_special === item.char && (player.equipped_special_plus || 0) === item.plus && sameStock <= 1) {
+    upd.equipped_special = null; upd.equipped_special_plus = 0;
+  }
   if (Object.keys(upd).length) { await client.from('kanji_players').update(upd).eq('id', player.id); Object.assign(player, upd); }
   hand = hand.filter(h => h.id !== id);
   selected = [];
-  toast('👋 ' + item.char + ' をにがした');
+  toast('👋 ' + item.char + plusLabel(item.plus) + ' をにがした');
   renderInventory();
 }
 
@@ -577,14 +641,19 @@ let stg = null;
 
 function stgConfig() {
   const shotChar = player.equipped_shot;
+  const shotPlus = player.equipped_shot_plus || 0;
   const specialChar = player.equipped_special;
+  const specialPlus = player.equipped_special_plus || 0;
   return {
-    shotChar,
-    specialChar,
-    shotPower: shotChar ? kanjiPower(shotChar) : 5,       // 弾の威力
-    specialPower: specialChar ? kanjiPower(specialChar) * 6 : 30 // 必殺の威力
+    shotChar, shotPlus,
+    specialChar, specialPlus,
+    shotPower: shotChar ? kanjiPower(shotChar, shotPlus) : 5,             // 弾の威力
+    specialPower: specialChar ? kanjiPower(specialChar, specialPlus) * 6 : 30 // 必殺の威力
   };
 }
+
+// フロアボス判定: 5ステージごと（5,10,15…）が強ボス
+function isFloorBossStage(stage) { return stage % 5 === 0; }
 
 function startStg() {
   if (!player) return;
@@ -673,10 +742,12 @@ function spawnStage() {
 }
 
 function spawnBoss() {
-  const hp = 60 + stg.stage * 40;
+  const floor = isFloorBossStage(stg.stage);
+  const hp = (60 + stg.stage * 40) * (floor ? 2.2 : 1);
   stg.boss = {
-    x: stg.w / 2, y: 70, r: 42, hp, maxHp: hp,
-    vx: 1.2 + stg.stage * 0.1, dir: 1, fireT: 40
+    x: stg.w / 2, y: 70, r: floor ? 52 : 42, hp, maxHp: hp,
+    vx: (1.2 + stg.stage * 0.1) * (floor ? 1.3 : 1), dir: 1, fireT: 40,
+    floor
   };
 }
 
@@ -772,17 +843,19 @@ function updateEntities() {
   stg.enemies = stg.enemies.filter(e => e.hp > 0);
 
   if (stg.boss && stg.boss.hp <= 0) {
-    stg.score += 100 + stg.stage * 20;
-    dropFromBoss(stg.boss.x, stg.boss.y);
-    for (let i = 0; i < 12; i++) addParticle(stg.boss.x, stg.boss.y, '#ffd27f');
+    const wasFloor = stg.boss.floor;
+    stg.score += (100 + stg.stage * 20) * (wasFloor ? 2 : 1);
+    dropFromBoss(stg.boss.x, stg.boss.y, wasFloor);
+    for (let i = 0; i < (wasFloor ? 24 : 12); i++) addParticle(stg.boss.x, stg.boss.y, wasFloor ? '#ff6ec7' : '#ffd27f');
     stg.boss = null;
+    if (wasFloor) raisePlusCap();
   }
 
   // ドロップ落下 + 取得
   stg.drops.forEach(d => { d.y += 1.5; });
   stg.drops = stg.drops.filter(d => {
     if (d.y > h + 20) return false;
-    if (dist(d, stg.player) < stg.player.r + d.r) { collectDrop(d.char); return false; }
+    if (dist(d, stg.player) < stg.player.r + d.r) { collectDrop(d.char, d.floor); return false; }
     return true;
   });
 
@@ -816,24 +889,48 @@ function onPlayerHit() {
   else toast('あと ' + _lives + ' 回！');
 }
 
-// ボスがパーツをドロップ（is_part の中からランダム）
-function dropFromBoss(x, y) {
-  const parts = Object.values(MASTER).filter(m => m.is_part).map(m => m.char);
-  if (parts.length === 0) return;
-  const char = parts[Math.floor(Math.random() * parts.length)];
-  stg.drops.push({ x, y, r: 16, char });
+// ボスがドロップ:
+//  - 通常ボス: 基本パーツ（is_part=true）からランダム
+//  - フロアボス: 合成漢字（is_part=false）。ステージが進むほど画数の高い漢字を落とす
+function dropFromBoss(x, y, floor) {
+  let pool;
+  if (floor) {
+    pool = Object.values(MASTER).filter(m => !m.is_part);
+    if (pool.length === 0) pool = Object.values(MASTER).filter(m => m.is_part);
+    // ステージ進行で解禁する画数上限（stage5→~10画, stage10→~14画 …）
+    const strokeCap = 6 + Math.floor(stg.stage / 5) * 4;
+    const filtered = pool.filter(m => m.strokes <= strokeCap);
+    if (filtered.length) pool = filtered;
+    // 画数の高いものを優先的に（後半ほど強い）
+    pool.sort((a, b) => b.strokes - a.strokes);
+    // 上位1/3から抽選
+    const top = pool.slice(0, Math.max(1, Math.ceil(pool.length / 3)));
+    pool = top;
+  } else {
+    pool = Object.values(MASTER).filter(m => m.is_part);
+  }
+  if (!pool.length) return;
+  const char = pool[Math.floor(Math.random() * pool.length)].char;
+  stg.drops.push({ x, y, r: 16, char, floor: !!floor });
 }
 
-async function collectDrop(char) {
+async function collectDrop(char, floor) {
   addParticle(stg.player.x, stg.player.y, '#a0ff9f');
-  // 手持ちに空きがあれば追加
   if (hand.length >= MAX_HAND) { toast('手持ちがいっぱい！ ' + char + ' はにげちゃった'); return; }
+  // フロアボスの合成漢字ドロップは +1 付きで手に入る（ちょっと強い）
+  const dropPlus = floor ? Math.min(1, (player.plus_cap || 3)) : 0;
   const { data } = await client.from('kanji_inventory')
-    .insert({ player_id: player.id, char, created_by_device: DEVICE_ID }).select().single();
-  if (data) hand.push({ id: data.id, char: data.char });
-  toast('🎁 ' + char + ' をゲット！');
-  // ボス撃破後、次ステージへ
+    .insert({ player_id: player.id, char, plus: dropPlus, created_by_device: DEVICE_ID }).select().single();
+  if (data) hand.push({ id: data.id, char: data.char, plus: data.plus || 0 });
+  toast('🎁 ' + char + plusLabel(dropPlus) + ' をゲット！');
   clearStageAdvance();
+}
+
+// フロアボス撃破で+値の上限を1上げる
+async function raisePlusCap() {
+  player.plus_cap = (player.plus_cap || 3) + 1;
+  await client.from('kanji_players').update({ plus_cap: player.plus_cap }).eq('id', player.id);
+  toast('⭐ フロアボス撃破！ +の上限が ' + player.plus_cap + ' になった！');
 }
 
 function clearStageAdvance() {
@@ -906,13 +1003,13 @@ function draw() {
     ctx.fillStyle = '#fff'; ctx.fillText('敵', e.x, e.y);
   });
 
-  // ボス
+  // ボス（フロアボスは紫で大きく、文字は「王」）
   if (stg.boss) {
     const bo = stg.boss;
-    ctx.fillStyle = '#ff5252';
+    ctx.fillStyle = bo.floor ? '#b14dff' : '#ff5252';
     ctx.beginPath(); ctx.arc(bo.x, bo.y, bo.r, 0, 7); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif';
-    ctx.fillText('鬼', bo.x, bo.y);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold ' + (bo.floor ? 48 : 40) + 'px sans-serif';
+    ctx.fillText(bo.floor ? '王' : '鬼', bo.x, bo.y);
   }
 
   // ドロップ（漢字）

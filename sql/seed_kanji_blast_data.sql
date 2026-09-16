@@ -16,6 +16,14 @@
 INSERT INTO kanji_master (char, strokes, kentei_level, is_part, readings) VALUES
 -- === 基本パーツ（ドロップ対象） ===
 ('一', 1, '10', true, '[{"type":"音","kana":"イチ","display":"イチ"},{"type":"音","kana":"イツ","display":"イツ"},{"type":"訓","kana":"ひと","display":"ひと"},{"type":"訓","kana":"ひと.つ","display":"一つ"}]'),
+('二', 2, '10', true, '[{"type":"音","kana":"ニ","display":"ニ"},{"type":"訓","kana":"ふた","display":"ふた"},{"type":"訓","kana":"ふた.つ","display":"二つ"}]'),
+('三', 3, '10', true, '[{"type":"音","kana":"サン","display":"サン"},{"type":"訓","kana":"み","display":"み"},{"type":"訓","kana":"み.つ","display":"三つ"},{"type":"訓","kana":"みっ.つ","display":"三つ"}]'),
+('四', 5, '10', true, '[{"type":"音","kana":"シ","display":"シ"},{"type":"訓","kana":"よ","display":"よ"},{"type":"訓","kana":"よっ.つ","display":"四つ"},{"type":"訓","kana":"よん","display":"よん"}]'),
+('五', 4, '10', true, '[{"type":"音","kana":"ゴ","display":"ゴ"},{"type":"訓","kana":"いつ","display":"いつ"},{"type":"訓","kana":"いつ.つ","display":"五つ"}]'),
+('六', 4, '10', true, '[{"type":"音","kana":"ロク","display":"ロク"},{"type":"訓","kana":"む","display":"む"},{"type":"訓","kana":"むっ.つ","display":"六つ"},{"type":"訓","kana":"むい","display":"むい"}]'),
+('七', 2, '10', true, '[{"type":"音","kana":"シチ","display":"シチ"},{"type":"訓","kana":"なな","display":"なな"},{"type":"訓","kana":"なな.つ","display":"七つ"},{"type":"訓","kana":"なの","display":"なの"}]'),
+('八', 2, '10', true, '[{"type":"音","kana":"ハチ","display":"ハチ"},{"type":"訓","kana":"や","display":"や"},{"type":"訓","kana":"やっ.つ","display":"八つ"},{"type":"訓","kana":"よう","display":"よう"}]'),
+('九', 2, '10', true, '[{"type":"音","kana":"キュウ","display":"キュウ"},{"type":"音","kana":"ク","display":"ク"},{"type":"訓","kana":"ここの","display":"ここの"},{"type":"訓","kana":"ここの.つ","display":"九つ"}]'),
 ('十', 2, '10', true, '[{"type":"音","kana":"ジュウ","display":"ジュウ"},{"type":"音","kana":"ジッ","display":"ジッ"},{"type":"訓","kana":"とお","display":"とお"},{"type":"訓","kana":"と","display":"と"}]'),
 ('口', 3, '10', true, '[{"type":"音","kana":"コウ","display":"コウ"},{"type":"音","kana":"ク","display":"ク"},{"type":"訓","kana":"くち","display":"くち"}]'),
 ('日', 4, '10', true, '[{"type":"音","kana":"ニチ","display":"ニチ"},{"type":"音","kana":"ジツ","display":"ジツ"},{"type":"訓","kana":"ひ","display":"ひ"},{"type":"訓","kana":"か","display":"か"}]'),
@@ -65,7 +73,10 @@ DELETE FROM kanji_recipes;
 
 -- 2素材レシピ
 INSERT INTO kanji_recipes (result_char, part_a, part_b) VALUES
-('十', '一', '一'),   -- 一＋一＝十
+('十', '一', '一'),   -- 一＋一＝十（一+一は 二/十 の選択式）
+('二', '一', '一'),   -- 一＋一＝二
+('三', '二', '一'),   -- 二＋一＝三（二+一+一 の別ルートは3素材で）
+('四', '口', '八'),   -- 口＋八＝四
 ('日', '口', '一'),   -- 口＋一＝日
 ('林', '木', '木'),   -- 木＋木＝林
 ('森', '木', '林'),   -- 木＋林＝森
@@ -84,4 +95,6 @@ INSERT INTO kanji_recipes (result_char, part_a, part_b, part_c) VALUES
 ('品', '口', '口', '口'),   -- 口＋口＋口＝品
 ('晶', '日', '日', '日'),   -- 日＋日＋日＝晶
 ('森', '木', '木', '木'),   -- 木＋木＋木＝森（森=木+林 と併存）
-('唱', '口', '日', '日');   -- 口＋日＋日＝唱
+('唱', '口', '日', '日'),   -- 口＋日＋日＝唱
+('三', '一', '一', '一'),   -- 一＋一＋一＝三
+('六', '一', '一', '八');   -- 一＋一＋八＝六
