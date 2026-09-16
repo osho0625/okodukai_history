@@ -20,8 +20,8 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 
 1. 縦STGで敵・ボスを倒す（自機ドラッグ移動＋自動連射、必殺技ボタン）
 2. ボス撃破で基本パーツ漢字がドロップ、取ると手持ち（最大10枠）に追加
-3. 合体パートでレシピに沿って漢字を合成（例: 口+十=田、木+木=林、日+月=明）
-4. 分解で合体漢字を素材2つに戻せる
+3. 合体パートでレシピに沿って漢字を合成（2〜3素材。例: 木+木=林、口+口+口=品）
+4. 分解で合体漢字を素材（2〜3個）に戻せる（画数が大きいパーツを含むレシピを優先）
 5. 不要な漢字は「にがす」で手持ちを空ける
 6. 漢字を「ショット」「必殺技」に1つずつ装備
 7. 読み仮名を入力→正解なら図鑑登録＆強化
@@ -66,8 +66,13 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 - is_part=true が敵ドロップ対象の基本パーツ
 
 ### kanji_recipes（合体レシピ・共通）
-- id UUID (PK), result_char / part_a / part_b（すべて kanji_master への FK）
-- UNIQUE(result_char)。合体・分解の双方向に使用
+- id UUID (PK), result_char / part_a / part_b / part_c（すべて kanji_master への FK）
+- part_c は NULL 可（2素材レシピ）。2〜3素材の合体に対応
+- 同じ result_char に複数レシピ可（例: 森=木+林 / 森=木+木+木）
+- 合体は素材の順不同一致（partKey でソート）。分解は「画数が大きいパーツを
+  含むレシピ」を優先（chooseSplitRecipe）
+- seed は冪等性のため `DELETE FROM kanji_recipes` 後に再投入する
+  （part_c=NULL 行は ON CONFLICT で重複検知できないため）
 
 ### kanji_players（子供ごとのセーブ）
 - id UUID (PK), name, equipped_shot, equipped_special, best_score, max_stage, created_by_device
@@ -89,10 +94,11 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 ## 初期データ（seed）
 
 - 基本パーツ19（一/十/口/日/月/木/火/水/田/力/人/目/土/女/子/大/山/石/鳥）
-- 合体漢字13（林/森/炎/明/男/相/好/休/畑/岩/品/晶/鳴）
-- レシピ13（木+木=林、木+林=森、火+火=炎、日+月=明、田+力=男、木+目=相、
-  女+子=好、人+木=休、火+田=畑、山+石=岩、口+口=品、日+品=晶、口+鳥=鳴）
-- レシピの part_a/part_b/result_char は必ず kanji_master に存在させること（FK制約）
+- 合体漢字14（林/森/炎/明/男/相/好/休/畑/岩/品/晶/鳴/唱）
+- 2素材レシピ: 一+一=十、口+一=日、木+木=林、木+林=森、火+火=炎、日+月=明、
+  田+力=男、木+目=相、女+子=好、人+木=休、火+田=畑、山+石=岩、口+鳥=鳴
+- 3素材レシピ: 口+口+口=品、日+日+日=晶、木+木+木=森、口+日+日=唱
+- レシピの part_a/part_b/part_c/result_char は必ず kanji_master に存在させること（FK制約）
 
 ## 注意点
 

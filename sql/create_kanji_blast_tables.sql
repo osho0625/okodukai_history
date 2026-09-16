@@ -39,16 +39,19 @@ CREATE POLICY "Allow all" ON kanji_master FOR ALL USING (true) WITH CHECK (true)
 
 -- ------------------------------------------------------------
 -- 2. 合体レシピ（共通）
---    part_a + part_b = result_char
---    合体・分解の双方向に使う。
+--    part_a + part_b (+ part_c) = result_char
+--    part_c は NULL 可（2素材レシピ）。合体・分解の双方向に使う。
+--    同じ result_char に複数レシピを許す（例: 森=木+林 / 森=木+木+木）。
+--    分解時は「画数が大きいパーツを含むレシピ」を優先する（アプリ層で選択）。
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS kanji_recipes (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   result_char  TEXT NOT NULL REFERENCES kanji_master(char),
   part_a       TEXT NOT NULL REFERENCES kanji_master(char),
   part_b       TEXT NOT NULL REFERENCES kanji_master(char),
+  part_c       TEXT REFERENCES kanji_master(char),
   created_at   TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (result_char)
+  UNIQUE (result_char, part_a, part_b, part_c)
 );
 
 CREATE INDEX IF NOT EXISTS idx_kanji_recipes_result ON kanji_recipes (result_char);
