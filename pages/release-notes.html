@@ -56,6 +56,15 @@ h1 { margin-bottom: 24px; color: #333; }
 </div>
 
 <div class="release">
+  <div><span class="ver">v2.46.0</span><span class="date">2026/09/15</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: ご褒美お小遣い・あそびチケットを「当日付与分で新たに達成した分のみ」付与する差分方式に変更</li>
+    <li><span class="tag tag-fix">fix</span> 自動ポイント付与: 過去の未付与分を一気に補填するリコンシリエーションを廃止（実績突合をやめ、二重付与リスクを排除）</li>
+    <li><span class="tag tag-infra">infra</span> auto-chore-points.js: checkAndGiveAllowance/checkAndIssuePageTickets を差分計算に変更、SW v346</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.45.0</span><span class="date">2026/09/15</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> ゲームセンターに「ことば落とし」追加。2〜8人ローカル対面、スマホを回して役職確認（親＋サポート vs 回答側）、秘密の言葉を雑談に紛れ込ませる心理戦。3分タイマー・お題5ジャンル・候補3つまで推理・答え合わせ判定、夜間制限・ゲーム公開設定対応、SW v343</li>

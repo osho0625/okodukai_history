@@ -102,8 +102,9 @@ async function main() {
   }
   const children = await childrenRes.json();
 
-  // 付与対象の子供IDを収集
+  // 付与対象の子供IDと、今回付与したポイント数を収集
   const affectedChildIds = new Set();
+  const addedPointsByChild = new Map(); // childId -> 今回付与した合計ポイント
 
   for (const rule of AUTO_CHORE_RULES) {
     // N日に1回の判定（dayOfYear % N === 0）
@@ -138,17 +139,19 @@ async function main() {
     if (insertRes.ok) {
       console.log(`✓ ${rule.childName}: ${rule.choreName} +${rule.points}pt`);
       affectedChildIds.add(child.id);
+      addedPointsByChild.set(child.id, (addedPointsByChild.get(child.id) || 0) + rule.points);
     } else {
       console.error(`Failed to insert for ${rule.childName}: ${insertRes.status}`);
     }
   }
 
-  // マイルストーンチェック＆お小遣い自動付与
+  // マイルストーンチェック＆お小遣い自動付与（今回付与分で新たに達成したご褒美のみ）
   for (const childId of affectedChildIds) {
     const child = children.find(c => c.id === childId);
     if (!child) continue;
-    await checkAndGiveAllowance(SUPABASE_URL, SUPABASE_KEY, child, children);
-    await checkAndIssuePageTickets(SUPABASE_URL, SUPABASE_KEY, child);
+    const addedPts = addedPointsByChild.get(child.id) || 0;
+    await checkAndGiveAllowance(SUPABASE_URL, SUPABASE_KEY, child, children, addedPts);
+    await checkAndIssuePageTickets(SUPABASE_URL, SUPABASE_KEY, child, addedPts);
   }
 
   console.log('Done.');
@@ -156,87 +159,65 @@ async function main() {
 
 // ============================================================
 // マイルストーンチェック＆お小遣い付与
+// 今回付与したポイント(addedPts)で新たに達成したマイルストーンのご褒美額のみを付与する。
+// 過去の未付与分を一気に補填するリコンシリエーションは行わない。
 // ============================================================
-async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildren) {
+async function checkAndGiveAllowance(supabaseUrl, supabaseKey, child, allChildren, addedPts) {
+  if (!addedPts || addedPts <= 0) return;
+
   // 全件取得用ヘッダー（Supabase REST APIデフォルト1000行制限を回避）
   const allHeaders = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Range': '0-99999' };
 
-  // 合計承認済みポイントを取得
+  // 現在の合計承認済みポイント（＝今回付与後の値）を取得
   const ptsRes = await fetch(
     `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
     { headers: allHeaders }
   );
   if (!ptsRes.ok && ptsRes.status !== 206) return;
   const ptsData = await ptsRes.json();
-  const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
+  const totalAfter = ptsData.reduce((s, r) => s + r.points, 0);
+  const totalBefore = totalAfter - addedPts;
 
-  // 期待されるお小遣い総額を計算（ポイント1〜totalPtsの全マイルストーン）
-  const expectedAllowance = calcExpectedAllowance(totalPts);
+  // 今回付与分で新たに超えたマイルストーンのご褒美額のみを計算
+  const reward = calcCumulativeAllowance(totalAfter) - calcCumulativeAllowance(totalBefore);
 
-  // 実際に入金されたお小遣い総額を取得（memo='ポイント表ご褒美'のtransactions合計）
-  const txRes = await fetch(
-    `${supabaseUrl}/rest/v1/transactions?child_id=eq.${child.id}&type=eq.add&memo=eq.ポイント表ご褒美&select=amount`,
-    { headers: allHeaders }
-  );
-  if (!txRes.ok && txRes.status !== 206) return;
-  const txData = await txRes.json();
-  const actualAllowance = txData.reduce((s, r) => s + r.amount, 0);
-
-  // 返済用アカウントの入金分も加算
-  const repayChild = allChildren.find(c => c.name === child.name + 'が返すお金');
-  let repayAllowance = 0;
-  if (repayChild) {
-    const repayRes = await fetch(
-      `${supabaseUrl}/rest/v1/transactions?child_id=eq.${repayChild.id}&type=eq.add&memo=like.ポイント表ご褒美%&select=amount`,
-      { headers: allHeaders }
-    );
-    if (repayRes.ok || repayRes.status === 206) {
-      const repayData = await repayRes.json();
-      repayAllowance = repayData.reduce((s, r) => s + r.amount, 0);
-    }
-  }
-
-  const totalActual = actualAllowance + repayAllowance;
-  const deficit = expectedAllowance - totalActual;
-
-  if (deficit <= 0) {
-    console.log(`  ${child.name}: お小遣い正常（期待=${expectedAllowance}円, 実績=${totalActual}円）`);
+  if (reward <= 0) {
+    console.log(`  ${child.name}: ご褒美なし（${totalBefore}pt → ${totalAfter}pt）`);
     return;
   }
 
-  console.log(`  ${child.name}: お小遣い不足 ${deficit}円 を入金（期待=${expectedAllowance}円, 実績=${totalActual}円）`);
+  console.log(`  ${child.name}: ご褒美 ${reward}円 を入金（${totalBefore}pt → ${totalAfter}pt）`);
 
   // 入金実行
+  const repayChild = allChildren.find(c => c.name === child.name + 'が返すお金');
   if (repayChild) {
-    const half = Math.floor(deficit / 2);
-    const remainder = deficit - half;
+    const half = Math.floor(reward / 2);
+    const remainder = reward - half;
 
     // 本人への入金
     const { balance: curBal } = await getBalance(supabaseUrl, supabaseKey, child.id);
-    const newBal = curBal + remainder;
-    await updateBalance(supabaseUrl, supabaseKey, child.id, newBal);
+    await updateBalance(supabaseUrl, supabaseKey, child.id, curBal + remainder);
     await insertTransaction(supabaseUrl, supabaseKey, child.id, remainder, 'ポイント表ご褒美');
 
     // 返済用アカウントへの入金
     const { balance: repBal } = await getBalance(supabaseUrl, supabaseKey, repayChild.id);
-    const newRepBal = repBal + half;
-    await updateBalance(supabaseUrl, supabaseKey, repayChild.id, newRepBal);
+    await updateBalance(supabaseUrl, supabaseKey, repayChild.id, repBal + half);
     await insertTransaction(supabaseUrl, supabaseKey, repayChild.id, half, `ポイント表ご褒美（${child.name}分）`);
 
     console.log(`    → 本人 +${remainder}円, 返済用 +${half}円`);
   } else {
     const { balance: curBal } = await getBalance(supabaseUrl, supabaseKey, child.id);
-    const newBal = curBal + deficit;
-    await updateBalance(supabaseUrl, supabaseKey, child.id, newBal);
-    await insertTransaction(supabaseUrl, supabaseKey, child.id, deficit, 'ポイント表ご褒美');
-    console.log(`    → +${deficit}円`);
+    await updateBalance(supabaseUrl, supabaseKey, child.id, curBal + reward);
+    await insertTransaction(supabaseUrl, supabaseKey, child.id, reward, 'ポイント表ご褒美');
+    console.log(`    → +${reward}円`);
   }
 }
 
 // ============================================================
-// お小遣い期待額を計算
+// 1〜totalPtsで達成したマイルストーンご褒美の累計額を計算
+// ご褒美額の差分は calcCumulativeAllowance(after) - calcCumulativeAllowance(before) で求める
 // ============================================================
-function calcExpectedAllowance(totalPts) {
+function calcCumulativeAllowance(totalPts) {
   let total = 0;
   for (let pt = 1; pt <= totalPts; pt++) {
     // 枚内のポイント位置（1-400）
@@ -287,51 +268,43 @@ async function insertTransaction(supabaseUrl, supabaseKey, childId, amount, memo
 }
 
 // ============================================================
-// 枚コンプリート時チケット発行チェック（リコンシリエーション）
+// 枚コンプリート時チケット発行チェック
+// 今回付与したポイント(addedPts)で新たに完了した枚数分のみチケットを発行する。
+// 過去分を一気に発行するリコンシリエーションは行わない。
 // ============================================================
 const TICKET_OWNERS = ['かいせい', 'はるちか', 'いろは'];
 
-async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child) {
+async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child, addedPts) {
   if (!TICKET_OWNERS.includes(child.name)) return;
+  if (!addedPts || addedPts <= 0) return;
 
   const allHeaders = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Range': '0-99999' };
 
-  // 合計承認済みポイントを取得
+  // 現在の合計承認済みポイント（＝今回付与後の値）を取得
   const ptsRes = await fetch(
     `${supabaseUrl}/rest/v1/chore_points?child_id=eq.${child.id}&status=eq.approved&select=points`,
     { headers: allHeaders }
   );
   if (!ptsRes.ok && ptsRes.status !== 206) return;
   const ptsData = await ptsRes.json();
-  const totalPts = ptsData.reduce((s, r) => s + r.points, 0);
-  const completedSheets = totalPts > 0 ? Math.floor(totalPts / 400) : 0;
-  if (completedSheets === 0) return;
+  const totalAfter = ptsData.reduce((s, r) => s + r.points, 0);
+  const totalBefore = totalAfter - addedPts;
 
-  // 枚コンプリートで発行されるべきチケット数（1枚完了につき60分×2枚）
-  const expectedTickets = completedSheets * 2;
-
-  // 実際に発行済みの60分チケット数を取得（memo/sourceがないので duration_minutes=60 のみでカウント）
-  // Note: ポーカーチップ交換でも60分チケットは発行されるため、完璧な区別は不可。
-  // ここでは発行済み60分チケットの総数が期待数以上なら何もしない簡易チェックのみ。
-  const ticketRes = await fetch(
-    `${supabaseUrl}/rest/v1/tickets?owner=eq.${encodeURIComponent(child.name)}&duration_minutes=eq.60&select=id`,
-    { headers: allHeaders }
-  );
-  if (!ticketRes.ok && ticketRes.status !== 206) return;
-  const ticketData = await ticketRes.json();
-  const actualTickets = ticketData.length;
-
-  if (actualTickets >= expectedTickets) {
-    console.log(`  ${child.name}: チケット正常（期待=${expectedTickets}枚, 実績=${actualTickets}枚）`);
+  // 今回付与分で新たに完了した枚数
+  const sheetsBefore = totalBefore > 0 ? Math.floor(totalBefore / 400) : 0;
+  const sheetsAfter = totalAfter > 0 ? Math.floor(totalAfter / 400) : 0;
+  const newSheets = sheetsAfter - sheetsBefore;
+  if (newSheets <= 0) {
+    console.log(`  ${child.name}: チケット発行なし（${totalBefore}pt → ${totalAfter}pt）`);
     return;
   }
 
-  const deficit = expectedTickets - actualTickets;
-  console.log(`  ${child.name}: チケット不足 ${deficit}枚 を発行（期待=${expectedTickets}枚, 実績=${actualTickets}枚）`);
+  // 1枚完了につき60分×2枚
+  const issueCount = newSheets * 2;
+  console.log(`  ${child.name}: 枚コンプリート ${newSheets}枚 → チケット ${issueCount}枚 発行（${totalBefore}pt → ${totalAfter}pt）`);
 
-  // 不足分を発行
   const rows = [];
-  for (let i = 0; i < deficit; i++) {
+  for (let i = 0; i < issueCount; i++) {
     rows.push({ owner: child.name, duration_minutes: 60 });
   }
   await fetch(`${supabaseUrl}/rest/v1/tickets`, {
@@ -344,7 +317,7 @@ async function checkAndIssuePageTickets(supabaseUrl, supabaseKey, child) {
     },
     body: JSON.stringify(rows)
   });
-  console.log(`    → +${deficit}枚 発行完了`);
+  console.log(`    → +${issueCount}枚 発行完了`);
 }
 
 // ============================================================

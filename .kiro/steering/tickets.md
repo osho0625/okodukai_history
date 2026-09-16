@@ -58,7 +58,7 @@ fileMatchPattern: "*ticket*"
 - 発行タイミング: addChorePoints(admin即承認時)、approvePoint(承認フロー)、approveFromTop(トップ画面承認)
 - 共通関数: `issuePageCompleteTickets(ownerName, totalBefore, totalAfter)` in js/common.js
 - 演出: 枚コンプリート演出（showSheetCompleteAnimation）→ チケットGETカード表示 → 次の枚遷移演出（showSheetTransition）
-- リコンシリエーション: scripts/auto-chore-points.jsのcronで期待枚数と実際の60分チケット数を比較、不足分を補填
+- 自動付与cron（scripts/auto-chore-points.js）: 当日付与したポイントで**新たに完了した枚数分のみ**チケットを発行（過去分を一気に補填するリコンシリエーションは廃止）
 - Discord通知 + Push通知（全端末）
 
 ## localStorage キー
