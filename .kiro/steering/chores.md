@@ -49,6 +49,15 @@ fileMatchPattern: "*chore*"
 DBに設定が無い場合はスクリプト内 `DEFAULT_AUTO_CHORE_CONFIG` を使用。
 手動実行（workflow_dispatch）で `force=true` を指定すると時刻判定をスキップして即時付与。
 
+### ご褒美・チケットの付与ロジック（差分方式）
+
+自動付与時のお小遣いご褒美・あそびチケットは、**当日付与したポイントで新たに達成した分のみ**を付与する：
+
+- お小遣い: `calcCumulativeAllowance(付与後pt) - calcCumulativeAllowance(付与前pt)` で新規到達マイルストーン分のみ入金
+- チケット: 付与前後の完了枚数差（`floor(pt/400)`）× 2枚のみ発行
+- **過去の未付与分を一気に補填するリコンシリエーションは廃止**（実績transactions/tickets数との突合はしない）
+- 返済用アカウント（`○○が返すお金`）がある場合はご褒美を本人/返済用に折半
+
 ## テーブル: chore_tasks
 
 | カラム | 型 | 説明 |
