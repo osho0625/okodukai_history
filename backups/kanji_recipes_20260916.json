@@ -1,0 +1,13 @@
+[{"id":"c6960389-b7b8-40f0-adbd-dcd33c3ad1af","result_char":"林","part_a":"木","part_b":"木","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"5f36c85b-bf74-4778-b4b5-d0330ec7c9d6","result_char":"森","part_a":"木","part_b":"林","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"70146118-9c2b-4530-80e6-241fc3b19644","result_char":"炎","part_a":"火","part_b":"火","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"be8a1033-4a2e-4d74-b050-7ae3b42c020a","result_char":"明","part_a":"日","part_b":"月","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"757aafa5-5b09-43c6-b901-4918b67804d5","result_char":"男","part_a":"田","part_b":"力","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"a48541b0-0f82-4596-a83c-f14e47a0803c","result_char":"相","part_a":"木","part_b":"目","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"b9db4bd2-7fa4-4da9-b090-b29ff805405f","result_char":"好","part_a":"女","part_b":"子","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"3e2065e7-2df0-4452-bc2e-71efee55b589","result_char":"休","part_a":"人","part_b":"木","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"b6e19478-698d-4b27-ac7e-69a7544b71fa","result_char":"畑","part_a":"火","part_b":"田","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"835a1ddf-054f-49f7-a297-d0ebde95bc28","result_char":"岩","part_a":"山","part_b":"石","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"c4ab4d2f-2ea1-4230-bdf9-61f9d82b303e","result_char":"品","part_a":"口","part_b":"口","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"383de41d-2c21-4d09-b56e-547c0da39304","result_char":"晶","part_a":"日","part_b":"品","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}, 
+ {"id":"1c33613c-86d1-4ba7-bbd4-d63a63138993","result_char":"鳴","part_a":"口","part_b":"鳥","created_at":"2026-09-15T08:16:44.243441+00:00","part_c":null}]
