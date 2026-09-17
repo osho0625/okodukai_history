@@ -306,4 +306,5 @@ graph LR
 | 神経衰弱 | memory-game.html | 記憶力カードゲーム | memory_rankings |
 | ブロックス | blokus.html | ボードゲーム（1-4人、CPU対戦） | blokus_rankings |
 | ことば落とし | kotoba-otoshi.html | パーティ（2-8人、正体隠匿・言葉当て） | なし |
+| ワードウルフ | word-wolf.html | パーティ（3-8人、正体隠匿・会話推理） | なし |
 | 漢字合体ブラスト | kanji-blast.html | 縦STG＋漢字合体パズル（子供ごとにデータ分離） | kanji_master, kanji_recipes, kanji_players, kanji_inventory, kanji_dex |
