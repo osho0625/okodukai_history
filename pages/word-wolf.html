@@ -265,30 +265,55 @@ const WORD_PAIRS = {
   'たべもの': [
     ['ラーメン','うどん'],['カレー','ハヤシライス'],['すし','さしみ'],['プリン','ゼリー'],
     ['たこやき','あかしやき'],['アイス','かきごおり'],['おにぎり','サンドイッチ'],['チョコ','あめ'],
-    ['ホットケーキ','どらやき'],['からあげ','てんぷら'],['ピザ','お好みやき'],['ぎゅうにゅう','ヨーグルト']
+    ['ホットケーキ','どらやき'],['からあげ','てんぷら'],['ピザ','お好みやき'],['ぎゅうにゅう','ヨーグルト'],
+    ['ハンバーグ','ステーキ'],['うめぼし','らっきょう'],['メロン','すいか'],['りんご','なし'],
+    ['しょくパン','フランスパン'],['みそしる','スープ'],['そば','そうめん'],['ケーキ','パイ'],
+    ['グミ','ゼリー'],['ぎょうざ','しゅうまい'],['のり','こんぶ'],['はちみつ','メープルシロップ']
   ],
   'いきもの': [
     ['いぬ','おおかみ'],['ねこ','とら'],['カエル','ヒキガエル'],['ペンギン','アザラシ'],
     ['ゾウ','サイ'],['きんぎょ','めだか'],['ちょうちょ','ガ'],['カメ','スッポン'],
-    ['サル','ゴリラ'],['ウサギ','リス'],['クジラ','イルカ'],['ワニ','トカゲ']
+    ['サル','ゴリラ'],['ウサギ','リス'],['クジラ','イルカ'],['ワニ','トカゲ'],
+    ['ハト','スズメ'],['カブトムシ','クワガタ'],['タコ','イカ'],['ヘビ','ミミズ'],
+    ['キリン','シマウマ'],['ライオン','チーター'],['カニ','ザリガニ'],['コウモリ','ムササビ'],
+    ['アヒル','ガチョウ'],['ラクダ','アルパカ'],['カバ','ブタ'],['クモ','ダンゴムシ']
   ],
   'ばしょ': [
     ['がっこう','ようちえん'],['こうえん','ひろば'],['びょういん','しんりょうじょ'],['スーパー','コンビニ'],
     ['プール','うみ'],['どうぶつえん','すいぞくかん'],['としょかん','ほんや'],['えいがかん','げきじょう'],
-    ['おんせん','せんとう'],['ゆうえんち','あそびば']
+    ['おんせん','せんとう'],['ゆうえんち','あそびば'],['えき','バスてい'],['やま','おか'],
+    ['かわ','いけ'],['たいいくかん','ホール'],['やおや','はなや'],['きっさてん','レストラン'],
+    ['じんじゃ','おてら'],['ホテル','りょかん'],['くうこう','みなと'],['ちゅうしゃじょう','しゃこ']
   ],
   'もちもの': [
     ['かさ','レインコート'],['えんぴつ','シャーペン'],['リュック','かばん'],['スマホ','タブレット'],
     ['めがね','サングラス'],['とけい','めざましどけい'],['はさみ','カッター'],['ノート','メモちょう'],
-    ['ぼうし','ヘルメット'],['くつ','スリッパ']
+    ['ぼうし','ヘルメット'],['くつ','スリッパ'],['さいふ','ポーチ'],['マフラー','てぶくろ'],
+    ['けしゴム','のり'],['じょうぎ','コンパス'],['ハンカチ','ティッシュ'],['すいとう','ペットボトル'],
+    ['かがみ','くし'],['かさたて','くつばこ'],['マスク','ゴーグル'],['てちょう','カレンダー']
   ],
   'こうどう': [
     ['はしる','あるく'],['およぐ','もぐる'],['うたう','ハミング'],['えをかく','しゃしんをとる'],
     ['ねる','ひるね'],['わらう','ほほえむ'],['かう','もらう'],['よむ','きく'],
-    ['とぶ','はねる'],['なげる','ける']
+    ['とぶ','はねる'],['なげる','ける'],['あらう','ふく'],['きる','やぶる'],
+    ['おす','ひく'],['なく','さけぶ'],['たべる','のむ'],['さがす','みつける'],
+    ['つくる','なおす'],['はなす','ささやく'],['ならぶ','すわる'],['のぼる','くだる']
+  ],
+  'しぜん': [
+    ['にじ','オーロラ'],['ゆき','あられ'],['たいよう','つき'],['かみなり','いなずま'],
+    ['やま','たに'],['うみ','みずうみ'],['もり','はやし'],['かわ','たき'],
+    ['はな','つぼみ'],['くも','きり'],['ほし','ながれぼし'],['かぜ','たつまき'],
+    ['すな','つち'],['いわ','いし'],['こおり','しも'],['たいふう','ゆうだち']
+  ],
+  'ぎょうじ': [
+    ['たんじょうび','クリスマス'],['おしょうがつ','おおみそか'],['ひなまつり','こどものひ'],['なつまつり','はなび'],
+    ['うんどうかい','えんそく'],['にゅうがくしき','そつぎょうしき'],['たなばた','つきみ'],['せつぶん','おぼん'],
+    ['はなみ','もみじがり'],['はっぴょうかい','がくげいかい'],['けっこんしき','しちごさん']
   ]
 };
 const CAT_NAMES = Object.keys(WORD_PAIRS);
+// 全ペアをまとめたプール（ランダムモード用）
+const ALL_PAIRS = Object.values(WORD_PAIRS).reduce((a, b) => a.concat(b), []);
 
 // ===== 参加者管理（ことば落としと共有） =====
 const MEMBERS_KEY = 'kotoba_otoshi_members';
@@ -337,6 +362,7 @@ function saveMembers() {
 // ===== 状態 =====
 let state = {
   categories: [...CAT_NAMES],
+  randomMode: false,  // 🎲 全ジャンルから完全ランダムに出題
   selected: [],
   roles: [],          // selected同順の役職 'citizen'|'wolf'
   words: [],          // selected同順の配布ワード
@@ -424,11 +450,20 @@ function buildSetup() {
 
   const cl = document.getElementById('catList');
   cl.innerHTML = '';
+  // 🎲 ランダムモードボタン
+  const rb = document.createElement('button');
+  rb.className = 'cat-btn' + (state.randomMode ? ' selected' : '');
+  rb.textContent = '🎲 おまかせ（全ジャンル）';
+  rb.onclick = () => { state.randomMode = !state.randomMode; buildSetup(); };
+  cl.appendChild(rb);
+  // 個別ジャンル（ランダムモード時は選べない）
   CAT_NAMES.forEach(cat => {
     const b = document.createElement('button');
-    b.className = 'cat-btn' + (state.categories.includes(cat) ? ' selected' : '');
+    b.className = 'cat-btn' + (!state.randomMode && state.categories.includes(cat) ? ' selected' : '');
+    if (state.randomMode) b.style.opacity = '0.35';
     b.textContent = cat;
     b.onclick = () => {
+      if (state.randomMode) return;
       if (state.categories.includes(cat)) {
         if (state.categories.length > 1) state.categories = state.categories.filter(c => c !== cat);
       } else state.categories.push(cat);
@@ -567,10 +602,17 @@ function startAssign() {
   state.roles = assignment;
 
   // お題ペアを選ぶ
-  const pool = state.categories.length ? state.categories : CAT_NAMES;
-  state.category = pool[Math.floor(Math.random() * pool.length)];
-  const pairs = WORD_PAIRS[state.category];
-  const pair = pairs[Math.floor(Math.random() * pairs.length)];
+  let pair;
+  if (state.randomMode) {
+    // 全ジャンルからランダム
+    pair = ALL_PAIRS[Math.floor(Math.random() * ALL_PAIRS.length)];
+    state.category = 'おまかせ';
+  } else {
+    const pool = state.categories.length ? state.categories : CAT_NAMES;
+    state.category = pool[Math.floor(Math.random() * pool.length)];
+    const pairs = WORD_PAIRS[state.category];
+    pair = pairs[Math.floor(Math.random() * pairs.length)];
+  }
   // どちらを市民語にするかランダム
   if (Math.random() < 0.5) { state.citizenWord = pair[0]; state.wolfWord = pair[1]; }
   else { state.citizenWord = pair[1]; state.wolfWord = pair[0]; }
