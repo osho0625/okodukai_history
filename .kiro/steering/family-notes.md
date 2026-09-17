@@ -85,7 +85,9 @@ fileMatchPattern: "*family-notes*,*family_notes*"
   { "title": "💪 懸垂バー選定", "file": "chinning-bar-selection.md" },
   { "title": "🚂 家族寝台特急旅行計画", "file": "family-train-trip.md" },
   { "title": "💒 新婚旅行計画", "file": "honeymoon-trip.md" },
-  { "title": "🍓 Raspberry Pi セットアップガイド", "file": "raspi-setup-guide.md" }
+  { "title": "🍓 Raspberry Pi セットアップガイド", "file": "raspi-setup-guide.md" },
+  { "title": "🧮 算数 学習・知育の進め方", "file": "math-drill-guide.md" },
+  { "title": "📚 国語・漢字 学習の進め方", "file": "japanese-study-guide.md" }
 ]
 ```
 
