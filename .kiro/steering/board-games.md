@@ -1,9 +1,9 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotoba-otoshi*"
+fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotoba-otoshi*,*word-wolf*"
 ---
 
-# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス・ことば落とし）
+# ボードゲーム・カードゲーム（ごきぶりポーカー・クアルト・コリドール・神経衰弱・ブロックス・ことば落とし・ワードウルフ）
 
 ## ファイル構成
 
@@ -14,6 +14,7 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotob
 - `pages/memory-game.html` — 神経衰弱（記憶力カードゲーム）
 - `pages/blokus.html` — ブロックス（陣取りボードゲーム）
 - `pages/kotoba-otoshi.html` — ことば落とし（正体隠匿・言葉当て心理戦、単一HTMLで完結）
+- `pages/word-wolf.html` — ワードウルフ（正体隠匿・会話推理、単一HTMLで完結、参加者管理はことば落としと共有）
 
 ## ごきぶりポーカー（cockroach-poker.html + js/cockroach-poker.js）
 
@@ -217,6 +218,20 @@ fileMatchPattern: "*cockroach*,*quarto*,*quoridor*,*memory-game*,*blokus*,*kotob
 - 勝敗は手動判定（当たり＝回答側の勝ち／はずれ＝親側の勝ち）
 - タイマーは3分固定＋30秒追加・一時停止対応
 - 夜間制限対応（`isNightTime()`）、ゲーム公開設定キー `game_kotoba_otoshi`（admin.html のトグル一覧に登録済み）
+- ランキングなし（対面ゲームのため）
+
+## ワードウルフ（word-wolf.html）
+
+- 3〜8人ローカル対面のパーティゲーム（正体隠匿＋会話推理）。DB不使用・CPUなし・単一HTMLで完結
+- 役職: 👥市民（多数派、全員同じお題）／🐺ウルフ（少数派、似た別のお題）。ウルフ人数は3〜5人=1人、6〜8人=最大2人（`maxWolves()`）
+- お題は `WORD_PAIRS`（`[市民語, ウルフ語]` の似た言葉ペア）を5ジャンル（たべもの／いきもの／ばしょ／もちもの／こうどう）で定義。どちらを市民語にするかは毎回ランダム
+- 自分の役職は伏せられ、配られるのは「お題の言葉」のみ（役職確認画面はことば落としと違い役職名を出さない）
+- 流れ: 参加者選択(3-8) → ウルフ人数選択 → ジャンル選択 → スマホを回してお題確認 → 3分タイマーで会話 → 投票 → 結果（全員の役職・お題・得票を公開）
+- **投票**: 1人ずつスマホを回す個別投票。自分には投票不可。最多得票者を追放（同数はランダムでタイブレーク、`tallyVotes()`）
+- **運転手対応（novote）**: ⚙️で「運転中」に設定した人は投票順が最後に回り、投票画面は「代理入力」モードになる（運転手が口頭申告→他の人が入力）。`novote` は localStorage `kotoba_otoshi_members` に全ゲーム共通属性として保存（ことば落としの exclude を壊さないようマージ保存）
+- 参加者管理はことば落としと共有（同じ `MEMBERS_KEY`）。役職制限は wolf/citizen のみ有効（ことば落としの oya/support/guesser 制限は読み込み時に無視）
+- 勝敗判定は自動（追放されたのがウルフ→市民の勝ち／市民→ウルフの勝ち）
+- 夜間制限対応（`isNightTime()`）、ゲーム公開設定キー `game_word_wolf`（admin.html のトグル一覧に登録済み）
 - ランキングなし（対面ゲームのため）
 
 ## 共通仕様

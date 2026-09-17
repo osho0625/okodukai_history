@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>ワードウルフ</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460); color: #eee; min-height: 100vh; }
+.header { display: flex; align-items: center; padding: 12px 16px; gap: 12px; max-width: 480px; margin: 0 auto; }
+.header .back { color: #eee; font-size: 1.6em; cursor: pointer; text-decoration: none; }
+.header h1 { flex: 1; text-align: center; font-size: 1.2em; font-weight: 700; }
+.header .home { color: #eee; font-size: 1.4em; cursor: pointer; text-decoration: none; }
+.screen { display: none; max-width: 480px; margin: 0 auto; padding: 0 16px 32px; }
+.screen.active { display: block; }
+.btn { display: inline-block; padding: 14px 28px; border-radius: 12px; font-size: 1.05em; font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s, opacity 0.2s; color: #fff; text-decoration: none; }
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg,#7b2ff7,#9d5cff); }
+.btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22); }
+.btn-success { background: linear-gradient(135deg,#388e3c,#66bb6a); }
+.btn-block { display: block; width: 100%; margin-bottom: 12px; }
+/* Title */
+#titleScreen { text-align: center; padding-top: 48px; }
+#titleScreen .title-icon { font-size: 3.4em; margin-bottom: 12px; }
+#titleScreen h2 { font-size: 2em; margin-bottom: 8px; }
+#titleScreen .subtitle { color: #bbb; margin-bottom: 32px; line-height: 1.6; font-size: 0.95em; }
+.rule-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 18px; text-align: left; margin-bottom: 24px; font-size: 0.88em; line-height: 1.7; color: #ddd; }
+.rule-box b { color: #9d5cff; }
+/* Setup */
+.section-label { font-size: 0.9em; color: #bbb; margin: 20px 0 10px; font-weight: 600; }
+/* Members */
+.member-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.member-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); transition: all 0.15s; }
+.member-row.selected { border-color: #9d5cff; background: rgba(123,47,247,0.2); }
+.member-pick { flex: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; }
+.member-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center; font-size: 0.9em; flex-shrink: 0; }
+.member-row.selected .member-check { background: #9d5cff; border-color: #9d5cff; }
+.member-name { font-size: 1.05em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.member-tag { font-size: 0.68em; padding: 2px 7px; border-radius: 10px; background: rgba(0,0,0,0.3); color: #c9a8ff; white-space: nowrap; }
+.member-cog { flex-shrink: 0; background: rgba(255,255,255,0.1); border: none; color: #eee; width: 34px; height: 34px; border-radius: 8px; font-size: 1.05em; cursor: pointer; }
+.member-cog:active { transform: scale(0.92); }
+.member-add { display: flex; gap: 8px; margin-bottom: 8px; }
+.member-add-input { flex: 1; padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #eee; font-size: 1em; outline: none; }
+.member-add-input:focus { border-color: #9d5cff; }
+.member-add-btn { padding: 0 18px; border-radius: 10px; border: none; background: rgba(255,255,255,0.14); color: #eee; font-weight: 700; font-size: 0.95em; cursor: pointer; white-space: nowrap; }
+.member-add-btn:active { transform: scale(0.95); }
+/* Overlay modal */
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+.ov.active { display: flex; }
+.ov-modal { background: #1e2340; border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 24px 20px; width: 100%; max-width: 360px; }
+.ov-modal h3 { font-size: 1.3em; margin-bottom: 10px; text-align: center; }
+.ov-note { font-size: 0.85em; color: #bbb; line-height: 1.6; margin-bottom: 16px; text-align: center; }
+.rl-roles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.rl-role { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,0.06); font-size: 1em; cursor: pointer; }
+.rl-role input { width: 20px; height: 20px; accent-color: #9d5cff; }
+.rl-warn { color: #ffb74d; font-size: 0.8em; text-align: center; min-height: 1.2em; margin-bottom: 6px; }
+.ov-btns { display: flex; gap: 10px; }
+.ov-btns .btn { flex: 1; padding: 12px; }
+.cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.cat-btn { padding: 10px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.cat-btn.selected { border-color: #9d5cff; background: rgba(123,47,247,0.25); }
+.wolf-opt { display: flex; gap: 8px; margin-bottom: 8px; }
+.wolf-opt .cat-btn { flex: 1; text-align: center; }
+.hint { font-size: 0.8em; color: #999; line-height: 1.6; margin-top: 4px; }
+/* Pass / word reveal */
+#passScreen, #roleScreen { text-align: center; padding-top: 40px; }
+.pass-icon { font-size: 4em; margin-bottom: 16px; }
+#passScreen h2 { font-size: 1.6em; margin-bottom: 8px; }
+#passScreen .who { color: #9d5cff; font-size: 2em; font-weight: 800; margin: 12px 0; }
+#passScreen p { color: #bbb; margin-bottom: 28px; line-height: 1.6; }
+.role-card { border-radius: 18px; padding: 28px 20px; margin-bottom: 22px; background: linear-gradient(135deg,#4a2b7a,#2a1a4a); }
+.role-card .role-name { font-size: 1.15em; font-weight: 700; margin-bottom: 14px; opacity: 0.9; }
+.word-reveal { background: rgba(0,0,0,0.35); border-radius: 14px; padding: 20px; }
+.word-reveal .word-label { font-size: 0.85em; color: #d8c8ff; margin-bottom: 6px; }
+.word-reveal .word { font-size: 2.4em; font-weight: 900; color: #fff; letter-spacing: 2px; }
+.role-sub { font-size: 0.85em; opacity: 0.85; line-height: 1.6; margin-top: 14px; }
+/* Play (timer) */
+#playScreen { text-align: center; padding-top: 30px; }
+#playScreen h2 { font-size: 1.3em; margin-bottom: 8px; color: #bbb; }
+.timer { font-size: 4.5em; font-weight: 900; margin: 16px 0; font-variant-numeric: tabular-nums; }
+.timer.warn { color: #ff6b81; }
+.timer-controls { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+.timer-controls .btn { padding: 12px 20px; }
+.play-note { color: #999; font-size: 0.85em; line-height: 1.7; margin-top: 16px; }
+/* Vote */
+#voteScreen { padding-top: 24px; }
+#voteScreen h2 { text-align: center; font-size: 1.3em; margin-bottom: 6px; }
+#voteScreen .ans-note { text-align: center; color: #bbb; font-size: 0.9em; margin-bottom: 20px; line-height: 1.6; }
+.vote-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.vote-btn { padding: 14px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #eee; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: all 0.15s; text-align: left; }
+.vote-btn.selected { border-color: #9d5cff; background: rgba(123,47,247,0.3); }
+/* Result */
+#resultScreen { text-align: center; padding-top: 36px; }
+#resultScreen .result-emoji { font-size: 4em; margin-bottom: 12px; }
+#resultScreen .result-title { font-size: 2em; font-weight: 900; margin-bottom: 8px; }
+#resultScreen .result-title.citizen-win { color: #66bb6a; }
+#resultScreen .result-title.wolf-win { color: #9d5cff; }
+.answer-box { background: rgba(0,0,0,0.35); border-radius: 14px; padding: 20px; margin: 20px 0; }
+.answer-box .lbl { font-size: 0.85em; color: #bbb; margin-bottom: 6px; }
+.answer-box .ans-word { font-size: 1.5em; font-weight: 900; color: #fff; }
+.reveal-list { text-align: left; margin: 16px 0; font-size: 0.95em; color: #ddd; line-height: 1.9; }
+.reveal-list .wolf { color: #c9a8ff; font-weight: 700; }
+.judge-btns { display: flex; gap: 10px; margin: 20px 0; }
+.judge-btns .btn { flex: 1; }
+/* Night */
+#nightOverlay { display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+#nightOverlay.active { display: flex; }
+#nightOverlay .moon { font-size: 4em; margin-bottom: 16px; }
+#nightOverlay p { color: #aaa; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="onBack()">←</a>
+  <h1>🐺 ワードウルフ</h1>
+  <a class="home" href="../index.html">🏠</a>
+</div>
+
+<!-- タイトル -->
+<div class="screen active" id="titleScreen">
+  <div class="title-icon">🐺</div>
+  <h2>ワードウルフ</h2>
+  <div class="subtitle">みんな似たお題。でも1人だけ違う。<br>会話で「仲間はずれ」を探し出せ。<br>3〜8人・8歳以上・約5分</div>
+  <div class="rule-box">
+    <b>あそびかた</b><br>
+    ・参加者を選んで（3〜8人）、順番にスマホを回してお題を確認します。<br>
+    ・多数派（<b>市民</b>）はみんな同じお題。少数派（<b>ウルフ</b>）だけ少し違うお題。<br>
+    ・でも自分がどっちかは<b>分かりません</b>。<br>
+    ・全員で3分間、そのお題について話します（ズバリの単語は言わないのがコツ）。<br>
+    ・話し合いのあと、1人ずつスマホを回して<b>投票</b>します。<br>
+    ・⚙️で「運転中」にした人は投票順が最後になり、口頭で伝えて<b>他の人が代理入力</b>します。<br>
+    ・いちばん票が集まった人を追放。ウルフなら<b>市民の勝ち</b>、市民なら<b>ウルフの勝ち</b>。
+  </div>
+  <button class="btn btn-primary btn-block" onclick="goSetup()">はじめる</button>
+</div>
+
+<!-- セットアップ -->
+<div class="screen" id="setupScreen">
+  <div class="section-label">参加者を選ぶ <span style="color:#777;font-weight:400">（3〜8人）</span></div>
+  <div class="member-list" id="memberList"></div>
+  <div class="member-add">
+    <input class="member-add-input" id="newMemberInput" placeholder="新しい参加者の名前" autocomplete="off" maxlength="10">
+    <button class="member-add-btn" onclick="addMember()">＋追加</button>
+  </div>
+  <div class="hint" id="roleHint"></div>
+
+  <div class="section-label">ウルフの人数</div>
+  <div class="wolf-opt" id="wolfOpt"></div>
+
+  <div class="section-label">お題のジャンル</div>
+  <div class="cat-list" id="catList"></div>
+
+  <button class="btn btn-primary btn-block" style="margin-top:24px" onclick="startAssign()">お題を配る</button>
+  <button class="btn btn-secondary btn-block" onclick="showScreen('titleScreen')">もどる</button>
+</div>
+
+<!-- 役職制限モーダル -->
+<div id="roleLimitOverlay" class="ov">
+  <div class="ov-modal">
+    <h3 id="rlName">なまえ</h3>
+    <p class="ov-note">役職の制限や「運転中」を設定できます<br><span style="color:#888">（小さい子はウルフを外すと安心）</span></p>
+    <div class="rl-roles">
+      <label class="rl-role"><input type="checkbox" data-role="wolf"> 🐺 ウルフをやらせない</label>
+      <label class="rl-role"><input type="checkbox" data-role="citizen"> 👥 市民をやらせない</label>
+    </div>
+    <p class="rl-warn" id="rlWarn"></p>
+    <div class="rl-roles" style="margin-bottom:12px">
+      <label class="rl-role"><input type="checkbox" id="rlDriver"> 🚗 運転中（自分で投票できない・代理入力）</label>
+    </div>
+    <div class="ov-btns">
+      <button class="btn btn-secondary" onclick="deleteMember()">🗑 削除</button>
+      <button class="btn btn-primary" onclick="saveRoleLimit()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- スマホを渡す -->
+<div class="screen" id="passScreen">
+  <div class="pass-icon">📱➡️</div>
+  <h2>スマホを渡してね</h2>
+  <div class="who" id="passWho">1人目</div>
+  <p><b id="passName"></b> さんだけがボタンを押して<br>自分のお題を確認してください</p>
+  <button class="btn btn-primary btn-block" onclick="revealRole()">わたしのお題を見る</button>
+</div>
+
+<!-- お題確認 -->
+<div class="screen" id="roleScreen">
+  <div class="role-card">
+    <div class="role-name" id="roleName"></div>
+    <div class="word-reveal">
+      <div class="word-label">🤫 あなたのお題</div>
+      <div class="word" id="wordText">ねこ</div>
+    </div>
+    <div class="role-sub">この言葉について話します。<br>あなたが多数派か少数派かは分かりません。</div>
+  </div>
+  <button class="btn btn-success btn-block" onclick="nextPlayer()" id="roleNextBtn">確認した・次の人へ</button>
+</div>
+
+<!-- 雑談タイマー -->
+<div class="screen" id="playScreen">
+  <h2>3分間、お題について話そう！</h2>
+  <div class="timer" id="timer">3:00</div>
+  <div class="timer-controls">
+    <button class="btn btn-secondary" id="pauseBtn" onclick="toggleTimer()">⏸ 一時停止</button>
+    <button class="btn btn-secondary" onclick="addTime(30)">＋30秒</button>
+  </div>
+  <button class="btn btn-primary btn-block" onclick="goVote()">投票へ（早めに終える）</button>
+  <div class="play-note">
+    ズバリの単語は言わずに、特徴やエピソードで話すのがコツ。<br>
+    自分と話が噛み合わない人＝ウルフかも？
+  </div>
+</div>
+
+<!-- 投票：スマホを渡す -->
+<div class="screen" id="votePassScreen">
+  <div class="pass-icon" id="votePassIcon">🗳️➡️</div>
+  <h2 id="votePassTitle">投票タイム</h2>
+  <div class="who" id="votePassWho">1人目</div>
+  <p id="votePassNote"></p>
+  <button class="btn btn-primary btn-block" onclick="showVoteBallot()" id="votePassBtn">投票する</button>
+</div>
+
+<!-- 投票：本人が選ぶ -->
+<div class="screen" id="voteScreen">
+  <h2 id="voteTitle">🗳 だれがウルフ？</h2>
+  <div class="ans-note" id="voteNote">ウルフだと思う人を1人選んでください<br><span style="color:#888">（他の人に見えないように）</span></div>
+  <div class="vote-list" id="voteList"></div>
+  <button class="btn btn-primary btn-block" style="margin-top:6px" onclick="submitVote()" id="voteConfirmBtn" disabled>この人に投票して次へ</button>
+</div>
+
+<!-- 結果 -->
+<div class="screen" id="resultScreen">
+  <div class="answer-box">
+    <div class="lbl">追放されたのは</div>
+    <div class="ans-word" id="votedName">？</div>
+  </div>
+  <div class="reveal-list" id="revealList"></div>
+  <div class="answer-box">
+    <div class="lbl">お題（市民 / ウルフ）</div>
+    <div class="ans-word" id="wordPair">？ / ？</div>
+  </div>
+  <div id="judgeResult">
+    <div class="result-emoji" id="resultEmoji">🎉</div>
+    <div class="result-title" id="resultTitle"></div>
+    <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="restart()">もう一回</button>
+    <button class="btn btn-secondary btn-block" onclick="location.href='arcade.html'">ゲームセンターに戻る</button>
+  </div>
+</div>
+
+<!-- 夜間オーバーレイ -->
+<div id="nightOverlay">
+  <div class="moon">🌙</div>
+  <h2>今日はおしまい！</h2>
+  <p>また明日ね</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<script>
+// ===== お題データ（[市民のお題, ウルフのお題] の似た言葉ペア） =====
+const WORD_PAIRS = {
+  'たべもの': [
+    ['ラーメン','うどん'],['カレー','ハヤシライス'],['すし','さしみ'],['プリン','ゼリー'],
+    ['たこやき','あかしやき'],['アイス','かきごおり'],['おにぎり','サンドイッチ'],['チョコ','あめ'],
+    ['ホットケーキ','どらやき'],['からあげ','てんぷら'],['ピザ','お好みやき'],['ぎゅうにゅう','ヨーグルト']
+  ],
+  'いきもの': [
+    ['いぬ','おおかみ'],['ねこ','とら'],['カエル','ヒキガエル'],['ペンギン','アザラシ'],
+    ['ゾウ','サイ'],['きんぎょ','めだか'],['ちょうちょ','ガ'],['カメ','スッポン'],
+    ['サル','ゴリラ'],['ウサギ','リス'],['クジラ','イルカ'],['ワニ','トカゲ']
+  ],
+  'ばしょ': [
+    ['がっこう','ようちえん'],['こうえん','ひろば'],['びょういん','しんりょうじょ'],['スーパー','コンビニ'],
+    ['プール','うみ'],['どうぶつえん','すいぞくかん'],['としょかん','ほんや'],['えいがかん','げきじょう'],
+    ['おんせん','せんとう'],['ゆうえんち','あそびば']
+  ],
+  'もちもの': [
+    ['かさ','レインコート'],['えんぴつ','シャーペン'],['リュック','かばん'],['スマホ','タブレット'],
+    ['めがね','サングラス'],['とけい','めざましどけい'],['はさみ','カッター'],['ノート','メモちょう'],
+    ['ぼうし','ヘルメット'],['くつ','スリッパ']
+  ],
+  'こうどう': [
+    ['はしる','あるく'],['およぐ','もぐる'],['うたう','ハミング'],['えをかく','しゃしんをとる'],
+    ['ねる','ひるね'],['わらう','ほほえむ'],['かう','もらう'],['よむ','きく'],
+    ['とぶ','はねる'],['なげる','ける']
+  ]
+};
+const CAT_NAMES = Object.keys(WORD_PAIRS);
+
+// ===== 参加者管理（ことば落としと共有） =====
+const MEMBERS_KEY = 'kotoba_otoshi_members';
+const DEFAULT_MEMBERS = [
+  { name: 'かいせい', exclude: [] },
+  { name: 'はるちか', exclude: [] },
+  { name: 'いろは', exclude: [] },
+  { name: 'めぐみ', exclude: [] },
+  { name: 'りょうすけ', exclude: [] }
+];
+let members = loadMembers();
+
+function loadMembers() {
+  try {
+    const raw = localStorage.getItem(MEMBERS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length) {
+        // ワードウルフの役職に不要な制限（oya/support/guesser）は無視し、wolf/citizenのみ残す
+        // novote（運転中フラグ）は全ゲーム共通の属性として保持
+        return arr.map(m => ({
+          name: String(m.name),
+          exclude: Array.isArray(m.exclude) ? m.exclude.filter(r => r === 'wolf' || r === 'citizen') : [],
+          novote: m.novote === true
+        }));
+      }
+    }
+  } catch (e) {}
+  return DEFAULT_MEMBERS.map(m => ({ name: m.name, exclude: [...m.exclude], novote: false }));
+}
+function saveMembers() {
+  // 他ゲーム（ことば落とし）の役職制限を壊さないよう、保存時は既存データにマージ
+  try {
+    let existing = [];
+    try { existing = JSON.parse(localStorage.getItem(MEMBERS_KEY)) || []; } catch (e) {}
+    const merged = members.map(m => {
+      const prev = existing.find(e => e.name === m.name);
+      const otherExclude = prev && Array.isArray(prev.exclude)
+        ? prev.exclude.filter(r => r !== 'wolf' && r !== 'citizen') : [];
+      return { name: m.name, exclude: [...otherExclude, ...m.exclude], novote: m.novote === true };
+    });
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(merged));
+  } catch (e) {}
+}
+
+// ===== 状態 =====
+let state = {
+  categories: [...CAT_NAMES],
+  selected: [],
+  roles: [],          // selected同順の役職 'citizen'|'wolf'
+  words: [],          // selected同順の配布ワード
+  citizenWord: '',
+  wolfWord: '',
+  category: '',
+  wolfCount: 1,
+  current: 0,
+  editIndex: -1,
+  votedIndex: -1,
+  voteOrder: [],      // 投票する順番（selectedのindex配列。投票不可の人を最後に）
+  votePos: 0,         // 現在の投票者（voteOrder上の位置）
+  currentBallot: -1,  // 現在の投票者が選んだ相手
+  votes: [],          // selected同順の得票数
+  timer: 180,
+  timerId: null,
+  timerRunning: false
+};
+
+// ===== 画面切替 =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function onBack() {
+  const active = document.querySelector('.screen.active').id;
+  if (active === 'titleScreen') { history.back(); return; }
+  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+  showScreen('titleScreen');
+}
+
+const ROLE_LABEL = { wolf: '🐺ウルフ', citizen: '👥市民' };
+
+// ===== セットアップUI =====
+function isSelected(name) { return state.selected.some(m => m.name === name); }
+function maxWolves(n) { return n >= 6 ? 2 : 1; }
+
+function buildSetup() {
+  const ml = document.getElementById('memberList');
+  ml.innerHTML = '';
+  members.forEach((m, idx) => {
+    const row = document.createElement('div');
+    row.className = 'member-row' + (isSelected(m.name) ? ' selected' : '');
+
+    const pick = document.createElement('div');
+    pick.className = 'member-pick';
+    pick.onclick = () => toggleMember(idx);
+    const check = document.createElement('div');
+    check.className = 'member-check';
+    check.textContent = isSelected(m.name) ? '✓' : '';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'member-name';
+    nameEl.textContent = m.name;
+    pick.appendChild(check);
+    pick.appendChild(nameEl);
+    if ((m.exclude && m.exclude.length) || m.novote) {
+      const tags = document.createElement('div');
+      tags.className = 'member-tags';
+      m.exclude.forEach(r => {
+        const t = document.createElement('span');
+        t.className = 'member-tag';
+        t.textContent = ROLE_LABEL[r] + '×';
+        tags.appendChild(t);
+      });
+      if (m.novote) {
+        const t = document.createElement('span');
+        t.className = 'member-tag';
+        t.textContent = '🚗運転中';
+        tags.appendChild(t);
+      }
+      pick.appendChild(tags);
+    }
+    row.appendChild(pick);
+
+    const cog = document.createElement('button');
+    cog.className = 'member-cog';
+    cog.textContent = '⚙️';
+    cog.onclick = (e) => { e.stopPropagation(); openRoleLimit(idx); };
+    row.appendChild(cog);
+
+    ml.appendChild(row);
+  });
+  updateRoleHint();
+  buildWolfOpt();
+
+  const cl = document.getElementById('catList');
+  cl.innerHTML = '';
+  CAT_NAMES.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'cat-btn' + (state.categories.includes(cat) ? ' selected' : '');
+    b.textContent = cat;
+    b.onclick = () => {
+      if (state.categories.includes(cat)) {
+        if (state.categories.length > 1) state.categories = state.categories.filter(c => c !== cat);
+      } else state.categories.push(cat);
+      buildSetup();
+    };
+    cl.appendChild(b);
+  });
+}
+
+function buildWolfOpt() {
+  const wo = document.getElementById('wolfOpt');
+  wo.innerHTML = '';
+  const n = state.selected.length;
+  const max = maxWolves(n);
+  if (state.wolfCount > max) state.wolfCount = max;
+  for (let w = 1; w <= 2; w++) {
+    const b = document.createElement('button');
+    b.className = 'cat-btn' + (state.wolfCount === w ? ' selected' : '');
+    b.textContent = `${w}人`;
+    b.disabled = w > max;
+    if (w > max) b.style.opacity = '0.3';
+    b.onclick = () => { if (w <= max) { state.wolfCount = w; buildSetup(); } };
+    wo.appendChild(b);
+  }
+}
+
+function toggleMember(idx) {
+  const m = members[idx];
+  if (isSelected(m.name)) {
+    state.selected = state.selected.filter(s => s.name !== m.name);
+  } else {
+    if (state.selected.length >= 8) return;
+    state.selected.push(m);
+  }
+  buildSetup();
+}
+
+function updateRoleHint() {
+  const n = state.selected.length;
+  const hint = document.getElementById('roleHint');
+  if (n < 3) {
+    hint.textContent = `参加者を3〜8人選んでください（現在 ${n}人）`;
+    hint.style.color = '#ffb74d';
+    return;
+  }
+  hint.style.color = '';
+  const w = Math.min(state.wolfCount, maxWolves(n));
+  hint.textContent = `${n}人：👥市民 ${n - w}人 vs 🐺ウルフ ${w}人`;
+}
+
+function goSetup() {
+  if (!state.selected.length) {
+    state.selected = members.slice(0, 8);
+  } else {
+    state.selected = state.selected.filter(s => members.some(m => m.name === s.name))
+      .map(s => members.find(m => m.name === s.name));
+  }
+  buildSetup();
+  showScreen('setupScreen');
+}
+
+// ===== 参加者の追加・削除・役職制限 =====
+function addMember() {
+  const input = document.getElementById('newMemberInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (members.some(m => m.name === name)) { input.value = ''; return; }
+  members.push({ name, exclude: [], novote: false });
+  saveMembers();
+  input.value = '';
+  buildSetup();
+}
+
+function openRoleLimit(idx) {
+  state.editIndex = idx;
+  const m = members[idx];
+  document.getElementById('rlName').textContent = m.name;
+  document.querySelectorAll('#roleLimitOverlay input[data-role]').forEach(cb => {
+    cb.checked = m.exclude.includes(cb.getAttribute('data-role'));
+    cb.onchange = validateRoleLimit;
+  });
+  document.getElementById('rlDriver').checked = m.novote === true;
+  document.getElementById('rlWarn').textContent = '';
+  document.getElementById('roleLimitOverlay').classList.add('active');
+}
+function validateRoleLimit() {
+  const checked = [...document.querySelectorAll('#roleLimitOverlay input[data-role]:checked')];
+  const warn = document.getElementById('rlWarn');
+  if (checked.length >= 2) {
+    warn.textContent = '⚠️ 両方は外せません（やれる役職が無くなります）';
+    return false;
+  }
+  warn.textContent = '';
+  return true;
+}
+function saveRoleLimit() {
+  if (!validateRoleLimit()) return;
+  const m = members[state.editIndex];
+  m.exclude = [...document.querySelectorAll('#roleLimitOverlay input[data-role]:checked')]
+    .map(cb => cb.getAttribute('data-role'));
+  m.novote = document.getElementById('rlDriver').checked;
+  saveMembers();
+  closeRoleLimit();
+  buildSetup();
+}
+function deleteMember() {
+  const m = members[state.editIndex];
+  if (!confirm(`「${m.name}」を削除しますか？`)) return;
+  state.selected = state.selected.filter(s => s.name !== m.name);
+  members.splice(state.editIndex, 1);
+  saveMembers();
+  closeRoleLimit();
+  buildSetup();
+}
+function closeRoleLimit() {
+  document.getElementById('roleLimitOverlay').classList.remove('active');
+  state.editIndex = -1;
+}
+
+// ===== 役職・お題割り当て =====
+function startAssign() {
+  const n = state.selected.length;
+  if (n < 3) { alert('参加者を3人以上選んでください'); return; }
+  if (n > 8) { alert('参加者は8人までです'); return; }
+
+  const w = Math.min(state.wolfCount, maxWolves(n));
+  const roleSet = [];
+  for (let i = 0; i < w; i++) roleSet.push('wolf');
+  while (roleSet.length < n) roleSet.push('citizen');
+
+  const assignment = assignRoles(state.selected, roleSet);
+  if (!assignment) {
+    alert('役職制限の条件が厳しすぎて配れませんでした。\n誰かの制限を緩めるか、参加者を変えてください。');
+    return;
+  }
+  state.roles = assignment;
+
+  // お題ペアを選ぶ
+  const pool = state.categories.length ? state.categories : CAT_NAMES;
+  state.category = pool[Math.floor(Math.random() * pool.length)];
+  const pairs = WORD_PAIRS[state.category];
+  const pair = pairs[Math.floor(Math.random() * pairs.length)];
+  // どちらを市民語にするかランダム
+  if (Math.random() < 0.5) { state.citizenWord = pair[0]; state.wolfWord = pair[1]; }
+  else { state.citizenWord = pair[1]; state.wolfWord = pair[0]; }
+
+  state.words = state.roles.map(r => r === 'wolf' ? state.wolfWord : state.citizenWord);
+  state.current = 0;
+  showPass();
+}
+
+// 制限を尊重した割り当て（バックトラッキング）
+function assignRoles(players, roleSet) {
+  const need = {};
+  roleSet.forEach(r => need[r] = (need[r] || 0) + 1);
+  const order = players.map((p, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const result = new Array(players.length).fill(null);
+  const remaining = { ...need };
+  function canAssign(pi, role) {
+    return remaining[role] > 0 && !players[pi].exclude.includes(role);
+  }
+  function backtrack(k) {
+    if (k === order.length) return true;
+    const pi = order[k];
+    const roles = Object.keys(remaining).filter(r => remaining[r] > 0);
+    for (let i = roles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [roles[i], roles[j]] = [roles[j], roles[i]];
+    }
+    for (const role of roles) {
+      if (!canAssign(pi, role)) continue;
+      result[pi] = role;
+      remaining[role]--;
+      if (backtrack(k + 1)) return true;
+      remaining[role]++;
+      result[pi] = null;
+    }
+    return false;
+  }
+  return backtrack(0) ? result : null;
+}
+
+function showPass() {
+  document.getElementById('passWho').textContent = `${state.current + 1}人目`;
+  document.getElementById('passName').textContent = state.selected[state.current].name;
+  showScreen('passScreen');
+}
+
+function revealRole() {
+  document.getElementById('roleName').textContent = state.selected[state.current].name + ' のお題';
+  document.getElementById('wordText').textContent = state.words[state.current];
+  const btn = document.getElementById('roleNextBtn');
+  btn.textContent = (state.current === state.selected.length - 1) ? '確認した・話し合いスタート！' : '確認した・次の人へ';
+  showScreen('roleScreen');
+}
+
+function nextPlayer() {
+  state.current++;
+  if (state.current >= state.selected.length) {
+    startTimer();
+  } else {
+    showPass();
+  }
+}
+
+// ===== タイマー =====
+function startTimer() {
+  state.timer = 180;
+  state.timerRunning = true;
+  updateTimerDisplay();
+  showScreen('playScreen');
+  document.getElementById('pauseBtn').textContent = '⏸ 一時停止';
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(tick, 1000);
+}
+function tick() {
+  if (!state.timerRunning) return;
+  state.timer--;
+  updateTimerDisplay();
+  if (state.timer <= 0) {
+    clearInterval(state.timerId); state.timerId = null;
+    goVote();
+  }
+}
+function updateTimerDisplay() {
+  const m = Math.floor(state.timer / 60);
+  const s = state.timer % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('warn', state.timer <= 30);
+}
+function toggleTimer() {
+  state.timerRunning = !state.timerRunning;
+  document.getElementById('pauseBtn').textContent = state.timerRunning ? '⏸ 一時停止' : '▶ 再開';
+}
+function addTime(sec) { state.timer += sec; updateTimerDisplay(); }
+
+// ===== 投票（1人ずつ・運転手は最後に代理入力） =====
+function goVote() {
+  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+  // 得票数リセット
+  state.votes = state.selected.map(() => 0);
+  // 投票順：自分で投票できる人が先、運転手（novote）は最後
+  const voters = state.selected.map((m, i) => i);
+  const canVote = voters.filter(i => !state.selected[i].novote);
+  const drivers = voters.filter(i => state.selected[i].novote);
+  state.voteOrder = [...canVote, ...drivers];
+  state.votePos = 0;
+  state.currentBallot = -1;
+  showVotePass();
+}
+
+function currentVoterIndex() { return state.voteOrder[state.votePos]; }
+
+function showVotePass() {
+  const vi = currentVoterIndex();
+  const voter = state.selected[vi];
+  const isDriver = voter.novote;
+  document.getElementById('votePassWho').textContent = voter.name;
+  if (isDriver) {
+    document.getElementById('votePassIcon').textContent = '🚗🗣️';
+    document.getElementById('votePassTitle').textContent = '運転手さんの投票';
+    document.getElementById('votePassNote').innerHTML =
+      '<b>' + voter.name + '</b> さんは運転中です。<br>口頭でウルフだと思う人を伝えてください。<br><span style="color:#888">他の人が代理でスマホに入力します</span>';
+    document.getElementById('votePassBtn').textContent = '代理で入力する';
+  } else {
+    document.getElementById('votePassIcon').textContent = '🗳️➡️';
+    document.getElementById('votePassTitle').textContent = '投票タイム';
+    document.getElementById('votePassNote').innerHTML =
+      '<b>' + voter.name + '</b> さんにスマホを渡してください。<br><span style="color:#888">他の人に見えないように投票します</span>';
+    document.getElementById('votePassBtn').textContent = '投票する';
+  }
+  showScreen('votePassScreen');
+}
+
+function showVoteBallot() {
+  const vi = currentVoterIndex();
+  const voter = state.selected[vi];
+  const isDriver = voter.novote;
+  state.currentBallot = -1;
+  document.getElementById('voteTitle').textContent = isDriver
+    ? `🚗 ${voter.name} さんの投票（代理入力）`
+    : `🗳 ${voter.name} さんの投票`;
+  document.getElementById('voteNote').innerHTML = isDriver
+    ? '運転手さんが言った人を選んでください'
+    : 'ウルフだと思う人を1人選んでください<br><span style="color:#888">（他の人に見えないように）</span>';
+  const vl = document.getElementById('voteList');
+  vl.innerHTML = '';
+  state.selected.forEach((m, idx) => {
+    if (idx === vi) return; // 自分には投票できない
+    const b = document.createElement('button');
+    b.className = 'vote-btn';
+    b.textContent = m.name;
+    b.onclick = () => selectBallot(idx, b);
+    vl.appendChild(b);
+  });
+  document.getElementById('voteConfirmBtn').disabled = true;
+  document.getElementById('voteConfirmBtn').textContent =
+    (state.votePos === state.voteOrder.length - 1) ? 'この人に投票して結果へ' : 'この人に投票して次へ';
+  showScreen('voteScreen');
+}
+
+function selectBallot(idx, btn) {
+  state.currentBallot = idx;
+  document.querySelectorAll('#voteList .vote-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('voteConfirmBtn').disabled = false;
+}
+
+function submitVote() {
+  if (state.currentBallot < 0) return;
+  state.votes[state.currentBallot]++;
+  state.votePos++;
+  if (state.votePos >= state.voteOrder.length) {
+    tallyVotes();
+  } else {
+    showVotePass();
+  }
+}
+
+function tallyVotes() {
+  const max = Math.max(...state.votes);
+  const top = state.selected.map((m, i) => i).filter(i => state.votes[i] === max);
+  // 同数はランダムで1人（タイブレーク）
+  state.votedIndex = top[Math.floor(Math.random() * top.length)];
+  showResult();
+}
+
+// ===== 結果 =====
+function showResult() {
+  if (state.votedIndex < 0) return;
+  const voted = state.selected[state.votedIndex];
+  const votedRole = state.roles[state.votedIndex];
+  document.getElementById('votedName').textContent = voted.name + `（${state.votes[state.votedIndex]}票）`;
+
+  // 全員の役職・得票公開
+  const rl = document.getElementById('revealList');
+  rl.innerHTML = state.selected.map((m, i) => {
+    const isWolf = state.roles[i] === 'wolf';
+    const votes = state.votes[i] > 0 ? ` <span style="color:#888">(${state.votes[i]}票)</span>` : '';
+    return `${isWolf ? '🐺' : '👥'} ${m.name}：<span class="${isWolf ? 'wolf' : ''}">${state.words[i]}</span>${votes}`;
+  }).join('<br>');
+
+  document.getElementById('wordPair').textContent = `${state.citizenWord} / ${state.wolfWord}`;
+
+  const citizenWin = votedRole === 'wolf';
+  const emoji = document.getElementById('resultEmoji');
+  const title = document.getElementById('resultTitle');
+  if (citizenWin) {
+    emoji.textContent = '👥🎉';
+    title.textContent = '市民の勝ち！';
+    title.className = 'result-title citizen-win';
+  } else {
+    emoji.textContent = '🐺🎉';
+    title.textContent = 'ウルフの勝ち！';
+    title.className = 'result-title wolf-win';
+  }
+  showScreen('resultScreen');
+}
+
+function restart() {
+  state.current = 0;
+  state.votedIndex = -1;
+  state.votePos = 0;
+  state.currentBallot = -1;
+  state.votes = [];
+  goSetup();
+}
+
+// ===== 初期化・夜間制限 =====
+(function init() {
+  if (typeof isNightTime === 'function' && isNightTime()) {
+    document.getElementById('nightOverlay').classList.add('active');
+    return;
+  }
+  state.selected = members.slice(0, 8);
+  document.getElementById('roleLimitOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeRoleLimit();
+  });
+  document.getElementById('newMemberInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addMember();
+  });
+  buildSetup();
+})();
+</script>
+</body>
+</html>
