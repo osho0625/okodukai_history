@@ -8,7 +8,7 @@
 |----------|-------------|------|
 | `project-overview.md` | 常に自動 | プロジェクト概要・テーブル構成・開発ルール・Git・注意点 |
 | `kanji-test.md` | `*kanji*` ファイルを開いた時 | 漢字50問テスト |
-| `kanji-blast.md` | `*kanji-blast*,*kanji_blast*` を開いた時 | 漢字合体ブラスト（縦STG＋漢字合体パズル） |
+| `kanji-blast.md` | `*kanji-blast*,*kanji_blast*` を開いた時 | 漢字合体 -カンジニオン-（縦STG＋漢字合体パズル） |
 | `puyo-battle.md` | `*puyo*` ファイルを開いた時 | ぴくぴく対戦 + ぷよゲーム |
 | `math-olympiad.md` | `*math*` ファイルを開いた時 | 算数オリンピック + 算数バトル |
 | `suika-rpg.md` | `*suika*` ファイルを開いた時 | すいかが食べたい（3D RPG） |
@@ -47,7 +47,7 @@
 | 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント（育成ロードマップ / Scratch・AI開発ガイド等の子供向けドキュメント含む） |
 | ナースコール | pages/nurse-call.html | 体温記録・通話 |
 | ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
-| 漢字合体ブラスト | pages/kanji-blast.html | 縦STGで漢字パーツを集め合体・分解、読み仮名で図鑑強化（子供ごとにデータ分離） |
+| 漢字合体 -カンジニオン- | pages/kanji-blast.html | 縦STGで漢字パーツを集め合体・分解、読み仮名で図鑑強化（子供ごとにデータ分離） |
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
 | チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |

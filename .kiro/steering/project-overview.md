@@ -90,7 +90,7 @@ inclusion: auto
 ## バックアップ構成
 
 - スケジュール: 毎日AM3:00 JST（GitHub Actions cron）
-- 対象テーブル: 全67テーブル（`?select=*` で全カラム取得。漢字合体ブラストの5テーブル kanji_master/kanji_recipes/kanji_players/kanji_inventory/kanji_dex を含む）
+- 対象テーブル: 全67テーブル（`?select=*` で全カラム取得。漢字合体 -カンジニオン- の5テーブル kanji_master/kanji_recipes/kanji_players/kanji_inventory/kanji_dex を含む）
 - 対象ストレージ: recipe-photos, laq-photos（全ファイル差分管理）
 - 保存先: `backups/` フォルダにコミット
 - テーブルJSON保持期間: 14日ローテーション

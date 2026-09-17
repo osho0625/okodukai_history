@@ -1,5 +1,5 @@
 // ============================================================
-// 漢字合体ブラスト（縦STG + 漢字合体パズル）
+// 漢字合体 -カンジニオン-（縦STG + 漢字合体パズル）
 //  - データは Supabase（kanji_master / kanji_recipes /
 //    kanji_players / kanji_inventory / kanji_dex）に保存。
 //  - プレイデータは子供（player）ごとに分離。
@@ -88,25 +88,16 @@ async function loadMaster() {
   });
 }
 
-// レシピ行から素材配列を取り出す（part_c は任意）
-function recipeParts(rc) {
-  return [rc.part_a, rc.part_b, rc.part_c].filter(Boolean);
-}
+// recipeParts / partKey は js/kanji-blast.pure.js に唯一の実体があり、グローバル公開される。
 
-// 素材配列 → ソート済みキー（順不同で一致判定）
-function partKey(parts) { return parts.slice().sort().join('|'); }
-
-// パーツ配列に含まれる最大画数（分解の優先度に使用）
+// パーツ配列に含まれる最大画数（分解の優先度に使用）。実体は partsMaxStrokePure。
 function partsMaxStroke(parts) {
-  return parts.reduce((m, c) => Math.max(m, (MASTER[c] && MASTER[c].strokes) || 0), 0);
+  return partsMaxStrokePure(MASTER, parts);
 }
 
-// result_char の分解先レシピを1つ選ぶ。
-// 「画数が大きいパーツを含むレシピ」を優先（例: 森 → 木+林 を 木+木+木 より優先）。
+// result_char の分解先レシピを1つ選ぶ。実体は chooseSplitRecipePure。
 function chooseSplitRecipe(char) {
-  const list = RECIPE_BY_RESULT[char];
-  if (!list || list.length === 0) return null;
-  return list.slice().sort((a, b) => partsMaxStroke(b) - partsMaxStroke(a))[0];
+  return chooseSplitRecipePure(MASTER, RECIPE_BY_RESULT, char);
 }
 
 // ------------------------------------------------------------
@@ -118,6 +109,11 @@ function showScreen(id) {
 }
 
 function backToMenu() { showScreen('menuScreen'); refreshMenu(); }
+
+// 合体・分解 画面を開く
+function openInv() { selected = []; showScreen('invScreen'); renderInventory(); }
+// 装備・手持ち 画面を開く
+function openEquip() { selected = []; showScreen('equipScreen'); renderInventory(); }
 
 function goBack() {
   if (document.getElementById('stgScreen').classList.contains('active')) {
@@ -237,34 +233,25 @@ function escapeHtml(s) {
 //   全体ボーナス = 1 + 図鑑登録漢字数 × 0.02
 //   最終 = round(漢字パワー × 全体ボーナス)
 // ------------------------------------------------------------
-const KENTEI_FACTOR = {
-  '10': 1.0, '9': 1.2, '8': 1.4, '7': 1.6, '6': 1.8, '5': 2.0,
-  '4': 2.4, '3': 2.8, '準2': 3.2, '2': 3.6, '準1': 4.2, '1': 5.0
-};
+// KENTEI_FACTOR / kenteiFactor は js/kanji-blast.pure.js に唯一の実体があり、グローバル公開される。
 
-function kenteiFactor(level) { return KENTEI_FACTOR[level] || 1.0; }
-
-// 図鑑に登録済みの、その漢字の読み数
+// 図鑑に登録済みの、その漢字の読み数。実体は unlockedReadingCountPure。
 function unlockedReadingCount(char) {
-  return dex.filter(d => d.char === char).length;
+  return unlockedReadingCountPure(dex, char);
 }
 
-// 図鑑に1つでも読みが登録された漢字の種類数（全体ボーナス用）
+// 図鑑に1つでも読みが登録された漢字の種類数（全体ボーナス用）。実体は dexCharCountPure。
 function dexCharCount() {
-  return new Set(dex.map(d => d.char)).size;
+  return dexCharCountPure(dex);
 }
 
 function overallBonus() {
-  return 1 + dexCharCount() * 0.02;
+  return overallBonusPure(dex);
 }
 
-// plus: 強化値（+値）。+1ごとに×1.05のバフ
+// plus: 強化値（+値）。+1ごとに×1.05のバフ。実体は kanjiPowerPure。
 function kanjiPower(char, plus) {
-  const m = MASTER[char];
-  if (!m) return 0;
-  const p = plus || 0;
-  const base = m.strokes * kenteiFactor(m.kentei_level) * (1 + unlockedReadingCount(char) * 0.1);
-  return Math.round(base * overallBonus() * (1 + p * 0.05));
+  return kanjiPowerPure(MASTER, dex, char, plus);
 }
 
 // +値の表示用（+0は空文字）
@@ -278,71 +265,13 @@ function plusLabel(plus) { return (plus && plus > 0) ? ('+' + plus) : ''; }
 //   送り仮名あり/なし、活用ゆらぎ（まれる/まれた/む…）を許容する。
 //   一致したら display（正規形）を返す。
 // ------------------------------------------------------------
-function toHira(s) {
-  return s.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
-}
-function toKata(s) {
-  return s.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
-}
-function normInput(s) {
-  return (s || '').trim().replace(/\s/g, '').replace(/[・･]/g, '');
-}
+// toHira / toKata / normInput / readingParts / matchScore は js/kanji-blast.pure.js
+// に唯一の実体があり、classic script としてグローバル公開される（本ファイルより前に読み込む）。
 
-
-// 送り仮名の活用ゆらぎ判定用に、語幹（"."より前）と送りを分ける
-function readingParts(kana) {
-  const idx = kana.indexOf('.');
-  if (idx < 0) return { stem: kana, okuri: '' };
-  return { stem: kana.slice(0, idx), okuri: kana.slice(idx + 1) };
-}
-
-// 入力 input が reading(kana) にマッチするか判定する。
-// char: 対象漢字（表記入力「生まれる」対応のため）
-// 戻り値: マッチした「語幹の長さ」（マッチしなければ -1）。大きいほど良い一致。
-//   最長一致を選ぶことで「うむ」→生む、「うまれる」→生まれる を区別する。
-function matchScore(input, kana, char) {
-  const inHira = toHira(input);
-  const { stem, okuri } = readingParts(kana);
-  const stemHira = toHira(stem);
-
-  // 音読み等（送り仮名なし）: 完全一致のみ（ひら/カナ両対応）
-  if (!okuri) {
-    const kHira = toHira(kana);
-    if (inHira === kHira) return kHira.length + 100; // 完全一致は高スコア
-    return -1;
-  }
-
-  // 訓読み（送り仮名あり）
-  const fullHira = toHira(stem + okuri); // うまれる
-  // 表記入力（生まれる）→ 漢字を送り仮名に置換したものと比較
-  const inKanaFromWriting = toHira(input.replace(char, stem)); // 「生まれる」→「うまれる」
-
-  // 完全一致（かな or 表記）
-  if (inHira === fullHira || inKanaFromWriting === fullHira) return fullHira.length + 100;
-
-  // 活用ゆらぎ: 語幹 + 送り(1文字以上)。うまれた/うむ 等。
-  const candidates = [inHira, inKanaFromWriting];
-  for (const cand of candidates) {
-    if (cand.startsWith(stemHira) && cand.length > stemHira.length) {
-      return stemHira.length; // 語幹が長いほど優先される
-    }
-  }
-  return -1;
-}
-
-// 入力に一致する readings を探して、正規形 display を返す（無ければ null）
-// 最もスコアの高い（最長語幹一致の）読みを採用する。
+// 入力に一致する readings を探して、正規形 display を返す（無ければ null）。
+// 実体は resolveReadingPure（pure.js）。ここは MASTER を渡す薄いラッパー。
 function resolveReading(char, input) {
-  const m = MASTER[char];
-  if (!m || !Array.isArray(m.readings)) return null;
-  const norm = normInput(input);
-  if (!norm) return null;
-  let best = null, bestScore = -1;
-  for (const r of m.readings) {
-    const sc = matchScore(norm, r.kana, char);
-    if (sc > bestScore) { bestScore = sc; best = r.display; }
-  }
-  return bestScore >= 0 ? best : null;
+  return resolveReadingPure(MASTER, char, input);
 }
 
 // ------------------------------------------------------------
@@ -366,8 +295,19 @@ function setEquipDisplay(slot, char, plus) {
 // ------------------------------------------------------------
 // 手持ち / 合体UI
 // ------------------------------------------------------------
+// アクティブな手持ち画面（invScreen=合体分解 / equipScreen=装備手持ち）の
+// グリッド要素を返す。どちらも同じ hand/selected を共有する。
+function activeInvGrid() {
+  const equipScreen = document.getElementById('equipScreen');
+  if (equipScreen && equipScreen.classList.contains('active')) {
+    return document.getElementById('equipGrid');
+  }
+  return document.getElementById('invGrid');
+}
+
 function renderInventory() {
-  const grid = document.getElementById('invGrid');
+  const grid = activeInvGrid();
+  if (!grid) return;
   grid.innerHTML = '';
   for (let i = 0; i < MAX_HAND; i++) {
     const item = hand[i];
@@ -411,20 +351,16 @@ function selectedItems() {
   return selected.map(id => hand.find(h => h.id === id)).filter(Boolean);
 }
 
-// 合成後の+値 = 素材の+合計 + 1、plus_cap で上限クリップ
+// 合成後の+値 = 素材の+合計 + 1、plus_cap で上限クリップ。実体は mergedPlusPure。
 function mergedPlus(items) {
-  const sum = items.reduce((s, it) => s + (it.plus || 0), 0) + 1;
-  const cap = (player && player.plus_cap) || 3;
-  return Math.min(sum, cap);
+  return mergedPlusPure(items, (player && player.plus_cap) || 3);
 }
 
-// 分解時の各素材の+ = floor((結果の+ - 1) / 素材数)（端数切り捨て、0未満は0）
-function splitPlus(resultPlus, partCount) {
-  return Math.max(0, Math.floor(((resultPlus || 0) - 1) / partCount));
-}
+// splitPlus は js/kanji-blast.pure.js に唯一の実体があり、グローバル公開される。
 
 function updateRecipePreview() {
   const pv = document.getElementById('recipePreview');
+  if (!pv) return; // 装備画面にはプレビュー欄が無い
   const items = selectedItems();
   const chars = items.map(it => it.char);
   if (items.length >= 2) {
@@ -455,11 +391,17 @@ function updateInvButtons() {
   const multi = chars.length >= 2;
   const one = chars.length === 1;
   const results = multi ? RECIPE_BY_PARTS[partKey(chars)] : null;
-  document.getElementById('btnMerge').disabled = !(results && results.length);
-  document.getElementById('btnSplit').disabled = !(one && chooseSplitRecipe(chars[0]));
-  document.getElementById('btnEquipShot').disabled = !one;
-  document.getElementById('btnEquipSpecial').disabled = !one;
-  document.getElementById('btnRelease').disabled = !one;
+  // 合体・分解ボタンと装備・にがすボタンは別画面に分かれているため、
+  // 存在するものだけを更新する（null 安全）。
+  const setDisabled = (id, disabled) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = disabled;
+  };
+  setDisabled('btnMerge', !(results && results.length));
+  setDisabled('btnSplit', !(one && chooseSplitRecipe(chars[0])));
+  setDisabled('btnEquipShot', !one);
+  setDisabled('btnEquipSpecial', !one);
+  setDisabled('btnRelease', !one);
 }
 
 // 合体: 選択した素材（2〜3）を消して結果1つを追加。
@@ -731,6 +673,7 @@ function spawnStage() {
   stg.enemies = [];
   stg.boss = null;
   stg.tick = 0;
+  stg.lastShot = 0; // tick を 0 に戻すので lastShot も同期（次ステージで連射が止まるバグ対策）
   const n = 3 + Math.min(stg.stage, 6);
   for (let i = 0; i < n; i++) {
     stg.enemies.push({

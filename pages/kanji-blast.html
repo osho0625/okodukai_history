@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1a2e">
-<title>💥 漢字合体ブラスト</title>
+<title>💥 漢字合体 -カンジニオン-</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -97,7 +97,7 @@ h1 { font-size: 1.2em; font-weight: 700; }
 <body>
 <div class="header">
   <a class="back" onclick="goBack()">←</a>
-  <h1>💥 漢字合体ブラスト</h1>
+  <h1>💥 漢字合体 -カンジニオン-</h1>
   <a class="home" href="../index.html">🏠</a>
 </div>
 
@@ -114,7 +114,7 @@ h1 { font-size: 1.2em; font-weight: 700; }
 
 <!-- メニュー -->
 <div class="screen" id="menuScreen">
-  <div class="menu-title">💥漢字合体</div>
+  <div class="menu-title">💥漢字合体<br><span style="font-size:0.5em;color:#aaa;">-カンジニオン-</span></div>
   <div class="menu-sub" id="menuPlayerName"></div>
   <div class="stat-line" id="menuStats"></div>
   <div class="equip-row">
@@ -123,7 +123,8 @@ h1 { font-size: 1.2em; font-weight: 700; }
   </div>
   <div class="menu-btns">
     <button class="btn btn-primary" onclick="startStg()">🚀 しゅつげき！</button>
-    <button class="btn btn-secondary" onclick="showScreen('invScreen'); renderInventory();">🧩 合体・手持ち</button>
+    <button class="btn btn-secondary" onclick="openInv()">🧩 合体・分解</button>
+    <button class="btn btn-secondary" onclick="openEquip()">⚔ 装備・手持ち</button>
     <button class="btn btn-secondary" onclick="showScreen('dexScreen'); renderDex();">📖 図鑑・読み仮名</button>
     <button class="btn btn-ghost" onclick="showScreen('playerScreen'); loadPlayers();">👤 プレイヤーへんこう</button>
   </div>
@@ -144,20 +145,34 @@ h1 { font-size: 1.2em; font-weight: 700; }
   </div>
 </div>
 
-<!-- 合体/手持ち -->
+<!-- 合体・分解 -->
 <div class="screen" id="invScreen">
-  <h2>🧩 手持ち（さいだい10）</h2>
-  <div class="inv-hint">2〜3つえらんで「合体」、1つえらんで「分解」「そうび」「にがす」</div>
+  <h2>🧩 合体・分解</h2>
+  <div class="inv-hint">2〜3つえらんで「合体」、1つえらんで「分解」</div>
   <div class="inv-grid" id="invGrid"></div>
   <div class="recipe-preview" id="recipePreview"></div>
   <div class="inv-actions">
     <button class="btn btn-primary" id="btnMerge" onclick="doMerge()">合体</button>
     <button class="btn btn-secondary" id="btnSplit" onclick="doSplit()">分解</button>
+  </div>
+  <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="openEquip()">⚔ 装備・手持ちへ</button>
+    <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
+  </div>
+</div>
+
+<!-- 装備・手持ち -->
+<div class="screen" id="equipScreen">
+  <h2>⚔ 装備・手持ち（さいだい10）</h2>
+  <div class="inv-hint">1つえらんで「そうび」または「にがす」</div>
+  <div class="inv-grid" id="equipGrid"></div>
+  <div class="inv-actions">
     <button class="btn btn-secondary" id="btnEquipShot" onclick="doEquip('shot')">🔫装備</button>
     <button class="btn btn-secondary" id="btnEquipSpecial" onclick="doEquip('special')">💥装備</button>
     <button class="btn btn-ghost" id="btnRelease" onclick="doRelease()">にがす</button>
   </div>
   <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="openInv()">🧩 合体・分解へ</button>
     <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
   </div>
 </div>
@@ -176,6 +191,7 @@ h1 { font-size: 1.2em; font-weight: 700; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="../js/common.js"></script>
+<script src="../js/kanji-blast.pure.js"></script>
 <script src="../js/kanji-blast.js"></script>
 </body>
 </html>

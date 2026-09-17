@@ -3,16 +3,21 @@ inclusion: fileMatch
 fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 ---
 
-# 漢字合体ブラスト（縦STG + 漢字合体パズル）
+# 漢字合体 -カンジニオン-（縦STG + 漢字合体パズル）
 
 漢字のパーツを集めて合体させ、より複雑で強い漢字を作る縦スクロールSTG。
 漢字の成り立ちと読み仮名を遊びながら学べる教育要素つき。対象は小学1・3・5年生
 （漢字範囲の縛りなし）。
 
+> 名称は「**漢字合体 -カンジニオン-**」に統一（UI・ドキュメント呼称とも）。
+> ただし内部ID・ファイル名・テーブル名はデータ整合のため `kanji-blast` / `kanji_*` のまま。
+
 ## ファイル構成
 
 - `pages/kanji-blast.html` — 画面（プレイヤー選択/メニュー/STG/合体・手持ち/図鑑）
-- `js/kanji-blast.js` — ゲームロジック全体（STG本体・合体/分解・読み判定・図鑑）
+- `js/kanji-blast.pure.js` — 純粋関数の**唯一の実体**（読み判定・強さ計算・合体/分解の+値など）。
+  classic script でグローバル公開し、`kanji-blast.js` より前に読み込む。vitest からは import して同一実体を検証（`tests/kanji-blast/`）
+- `js/kanji-blast.js` — ゲームロジック全体（STG本体・合体/分解・読み判定・図鑑）。純粋関数は pure.js の薄いラッパー
 - `sql/create_kanji_blast_tables.sql` — テーブル定義5つ
 - `sql/seed_kanji_blast_data.sql` — 漢字マスタ・合体レシピ初期データ
 
@@ -66,7 +71,7 @@ fileMatchPattern: "*kanji-blast*,*kanji_blast*"
 - 同じ素材の組み合わせが複数の結果を持つ場合、合成時に番号入力で選ばせる
   （例: 一+一 → 「二」or「十」）。RECIPE_BY_PARTS は結果の配列を保持
 
-## 読み仮名の判定（js/kanji-blast.js の resolveReading）
+## 読み仮名の判定（実体は js/kanji-blast.pure.js の resolveReadingPure。kanji-blast.js の resolveReading はラッパー）
 
 - readings は音・訓・特殊読みの配列。kana の「.」が送り仮名の境界（例: `う.まれる`）
 - display が図鑑に登録される正規形（例: 生まれる / いきる / セイ / ショウ）
