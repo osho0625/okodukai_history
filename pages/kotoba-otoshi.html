@@ -256,13 +256,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <script>
 // ===== お題データ =====
 const WORDS = {
-  '身の回り': ['ちりとり','せんぷうき','じゃぐち','かいだん','まくら','ものさし','ぞうきん','はんこ','かさたて','てぶくろ','めざましどけい','はしご','じょうろ','くつべら','せんたくばさみ'],
-  'たべもの': ['たまごやき','なっとう','からあげ','みそしる','おにぎり','プリン','たこやき','コロッケ','しゅうまい','わたあめ','ようかん','メロンパン','おでん','きなこ','マカロン'],
-  'いきもの': ['カピバラ','なまけもの','だんごむし','ペンギン','かたつむり','ハムスター','くらげ','こうもり','やもり','いるか','ありくい','てんとうむし','ふくろう','らくだ','かめれおん'],
-  '学校': ['ちょうれい','きゅうしょく','たいいくかん','くつばこ','うわばき','ほけんしつ','こくばん','じかんわり','せいそう','ずこう','うんどうかい','きゅうしょくとうばん','がっしょう','ひなんくんれん'],
-  'のりもの': ['しんかんせん','きゅうきゅうしゃ','いかだ','ききゅう','せんすいかん','ロープウェイ','しょうぼうしゃ','ゆうらんせん','じてんしゃ','モノレール','たがやすトラクター','しんごうき']
+  '身の回り': ['ちりとり','せんぷうき','じゃぐち','かいだん','まくら','ものさし','ぞうきん','はんこ','かさたて','てぶくろ','めざましどけい','はしご','じょうろ','くつべら','せんたくばさみ','ものほし','ざぶとん','はぶらし','せっけん','タオル','かがみ','くしゃみ','つめきり','たんす','カーテン','ふとん','スリッパ','とけい','けしゴム','えんぴつけずり'],
+  'たべもの': ['たまごやき','なっとう','からあげ','みそしる','おにぎり','プリン','たこやき','コロッケ','しゅうまい','わたあめ','ようかん','メロンパン','おでん','きなこ','マカロン','おこのみやき','やきそば','カレー','ハンバーグ','ぎょうざ','おだんご','どらやき','たいやき','せんべい','こんぶ','うめぼし','とうふ','だいこん','ソフトクリーム','ポップコーン'],
+  'いきもの': ['カピバラ','なまけもの','だんごむし','ペンギン','かたつむり','ハムスター','くらげ','こうもり','やもり','いるか','ありくい','てんとうむし','ふくろう','らくだ','かめれおん','ハリネズミ','カンガルー','コアラ','ナマズ','ザリガニ','ミミズ','セミ','クワガタ','タツノオトシゴ','フラミンゴ','ペリカン','アルパカ','モグラ','イソギンチャク','ヤドカリ'],
+  '学校': ['ちょうれい','きゅうしょく','たいいくかん','くつばこ','うわばき','ほけんしつ','こくばん','じかんわり','せいそう','ずこう','うんどうかい','きゅうしょくとうばん','がっしょう','ひなんくんれん','ランドセル','しゅくだい','えんそく','きゅうけい','としょしつ','しいくごや','プール','てつぼう','なわとび','きゅうしょくトレー','しきしゃ','たいそうふく','クラブかつどう','じゆうけんきゅう'],
+  'のりもの': ['しんかんせん','きゅうきゅうしゃ','いかだ','ききゅう','せんすいかん','ロープウェイ','しょうぼうしゃ','ゆうらんせん','じてんしゃ','モノレール','トラクター','しんごうき','パトカー','ヘリコプター','いちりんしゃ','じんりきしゃ','スケートボード','ケーブルカー','タンカー','ゴミしゅうしゅうしゃ','ブルドーザー','ロケット','きかんしゃ','リヤカー','キックボード'],
+  '自然': ['にじ','たきび','つらら','みずたまり','おちば','くもり','かみなり','ゆきだるま','たけのこ','どんぐり','まつぼっくり','みかづき','しんきろう','たつまき','おんせん','どうくつ','さんご','ながれぼし','かげろう','しも','たんぽぽ','ひまわり','あさがお','こけ','きり'],
+  'あそび': ['かくれんぼ','おにごっこ','なわとび','けんだま','おりがみ','あやとり','しゃぼんだま','すごろく','こままわし','だるまさんがころんだ','ふうせん','ジェスチャー','しりとり','たからさがし','ぬりえ','つみき','ブランコ','すべりだい','どろだんご','せんべいぶとん'],
+  'おうち': ['げんかん','おふろ','だいどころ','ベランダ','おしいれ','てんじょう','やねうら','かいだん','ろうか','しょうじ','ふすま','こたつ','れいぞうこ','せんたくき','でんしレンジ','そうじき','ゆかだんぼう','いんかん','ゆうびんうけ','いんたーほん']
 };
 const CAT_NAMES = Object.keys(WORDS);
+// 全お題をまとめたプール（ランダムモード用）
+const ALL_WORDS = Object.values(WORDS).reduce((a, b) => a.concat(b), []);
 
 // ===== 参加者管理 =====
 const MEMBERS_KEY = 'kotoba_otoshi_members';
@@ -294,6 +299,7 @@ function saveMembers() {
 // ===== 状態 =====
 let state = {
   categories: [...CAT_NAMES],
+  randomMode: false, // 🎲 全ジャンルから完全ランダムに出題
   selected: [],     // 参加する member オブジェクトの配列（プレイ順）
   roles: [],        // selected と同順の役職 'oya'|'support'|'guesser'
   word: '',
@@ -366,11 +372,20 @@ function buildSetup() {
 
   const cl = document.getElementById('catList');
   cl.innerHTML = '';
+  // 🎲 ランダムモードボタン
+  const rb = document.createElement('button');
+  rb.className = 'cat-btn' + (state.randomMode ? ' selected' : '');
+  rb.textContent = '🎲 おまかせ（全ジャンル）';
+  rb.onclick = () => { state.randomMode = !state.randomMode; buildSetup(); };
+  cl.appendChild(rb);
+  // 個別ジャンル（ランダムモード時は選べない）
   CAT_NAMES.forEach(cat => {
     const b = document.createElement('button');
-    b.className = 'cat-btn' + (state.categories.includes(cat) ? ' selected' : '');
+    b.className = 'cat-btn' + (!state.randomMode && state.categories.includes(cat) ? ' selected' : '');
+    if (state.randomMode) b.style.opacity = '0.35';
     b.textContent = cat;
     b.onclick = () => {
+      if (state.randomMode) return;
       if (state.categories.includes(cat)) {
         if (state.categories.length > 1) state.categories = state.categories.filter(c => c !== cat);
       } else state.categories.push(cat);
@@ -495,10 +510,16 @@ function startAssign() {
   }
   state.roles = assignment;
 
-  const pool = state.categories.length ? state.categories : CAT_NAMES;
-  state.category = pool[Math.floor(Math.random() * pool.length)];
-  const list = WORDS[state.category];
-  state.word = list[Math.floor(Math.random() * list.length)];
+  if (state.randomMode) {
+    // 全ジャンルからランダム
+    state.word = ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)];
+    state.category = 'おまかせ';
+  } else {
+    const pool = state.categories.length ? state.categories : CAT_NAMES;
+    state.category = pool[Math.floor(Math.random() * pool.length)];
+    const list = WORDS[state.category];
+    state.word = list[Math.floor(Math.random() * list.length)];
+  }
   state.current = 0;
   showPass();
 }
