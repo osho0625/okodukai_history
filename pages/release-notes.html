@@ -36,6 +36,22 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.50.0</span><span class="date">2026/09/17</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> ことば落とし・ワードウルフ: お題ごとに出題回数を記録し、少なく出た言葉を優先して出題する仕組みを追加（同じお題が続きにくくなる）</li>
+    <li><span class="tag tag-feat">feat</span> ことば落とし・ワードウルフ: 設定に「🔁 少なく出た言葉を優先」トグルを追加（ON/OFF切替可・デフォルトON、localStorage保存）。OFFで従来の完全ランダム、SW v351</li>
+  </ul>
+</div>
+
+<div class="release">
+  <div><span class="ver">v2.49.1</span><span class="date">2026/09/17</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 「漢字合体ブラスト」の表示名を「漢字合体 -カンジニオン-」に変更（タイトル・メニュー・アーケードのカード表示）</li>
+    <li><span class="tag tag-infra">infra</span> 漢字合体の純粋関数（読み判定・強さ計算・合体/分解の+値など）を kanji-blast.pure.js に切り出してユニット/プロパティテストを追加（挙動は不変）。SW プリキャッシュに pure.js を追加、SW v350</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.49.0</span><span class="date">2026/09/17</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> ことば落とし: お題を大幅追加（各ジャンル約30語に増量＋「自然」「あそび」「おうち」ジャンル追加）</li>

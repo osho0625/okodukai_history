@@ -65,6 +65,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .wolf-opt { display: flex; gap: 8px; margin-bottom: 8px; }
 .wolf-opt .cat-btn { flex: 1; text-align: center; }
 .hint { font-size: 0.8em; color: #999; line-height: 1.6; margin-top: 4px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); font-size: 0.95em; font-weight: 600; cursor: pointer; }
+.setting-row .setting-desc { font-size: 0.75em; color: #999; font-weight: 400; }
+.setting-row input[type=checkbox] { width: 46px; height: 26px; appearance: none; -webkit-appearance: none; background: rgba(255,255,255,0.2); border-radius: 13px; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+.setting-row input[type=checkbox]:checked { background: #9d5cff; }
+.setting-row input[type=checkbox]::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+.setting-row input[type=checkbox]:checked::after { transform: translateX(20px); }
 /* Pass / word reveal */
 #passScreen, #roleScreen { text-align: center; padding-top: 40px; }
 .pass-icon { font-size: 4em; margin-bottom: 16px; }
@@ -152,6 +158,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <div class="section-label">お題のジャンル</div>
   <div class="cat-list" id="catList"></div>
+
+  <div class="section-label">設定</div>
+  <label class="setting-row">
+    <span>🔁 少なく出たお題を優先<br><span class="setting-desc">同じお題が続きにくくなります</span></span>
+    <input type="checkbox" id="preferUnusedToggle" onchange="onPreferToggle(this)">
+  </label>
 
   <button class="btn btn-primary btn-block" style="margin-top:24px" onclick="startAssign()">お題を配る</button>
   <button class="btn btn-secondary btn-block" onclick="showScreen('titleScreen')">もどる</button>
@@ -315,6 +327,40 @@ const CAT_NAMES = Object.keys(WORD_PAIRS);
 // 全ペアをまとめたプール（ランダムモード用）
 const ALL_PAIRS = Object.values(WORD_PAIRS).reduce((a, b) => a.concat(b), []);
 
+// ===== 出題回数の記録（少なく出たお題ペアを優先） =====
+const WORDCOUNT_KEY = 'word_wolf_wordcount';
+const PREFER_KEY = 'word_wolf_prefer_unused';
+
+function pairKey(pair) { return pair[0] + '/' + pair[1]; }
+function loadWordCounts() {
+  try { return JSON.parse(localStorage.getItem(WORDCOUNT_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveWordCounts(counts) {
+  try { localStorage.setItem(WORDCOUNT_KEY, JSON.stringify(counts)); } catch (e) {}
+}
+function bumpPairCount(pair) {
+  const counts = loadWordCounts();
+  const k = pairKey(pair);
+  counts[k] = (counts[k] || 0) + 1;
+  saveWordCounts(counts);
+}
+function loadPreferUnused() {
+  return localStorage.getItem(PREFER_KEY) !== 'false'; // デフォルトON
+}
+function savePreferUnused(v) {
+  try { localStorage.setItem(PREFER_KEY, v ? 'true' : 'false'); } catch (e) {}
+}
+// ペア候補から1つ選ぶ。preferUnused=ONなら出題回数が最少のグループから、OFFなら完全ランダム
+function pickPair(pairs) {
+  if (!pairs || !pairs.length) return null;
+  if (!state.preferUnused) return pairs[Math.floor(Math.random() * pairs.length)];
+  const counts = loadWordCounts();
+  let min = Infinity;
+  pairs.forEach(p => { const c = counts[pairKey(p)] || 0; if (c < min) min = c; });
+  const leastUsed = pairs.filter(p => (counts[pairKey(p)] || 0) === min);
+  return leastUsed[Math.floor(Math.random() * leastUsed.length)];
+}
+
 // ===== 参加者管理（ことば落としと共有） =====
 const MEMBERS_KEY = 'kotoba_otoshi_members';
 const DEFAULT_MEMBERS = [
@@ -363,6 +409,7 @@ function saveMembers() {
 let state = {
   categories: [...CAT_NAMES],
   randomMode: false,  // 🎲 全ジャンルから完全ランダムに出題
+  preferUnused: loadPreferUnused(), // 少なく出たお題を優先
   selected: [],
   roles: [],          // selected同順の役職 'citizen'|'wolf'
   words: [],          // selected同順の配布ワード
@@ -601,18 +648,17 @@ function startAssign() {
   }
   state.roles = assignment;
 
-  // お題ペアを選ぶ
+  // お題ペアを選ぶ（少なく出たペアを優先）
   let pair;
   if (state.randomMode) {
-    // 全ジャンルからランダム
-    pair = ALL_PAIRS[Math.floor(Math.random() * ALL_PAIRS.length)];
+    pair = pickPair(ALL_PAIRS);
     state.category = 'おまかせ';
   } else {
     const pool = state.categories.length ? state.categories : CAT_NAMES;
     state.category = pool[Math.floor(Math.random() * pool.length)];
-    const pairs = WORD_PAIRS[state.category];
-    pair = pairs[Math.floor(Math.random() * pairs.length)];
+    pair = pickPair(WORD_PAIRS[state.category]);
   }
+  bumpPairCount(pair);
   // どちらを市民語にするかランダム
   if (Math.random() < 0.5) { state.citizenWord = pair[0]; state.wolfWord = pair[1]; }
   else { state.citizenWord = pair[1]; state.wolfWord = pair[0]; }
@@ -844,6 +890,11 @@ function restart() {
   goSetup();
 }
 
+function onPreferToggle(cb) {
+  state.preferUnused = cb.checked;
+  savePreferUnused(cb.checked);
+}
+
 // ===== 初期化・夜間制限 =====
 (function init() {
   if (typeof isNightTime === 'function' && isNightTime()) {
@@ -851,6 +902,7 @@ function restart() {
     return;
   }
   state.selected = members.slice(0, 8);
+  document.getElementById('preferUnusedToggle').checked = state.preferUnused;
   document.getElementById('roleLimitOverlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeRoleLimit();
   });
