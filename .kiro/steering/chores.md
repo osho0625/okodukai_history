@@ -45,9 +45,13 @@ fileMatchPattern: "*chore*"
 }
 ```
 
-`scripts/auto-chore-points.js` が毎時cronで起動し、`jstHour === config.hour` の時のみ付与を実行。
+`scripts/auto-chore-points.js` が毎時cronで起動し、`jstHour >= config.hour`（設定時刻**以降**）で付与を実行。
+GitHub Actions cron の遅延・スキップに備え「その時刻ちょうど一致」ではなく「以降」で判定するため、
+17時台の実行が遅延・欠落しても当日のその後の毎時cronで拾える。
+二重付与は `hasChoreToday()` が「当日すでに同じルール(child_id + chore_name)で付与済みか」を
+chore_points から判定してスキップすることで防ぐ（時刻ゲートを緩めたことによる重複対策）。
 DBに設定が無い場合はスクリプト内 `DEFAULT_AUTO_CHORE_CONFIG` を使用。
-手動実行（workflow_dispatch）で `force=true` を指定すると時刻判定をスキップして即時付与。
+手動実行（workflow_dispatch）で `force=true` を指定すると時刻判定をスキップして即時付与（当日付与済みルールはスキップ）。
 
 ### ご褒美・チケットの付与ロジック（差分方式）
 

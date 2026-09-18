@@ -82,11 +82,14 @@ async function main() {
 
   console.log(`Auto chore points: ${dateStr} ${jstHour}:00 JST (day of year: ${dayOfYear}, target hour: ${config.hour})`);
 
-  // 設定された付与時刻でなければスキップ（cronは毎時実行される想定）
-  // FORCE_RUN=true（手動実行）の場合は時刻判定をスキップして即実行
+  // 設定された付与時刻を過ぎていれば実行（cronは毎時実行される想定）。
+  // 「その時刻ちょうど」ではなく「その時刻以降」で判定するため、
+  // GitHub Actions cron の遅延・スキップが起きても当日中に拾える。
+  // 二重付与は「当日すでに付与済みか」を chore_points で判定して防ぐ（下記 hasChoreToday）。
+  // FORCE_RUN=true（手動実行）の場合は時刻判定をスキップして即実行。
   const forceRun = process.env.FORCE_RUN === 'true';
-  if (!forceRun && jstHour !== config.hour) {
-    console.log(`Skip: current hour ${jstHour} != target hour ${config.hour}`);
+  if (!forceRun && jstHour < config.hour) {
+    console.log(`Skip: current hour ${jstHour} < target hour ${config.hour} (まだ付与時刻前)`);
     console.log('Done.');
     return;
   }
@@ -116,6 +119,14 @@ async function main() {
     const child = children.find(c => c.name === rule.childName);
     if (!child) {
       console.error(`Child not found: ${rule.childName}`);
+      continue;
+    }
+
+    // 当日すでにこのルールで付与済みなら二重付与を防ぐためスキップ。
+    // （cronが同日に複数回実行される想定：時刻ゲートを「以上」にしたため）
+    const alreadyGiven = await hasChoreToday(SUPABASE_URL, SUPABASE_KEY, child.id, rule.choreName, dateStr);
+    if (alreadyGiven) {
+      console.log(`Skip: ${rule.childName} - ${rule.choreName} (今日は付与済み)`);
       continue;
     }
 
@@ -232,6 +243,40 @@ function calcCumulativeAllowance(totalPts) {
 // ============================================================
 // Supabase ヘルパー
 // ============================================================
+
+// 指定した子供・お手伝い名で、JST当日(dateStr)に付与済みレコードがあるか判定。
+// created_at は UTC 保存なので、JST当日 [00:00, 24:00) を UTC 範囲
+// [前日15:00Z, 当日15:00Z) に変換して問い合わせる。
+async function hasChoreToday(supabaseUrl, supabaseKey, childId, choreName, dateStr) {
+  const startUtc = new Date(`${dateStr}T00:00:00+09:00`).toISOString();
+  const endUtc = new Date(`${dateStr}T00:00:00+09:00`);
+  endUtc.setDate(endUtc.getDate() + 1);
+  const endUtcStr = endUtc.toISOString();
+
+  const url = `${supabaseUrl}/rest/v1/chore_points`
+    + `?child_id=eq.${childId}`
+    + `&chore_name=eq.${encodeURIComponent(choreName)}`
+    + `&created_at=gte.${startUtc}`
+    + `&created_at=lt.${endUtcStr}`
+    + `&select=id&limit=1`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+    if (!res.ok && res.status !== 206) {
+      // 判定に失敗した場合は安全側（未付与扱いにせず）に倒して二重付与を避けるため true を返す
+      console.warn(`hasChoreToday check failed (${res.status}) for ${choreName}, treating as already given to avoid duplicates`);
+      return true;
+    }
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0;
+  } catch (e) {
+    console.warn(`hasChoreToday error for ${choreName}: ${e.message}, treating as already given`);
+    return true;
+  }
+}
+
 async function getBalance(supabaseUrl, supabaseKey, childId) {
   const res = await fetch(
     `${supabaseUrl}/rest/v1/children?id=eq.${childId}&select=balance`,

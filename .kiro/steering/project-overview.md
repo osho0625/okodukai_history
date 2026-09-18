@@ -62,7 +62,7 @@ inclusion: auto
 ├── dict/               # kuromoji辞書ファイル（ひらがな変換用）
 ├── suika/              # すいかが食べたい（原作アセット+HTML5移植）
 ├── scripts/            # Cron/ユーティリティスクリプト
-│   ├── auto-chore-points.js  # 自動お手伝いポイント付与（付与ルール/時刻は管理者ページ→game_settings.auto_chore_config で編集可能、毎時cron）
+│   ├── auto-chore-points.js  # 自動お手伝いポイント付与（ルール/時刻は管理者ページ→game_settings.auto_chore_config で編集可能、毎時cron・設定時刻以降に当日1回付与/当日重複はスキップ）
 │   ├── auto-chore-tasks.js   # 定型業務の毎朝自動追加
 │   ├── reminder-notify.js    # リマインダーDiscord通知
 │   ├── news-notify.js        # ニュース差分Push通知

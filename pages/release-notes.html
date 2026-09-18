@@ -36,6 +36,14 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.53.0</span><span class="date">2026/09/18</span></div>
+  <ul>
+    <li><span class="tag tag-fix">fix</span> 自動お手伝いポイント付与: GitHub Actions cron の遅延・スキップで付与が丸ごと落ちる問題を修正。付与判定を「設定時刻ちょうど一致」→「設定時刻以降」に変更し、当日中の後続cronで拾えるように</li>
+    <li><span class="tag tag-fix">fix</span> 自動付与: 当日すでに付与済みのルールはスキップする重複防止（hasChoreToday）を追加し、時刻ゲート緩和による二重付与を防止</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.52.2</span><span class="date">2026/09/17</span></div>
   <ul>
     <li><span class="tag tag-feat">feat</span> 家族メモ帳: 算数・国語の学習ドキュメントの基本方針に「親のスタンス」を追記（強制しない/クリアで次を早めに/飽きても怒らず次を買わないだけ/勉強にはお金を出す姿勢でドリル購入は視野に）</li>
