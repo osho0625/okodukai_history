@@ -87,7 +87,8 @@ fileMatchPattern: "*family-notes*,*family_notes*"
   { "title": "💒 新婚旅行計画", "file": "honeymoon-trip.md" },
   { "title": "🍓 Raspberry Pi セットアップガイド", "file": "raspi-setup-guide.md" },
   { "title": "🧮 算数 学習・知育の進め方", "file": "math-drill-guide.md" },
-  { "title": "📚 国語・漢字 学習の進め方", "file": "japanese-study-guide.md" }
+  { "title": "📚 国語・漢字 学習の進め方", "file": "japanese-study-guide.md" },
+  { "title": "🍽️ 10/24 両家顔合わせ 店舗候補", "file": "ryoke-kaoawase-shinyokohama.md" }
 ]
 ```
 
