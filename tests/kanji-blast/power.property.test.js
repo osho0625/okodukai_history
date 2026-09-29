@@ -4,8 +4,8 @@ import { kanjiPowerPure } from '../../js/kanji-blast.pure.js';
 
 // ============================================================
 // 3.3 プロパティ: plus 増加で Final_Power は減らない（単調非減少）
-//   Requirements: 9.1
-//   他項（strokes/級/Dex）を固定し、plus を増やしたとき
+//   Requirements(balance): 2.9
+//   他項（strokes/級/Dex/plusCap）を固定し、plus を増やしたとき
 //   kanjiPowerPure は減少しない（Math.round のため厳密増加ではなく非減少）。
 // ============================================================
 describe('3.3 property: plus について単調非減少', () => {
@@ -20,7 +20,8 @@ describe('3.3 property: plus について単調非減少', () => {
         fc.integer({ min: 0, max: 10 }),  // 対象charの読み数
         fc.integer({ min: 0, max: 20 }),  // plus
         fc.integer({ min: 0, max: 20 }),  // 追加分 delta
-        (strokes, lvl, otherChars, selfReadings, plus, delta) => {
+        fc.integer({ min: 1, max: 10 }),  // plusCap
+        (strokes, lvl, otherChars, selfReadings, plus, delta, cap) => {
           const char = '対';
           const master = { [char]: { char, strokes, kentei_level: lvl } };
 
@@ -29,8 +30,8 @@ describe('3.3 property: plus について単調非減少', () => {
           for (let i = 0; i < selfReadings; i++) dex.push({ char, reading: 'r' + i });
           for (let i = 0; i < otherChars; i++) dex.push({ char: 'x' + i, reading: 'y' });
 
-          const low = kanjiPowerPure(master, dex, char, plus);
-          const high = kanjiPowerPure(master, dex, char, plus + delta);
+          const low = kanjiPowerPure(master, dex, char, plus, cap);
+          const high = kanjiPowerPure(master, dex, char, plus + delta, cap);
 
           expect(high).toBeGreaterThanOrEqual(low);
         }

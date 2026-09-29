@@ -28,27 +28,29 @@ describe('3.1 kenteiFactor', () => {
 });
 
 // ============================================================
-// 3.2 kanjiPowerPure
-//   Requirements: 9.1
-//   round(strokes × kenteiFactor × (1+読み数×0.1) × (1+図鑑種類数×0.02) × (1+plus×0.05))
+// 3.2 kanjiPowerPure（強さ再設計版 / kanji-blast-balance-danmaku）
+//   Requirements(balance): 2.1, 2.8
+//   round(strokes × kenteiBoost × plusBoost(plus,cap) × (1+読み数×0.1) × (1+図鑑種類数×0.02))
+//   kenteiBoost(level) = 1 + 0.5×(F-1)/4  （F=kenteiFactor, Fmin=1,Fmax=5）
+//   plusBoost(plus,cap) = 1 + 0.5×clamp(plus,0,cap)/max(cap,1)
 // ============================================================
-describe('3.2 kanjiPowerPure', () => {
+describe('3.2 kanjiPowerPure（新式・画数主軸）', () => {
   const master = {
     '生': { char: '生', strokes: 5, kentei_level: '10' },
     '一': { char: '一', strokes: 1, kentei_level: '10' }
   };
 
   it('Dex が空・plus 0 の基本ケース', () => {
-    // 5 × 1.0 × (1+0) × (1+0) × (1+0) = 5
-    expect(kanjiPowerPure(master, [], '生', 0)).toBe(5);
+    // 5 × 1.0(10級) × 1.0(+0) × 1 × 1 = 5
+    expect(kanjiPowerPure(master, [], '生', 0, 3)).toBe(5);
   });
 
-  it('plus 省略時は 0 扱い', () => {
+  it('plus 省略時は 0 扱い（plusBoost=1.0）', () => {
     expect(kanjiPowerPure(master, [], '生')).toBe(5);
   });
 
   it('マスタに無い char は 0', () => {
-    expect(kanjiPowerPure(master, [], '無', 3)).toBe(0);
+    expect(kanjiPowerPure(master, [], '無', 3, 3)).toBe(0);
   });
 
   it('読み数・図鑑種類数・plus を反映する', () => {
@@ -58,16 +60,15 @@ describe('3.2 kanjiPowerPure', () => {
       { char: '生', reading: '生まれる' },
       { char: '一', reading: 'いち' }
     ];
-    // base = 5 × 1.0 × (1 + 2×0.1) = 5 × 1.2 = 6
-    // overall = 1 + 2×0.02 = 1.04
-    // plus=3 → (1 + 3×0.05) = 1.15
-    // 6 × 1.04 × 1.15 = 7.176 → round = 7
-    expect(kanjiPowerPure(master, dex, '生', 3)).toBe(7);
+    // base = 5 × 1.0(10級) × plusBoost(3,3)=1.5 × (1+2×0.1)=1.2 × (1+2×0.02)=1.04
+    //      = 5 × 1.5 × 1.2 × 1.04 = 9.36 → round = 9
+    expect(kanjiPowerPure(master, dex, '生', 3, 3)).toBe(9);
   });
 
-  it('級係数を反映する（準1級）', () => {
+  it('級ブーストを反映する（準1級・画数主軸で穏やか）', () => {
     const m = { '龍': { char: '龍', strokes: 16, kentei_level: '準1' } };
-    // 16 × 4.2 × 1 × 1 × 1 = 67.2 → round = 67
-    expect(kanjiPowerPure(m, [], '龍', 0)).toBe(67);
+    // kenteiBoost(準1: F=4.2) = 1 + 0.5×(4.2-1)/4 = 1.4
+    // 16 × 1.4 × 1.0(+0) × 1 × 1 = 22.4 → round = 22
+    expect(kanjiPowerPure(m, [], '龍', 0, 3)).toBe(22);
   });
 });

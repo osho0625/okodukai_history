@@ -47,7 +47,7 @@
 | 家族メモ帳 | pages/family-notes.html | 共有メモ・ドキュメント（育成ロードマップ / Scratch・AI開発ガイド / 算数・国語の学習方針等の子供向けドキュメント含む） |
 | ナースコール | pages/nurse-call.html | 体温記録・通話 |
 | ゲームセンター | pages/arcade.html | 各種ミニゲーム集 |
-| 漢字合体 -カンジニオン- | pages/kanji-blast.html | 縦STGで漢字パーツを集め合体・分解、読み仮名で図鑑強化（子供ごとにデータ分離） |
+| 漢字合体 -カンジニオン- | pages/kanji-blast.html | 縦STGで漢字パーツを集め合体・分解、読み仮名で図鑑強化（子供ごとにデータ分離、東方風ボス弾幕・スペルカード） |
 | テキサスホールデム | pages/texas-holdem.html | ルールガイド |
 | チップ預かり所 | pages/poker-chips.html | ポーカーチップ管理・交換所 |
 | あそびチケット | pages/tickets.html | チケット発行・消費 |
