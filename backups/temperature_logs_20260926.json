@@ -1,0 +1,4 @@
+[{"id":"69b55af1-f801-46c6-9000-73fc9c089178","child_name":"いろは","temperature":36.5,"measured_at":"2026-06-18T10:54:33.101+00:00","device_id":"0b811737-0143-4fbd-86d2-e4eaa88bebad"}, 
+ {"id":"38db74cc-606a-4c31-81c3-1af8d3ec96c4","child_name":"かいせい","temperature":37.0,"measured_at":"2026-06-18T23:00:18.796+00:00","device_id":"0b811737-0143-4fbd-86d2-e4eaa88bebad"}, 
+ {"id":"a4ce0e66-0d33-4be4-ad21-1bdb0d270ddf","child_name":"はるちか","temperature":36.8,"measured_at":"2026-06-18T23:00:34.285+00:00","device_id":"0b811737-0143-4fbd-86d2-e4eaa88bebad"}, 
+ {"id":"ded57f9d-ddc0-4d90-8671-97cabe99a456","child_name":"いろは","temperature":36.8,"measured_at":"2026-06-18T23:00:43.141+00:00","device_id":"0b811737-0143-4fbd-86d2-e4eaa88bebad"}]
