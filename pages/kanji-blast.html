@@ -63,8 +63,8 @@ h1 { font-size: 1.2em; font-weight: 700; }
 .special-btn { position: absolute; bottom: 14px; right: 14px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(255,107,107,0.25); color: #fff; font-size: 1.5em; font-weight: 700; }
 .special-btn:disabled { opacity: 0.3; }
 
-/* --- 合体/手持ち --- */
-#invScreen h2 { text-align: center; margin: 8px 0 4px; }
+/* --- 合体/分解/手持ち --- */
+#mergeScreen h2, #splitScreen h2, #equipScreen h2, #dexScreen h2 { text-align: center; margin: 8px 0 4px; }
 .inv-hint { text-align: center; color: #aaa; font-size: 0.78em; margin-bottom: 10px; }
 .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .kanji-cell { position: relative; aspect-ratio: 1; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
@@ -123,7 +123,8 @@ h1 { font-size: 1.2em; font-weight: 700; }
   </div>
   <div class="menu-btns">
     <button class="btn btn-primary" onclick="startStg()">🚀 しゅつげき！</button>
-    <button class="btn btn-secondary" onclick="openInv()">🧩 合体・分解</button>
+    <button class="btn btn-secondary" onclick="openMerge()">🔧 合体</button>
+    <button class="btn btn-secondary" onclick="openSplit()">✂ 分解</button>
     <button class="btn btn-secondary" onclick="openEquip()">⚔ 装備・手持ち</button>
     <button class="btn btn-secondary" onclick="showScreen('dexScreen'); renderDex();">📖 図鑑・読み仮名</button>
     <button class="btn btn-ghost" onclick="showScreen('playerScreen'); loadPlayers();">👤 プレイヤーへんこう</button>
@@ -145,17 +146,33 @@ h1 { font-size: 1.2em; font-weight: 700; }
   </div>
 </div>
 
-<!-- 合体・分解 -->
-<div class="screen" id="invScreen">
-  <h2>🧩 合体・分解</h2>
-  <div class="inv-hint">2〜3つえらんで「合体」、1つえらんで「分解」</div>
-  <div class="inv-grid" id="invGrid"></div>
+<!-- 合体 -->
+<div class="screen" id="mergeScreen">
+  <h2>🔧 合体</h2>
+  <div class="inv-hint">2〜3つえらんで「合体」</div>
+  <div class="inv-grid" id="mergeGrid"></div>
   <div class="recipe-preview" id="recipePreview"></div>
   <div class="inv-actions">
     <button class="btn btn-primary" id="btnMerge" onclick="doMerge()">合体</button>
+  </div>
+  <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="openSplit()">✂ 分解へ</button>
+    <button class="btn btn-secondary" onclick="openEquip()">⚔ 装備・手持ちへ</button>
+    <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
+  </div>
+</div>
+
+<!-- 分解 -->
+<div class="screen" id="splitScreen">
+  <h2>✂ 分解</h2>
+  <div class="inv-hint">1つえらんで「分解」</div>
+  <div class="inv-grid" id="splitGrid"></div>
+  <div class="recipe-preview" id="splitPreview"></div>
+  <div class="inv-actions">
     <button class="btn btn-secondary" id="btnSplit" onclick="doSplit()">分解</button>
   </div>
   <div class="menu-btns" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="openMerge()">🔧 合体へ</button>
     <button class="btn btn-secondary" onclick="openEquip()">⚔ 装備・手持ちへ</button>
     <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
   </div>
@@ -172,7 +189,8 @@ h1 { font-size: 1.2em; font-weight: 700; }
     <button class="btn btn-ghost" id="btnRelease" onclick="doRelease()">にがす</button>
   </div>
   <div class="menu-btns" style="margin-top:16px;">
-    <button class="btn btn-secondary" onclick="openInv()">🧩 合体・分解へ</button>
+    <button class="btn btn-secondary" onclick="openMerge()">🔧 合体へ</button>
+    <button class="btn btn-secondary" onclick="openSplit()">✂ 分解へ</button>
     <button class="btn btn-ghost" onclick="backToMenu()">← メニュー</button>
   </div>
 </div>

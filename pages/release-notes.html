@@ -36,6 +36,17 @@ h1 { margin-bottom: 24px; color: #333; }
 <h1>&#x1F4CB; リリースノート</h1>
 
 <div class="release">
+  <div><span class="ver">v2.54.0</span><span class="date">2026/09/24</span></div>
+  <ul>
+    <li><span class="tag tag-feat">feat</span> 漢字合体 -カンジニオン-: 強さ計算を再設計。画数を主軸に、漢検級と＋強化をそれぞれ最大1.5倍の穏やかなブーストへ（画数が多いだけで急に強くなりすぎる問題を解消）</li>
+    <li><span class="tag tag-feat">feat</span> 手持ち画面を「合体」「分解」「装備・手持ち」の3画面に分割（相互遷移・選択リセット）</li>
+    <li><span class="tag tag-feat">feat</span> ボス弾幕を強化（東方風）: 弾種を追加（大玉/小玉/遅い弾/細長い弾/予告線→レーザー）、攻撃パターン（自機狙い/自機外し/固定弾/全方位/大玉散布）を直前と異なるものへ切替、サイン・8の字・ワープ移動</li>
+    <li><span class="tag tag-feat">feat</span> ボスに特殊弾幕（スペルカード）を追加。HPしきい値ごとに1回ずつ発動（予告演出あり・理不尽な即死弾なし）、SW v360</li>
+    <li><span class="tag tag-infra">infra</span> 強さ・弾幕計算を純粋関数化（kanji-blast.pure.js）しユニット/プロパティテストを追加（計73テスト緑）</li>
+  </ul>
+</div>
+
+<div class="release">
   <div><span class="ver">v2.53.0</span><span class="date">2026/09/18</span></div>
   <ul>
     <li><span class="tag tag-fix">fix</span> 自動お手伝いポイント付与: GitHub Actions cron の遅延・スキップで付与が丸ごと落ちる問題を修正。付与判定を「設定時刻ちょうど一致」→「設定時刻以降」に変更し、当日中の後続cronで拾えるように</li>

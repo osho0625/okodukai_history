@@ -110,9 +110,10 @@ function showScreen(id) {
 
 function backToMenu() { showScreen('menuScreen'); refreshMenu(); }
 
-// 合体・分解 画面を開く
-function openInv() { selected = []; showScreen('invScreen'); renderInventory(); }
-// 装備・手持ち 画面を開く
+// 手持ち系画面を開く（合体/分解/装備）。いずれも選択をリセットしてから描画する。
+// 相互遷移でも各 open* を経由するため、遷移先で selected は必ず空になる（引き継がない）。
+function openMerge() { selected = []; showScreen('mergeScreen'); renderInventory(); }
+function openSplit() { selected = []; showScreen('splitScreen'); renderInventory(); }
 function openEquip() { selected = []; showScreen('equipScreen'); renderInventory(); }
 
 function goBack() {
@@ -251,7 +252,8 @@ function overallBonus() {
 
 // plus: 強化値（+値）。+1ごとに×1.05のバフ。実体は kanjiPowerPure。
 function kanjiPower(char, plus) {
-  return kanjiPowerPure(MASTER, dex, char, plus);
+  const cap = (player && player.plus_cap) || 3;
+  return kanjiPowerPure(MASTER, dex, char, plus, cap);
 }
 
 // +値の表示用（+0は空文字）
@@ -295,14 +297,18 @@ function setEquipDisplay(slot, char, plus) {
 // ------------------------------------------------------------
 // 手持ち / 合体UI
 // ------------------------------------------------------------
-// アクティブな手持ち画面（invScreen=合体分解 / equipScreen=装備手持ち）の
-// グリッド要素を返す。どちらも同じ hand/selected を共有する。
+// アクティブな手持ち画面（mergeScreen=合体 / splitScreen=分解 / equipScreen=装備手持ち）の
+// グリッド要素を返す。3画面とも同じ hand/selected を共有する。
 function activeInvGrid() {
-  const equipScreen = document.getElementById('equipScreen');
-  if (equipScreen && equipScreen.classList.contains('active')) {
-    return document.getElementById('equipGrid');
-  }
-  return document.getElementById('invGrid');
+  const isActive = (id) => {
+    const el = document.getElementById(id);
+    return el && el.classList.contains('active');
+  };
+  if (isActive('mergeScreen')) return document.getElementById('mergeGrid');
+  if (isActive('splitScreen')) return document.getElementById('splitGrid');
+  if (isActive('equipScreen')) return document.getElementById('equipGrid');
+  // フォールバック: 存在するグリッドのいずれか
+  return document.getElementById('mergeGrid') || document.getElementById('splitGrid') || document.getElementById('equipGrid');
 }
 
 function renderInventory() {
@@ -358,31 +364,44 @@ function mergedPlus(items) {
 
 // splitPlus は js/kanji-blast.pure.js に唯一の実体があり、グローバル公開される。
 
+// 合体プレビュー（合体画面の #recipePreview）と分解プレビュー（分解画面の #splitPreview）を
+// それぞれ更新する。対象要素が無い画面では何もしない（null 安全）。
 function updateRecipePreview() {
-  const pv = document.getElementById('recipePreview');
-  if (!pv) return; // 装備画面にはプレビュー欄が無い
   const items = selectedItems();
   const chars = items.map(it => it.char);
-  if (items.length >= 2) {
-    const results = RECIPE_BY_PARTS[partKey(chars)];
-    const joined = items.map(it => it.char + plusLabel(it.plus)).join(' ＋ ');
-    if (results && results.length) {
-      const np = mergedPlus(items);
-      const outs = results.map(r => r + plusLabel(np) + '（⚔' + kanjiPower(r, np) + '）').join(' / ');
-      pv.textContent = joined + ' → ' + outs + (results.length > 1 ? '（えらべる）' : '');
+
+  // --- 合体プレビュー ---
+  const pv = document.getElementById('recipePreview');
+  if (pv) {
+    if (items.length >= 2) {
+      const results = RECIPE_BY_PARTS[partKey(chars)];
+      const joined = items.map(it => it.char + plusLabel(it.plus)).join(' ＋ ');
+      if (results && results.length) {
+        const np = mergedPlus(items);
+        const outs = results.map(r => r + plusLabel(np) + '（⚔' + kanjiPower(r, np) + '）').join(' / ');
+        pv.textContent = joined + ' → ' + outs + (results.length > 1 ? '（えらべる）' : '');
+      } else {
+        pv.textContent = joined + ' → ？（レシピなし）';
+      }
     } else {
-      pv.textContent = joined + ' → ？（レシピなし）';
+      pv.textContent = '';
     }
-  } else if (items.length === 1) {
-    const rc = chooseSplitRecipe(chars[0]);
-    if (rc) {
-      const sp = splitPlus(items[0].plus, rc.length);
-      pv.textContent = chars[0] + plusLabel(items[0].plus) + ' → ' + rc.map(c => c + plusLabel(sp)).join(' ＋ ') + ' に分解できる';
+  }
+
+  // --- 分解プレビュー ---
+  const sv = document.getElementById('splitPreview');
+  if (sv) {
+    if (items.length === 1) {
+      const rc = chooseSplitRecipe(chars[0]);
+      if (rc) {
+        const sp = splitPlus(items[0].plus, rc.length);
+        sv.textContent = chars[0] + plusLabel(items[0].plus) + ' → ' + rc.map(c => c + plusLabel(sp)).join(' ＋ ') + ' に分解できる';
+      } else {
+        sv.textContent = chars[0] + '（これ以上分解できない）';
+      }
     } else {
-      pv.textContent = chars[0] + '（これ以上分解できない）';
+      sv.textContent = '';
     }
-  } else {
-    pv.textContent = '';
   }
 }
 
@@ -581,6 +600,58 @@ async function submitReading(char, input) {
 // ============================================================
 let stg = null;
 
+// ------------------------------------------------------------
+// 弾幕システムの定数（プレイテストで調整可能な設定値）
+// ------------------------------------------------------------
+// 同時に存在できる敵弾の上限。到達時は新規発射を抑制（既存弾は破棄しない）。
+const MAX_ACTIVE_BULLETS = 260;
+
+// 弾種ごとのデフォルトパラメータ（当たり半径 r / 速度倍率 speed / 描画）。
+//  small: 標準の小玉 / big: 大玉 / slow: 遅い弾 / oval: 細長い弾（カプセル判定）
+//  laser: 予告線→レーザー（telegraph フレーム→life フレーム）
+const BULLET_DEFS = {
+  small: { r: 4, speed: 1.0, color: '#ff6b6b' },
+  big:   { r: 10, speed: 0.75, color: '#ff9f43' },
+  slow:  { r: 6, speed: 0.5, color: '#feca57' },
+  oval:  { r: 5, speed: 1.15, color: '#ff6bd6', length: 22 }, // length=カプセル長
+  laser: { r: 7, telegraph: 45, life: 30, color: '#5ac8fa' }  // r=レーザー太さ/2
+};
+
+// 敵弾を1発追加する（弾数上限に達していれば抑制）。
+// type 未指定は small 互換。angle+speedBase から vx/vy を作る（laser/oval は angle 保持）。
+function spawnBullet(opt) {
+  if (stg.enemyBullets.length >= MAX_ACTIVE_BULLETS) return; // 新規発射抑制
+  const type = opt.type || 'small';
+  const def = BULLET_DEFS[type] || BULLET_DEFS.small;
+  const b = {
+    x: opt.x, y: opt.y, type,
+    r: opt.r != null ? opt.r : def.r,
+    color: opt.color || def.color
+  };
+  if (type === 'laser') {
+    // レーザー: 方向は生成時に確定（追尾しない）。telegraph 中は無害。
+    b.angle = opt.angle != null ? opt.angle : Math.PI / 2;
+    b.telegraph = opt.telegraph != null ? opt.telegraph : def.telegraph;
+    b.life = opt.life != null ? opt.life : def.life;
+    b.length = opt.length != null ? opt.length : Math.max(stg.w, stg.h) * 1.5;
+    b.vx = 0; b.vy = 0; // 本体は移動しない（線分固定）
+  } else {
+    const base = opt.speedBase != null ? opt.speedBase : (3 + stg.stage * 0.1);
+    const spd = base * (def.speed || 1.0);
+    if (opt.angle != null) {
+      b.angle = opt.angle;
+      b.vx = Math.cos(opt.angle) * spd;
+      b.vy = Math.sin(opt.angle) * spd;
+    } else {
+      b.vx = opt.vx || 0;
+      b.vy = opt.vy != null ? opt.vy : spd;
+      b.angle = Math.atan2(b.vy, b.vx);
+    }
+    if (type === 'oval') b.length = opt.length != null ? opt.length : def.length;
+  }
+  stg.enemyBullets.push(b);
+}
+
 function stgConfig() {
   const shotChar = player.equipped_shot;
   const shotPlus = player.equipped_shot_plus || 0;
@@ -684,14 +755,54 @@ function spawnStage() {
   }
 }
 
+// 通常弾幕パターンの候補（floor で候補数が変わる）
+const BOSS_PATTERNS_NORMAL = ['aimed', 'spread', 'fixed'];
+const BOSS_PATTERNS_FLOOR = ['aimed', 'spread', 'fixed', 'ring', 'bigLob'];
+// ボスの動きの候補
+const BOSS_MOVES = ['sine', 'eight', 'warp'];
+
 function spawnBoss() {
   const floor = isFloorBossStage(stg.stage);
   const hp = (60 + stg.stage * 40) * (floor ? 2.2 : 1);
+  const patterns = floor ? BOSS_PATTERNS_FLOOR : BOSS_PATTERNS_NORMAL;
+  // スペルカードしきい値（maxHp 比）。floor は多め。
+  const thresholds = floor ? [0.7, 0.45, 0.2] : [0.5];
+  const spellState = {};
+  thresholds.forEach(t => { spellState[t] = 'inactive'; });
   stg.boss = {
     x: stg.w / 2, y: 70, r: floor ? 52 : 42, hp, maxHp: hp,
-    vx: (1.2 + stg.stage * 0.1) * (floor ? 1.3 : 1), dir: 1, fireT: 40,
-    floor
+    baseX: stg.w / 2, baseY: 70,
+    vx: (1.2 + stg.stage * 0.1) * (floor ? 1.3 : 1), dir: 1,
+    floor,
+    // 弾幕パターン
+    patterns,
+    pattern: patterns[Math.floor(Math.random() * patterns.length)],
+    patternT: 150,      // 現パターンの残りフレーム
+    fireT: 0,           // 発射クールダウン
+    // 動き
+    moves: BOSS_MOVES,
+    move: 'sine',
+    moveT: 0,
+    warpTarget: null,
+    // スペルカード状態機械
+    spellThresholds: thresholds,
+    spellState,
+    mode: 'normal',     // 'normal' | 'spell'
+    spellT: 0,          // spell 残りフレーム
+    spellName: ''
   };
+}
+
+// 次パターンを選ぶ（直前と異なるものからランダム）
+function pickNextPattern(bo) {
+  const cands = bo.patterns.filter(p => p !== bo.pattern);
+  const pool = cands.length ? cands : bo.patterns;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function pickNextMove(bo) {
+  const cands = bo.moves.filter(m => m !== bo.move);
+  const pool = cands.length ? cands : bo.moves;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function loop() {
@@ -737,9 +848,22 @@ function updateEntities() {
   stg.bullets.forEach(b => b.y += b.vy);
   stg.bullets = stg.bullets.filter(b => b.y > -10);
 
-  // 敵弾
-  stg.enemyBullets.forEach(b => { b.x += b.vx || 0; b.y += b.vy; });
-  stg.enemyBullets = stg.enemyBullets.filter(b => b.y < h + 10 && b.y > -10);
+  // 敵弾（弾種別に更新）
+  stg.enemyBullets.forEach(b => {
+    if (b.type === 'laser') {
+      // 予告→本体→消滅。移動しない（線分固定）。
+      if (b.telegraph > 0) b.telegraph--;
+      else if (b.life > 0) b.life--;
+      return;
+    }
+    b.x += b.vx || 0;
+    b.y += b.vy || 0;
+  });
+  // 画面外・寿命切れを破棄（laser は telegraph/life を使い切ったら破棄）
+  stg.enemyBullets = stg.enemyBullets.filter(b => {
+    if (b.type === 'laser') return !(b.telegraph <= 0 && b.life <= 0);
+    return b.y < h + 20 && b.y > -20 && b.x > -20 && b.x < w + 20;
+  });
 
   // 雑魚
   stg.enemies.forEach(e => {
@@ -748,26 +872,16 @@ function updateEntities() {
     e.fireT--;
     if (e.fireT <= 0 && e.y > 0 && e.y < h * 0.6) {
       e.fireT = 90 + Math.random() * 60;
-      stg.enemyBullets.push({ x: e.x, y: e.y + e.r, vy: 3 + stg.stage * 0.1 });
+      spawnBullet({ x: e.x, y: e.y + e.r, vy: 3 + stg.stage * 0.1, type: 'small' });
     }
   });
 
   // 雑魚が全滅したらボス
   if (!stg.boss && stg.enemies.length === 0 && stg.tick > 30) spawnBoss();
 
-  // ボス挙動
+  // ボス挙動（動き → スペル遷移 → 弾幕発射）
   if (stg.boss) {
-    const bo = stg.boss;
-    bo.x += bo.vx * bo.dir;
-    if (bo.x < bo.r || bo.x > w - bo.r) bo.dir *= -1;
-    bo.fireT--;
-    if (bo.fireT <= 0) {
-      bo.fireT = 45;
-      // 3方向弾
-      for (let a = -1; a <= 1; a++) {
-        stg.enemyBullets.push({ x: bo.x, y: bo.y + bo.r, vx: a * 1.5, vy: 3.2 });
-      }
-    }
+    updateBoss(stg.boss);
   }
 
   // 衝突: 自弾 vs 雑魚
@@ -802,13 +916,14 @@ function updateEntities() {
     return true;
   });
 
-  // 敵弾 vs 自機（被弾でゲームオーバー: HP制ではなく1発でやられない緩さ→3回まで）
+  // 敵弾 vs 自機（被弾は3回まで。弾種別に判定）
   if (stg._invuln > 0) stg._invuln--;
-  stg.enemyBullets.forEach(b => {
-    if (stg._invuln <= 0 && dist(b, stg.player) < stg.player.r) {
-      b.dead = true; onPlayerHit();
+  if (stg._invuln <= 0) {
+    const p = stg.player;
+    for (const b of stg.enemyBullets) {
+      if (enemyBulletHitsPlayer(b, p)) { b.dead = true; onPlayerHit(); break; }
     }
-  });
+  }
   stg.enemyBullets = stg.enemyBullets.filter(b => !b.dead);
 
   // パーティクル
@@ -820,6 +935,258 @@ function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function addParticle(x, y, color) {
   for (let i = 0; i < 5; i++) {
     stg.particles.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 20, color });
+  }
+}
+
+// ------------------------------------------------------------
+// ボスの更新（動き → スペル遷移 → 弾幕発射）
+// ------------------------------------------------------------
+function updateBoss(bo) {
+  const { w } = stg;
+
+  // --- スペルカード遷移（1回限り発動の状態機械） ---
+  if (bo.mode === 'normal') {
+    // 未 completed のしきい値を初めて下回ったら active 化して spell へ
+    const hpRatio = bo.hp / bo.maxHp;
+    for (const t of bo.spellThresholds) {
+      if (bo.spellState[t] === 'inactive' && hpRatio <= t) {
+        bo.spellState[t] = 'active';
+        bo.mode = 'spell';
+        bo.spellT = bo.floor ? 320 : 240;
+        bo.activeSpell = t;
+        bo.move = 'center'; // spell 中は中央寄せ
+        bo.fireT = 0;
+        bo.spellName = bo.floor ? '大呪符「漢字乱舞」' : '呪符「画数の渦」';
+        toast('✦ ' + bo.spellName);
+        break;
+      }
+    }
+  } else if (bo.mode === 'spell') {
+    bo.spellT--;
+    if (bo.spellT <= 0) {
+      // spell 終了 → completed 化して通常へ戻る
+      if (bo.activeSpell != null) bo.spellState[bo.activeSpell] = 'completed';
+      bo.activeSpell = null;
+      bo.mode = 'normal';
+      bo.move = pickNextMove(bo);
+      bo.moveT = 0;
+      bo.pattern = pickNextPattern(bo);
+      bo.patternT = 150;
+      bo.fireT = 0;
+    }
+  }
+
+  // --- 動き ---
+  moveBoss(bo);
+
+  // --- 発射 ---
+  if (bo.mode === 'spell') {
+    fireSpell(bo);
+  } else {
+    // 通常パターン: 時間切れで直前と異なるパターン＋動きへ
+    bo.patternT--;
+    if (bo.patternT <= 0) {
+      bo.pattern = pickNextPattern(bo);
+      bo.patternT = 120 + Math.floor(Math.random() * 90);
+      bo.move = pickNextMove(bo);
+      bo.moveT = 0;
+    }
+    firePattern(bo);
+  }
+}
+
+// ボスの移動軌道
+function moveBoss(bo) {
+  const { w } = stg;
+  bo.moveT = (bo.moveT || 0) + 1;
+  const t = bo.moveT;
+  const margin = bo.r + 6;
+  if (bo.move === 'center') {
+    // 中央へ寄る（spell 用）
+    bo.x += (w / 2 - bo.x) * 0.05;
+    bo.y += (72 - bo.y) * 0.05;
+  } else if (bo.move === 'sine') {
+    const amp = Math.min(w / 2 - margin, 120);
+    bo.x = w / 2 + Math.sin(t * 0.03) * amp;
+    bo.y = bo.baseY + Math.sin(t * 0.05) * 14;
+  } else if (bo.move === 'eight') {
+    const ampX = Math.min(w / 2 - margin, 110);
+    bo.x = w / 2 + Math.sin(t * 0.035) * ampX;
+    bo.y = bo.baseY + Math.sin(t * 0.07) * 22;
+  } else if (bo.move === 'warp') {
+    // 一定間隔で自機から一定距離離れた位置へワープ（重なり被弾を防ぐ）
+    if (!bo.warpTarget || t % 90 === 0) {
+      let tx;
+      const p = stg.player;
+      // 自機と左右反対側へ寄せる（最低でも画面幅の1/4離す）
+      if (p.x < w / 2) tx = w * 0.5 + Math.random() * (w * 0.35);
+      else tx = w * 0.15 + Math.random() * (w * 0.35);
+      tx = Math.max(margin, Math.min(w - margin, tx));
+      bo.warpTarget = { x: tx, y: bo.baseY + (Math.random() * 20 - 10) };
+    }
+    // すばやく移動（瞬間移動風だが一瞬で重ならないよう補間）
+    bo.x += (bo.warpTarget.x - bo.x) * 0.35;
+    bo.y += (bo.warpTarget.y - bo.y) * 0.35;
+  }
+  bo.x = Math.max(margin, Math.min(w - margin, bo.x));
+}
+
+// 通常弾幕パターンの発射
+function firePattern(bo) {
+  bo.fireT--;
+  if (bo.fireT > 0) return;
+  const p = stg.player;
+  const ox = bo.x, oy = bo.y + bo.r;
+  const dens = bo.floor ? 1 : 0; // floor は密度増（間隔短縮・弾数増）
+
+  switch (bo.pattern) {
+    case 'aimed': {
+      bo.fireT = bo.floor ? 26 : 36;
+      const center = aimAngle(ox, oy, p.x, p.y);
+      const n = bo.floor ? 3 : 1;
+      spreadAngles(center, n, 0.5).forEach(a =>
+        spawnBullet({ x: ox, y: oy, angle: a, type: 'small', speedBase: 3.4 + stg.stage * 0.08 }));
+      break;
+    }
+    case 'spread': {
+      bo.fireT = bo.floor ? 40 : 52;
+      // 自機方向を避けた扇状（自機外し）: 中心を自機角度から少しずらす
+      const aim = aimAngle(ox, oy, p.x, p.y);
+      const center = aim + (Math.random() < 0.5 ? 0.5 : -0.5);
+      spreadAngles(center, 5 + dens * 2, 1.4).forEach(a =>
+        spawnBullet({ x: ox, y: oy, angle: a, type: 'small', speedBase: 2.8 }));
+      break;
+    }
+    case 'fixed': {
+      bo.fixedOff = (bo.fixedOff || 0) + 0.12;
+      bo.fireT = bo.floor ? 16 : 24;
+      // 下向き固定のカーテン（左右に往復するオフセット）。細長い弾(oval)と遅い弾(slow)を交互に。
+      const cols = bo.floor ? 6 : 4;
+      const spanW = stg.w * 0.8;
+      const base = stg.w * 0.1 + (Math.sin(bo.fixedOff) * 0.5 + 0.5) * (stg.w * 0.1);
+      for (let i = 0; i < cols; i++) {
+        const x = base + (spanW / (cols - 1)) * i;
+        const type = (i % 2 === 0) ? 'oval' : 'slow';
+        spawnBullet({ x, y: oy, angle: Math.PI / 2, type, speedBase: 3.0 });
+      }
+      break;
+    }
+    case 'ring': {
+      bo.ringOff = (bo.ringOff || 0) + 0.25;
+      bo.fireT = bo.floor ? 22 : 30;
+      const n = bo.floor ? 16 : 12;
+      ringAngles(n, bo.ringOff).forEach(a =>
+        spawnBullet({ x: bo.x, y: bo.y, angle: a, type: 'small', speedBase: 2.4 }));
+      break;
+    }
+    case 'bigLob': {
+      bo.fireT = bo.floor ? 44 : 60;
+      const n = bo.floor ? 4 : 3;
+      for (let i = 0; i < n; i++) {
+        const a = Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+        spawnBullet({ x: ox, y: oy, angle: a, type: 'big', speedBase: 2.0 });
+      }
+      break;
+    }
+    default:
+      bo.fireT = 40;
+  }
+}
+
+// 特殊弾幕（スペルカード）の発射。予告を伴い理不尽な即死弾を出さない。
+function fireSpell(bo) {
+  bo.fireT--;
+  if (bo.fireT > 0) return;
+  const p = stg.player;
+  if (bo.floor) {
+    // 大呪符: 全方位回転 + 予告レーザー十字
+    bo.spellOff = (bo.spellOff || 0) + 0.18;
+    bo.fireT = 12;
+    ringAngles(18, bo.spellOff).forEach(a =>
+      spawnBullet({ x: bo.x, y: bo.y, angle: a, type: 'small', speedBase: 2.2 }));
+    // 時々レーザー（予告あり）を自機方向へ
+    if (Math.random() < 0.12) {
+      const a = aimAngle(bo.x, bo.y, p.x, p.y);
+      spawnBullet({ x: bo.x, y: bo.y, angle: a, type: 'laser' });
+    }
+  } else {
+    // 呪符: 全方位回転（密）＋たまに大玉
+    bo.spellOff = (bo.spellOff || 0) + 0.22;
+    bo.fireT = 16;
+    ringAngles(14, bo.spellOff).forEach(a =>
+      spawnBullet({ x: bo.x, y: bo.y, angle: a, type: 'small', speedBase: 2.0 }));
+    if (Math.random() < 0.15) {
+      const a = aimAngle(bo.x, bo.y, p.x, p.y);
+      spawnBullet({ x: bo.x, y: bo.y, angle: a, type: 'big', speedBase: 1.8 });
+    }
+  }
+}
+
+// 敵弾 vs 自機の弾種別判定
+function enemyBulletHitsPlayer(b, p) {
+  if (b.type === 'laser') {
+    if (b.telegraph > 0 || b.life <= 0) return false; // 予告中・終了後は無害
+    const ex = b.x + Math.cos(b.angle) * b.length;
+    const ey = b.y + Math.sin(b.angle) * b.length;
+    return segPointDist(b.x, b.y, ex, ey, p.x, p.y) < (b.r + p.r);
+  }
+  if (b.type === 'oval') {
+    // 進行方向を軸とするカプセル判定（線分＋半径）
+    const half = (b.length || 20) / 2;
+    const ax = b.x - Math.cos(b.angle) * half, ay = b.y - Math.sin(b.angle) * half;
+    const ex = b.x + Math.cos(b.angle) * half, ey = b.y + Math.sin(b.angle) * half;
+    return segPointDist(ax, ay, ex, ey, p.x, p.y) < (b.r + p.r);
+  }
+  // 円（small/big/slow）
+  return dist(b, p) < (b.r + p.r);
+}
+
+// 敵弾の弾種別描画
+function drawEnemyBullet(ctx, b) {
+  if (b.type === 'laser') {
+    const ex = b.x + Math.cos(b.angle) * b.length;
+    const ey = b.y + Math.sin(b.angle) * b.length;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(ex, ey);
+    if (b.telegraph > 0) {
+      // 予告線: 細い半透明の点滅（無害と分かる見た目）
+      ctx.strokeStyle = 'rgba(90,200,250,0.45)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+    } else {
+      // 本体: 太い実線
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = b.r * 2;
+      ctx.setLineDash([]);
+    }
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (b.type === 'oval') {
+    // 進行方向に沿った細長い楕円
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.angle);
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, (b.length || 20) / 2, b.r, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  // 円（small/big/slow）
+  ctx.fillStyle = b.color || '#ff6b6b';
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r || 5, 0, Math.PI * 2);
+  ctx.fill();
+  if (b.type === 'big') {
+    // 大玉は縁取りで視認性UP
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
 }
 
@@ -933,9 +1300,8 @@ function draw() {
   ctx.fillStyle = '#ffe08a';
   stg.bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill(); });
 
-  // 敵弾
-  ctx.fillStyle = '#ff6b6b';
-  stg.enemyBullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill(); });
+  // 敵弾（弾種別に描画）
+  stg.enemyBullets.forEach(b => drawEnemyBullet(ctx, b));
 
   // 雑魚
   ctx.font = 'bold 24px sans-serif';

@@ -94,6 +94,8 @@ Supabase 構成の個人・家族向けPWAの1ゲームとして提供されま�
 
 **User Story:** 子供として、ボスを倒すと漢字が手に入り、5ステージごとの強ボスでは強い漢字と強化上限アップの報酬をもらいたい。
 
+**Note（弾幕強化）:** ボスの攻撃（弾種・攻撃パターン・特殊弾幕/スペルカード・移動）は `.kiro/specs/kanji-blast-balance-danmaku/`（Requirement 3〜5）により拡張された。本 Requirement 4 はドロップ・報酬・ステージ進行を扱い、弾幕の挙動は当該スペックを正とする（矛盾時は当該スペックが優先）。
+
 #### Acceptance Criteria
 
 1. WHERE ステージ番号が5の倍数である, THE STG_Engine SHALL そのステージのボスを Floor_Boss（HP約2.2倍）として出現させる。
@@ -116,6 +118,7 @@ Supabase 構成の個人・家族向けPWAの1ゲームとして提供されま�
 2. WHEN ユーザーが Hand から1つの漢字を選んでショットまたは必殺技に装備する, THE Kanji_Blast SHALL 装備スロットに漢字の char と Plus_Value の両方を保存する。
 3. WHEN ユーザーが Hand から1つの漢字を選んで「にがす」を確認する, THE Kanji_Blast SHALL その漢字を Hand から削除する。
 4. WHEN 逃がした漢字と同一の char かつ同一 Plus_Value の在庫が他に無く、その漢字が装備中である, THE Kanji_Blast SHALL 該当する装備スロットを解除する。
+5. THE Kanji_Blast SHALL 手持ちに対する操作を「合体」画面・「分解」画面・「装備・手持ち」画面の3画面に分け、メニューから各画面を開けるようにする。3画面は同一の Hand と選択状態を共有し、相互に遷移でき（遷移時に選択はリセット）、いずれからもメニューへ戻れる。（Note: 本項は UI 分割であり、合体/分解/装備/にがすの機能そのもの・DB データ構造は変えない。**画面構成は `.kiro/specs/kanji-blast-balance-danmaku/`（Requirement 1）により定義された変更後仕様であり、矛盾時は当該スペックが優先する。**）
 
 ### Requirement 6: 合体（マージ）
 
@@ -168,12 +171,11 @@ Supabase 構成の個人・家族向けPWAの1ゲームとして提供されま�
 
 #### Acceptance Criteria
 
-1. THE Kanji_Blast SHALL 漢字の Final_Power を `round(画数 × Kentei_Factor × (1 + 解放読み数 × 0.1) × (1 + 図鑑登録種類数 × 0.02) × (1 + Plus_Value × 0.05))` で算出する。ここで各項は次を指す:
-   - 画数: `kanji_master.strokes`。
-   - Kentei_Factor: `kanji_master.kentei_level` を Glossary の係数表で変換した値（未定義級は 1.0）。
-   - 解放読み数: 現在の Player の Dex に登録済みの、その char に対する distinct な reading 件数（Dex の UNIQUE(player_id, char, reading) により同一読みは1件）。
-   - 図鑑登録種類数: 現在の Player の Dex に登録された distinct な char の種類数（Dex 全体の母集団。図鑑を埋めるほど所持する全漢字が一律に強化される）。
-   - Plus_Value: 対象の1枚（または装備スロット）の Plus_Value。図鑑表示など枚を特定しない箇所では Plus_Value を 0 として算出する。
+1. THE Kanji_Blast SHALL 漢字の Final_Power を算出する。**（更新: 本項の算出式は `.kiro/specs/kanji-blast-balance-danmaku/`（強さ再設計）により変更後仕様へ上書きされた。矛盾する場合は当該スペックが優先する。）** 現行の変更後仕様は次のとおり:
+   - `round( 画数 × Kentei_Boost(kentei_level) × Plus_Boost(Plus_Value, Plus_Cap) × (1 + 解放読み数 × 0.1) × (1 + 図鑑登録種類数 × 0.02) )`
+   - 画数を主軸とし、Kentei_Boost（漢検級を 1.0〜1.5 に正規化）と Plus_Boost（Plus_Value を Plus_Cap 基準で 1.0〜1.5 に線形マップ、負数/cap超過/cap=0 を安全処理）をそれぞれ最大1.5倍の穏やかな補正とする。
+   - 各項: 画数=`kanji_master.strokes`／解放読み数=その char の Dex distinct reading 数／図鑑登録種類数=Dex の distinct char 種類数／Plus_Value 省略時は 0（Plus_Boost=1.0）。
+   - 旧式（`画数 × Kentei_Factor(最大5.0) × … × (1 + Plus_Value × 0.05)`）は廃止。式・境界条件の詳細は balance スペックの Requirement 2 を参照。
 2. WHERE ショットに漢字が装備されている, THE STG_Engine SHALL ショット威力を装備ショットの Final_Power とする。
 3. WHERE ショットに漢字が装備されていない, THE STG_Engine SHALL ショット威力を5とする。
 4. WHERE 必殺技に漢字が装備されている, THE STG_Engine SHALL 必殺威力を装備必殺の Final_Power × 6 とする。
@@ -215,5 +217,6 @@ Supabase 構成の個人・家族向けPWAの1ゲームとして提供されま�
 4. THE Backup_Job SHALL 毎日 AM3:00 JST（cron `0 18 * * *`）に実行されるスケジュールを持ち、手動実行（workflow_dispatch）も可能とする。
 5. WHEN Backup_Job が実行される, THE Backup_Job SHALL 5テーブル（kanji_master / kanji_recipes / kanji_players / kanji_inventory / kanji_dex）を REST（`select=*`）で取得し、テーブルごとに `backups/<table>_YYYYMMDD.json`（各テーブルへ復元可能な生 JSON）として保存し、`backups/` にコミット・push する。
 6. THE Backup_Job SHALL 保存後、14日より古いバックアップ JSON を削除する。
-7. WHERE Backup_Job が成功した, THE Backup_Job SHALL Discord に完了通知を送る。（Note: 取得は `curl -s` で行い個別リクエスト失敗を明示的にジョブ失敗へは昇格させていない。取得失敗時の堅牢化は今後の設計課題とする。）
-8. THE Kanji_Blast SHALL 本要件の範囲をバックアップ（取得・保存）のみとする。保存済み JSON からの復元は自動化された要件・API を持たず、必要時の手動作業とする（各テーブルへ JSON を再投入することで復元可能）。
+7. WHERE Backup_Job が成功した, THE Backup_Job SHALL Discord に完了通知を送る。
+8. WHEN Backup_Job が kanji 系5テーブル（kanji_master / kanji_recipes / kanji_players / kanji_inventory / kanji_dex）を取得する, THE Backup_Job SHALL HTTP エラー時に当該ステップを失敗させ（`curl --fail-with-body` 相当）、取得結果が妥当な JSON でない場合も当該ステップを失敗させて、失敗をジョブ全体の失敗へ昇格する。（Note: kanji 系以外のテーブルは従来どおり `curl -s` で失敗を昇格させない。全テーブルへの展開はスコープ外。）
+9. THE Kanji_Blast SHALL 本要件の範囲をバックアップ（取得・保存）のみとする。保存済み JSON からの復元は自動化された要件・API を持たず、必要時の手動作業とする（各テーブルへ JSON を再投入することで復元可能）。
