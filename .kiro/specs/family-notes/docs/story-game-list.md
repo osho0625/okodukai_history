@@ -92,11 +92,64 @@
 | FEZ | 2Dの世界を回転させることで、同じ場所を異なる視点から捉え直して道を発見する探索パズル。世界に隠された暗号やルールを自分で解読していく。 | PC・Switch | ○ 日本語対応 | 約1,000円 | 約1,000円 | [Steam](https://store.steampowered.com/app/224760/) |
 | INSIDE | 謎の施設を少年として探索し、環境を利用したパズルや追跡から逃れながら、説明されない世界の秘密を読み取っていくアドベンチャー。 | PC・Switch | ○ 日本語対応 | 約2,300円 | 約2,300円 | [Steam](https://store.steampowered.com/app/304430/) |
 | Thank Goodness You're Here! | 奇妙なイギリスの町を歩き回り、住人たちの変な依頼を次々とこなしていく短編コメディアドベンチャー。シュールな世界とギャグを楽しむ作品。 | PC・Switch | ○ 日本語対応 | 約2,300円 | 約2,300円 | [Steam](https://store.steampowered.com/app/2366980/) |
+| Hades | 死ぬたびに能力を変えながら冥界からの脱出を目指すローグライク・アクションRPG。戦闘、成長、物語の完成度が非常に高い。 | PC・Switch | ○ 日本語対応 | 2,800円 | 約2,970円 | [Steam](https://store.steampowered.com/app/1145360/) |
+| Hollow Knight | 広大な地下王国を探索する2Dアクション。探索・戦闘・世界観の作り込みが非常に深い。 | PC・Switch | ○ 日本語対応 | 1,700円 | 1,470円 | [Steam](https://store.steampowered.com/app/367520/) |
+| Celeste | 山登りを題材にした高難度2Dアクション。何度も失敗しながら少しずつ上達していく気持ちよさが魅力。 | PC・Switch | ○ 日本語対応 | 1,980円 | 1,980円 | [Steam](https://store.steampowered.com/app/504230/) |
+| Dead Cells | ローグライク要素を取り入れた高速2Dアクション。武器や能力を組み合わせて何度も挑戦する。 | PC・Switch | ○ 日本語対応 | 2,480円 | 2,480円 | [Steam](https://store.steampowered.com/app/588650/) |
+| Metroid Dread | 探索・アクション・ボス戦を高い完成度でまとめた2Dメトロイド。 | Switch | ○ 日本語対応 | ― | 約7,600円 | ― |
+| Metroid Prime Remastered | 一人称視点で惑星を探索する探索型FPS。戦闘よりも探索・謎解き・世界観を重視した独特の作品。 | Switch | ○ 日本語対応 | ― | 約4,300円 | ― |
+| Cuphead | 1930年代アニメ風の映像が特徴の高難度アクション。ボス戦を中心にした独特のゲームデザイン。 | PC・Switch | ○ 日本語対応 | 1,980円 | 1,980円 | [Steam](https://store.steampowered.com/app/268910/) |
+| Ikaruga | 属性を白黒に切り替えながら敵弾を吸収・回避する名作縦STG。パズル的な思考も要求される。 | PC・Switch | △ 一部日本語 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/253750/) |
+| Enter the Gungeon | 銃をテーマにしたローグライク弾幕アクション。大量の武器とアイテムを組み合わせて戦う。 | PC・Switch | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/311690/) |
+| Neon White | カードを武器として使いながらステージを高速攻略するFPSアクション。タイムアタック要素が強い。 | PC・Switch | ○ 日本語対応 | 約3,000円 | 約3,000円 | [Steam](https://store.steampowered.com/app/1533420/) |
+| Ori and the Will of the Wisps | 美しい世界を探索する2Dアクション。滑らかな移動と探索の楽しさが特徴。 | PC・Switch | ○ 日本語対応 | 3,132円 | 約3,100円 | [Steam](https://store.steampowered.com/app/1057090/) |
+| Prince of Persia: The Lost Crown | 高速な移動・探索・戦闘を組み合わせた現代的メトロイドヴァニア。 | PC・Switch | ○ 日本語対応 | 約5,000円 | 約5,000円 | [Steam](https://store.steampowered.com/app/2751000/) |
+| NieR:Automata The End of YoRHa Edition | スタイリッシュなアクションと独特の物語構成を組み合わせたアクションRPG。 | PC・Switch | ○ 日本語対応 | 5,184円 | 約5,280円 | [Steam](https://store.steampowered.com/app/524220/) |
+| ドラゴンクエストXI 過ぎ去りし時を求めて S | 王道JRPGの集大成的作品。広い世界を冒険しながら仲間と旅をする。 | PC・Switch | ○ 日本語対応 | 5,478円 | 5,478円 | [Steam](https://store.steampowered.com/app/1295510/) |
+| ペルソナ5 ザ・ロイヤル | 学園生活とダンジョン攻略を組み合わせた長編RPG。キャラクターや音楽も大きな魅力。 | PC・Switch | ○ 日本語対応 | 7,678円 | 7,678円 | [Steam](https://store.steampowered.com/app/1687950/) |
+| 十三機兵防衛圏 | 13人の主人公によるSFドラマとシミュレーションバトルを組み合わせた作品。 | Switch・PS4 | ○ 日本語対応 | ― | 約7,678円 | ― |
+| ユニコーンオーバーロード | 美しい2Dグラフィックと部隊編成型シミュレーションを組み合わせたSRPG。 | Switch・PS5・Xbox | ○ 日本語対応 | ― | 約8,778円 | ― |
+| Into the Breach | 敵の次の行動が見える状態で、最善手を考えるターン制ストラテジー。非常に濃密なゲーム性。 | PC・Switch | ○ 日本語対応 | 1,520円 | 約1,700円 | [Steam](https://store.steampowered.com/app/590380/) |
+| Slay the Spire | カードデッキを構築しながら塔を登るローグライク。組み合わせを考える楽しさが非常に強い。 | PC・Switch | ○ 日本語対応 | 2,570円 | 2,570円 | [Steam](https://store.steampowered.com/app/646570/) |
+| Undertale | シンプルなRPGに見えて、戦闘・会話・選択によってゲームそのものが変化する独創的作品。 | PC・Switch | ○ 日本語対応 | 980円 | 約1,600円 | [Steam](https://store.steampowered.com/app/391540/) |
+| Spiritfarer | 船を拠点に世界を巡り、様々なキャラクターと交流するアクション・シミュレーション。 | PC・Switch | ○ 日本語対応 | 約3,400円 | 約3,400円 | [Steam](https://store.steampowered.com/app/972660/) |
+| DAVE THE DIVER | 昼は海で魚を捕り、夜は寿司屋を経営する。探索・アクション・経営などを次々に組み合わせる。 | PC・Switch | ○ 日本語対応 | 2,400円 | 2,400円 | [Steam](https://store.steampowered.com/app/1868140/) |
+| Katana ZERO | 一撃死の高速アクション。時間を操作しながらステージを攻略するスタイリッシュな作品。 | PC・Switch | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/460950/) |
+| Hyper Light Drifter | 美しいドット絵の世界を探索する高難度アクションRPG。説明を抑えた独特の世界観も魅力。 | PC・Switch | ○ 日本語対応 | 約2,000円 | 約2,000円 | [Steam](https://store.steampowered.com/app/257850/) |
+| Risk of Rain Returns | 大量の敵と戦いながらアイテムを集め、どんどん強くなっていくローグライク・アクション。 | PC・Switch | ○ 日本語対応 | 1,700円 | 1,700円 | [Steam](https://store.steampowered.com/app/1337520/) |
+| Nine Sols | 『Sekiro』のような弾きアクションを2Dに落とし込んだ高難度アクション。アジアンSF世界観も特徴。 | PC・Switch・Switch 2 | ○ 日本語対応 | 3,400円 | 3,400円 | [Steam](https://store.steampowered.com/app/1809540/) |
+| Death's Door | 死神のカラスが魂を回収するダークファンタジー。ゼルダ系の探索＋歯ごたえのある戦闘。 | PC・Switch・Switch 2 | ○ 日本語対応 | 2,200円 | 2,200円 | [Steam](https://store.steampowered.com/app/894020/) |
+| SteamWorld Dig 2 | 地面を掘りながら地下世界を探索。装備を強化すると行ける場所が増えていく。 | PC・Switch・Switch 2 | △ 一部日本語 | 約2,050円 | 約2,050円 | [Steam](https://store.steampowered.com/app/571310/) |
+| DRAINUS | 敵弾を吸収して自分の攻撃に変える独自システムを持つ横スクロールSTG。 | PC・Switch・Switch 2 | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/1975360/) |
+| Rolling Gunner | アーケード系の本格派弾幕STG。大量の敵弾を避けながら高得点を狙う。 | PC・Switch・Switch 2 | ○ 日本語対応 | 約2,000円 | 約2,000円 | [Steam](https://store.steampowered.com/app/1456470/) |
+| Touhou Luna Nights | 時間を止める能力を利用して戦う東方Projectの2Dアクション。 | PC・Switch | ○ 日本語対応 | 約2,050円 | 3,280円 | [Steam](https://store.steampowered.com/app/851100/) |
+| ASTLIBRA Revision | 個人開発から生まれた大作級2D RPG。大量の装備・スキル・成長要素を詰め込んでいる。 | PC・Switch | ○ 日本語対応 | 2,570円 | 2,570円 | [Steam](https://store.steampowered.com/app/1718570/) |
+| ENDER LILIES: Quietus of the Knights | 滅びた王国を探索するダークファンタジー。美しい音楽と高難度アクションが特徴。 | PC・Switch | ○ 日本語対応 | 2,728円 | 2,728円 | [Steam](https://store.steampowered.com/app/1369630/) |
+| ENDER MAGNOLIA: Bloom in the Mist | ENDER LILIESの続編。探索・戦闘・世界観をさらに発展させた作品。 | PC・Switch・Switch 2 | ○ 日本語対応 | 2,920円 | 2,920円 | [Steam](https://store.steampowered.com/app/2725260/) |
+| Rogue Legacy 2 | 死ぬたびに子孫へ能力を引き継ぎながら攻略する2Dアクション。 | PC・Switch | ○ 日本語対応 | 2,800円 | 2,800円 | [Steam](https://store.steampowered.com/app/1253920/) |
+| Spelunky 2 | 毎回変化する洞窟を探索。罠や敵だけでなく物理演算まで敵になる高難度作品。 | PC・Switch | ○ 日本語対応 | 2,480円 | 2,480円 | [Steam](https://store.steampowered.com/app/418530/) |
+| Mark of the Ninja: Remastered | 敵に見つからないよう暗闇を利用して進む2Dステルス。非常に完成度が高い。 | PC・Switch | ○ 日本語対応 | 約2,050円 | 約2,050円 | [Steam](https://store.steampowered.com/app/860950/) |
+| Pizza Tower | 『ワリオランド』などに影響を受けた高速アクション。勢いと操作感が楽しい。 | PC・Switch | ○ 日本語対応 | 約1,980円 | 約1,980円 | [Steam](https://store.steampowered.com/app/2231450/) |
+| Shovel Knight: Treasure Trove | 8bit風アクションの傑作。複数作品が一つにまとまった大ボリューム。 | PC・Switch | ○ 日本語対応 | 約2,980円 | 約2,980円 | [Steam](https://store.steampowered.com/app/250760/) |
+| SteamWorld Heist II | 海賊ロボット軍団を率いて戦うターン制戦略ゲーム。銃撃の狙いを自分で操作する。 | PC・Switch・Switch 2 | ○ 日本語対応 | 約4,000円 | 約4,000円 | [Steam](https://store.steampowered.com/app/2396240/) |
+| SteamWorld Quest: Hand of Gilgamech | カードデッキを組みながら戦うRPG。SteamWorldらしいユーモアも魅力。 | PC・Switch | ○ 日本語対応 | 約2,050円 | 約2,050円 | [Steam](https://store.steampowered.com/app/804010/) |
+| Chained Echoes | 16bit風グラフィックの本格JRPG。探索、飛行船、メカ、ターン制戦闘などを詰め込んでいる。 | PC・Switch | ○ 日本語対応 | 約2,570円 | 約2,570円 | [Steam](https://store.steampowered.com/app/1229240/) |
+| Sea of Stars | 90年代JRPGへのオマージュを現代的に再構築。美しいドット絵とタイミング入力式戦闘が特徴。 | PC・Switch・Switch 2 | ○ 日本語対応 | 4,000円 | 4,400円 | [Steam](https://store.steampowered.com/app/1244090/) |
+| Citizen Sleeper | 宇宙ステーションで生き延びながら人々と交流するテキスト主体のRPG。 | PC・Switch | ○ 日本語対応 | 約2,050円 | 約2,050円 | [Steam](https://store.steampowered.com/app/1578650/) |
+| NORCO | 沈みゆく工業都市を舞台にしたSFアドベンチャー。独特のドット絵と物語が魅力。 | PC・Switch | ○ 日本語対応 | 約2,500円 | 約2,500円 | [Steam](https://store.steampowered.com/app/1221250/) |
+| SIGNALIS | PS1風のビジュアルで描かれるSFホラー。探索・戦闘・物語が密接に絡む。 | PC・Switch | ○ 日本語対応 | 1,980円 | 1,980円 | [Steam](https://store.steampowered.com/app/1262350/) |
+| FAITH: The Unholy Trinity | 初代PCゲームのような極端に粗い映像で描かれる宗教ホラー。見た目とは裏腹にかなり怖い。 | PC・Switch | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/1179080/) |
+| GRIS | 美しいアートと音楽を楽しみながら世界を進む。戦闘より雰囲気重視。 | PC・Switch | ○ 日本語対応 | 1,770円 | 1,770円 | [Steam](https://store.steampowered.com/app/683320/) |
+| Neva | 『GRIS』開発チームによる作品。少女と狼の旅を描く美しい2Dアクション。 | PC・Switch | ○ 日本語対応 | 約2,900円 | 約2,900円 | [Steam](https://store.steampowered.com/app/2420660/) |
+| The Procession to Calvary | ルネサンス絵画を切り貼りした異様な世界を旅するブラックコメディ。 | PC・Switch | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/1071130/) |
+| Disc Room | 無数の回転ノコギリを避けながら、部屋ごとの条件を達成していく高難度アクション。 | PC・Switch | ○ 日本語対応 | 約1,500円 | 約1,500円 | [Steam](https://store.steampowered.com/app/1229580/) |
+| Pipistrello and the Cursed Yoyo | ヨーヨーを武器に街を探索するメトロイドヴァニア。独特の操作とギミックが特徴。 | PC・Switch | ○ 日本語対応 | 約2,500円 | 約2,500円 | [Steam](https://store.steampowered.com/app/2870350/) |
+| Linelight | 一本の光の線を操作して進むミニマルなパズル。ルールを理解していく楽しさがある。 | PC・Switch | ○ 日本語対応 | 約1,000円 | 約1,000円 | [Steam](https://store.steampowered.com/app/469790/) |
 
 ## 価格についての補足
 
 - 価格はいずれも通常価格の目安です。Steam・eショップのセール価格は頻繁に変わります。
-- 「約◯◯円」は、米ドル価格や別プラットフォーム価格からの推定・近似値です。正確な金額は購入前にストアページでご確認ください。
+- 「約◯◯円」は、米ドル価格や別プラットフォーム価格からの推定・近似値です（日本円の定価が確認できなかったもの）。正確な金額は購入前にストアページでご確認ください。
 - 数値のみ（例: 2,420円）は、公式ストアや価格情報サイトで確認できた通常価格です。
 - 「―」は対象プラットフォームでの販売が確認できないものです。
 - 『Before Your Eyes』はPC版を対象とし、Switch版は含めていません。
