@@ -63,7 +63,11 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 .md-content blockquote { border-left: 3px solid #4caf50; padding-left: 12px; color: #666; margin: 10px 0; }
 .md-content table { border-collapse: collapse; width: 100%; margin: 10px 0; display: block; overflow-x: auto; }
 .md-content th, .md-content td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.85em; white-space: nowrap; }
-.md-content th { background: #f5f5f5; }
+.md-content th { background: #f5f5f5; cursor: pointer; user-select: none; position: relative; }
+.md-content th:hover { background: #eaeaea; }
+.md-content th .sort-ind { color: #1976d2; font-size: 0.8em; margin-left: 4px; }
+.md-content th[data-sort-hint]::after { content: ' ⇅'; color: #bbb; font-size: 0.8em; }
+.md-content th.sorted[data-sort-hint]::after { content: ''; }
 
 .empty-msg { text-align: center; color: #999; padding: 40px 20px; }
 </style>
@@ -217,6 +221,7 @@ function openReadOnly(noteId) {
   const viewer = document.getElementById('mdViewer');
   const content = document.getElementById('mdContent');
   content.innerHTML = '<h1>' + esc(note.title || '無題') + '</h1>' + marked.parse(note.content || '');
+  enableTableSort(content);
   viewer.classList.add('open');
 }
 
@@ -348,9 +353,64 @@ async function openMd(index) {
     if (!res.ok) throw new Error('Not found');
     const text = await res.text();
     content.innerHTML = marked.parse(text);
+    enableTableSort(content);
   } catch (e) {
     content.innerHTML = '<div style="color:#e53935;text-align:center;padding:40px;">ファイルを読み込めませんでした</div>';
   }
+}
+
+// --- ドキュメント内テーブルのクリックソート ---
+// mdの表ヘッダをクリックすると昇順/降順で並び替え。価格(約1,200円/470円/無料/―)や
+// ○×の対応列も賢く解釈する。marked.parseで生成した<table>に後付けする。
+function enableTableSort(container) {
+  const tables = container.querySelectorAll('table');
+  tables.forEach(table => {
+    const headRow = table.querySelector('thead tr');
+    const body = table.querySelector('tbody');
+    if (!headRow || !body) return;
+    const ths = Array.from(headRow.children);
+    ths.forEach((th, colIndex) => {
+      th.setAttribute('data-sort-hint', '1');
+      th.addEventListener('click', () => {
+        const asc = th.dataset.sortDir !== 'asc';
+        ths.forEach(o => { delete o.dataset.sortDir; o.classList.remove('sorted'); const s = o.querySelector('.sort-ind'); if (s) s.remove(); });
+        th.dataset.sortDir = asc ? 'asc' : 'desc';
+        th.classList.add('sorted');
+        const ind = document.createElement('span');
+        ind.className = 'sort-ind';
+        ind.textContent = asc ? '▲' : '▼';
+        th.appendChild(ind);
+
+        const rows = Array.from(body.querySelectorAll('tr'));
+        rows.sort((ra, rb) => {
+          const a = cellSortValue(ra.children[colIndex]);
+          const b = cellSortValue(rb.children[colIndex]);
+          if (a.num !== null && b.num !== null) return asc ? a.num - b.num : b.num - a.num;
+          if (a.num !== null) return asc ? -1 : 1;
+          if (b.num !== null) return asc ? 1 : -1;
+          return asc ? a.text.localeCompare(b.text, 'ja') : b.text.localeCompare(a.text, 'ja');
+        });
+        rows.forEach(r => body.appendChild(r));
+      });
+    });
+  });
+}
+
+// セルの値を並び替え用に解釈する。
+// 数値(価格など)が読み取れれば num に入れる。「―」「要確認」は数値なし扱いで末尾へ。
+// ○=1 / ×=0 として対応可否列もソートできるようにする。
+function cellSortValue(cell) {
+  const raw = (cell ? cell.textContent : '').trim();
+  if (/^[○◯]/.test(raw)) return { num: 1, text: raw };
+  if (/^[×✕✗]/.test(raw)) return { num: 0, text: raw };
+  if (raw === '無料') return { num: 0, text: raw };
+  const m = raw.replace(/,/g, '').match(/\d+(\.\d+)?/);
+  if (m && /円|\$|¥|\d/.test(raw) && raw !== '') {
+    // 「―」や空欄、単なる注記は除外したいので、数字を含む価格らしきものだけ数値化
+    if (/[―—-]/.test(raw) && !/\d/.test(raw)) return { num: null, text: raw };
+    return { num: parseFloat(m[0]), text: raw };
+  }
+  return { num: null, text: raw };
 }
 
 function closeMdViewer() {

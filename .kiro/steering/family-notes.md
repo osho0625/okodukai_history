@@ -88,9 +88,17 @@ fileMatchPattern: "*family-notes*,*family_notes*"
   { "title": "🍓 Raspberry Pi セットアップガイド", "file": "raspi-setup-guide.md" },
   { "title": "🧮 算数 学習・知育の進め方", "file": "math-drill-guide.md" },
   { "title": "📚 国語・漢字 学習の進め方", "file": "japanese-study-guide.md" },
-  { "title": "🍽️ 10/24 両家顔合わせ 店舗候補", "file": "ryoke-kaoawase-shinyokohama.md" }
+  { "title": "🍽️ 10/24 両家顔合わせ 店舗候補", "file": "ryoke-kaoawase-shinyokohama.md" },
+  { "title": "🎮 買い手ゲーム一覧", "file": "story-game-list.md" }
 ]
 ```
+
+## テーブルの並び替え（ソート）
+
+- `enableTableSort(container)` が `openMd` / `openNote` のレンダリング後に呼ばれ、ドキュメント・メモ内の全 `<table>` にクリックソートを付与する
+- 見出し（th）をタップすると当該列で並び替え、再タップで昇順／降順を切り替える
+- `cellSortValue(cell)` が値を解釈: `○/◯`=1・`×/✕/✗`=0・`無料`=0、価格などは数字を抽出して数値比較。`―` や数値なしは末尾側に寄せる
+- marked.js が生成する GFM テーブル（thead/tbody 構造）を前提とする。`innerHTML` 経由では `<script>` が実行されないため、ソートはmd内ではなくアプリ側（family-notes.html）に実装している
 
 ## localStorage キー
 
