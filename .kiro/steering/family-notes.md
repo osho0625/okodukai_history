@@ -100,6 +100,12 @@ fileMatchPattern: "*family-notes*,*family_notes*"
 - `cellSortValue(cell)` が値を解釈: `○/◯`=1・`×/✕/✗`=0・`無料`=0、価格などは数字を抽出して数値比較。`―` や数値なしは末尾側に寄せる
 - marked.js が生成する GFM テーブル（thead/tbody 構造）を前提とする。`innerHTML` 経由では `<script>` が実行されないため、ソートはmd内ではなくアプリ側（family-notes.html）に実装している
 
+## テーブルを含むドキュメントのレスポンシブ表示
+
+- `openMd` はレンダリング後、`content` 内に `<table>` があれば `.md-viewer` に `wide` クラスを付与する（`closeMdViewer` で除去）
+- `.md-viewer.wide .md-content` は `max-width: 1200px` に広げ、横長の表を見やすくする（通常ドキュメントは `max-width: 600px` を維持）
+- CSSメディアクエリ `@media (orientation: landscape) and (max-width: 950px)` で、スマホ横向き時は `max-width` を解除し画面幅いっぱいに表を表示する
+
 ## localStorage キー
 
 | キー | 用途 |
