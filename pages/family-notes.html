@@ -52,6 +52,14 @@ textarea.note-content-input { width: 100%; min-height: 300px; font-size: 0.95em;
 .md-viewer { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 100; padding: 20px; overflow-y: auto; }
 .md-viewer.open { display: block; }
 .md-content { background: #fff; border-radius: 12px; padding: 20px; max-width: 600px; margin: 0 auto; line-height: 1.7; font-size: 0.95em; }
+/* 表を含むドキュメントは横幅を広く使う（画面サイズに追従） */
+.md-viewer.wide { padding: 12px; }
+.md-viewer.wide .md-content { max-width: 1200px; }
+/* スマホを横向きにしたときは画面いっぱいまで広げて表を見やすく */
+@media (orientation: landscape) and (max-width: 950px) {
+  .md-viewer { padding: 10px; }
+  .md-content { max-width: none; }
+}
 .md-content h1 { font-size: 1.4em; margin: 16px 0 8px; color: #333; }
 .md-content h2 { font-size: 1.2em; margin: 14px 0 6px; color: #444; }
 .md-content h3 { font-size: 1.05em; margin: 12px 0 4px; color: #555; }
@@ -354,6 +362,8 @@ async function openMd(index) {
     const text = await res.text();
     content.innerHTML = marked.parse(text);
     enableTableSort(content);
+    // 表を含むドキュメントはビューアを広くして横スクロールを見やすくする
+    viewer.classList.toggle('wide', content.querySelector('table') !== null);
   } catch (e) {
     content.innerHTML = '<div style="color:#e53935;text-align:center;padding:40px;">ファイルを読み込めませんでした</div>';
   }
@@ -414,7 +424,9 @@ function cellSortValue(cell) {
 }
 
 function closeMdViewer() {
-  document.getElementById('mdViewer').classList.remove('open');
+  const v = document.getElementById('mdViewer');
+  v.classList.remove('open');
+  v.classList.remove('wide');
 }
 
 // --- ユーティリティ ---
