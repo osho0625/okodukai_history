@@ -1,12 +1,13 @@
 // Alexa お手伝いポイント申請スキル Lambda ハンドラー
-// 環境変数: SUPABASE_URL, SUPABASE_KEY, DISCORD_WEBHOOK
+// Supabase接続: SUPABASE_URL / SUPABASE_KEY（公開キーのため直書き）。Discord通知は discord-notify Edge Function 経由
 
 const Alexa = require('ask-sdk-core');
 const https = require('https');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+// Alexa-hosted Lambda は process.env 非対応のため実値を直書き
+const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_seKZakec1yB046vlgPDAKQ_zd4CKIg4';
+// DISCORD_WEBHOOK 定数は削除（discord-notify Edge Function 経由に変更。sendDiscord 参照）
 
 // ============================================================
 // HTTP ヘルパー（Node.js httpsモジュール使用、fetch不要）
@@ -77,15 +78,19 @@ async function supabasePatch(path, body) {
 }
 
 async function sendDiscord(message) {
-  if (!DISCORD_WEBHOOK) return;
   const bodyStr = JSON.stringify({ content: message });
-  await httpRequest(DISCORD_WEBHOOK, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(bodyStr)
-    }
-  }, bodyStr);
+  try {
+    await httpRequest(`${SUPABASE_URL}/functions/v1/discord-notify`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(bodyStr)
+      }
+    }, bodyStr);
+  } catch (e) {
+    console.error('Discord notify failed (non-fatal):', e);
+  }
 }
 
 async function queuePushMessage(title, body, targetRole) {
@@ -133,6 +138,7 @@ const DEFAULT_POINTS = {
   'トイレ掃除': 6,
   '生ごみ': 1,
   '牛乳パック開き': 1,
+  'タオル畳み': 5,  // 追加: 対話モデルに定義されているが未定義だったため追加（確定値: 5pt）
   'その他': 1
 };
 
@@ -444,3 +450,16 @@ exports.handler = Alexa.SkillBuilders.custom()
   )
   .addErrorHandlers(ErrorHandler)
   .lambda();
+
+// テスト用内部シンボル公開（Node.js 16 対応 / Alexa-hosted 動作に影響なし）
+// テスト環境でのみ参照される。本番 Lambda 実行には影響しない。
+if (process.env.NODE_ENV === 'test') {
+  module.exports._test = {
+    SUPABASE_URL: SUPABASE_URL,
+    SUPABASE_KEY: SUPABASE_KEY,
+    httpRequest: httpRequest,
+    sendDiscord: sendDiscord,
+    DEFAULT_POINTS: DEFAULT_POINTS,
+    normalizeChildName: normalizeChildName
+  };
+}

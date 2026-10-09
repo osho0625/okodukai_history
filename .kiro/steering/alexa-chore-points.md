@@ -96,6 +96,7 @@ children テーブルの name に対応。synonyms で読み仮名・漢字・�
 | トイレ掃除 | 6 |
 | 生ごみ | 1 |
 | 牛乳パック開き | 1 |
+| タオル畳み | 5 |
 | その他 | 1 |
 
 ## ポイント数決定の優先順位
@@ -114,15 +115,15 @@ children テーブルの name に対応。synonyms で読み仮名・漢字・�
 
 ポイント申請時:
 1. `chore_points` に INSERT (`status: 'pending'`)
-2. Discord Webhook に `🎤 Alexa申請: ...` を送信
+2. `discord-notify` Edge Function 経由で `🎤 Alexa申請: ...` を Discord へ送信
 3. `push_messages` に admin 向け Push通知をキュー
 
 ## デプロイ時の注意
 
-- Git リポジトリの `alexa/lambda/index.js` は `process.env` で環境変数を参照
-- 🔴 Alexa-hosted では環境変数が使えない。**Console にコードを貼る度に、必ず先頭3行を直書きに変更すること**
-  - 直書き忘れると `SUPABASE_URL` が undefined → `new URL(undefined)` → `Invalid URL` で全申請がエラーになる
-  - `const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';` の形式
+- 🔴 Alexa-hosted では環境変数が使えないため、`alexa/lambda/index.js` の `SUPABASE_URL`・`SUPABASE_KEY` は実値を直書きしてある
+  - `const SUPABASE_URL = 'https://ynecezxnltigplrfzzoh.supabase.co';` の形式（publishable key のため直書き許容）
+  - **リポジトリのコードをそのまま Console に貼り付ければ動作する（手動変換は不要）**
+  - Discord 通知は `discord-notify` Edge Function 経由（`${SUPABASE_URL}/functions/v1/discord-notify`）のため、Lambda に Webhook URL を持たない
 - `lambda/package.json` は Alexa-hosted のデフォルトのまま触らない（壊れる原因）
 - 対話モデル変更後は「モデルを保存」→「モデルをビルド」を忘れない
 - コード変更後は「Deploy」ボタンを押す（ビルドとは別、コード反映に必須）
