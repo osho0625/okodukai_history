@@ -271,4 +271,5 @@
  {"id":"3153c994-cf34-480c-927a-8e38a313b941","child_id":"dc1dc522-3bae-4428-86f3-24068b4473b4","type":"add","amount":100,"memo":"ポイント表ご褒美（いろは分）","created_at":"2026-10-11T08:49:04.816506"}, 
  {"id":"de283214-2001-43bd-9d42-80307515fe3a","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"use","amount":215,"memo":"みぞれ玉","created_at":"2026-10-11T09:12:28.335189"}, 
  {"id":"3a0fe996-f937-45ad-a45b-24b193c778d5","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"add","amount":40,"memo":"ポイント表ご褒美","created_at":"2026-10-12T12:51:01.664447"}, 
- {"id":"34f43b31-b139-42fe-81a6-a153ef8e224c","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":300,"memo":"ポイント表ご褒美","created_at":"2026-10-12T12:51:02.313178"}]
+ {"id":"34f43b31-b139-42fe-81a6-a153ef8e224c","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":300,"memo":"ポイント表ご褒美","created_at":"2026-10-12T12:51:02.313178"}, 
+ {"id":"0f58c6ea-0adb-49e2-9e15-1268aaaa890d","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"add","amount":40,"memo":"ポイント表ご褒美","created_at":"2026-10-13T10:14:55.281372"}]
