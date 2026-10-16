@@ -137,7 +137,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <b>あそびかた</b><br>
     ・参加者を選んで（2〜8人）、順番にスマホを回します。<br>
     ・⚙️から「この人にやらせない役職」を設定できます（運転中や小さい子は「親」を外すと安心）。<br>
-    ・<b>親</b>と<b>サポート</b>だけが「秘密の言葉（お題）」を見られます。<br>
+    ・<b>親</b>と<b>サポート</b>だけが「秘密の言葉（お題）」を見られます（サポートの人数は設定で増やせます）。<br>
     ・全員で3分間、ふつうに雑談。親はお題の言葉を<b>自然に</b>会話へ紛れ込ませます。<br>
     ・サポートは親が言いやすい方向へ話を誘導。<br>
     ・回答側は「今の会話あやしい？」と推理して、最後に候補を<b>3つまで</b>出します。<br>
@@ -158,6 +158,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <div class="section-label">お題のジャンル</div>
   <div class="cat-list" id="catList"></div>
+
+  <div class="section-label">🤝 サポートの人数 <span style="color:#777;font-weight:400">（親のなかま）</span></div>
+  <div class="count-grid" id="supportGrid"></div>
+  <div class="hint" id="supportHint"></div>
 
   <div class="section-label">設定</div>
   <label class="setting-row">
@@ -284,6 +288,7 @@ const ALL_WORDS = Object.values(WORDS).reduce((a, b) => a.concat(b), []);
 // ===== 出題回数の記録（少なく出た言葉を優先） =====
 const WORDCOUNT_KEY = 'kotoba_otoshi_wordcount';
 const PREFER_KEY = 'kotoba_otoshi_prefer_unused';
+const SUPPORT_KEY = 'kotoba_otoshi_support_count';
 
 function loadWordCounts() {
   try { return JSON.parse(localStorage.getItem(WORDCOUNT_KEY)) || {}; } catch (e) { return {}; }
@@ -302,6 +307,14 @@ function loadPreferUnused() {
 }
 function savePreferUnused(v) {
   try { localStorage.setItem(PREFER_KEY, v ? 'true' : 'false'); } catch (e) {}
+}
+function loadSupportCount() {
+  // デフォルト1（未設定時）
+  const v = parseInt(localStorage.getItem(SUPPORT_KEY), 10);
+  return Number.isFinite(v) && v >= 0 ? v : 1;
+}
+function saveSupportCount(v) {
+  try { localStorage.setItem(SUPPORT_KEY, String(v)); } catch (e) {}
 }
 // 候補リストから1語選ぶ。preferUnused=ONなら出題回数が最少のグループから、OFFなら完全ランダム
 function pickWord(list) {
@@ -346,6 +359,7 @@ let state = {
   categories: [...CAT_NAMES],
   randomMode: false, // 🎲 全ジャンルから完全ランダムに出題
   preferUnused: loadPreferUnused(), // 少なく出た言葉を優先
+  supportCount: loadSupportCount(), // 🤝 サポート人数の希望値（デフォルト1）
   selected: [],     // 参加する member オブジェクトの配列（プレイ順）
   roles: [],        // selected と同順の役職 'oya'|'support'|'guesser'
   word: '',
@@ -439,6 +453,46 @@ function buildSetup() {
     };
     cl.appendChild(b);
   });
+
+  buildSupportPicker();
+}
+
+// 🤝 サポート人数ピッカー
+function buildSupportPicker() {
+  const grid = document.getElementById('supportGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const n = state.selected.length;
+  const max = maxSupportCount(n); // 選べる上限（0は常に選べる）
+  const OPTIONS = [0, 1, 2, 3];
+  OPTIONS.forEach(cnt => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (state.supportCount === cnt ? ' selected' : '');
+    b.textContent = cnt + '人';
+    const disabled = cnt > Math.max(max, 0);
+    if (disabled) { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; }
+    b.onclick = () => {
+      if (b.disabled) return;
+      state.supportCount = cnt;
+      saveSupportCount(cnt);
+      buildSetup();
+    };
+    grid.appendChild(b);
+  });
+  // 補足ヒント
+  const hint = document.getElementById('supportHint');
+  if (hint) {
+    if (n < 3) {
+      hint.textContent = '※ サポートは3人以上のときに登場します。';
+    } else {
+      const eff = effectiveSupportCount(n);
+      if (eff < state.supportCount) {
+        hint.textContent = `※ 今の人数（${n}人）では最大 ${max}人まで。今回は ${eff}人になります。`;
+      } else {
+        hint.textContent = '親のなかまを増やすと、親がお題を言いやすくなります。';
+      }
+    }
+  }
 }
 
 function toggleMember(idx) {
@@ -452,6 +506,16 @@ function toggleMember(idx) {
   buildSetup();
 }
 
+// 参加者数 n に対して実際に適用するサポート人数。
+// 親1人＋回答側1人以上を必ず残すため、上限は n-2。3人未満はサポートなし。
+function maxSupportCount(n) {
+  return Math.max(0, n - 2);
+}
+function effectiveSupportCount(n) {
+  if (n < 3) return 0;
+  return Math.min(state.supportCount, maxSupportCount(n));
+}
+
 function updateRoleHint() {
   const n = state.selected.length;
   const hint = document.getElementById('roleHint');
@@ -461,10 +525,10 @@ function updateRoleHint() {
     return;
   }
   hint.style.color = '';
-  const support = n >= 3 ? 1 : 0;
+  const support = effectiveSupportCount(n);
   const guesser = n - 1 - support;
   let txt = `${n}人：👑親 1人`;
-  if (support) txt += ` ＋ 🤝サポート 1人`;
+  if (support) txt += ` ＋ 🤝サポート ${support}人`;
   txt += ` vs 🔍回答側 ${guesser}人`;
   document.getElementById('roleHint').textContent = txt;
 }
@@ -546,7 +610,8 @@ function startAssign() {
 
   // 必要な役職セットを作る
   const roleSet = ['oya'];
-  if (n >= 3) roleSet.push('support');
+  const support = effectiveSupportCount(n);
+  for (let i = 0; i < support; i++) roleSet.push('support');
   while (roleSet.length < n) roleSet.push('guesser');
 
   const assignment = assignRoles(state.selected, roleSet);
