@@ -21,20 +21,23 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
 
 /* 今週の当番カード */
 .duty-now-card {
-  background: #fff; border-radius: 14px; padding: 18px 20px;
+  background: #fff; border-radius: 14px; padding: 16px 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: flex-start; gap: 14px;
 }
 .duty-now-card .member {
-  font-size: 1.25em; font-weight: 700; color: #333; flex-shrink: 0; min-width: 4.5em;
+  font-size: 1.25em; font-weight: 700; color: #333; flex-shrink: 0; min-width: 4.5em; padding-top: 2px;
 }
-.duty-now-card .arrow { color: #bbb; font-size: 1.2em; flex-shrink: 0; }
+.duty-now-card .arrow { color: #bbb; font-size: 1.2em; flex-shrink: 0; padding-top: 4px; }
+.duty-now-card .duties {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+}
 .duty-now-card .duty {
-  flex: 1; font-size: 1.15em; font-weight: 600; color: #2e7d32;
+  font-size: 1.1em; font-weight: 600; color: #2e7d32;
   display: flex; align-items: center; gap: 8px;
 }
-.duty-now-card .duty .emoji { font-size: 1.4em; }
-.duty-now-card .duty.empty { color: #bbb; font-weight: 500; font-size: 1em; }
+.duty-now-card .duty .emoji { font-size: 1.3em; }
+.duty-now-card .duties.empty { color: #bbb; font-weight: 500; font-size: 1em; }
 
 .empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.05em; }
 
@@ -45,9 +48,9 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
   display: flex; align-items: center; gap: 10px; background: #fafafa;
   border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; font-size: 0.95em;
 }
-.next-row .member { font-weight: 600; color: #666; min-width: 4.5em; }
-.next-row .arrow { color: #ccc; }
-.next-row .duty { flex: 1; color: #777; }
+.next-row .member { font-weight: 600; color: #666; min-width: 4.5em; padding-top: 2px; }
+.next-row .arrow { color: #ccc; padding-top: 2px; }
+.next-row .duties { flex: 1; color: #777; display: flex; flex-direction: column; gap: 2px; }
 
 /* Admin設定 */
 .admin-section {
@@ -56,15 +59,25 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
 }
 .admin-section h2 { font-size: 1em; color: #555; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 
+/* メンバーごとの担当当番エディタ */
+.member-block {
+  border: 1px solid #eee; border-radius: 12px; padding: 14px; margin-bottom: 14px; background: #fafafa;
+}
+.member-block .member-head {
+  font-size: 1.05em; font-weight: 700; color: #333; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.member-block .member-head .pos { color: #4caf50; font-size: 0.8em; font-weight: 600; }
+
 .duty-edit-item {
   display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
 }
 .duty-edit-item .emoji-input {
   width: 48px; padding: 8px; border: 1px solid #ddd; border-radius: 8px;
-  font-size: 1.1em; text-align: center;
+  font-size: 1.1em; text-align: center; background: #fff;
 }
 .duty-edit-item .name-input {
-  flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em;
+  flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em; background: #fff;
 }
 .duty-edit-item .del-btn {
   width: 32px; height: 32px; border: none; border-radius: 8px;
@@ -75,9 +88,22 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
 
 .btn-add-duty {
   padding: 8px 12px; border: 1px dashed #bbb; border-radius: 8px;
-  background: #fafafa; color: #888; font-size: 0.9em; cursor: pointer; width: 100%; margin-bottom: 12px;
+  background: #fff; color: #888; font-size: 0.9em; cursor: pointer; width: 100%;
 }
 .btn-add-duty:hover { background: #f0f0f0; border-color: #999; }
+
+/* 輪番順の変更 */
+.order-item {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  background: #fafafa; border-radius: 8px; margin-bottom: 6px;
+}
+.order-item .order-name { flex: 1; font-weight: 600; font-size: 0.95em; color: #333; }
+.order-item .order-btn {
+  width: 32px; height: 32px; border: none; border-radius: 6px; background: #e0e0e0;
+  font-size: 1em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.order-item .order-btn:hover { background: #bbb; }
+.order-item .order-btn:disabled { opacity: 0.3; cursor: default; }
 
 .btn-primary {
   padding: 11px 20px; border: none; border-radius: 8px;
@@ -121,14 +147,18 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
     <div id="nextList"></div>
   </div>
 
-  <!-- Admin: お当番の設定 -->
+  <!-- Admin: お当番の設定（メンバーごとに担当当番を決める） -->
   <div class="admin-section" id="adminSection" style="display:none;">
     <h2>⚙️ お当番を決める</h2>
-    <p class="hint">みんなが担当するお仕事を登録してね。毎週、担当が1つずつずれて入れ替わるよ。</p>
-    <div id="dutyEditList"></div>
-    <button type="button" class="btn-add-duty" onclick="addDutyRow()">＋ お当番を追加</button>
+    <p class="hint">それぞれの担当するお仕事を登録してね（1人に2つ3つでもOK）。毎週、下の輪番順どおりに担当のセットがずれて入れ替わります。</p>
+    <div id="memberEditList"></div>
     <button class="btn-primary" onclick="saveDuties()">保存する</button>
     <div class="save-msg" id="saveMsg">✓ 保存しました！</div>
+
+    <hr class="divider">
+    <h2>🔢 輪番の順番</h2>
+    <p class="hint">当番セットが入れ替わっていく順番です。▲▼で変えられます。</p>
+    <div id="orderList"></div>
 
     <hr class="divider">
     <h2>🔄 当番を今すぐ入れ替える</h2>
@@ -141,8 +171,9 @@ h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
 // メンバーの表示・輪番順（ユーザー指定: かいせい → いろは → はるちか）
 const DEFAULT_MEMBERS = ['かいせい', 'いろは', 'はるちか'];
 
-let roster = null;      // game_settings.duty_roster の内容
-let editDuties = [];    // admin編集中のお当番配列
+let roster = null;       // game_settings.duty_roster の内容
+let editMembers = [];    // admin編集中の輪番順メンバー配列
+let editSlots = [];      // admin編集中の担当枠配列（members と同じ並び・同じ長さ）
 
 if (isAdmin) {
   document.getElementById('adminSection').style.display = 'block';
@@ -192,8 +223,34 @@ function fmtMD(dateStr) {
 // データ読み込み（＋週またぎの自動ローテーション）
 // ========================================================
 
+// 新データモデル:
+// {
+//   members: ["かいせい","いろは","はるちか"],  // 輪番順
+//   slots:   [ { id, duties:[{id,name,emoji}, ...] }, ... ],  // members と同じ長さの担当枠
+//   week_start, rotation_offset
+// }
 function defaultRoster() {
-  return { members: DEFAULT_MEMBERS.slice(), duties: [], week_start: null, rotation_offset: 0 };
+  return { members: DEFAULT_MEMBERS.slice(), slots: [], week_start: null, rotation_offset: 0 };
+}
+
+// slots を members の長さに揃える（足りなければ空枠を追加、多ければ切り詰め）
+function normalizeSlots(r) {
+  if (!Array.isArray(r.slots)) r.slots = [];
+  const n = r.members.length;
+  while (r.slots.length < n) r.slots.push({ id: genId(), duties: [] });
+  if (r.slots.length > n) r.slots = r.slots.slice(0, n);
+  r.slots.forEach(s => {
+    if (!s.id) s.id = genId();
+    if (!Array.isArray(s.duties)) s.duties = [];
+  });
+}
+
+// 旧モデル（duties配列: 1枠1当番の輪番）→ 新モデル（slots）へ移行
+function migrateOldModel(r) {
+  if (Array.isArray(r.slots) && r.slots.length > 0) return;      // 既に新モデル
+  if (!Array.isArray(r.duties) || r.duties.length === 0) return; // 変換元なし
+  r.slots = r.duties.map(d => ({ id: genId(), duties: [{ id: d.id || genId(), name: d.name, emoji: d.emoji || '' }] }));
+  delete r.duties;
 }
 
 async function loadRoster() {
@@ -225,15 +282,16 @@ async function loadRoster() {
   if (!Array.isArray(roster.members) || roster.members.length === 0) {
     roster.members = DEFAULT_MEMBERS.slice();
   }
-  if (!Array.isArray(roster.duties)) roster.duties = [];
+  migrateOldModel(roster);
+  normalizeSlots(roster);
 
   // --- 週またぎの自動ローテーション ---
   if (!roster.week_start) {
     roster.week_start = thisWeek;
   } else {
     const elapsed = weeksBetween(roster.week_start, thisWeek);
-    if (elapsed > 0 && roster.duties.length > 0) {
-      roster.rotation_offset = (roster.rotation_offset + elapsed) % roster.duties.length;
+    if (elapsed > 0 && roster.slots.length > 0) {
+      roster.rotation_offset = (roster.rotation_offset + elapsed) % roster.slots.length;
       roster.week_start = thisWeek;
       // 自動進行した結果を保存（静かに）
       await persistRoster({ silent: true });
@@ -242,25 +300,39 @@ async function loadRoster() {
     }
   }
 
-  editDuties = roster.duties.map(d => Object.assign({}, d));
+  syncEditState();
   render();
+}
+
+// admin編集用の作業コピーを roster から作る
+function syncEditState() {
+  editMembers = roster.members.slice();
+  editSlots = roster.slots.map(s => ({ id: s.id, duties: (s.duties || []).map(d => Object.assign({}, d)) }));
 }
 
 // ========================================================
 // 輪番ロジック
 // ========================================================
 
-// 指定オフセットで「メンバー→担当お当番」の割り当てを返す
-// members[i] の担当 = duties[(i + offset) % duties.length]
+// 指定オフセットで「メンバー→担当当番セット」の割り当てを返す
+// members[i] の担当枠 = slots[(i + offset) % slots.length]
 function assignmentsFor(offset) {
   const result = [];
-  const n = roster.duties.length;
+  const n = roster.slots.length;
   roster.members.forEach((member, i) => {
-    let duty = null;
-    if (n > 0) duty = roster.duties[((i + offset) % n + n) % n];
-    result.push({ member, duty });
+    let duties = [];
+    if (n > 0) {
+      const slot = roster.slots[((i + offset) % n + n) % n];
+      duties = (slot && slot.duties) ? slot.duties : [];
+    }
+    result.push({ member, duties });
   });
   return result;
+}
+
+// slots 内に1つでも当番が登録されているか
+function hasAnyDuty() {
+  return roster.slots.some(s => s.duties && s.duties.length > 0);
 }
 
 // ========================================================
@@ -278,79 +350,102 @@ function render() {
 
   // 今週の当番
   const nowList = document.getElementById('nowList');
-  if (roster.duties.length === 0) {
+  if (!hasAnyDuty()) {
     nowList.innerHTML = '<div class="empty-msg">まだお当番が決まっていません' + (isAdmin ? '<br>下の「お当番を決める」から追加してね' : '') + '</div>';
     document.getElementById('nextWeekSection').style.display = 'none';
   } else {
     const now = assignmentsFor(roster.rotation_offset);
     nowList.innerHTML = now.map(a => {
-      const dutyHtml = a.duty
-        ? '<div class="duty"><span class="emoji">' + (a.duty.emoji || '🧹') + '</span><span>' + escHtml(a.duty.name) + '</span></div>'
-        : '<div class="duty empty">お休み</div>';
+      const dutiesHtml = (a.duties && a.duties.length > 0)
+        ? '<div class="duties">' + a.duties.map(d =>
+            '<div class="duty"><span class="emoji">' + (d.emoji || '🧹') + '</span><span>' + escHtml(d.name) + '</span></div>'
+          ).join('') + '</div>'
+        : '<div class="duties empty">お休み</div>';
       return '<div class="duty-now-card">'
         + '<span class="member">' + escHtml(a.member) + '</span>'
         + '<span class="arrow">▶</span>'
-        + dutyHtml
+        + dutiesHtml
         + '</div>';
     }).join('');
 
     // 来週プレビュー
     const next = assignmentsFor(roster.rotation_offset + 1);
     document.getElementById('nextList').innerHTML = next.map(a => {
-      const label = a.duty ? ((a.duty.emoji || '🧹') + ' ' + escHtml(a.duty.name)) : 'お休み';
-      return '<div class="next-row"><span class="member">' + escHtml(a.member) + '</span><span class="arrow">▶</span><span class="duty">' + label + '</span></div>';
+      const label = (a.duties && a.duties.length > 0)
+        ? '<div class="duties">' + a.duties.map(d => (d.emoji || '🧹') + ' ' + escHtml(d.name)).join('<br>') + '</div>'
+        : '<span class="duties">お休み</span>';
+      return '<div class="next-row"><span class="member">' + escHtml(a.member) + '</span><span class="arrow">▶</span>' + label + '</div>';
     }).join('');
     document.getElementById('nextWeekSection').style.display = 'block';
   }
 
-  if (isAdmin) renderEditList();
+  if (isAdmin) { renderMemberEditList(); renderOrderList(); }
 }
 
 // ========================================================
 // Admin: お当番の編集
 // ========================================================
 
-function renderEditList() {
-  const el = document.getElementById('dutyEditList');
+// --- メンバーごとの担当当番エディタ ---
+// editMembers[i] の担当枠 = editSlots[i]（オフセット0基準。各人が「いま決めた当番」を基準に輪番が回る）
+function renderMemberEditList() {
+  const el = document.getElementById('memberEditList');
   el.innerHTML = '';
-  editDuties.forEach((d, idx) => {
-    const row = document.createElement('div');
-    row.className = 'duty-edit-item';
-    row.innerHTML =
-        '<input type="text" class="emoji-input" value="' + escAttr(d.emoji || '') + '" placeholder="🧹" maxlength="4" onchange="editDuties[' + idx + '].emoji=this.value">'
-      + '<input type="text" class="name-input" value="' + escAttr(d.name || '') + '" placeholder="お当番の名前（例：しょっきあらい）" maxlength="40" onchange="editDuties[' + idx + '].name=this.value">'
-      + '<button type="button" class="del-btn" onclick="removeDutyRow(' + idx + ')">✕</button>';
-    el.appendChild(row);
+  editMembers.forEach((member, mi) => {
+    const slot = editSlots[mi] || (editSlots[mi] = { id: genId(), duties: [] });
+    const block = document.createElement('div');
+    block.className = 'member-block';
+
+    let dutiesHtml = '';
+    slot.duties.forEach((d, di) => {
+      dutiesHtml +=
+          '<div class="duty-edit-item">'
+        + '<input type="text" class="emoji-input" value="' + escAttr(d.emoji || '') + '" placeholder="🧹" maxlength="4" onchange="editSlots[' + mi + '].duties[' + di + '].emoji=this.value">'
+        + '<input type="text" class="name-input" value="' + escAttr(d.name || '') + '" placeholder="お当番の名前（例：しょっきあらい）" maxlength="40" onchange="editSlots[' + mi + '].duties[' + di + '].name=this.value">'
+        + '<button type="button" class="del-btn" onclick="removeDutyRow(' + mi + ',' + di + ')">✕</button>'
+        + '</div>';
+    });
+
+    block.innerHTML =
+        '<div class="member-head">' + escHtml(member) + ' <span class="pos">（' + (mi + 1) + 'ばんめ）</span></div>'
+      + '<div id="dutyRows_' + mi + '">' + dutiesHtml + '</div>'
+      + '<button type="button" class="btn-add-duty" onclick="addDutyRow(' + mi + ')">＋ ' + escHtml(member) + ' のお当番を追加</button>';
+    el.appendChild(block);
   });
 }
 
-function addDutyRow() {
-  editDuties.push({ id: genId(), name: '', emoji: '' });
-  renderEditList();
+function addDutyRow(mi) {
+  if (!editSlots[mi]) editSlots[mi] = { id: genId(), duties: [] };
+  editSlots[mi].duties.push({ id: genId(), name: '', emoji: '' });
+  renderMemberEditList();
 }
 
-function removeDutyRow(idx) {
-  editDuties.splice(idx, 1);
-  renderEditList();
+function removeDutyRow(mi, di) {
+  if (editSlots[mi] && editSlots[mi].duties) {
+    editSlots[mi].duties.splice(di, 1);
+    renderMemberEditList();
+  }
 }
 
 async function saveDuties() {
-  // 名前が空のものは除外
-  const cleaned = editDuties
-    .map(d => ({ id: d.id || genId(), name: (d.name || '').trim(), emoji: (d.emoji || '').trim() }))
-    .filter(d => d.name);
+  // 各枠の空当番を除外して確定
+  const cleanedSlots = editSlots.map(s => ({
+    id: s.id || genId(),
+    duties: (s.duties || [])
+      .map(d => ({ id: d.id || genId(), name: (d.name || '').trim(), emoji: (d.emoji || '').trim() }))
+      .filter(d => d.name)
+  }));
 
-  roster.duties = cleaned;
-  // お当番の数が変わったらオフセットを安全な範囲に収める
-  if (cleaned.length > 0) {
-    roster.rotation_offset = ((roster.rotation_offset % cleaned.length) + cleaned.length) % cleaned.length;
-  } else {
-    roster.rotation_offset = 0;
-  }
+  roster.members = editMembers.slice();
+  roster.slots = cleanedSlots;
+  normalizeSlots(roster);
+  // 枠数（＝メンバー数）が変わってもオフセットを安全な範囲に収める
+  const n = roster.slots.length;
+  roster.rotation_offset = n > 0 ? ((roster.rotation_offset % n) + n) % n : 0;
   if (!roster.week_start) roster.week_start = getWeekStart();
 
   await persistRoster();
-  editDuties = roster.duties.map(d => Object.assign({}, d));
+  syncEditState();
   render();
 
   const msg = document.getElementById('saveMsg');
@@ -358,11 +453,38 @@ async function saveDuties() {
   setTimeout(() => msg.style.display = 'none', 2000);
 }
 
+// --- 輪番順の変更 ---
+// メンバーの並びを入れ替える。担当枠(editSlots)も一緒に動かすことで
+// 「各メンバーの担当当番」は保ったまま、回る順番だけが変わる。
+function renderOrderList() {
+  const el = document.getElementById('orderList');
+  el.innerHTML = '';
+  editMembers.forEach((member, idx) => {
+    const item = document.createElement('div');
+    item.className = 'order-item';
+    item.innerHTML =
+        '<span class="order-name">' + (idx + 1) + '. ' + escHtml(member) + '</span>'
+      + '<button class="order-btn" onclick="moveMember(' + idx + ',-1)"' + (idx === 0 ? ' disabled' : '') + '>&#x25B2;</button>'
+      + '<button class="order-btn" onclick="moveMember(' + idx + ',1)"' + (idx === editMembers.length - 1 ? ' disabled' : '') + '>&#x25BC;</button>';
+    el.appendChild(item);
+  });
+}
+
+function moveMember(idx, dir) {
+  const ni = idx + dir;
+  if (ni < 0 || ni >= editMembers.length) return;
+  [editMembers[idx], editMembers[ni]] = [editMembers[ni], editMembers[idx]];
+  [editSlots[idx], editSlots[ni]] = [editSlots[ni], editSlots[idx]];
+  renderMemberEditList();
+  renderOrderList();
+}
+
 // 手動で輪番を1つ進める
 async function rotateNow() {
-  if (roster.duties.length === 0) { alert('先にお当番を追加してね'); return; }
+  if (!hasAnyDuty()) { alert('先にお当番を追加してね'); return; }
   if (!confirm('当番を次の人に入れ替えますか？')) return;
-  roster.rotation_offset = (roster.rotation_offset + 1) % roster.duties.length;
+  const n = roster.slots.length;
+  roster.rotation_offset = n > 0 ? (roster.rotation_offset + 1) % n : 0;
   roster.week_start = getWeekStart();
   await persistRoster();
   render();
