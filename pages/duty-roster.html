@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4caf50">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../images/2728.png">
+<title>お当番表 - お小遣い手帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="../js/common.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; min-height: 100vh; }
+.back { display: inline-block; margin-bottom: 16px; color: #333; text-decoration: none; font-size: 1.6em; line-height: 1; padding: 8px 12px; cursor: pointer; }
+.back:hover { opacity: 0.6; }
+h1 { text-align: center; margin-bottom: 8px; color: #333; font-size: 1.4em; }
+.week-label { text-align: center; color: #888; font-size: 0.9em; margin-bottom: 20px; }
+
+.container { max-width: 520px; margin: 0 auto; }
+
+/* 今週の当番カード */
+.duty-now-card {
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 14px;
+}
+.duty-now-card .member {
+  font-size: 1.25em; font-weight: 700; color: #333; flex-shrink: 0; min-width: 4.5em;
+}
+.duty-now-card .arrow { color: #bbb; font-size: 1.2em; flex-shrink: 0; }
+.duty-now-card .duty {
+  flex: 1; font-size: 1.15em; font-weight: 600; color: #2e7d32;
+  display: flex; align-items: center; gap: 8px;
+}
+.duty-now-card .duty .emoji { font-size: 1.4em; }
+.duty-now-card .duty.empty { color: #bbb; font-weight: 500; font-size: 1em; }
+
+.empty-msg { text-align: center; color: #bbb; padding: 40px 20px; font-size: 1.05em; }
+
+/* 来週プレビュー */
+.next-week { margin-top: 20px; }
+.section-title { font-size: 0.9em; color: #888; font-weight: 600; margin: 0 4px 8px; }
+.next-row {
+  display: flex; align-items: center; gap: 10px; background: #fafafa;
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; font-size: 0.95em;
+}
+.next-row .member { font-weight: 600; color: #666; min-width: 4.5em; }
+.next-row .arrow { color: #ccc; }
+.next-row .duty { flex: 1; color: #777; }
+
+/* Admin設定 */
+.admin-section {
+  background: #fff; border-radius: 12px; padding: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-top: 24px;
+}
+.admin-section h2 { font-size: 1em; color: #555; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+.duty-edit-item {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.duty-edit-item .emoji-input {
+  width: 48px; padding: 8px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 1.1em; text-align: center;
+}
+.duty-edit-item .name-input {
+  flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95em;
+}
+.duty-edit-item .del-btn {
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: #ffebee; color: #e53935; font-size: 0.9em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.duty-edit-item .del-btn:hover { background: #ffcdd2; }
+
+.btn-add-duty {
+  padding: 8px 12px; border: 1px dashed #bbb; border-radius: 8px;
+  background: #fafafa; color: #888; font-size: 0.9em; cursor: pointer; width: 100%; margin-bottom: 12px;
+}
+.btn-add-duty:hover { background: #f0f0f0; border-color: #999; }
+
+.btn-primary {
+  padding: 11px 20px; border: none; border-radius: 8px;
+  background: #4caf50; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.98em; width: 100%;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-rotate {
+  padding: 11px 20px; border: none; border-radius: 8px;
+  background: #ff9800; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.98em; width: 100%; margin-top: 8px;
+}
+.btn-rotate:hover { opacity: 0.9; }
+
+.save-msg { color: #4caf50; font-size: 0.85em; text-align: center; margin-top: 8px; display: none; }
+.hint { font-size: 0.8em; color: #999; margin: 4px 0 12px; line-height: 1.5; }
+
+.divider { border: none; border-top: 1px solid #eee; margin: 16px 0; }
+
+@media (max-width: 520px) {
+  body { padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<a class="back" onclick="history.back()">←</a>
+<a href="../index.html" style="color:#333;text-decoration:none;font-size:1.4em;position:absolute;top:20px;right:20px;">🏠</a>
+<h1>🧹 お当番表</h1>
+<div class="week-label" id="weekLabel"></div>
+
+<div class="container">
+  <!-- 今週の当番 -->
+  <div id="nowList">
+    <div class="empty-msg">読み込み中...</div>
+  </div>
+
+  <!-- 来週プレビュー -->
+  <div class="next-week" id="nextWeekSection" style="display:none;">
+    <div class="section-title">📅 来週の当番</div>
+    <div id="nextList"></div>
+  </div>
+
+  <!-- Admin: お当番の設定 -->
+  <div class="admin-section" id="adminSection" style="display:none;">
+    <h2>⚙️ お当番を決める</h2>
+    <p class="hint">みんなが担当するお仕事を登録してね。毎週、担当が1つずつずれて入れ替わるよ。</p>
+    <div id="dutyEditList"></div>
+    <button type="button" class="btn-add-duty" onclick="addDutyRow()">＋ お当番を追加</button>
+    <button class="btn-primary" onclick="saveDuties()">保存する</button>
+    <div class="save-msg" id="saveMsg">✓ 保存しました！</div>
+
+    <hr class="divider">
+    <h2>🔄 当番を今すぐ入れ替える</h2>
+    <p class="hint">ふだんは毎週じどうで入れ替わります。手動で1つ先に進めたいときだけ押してね。</p>
+    <button class="btn-rotate" onclick="rotateNow()">当番を次に進める</button>
+  </div>
+</div>
+
+<script>
+// メンバーの表示・輪番順（ユーザー指定: かいせい → いろは → はるちか）
+const DEFAULT_MEMBERS = ['かいせい', 'いろは', 'はるちか'];
+
+let roster = null;      // game_settings.duty_roster の内容
+let editDuties = [];    // admin編集中のお当番配列
+
+if (isAdmin) {
+  document.getElementById('adminSection').style.display = 'block';
+}
+</script>
+
+<script>
+// ========================================================
+// 週の計算（JST基準・月曜はじまり）
+// ========================================================
+
+// 指定日(なければ今日)が属する週の月曜日を "YYYY-MM-DD"(JST) で返す
+function getWeekStart(dateStr) {
+  let d;
+  if (dateStr) {
+    d = new Date(dateStr + 'T00:00:00+09:00');
+  } else {
+    d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  }
+  const day = d.getDay();              // 0=日 1=月 ... 6=土
+  const diff = (day === 0 ? -6 : 1 - day); // 月曜まで戻す
+  d.setDate(d.getDate() + diff);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// week開始日に n 週間足した "YYYY-MM-DD" を返す
+function addWeeks(weekStart, n) {
+  const d = new Date(weekStart + 'T00:00:00+09:00');
+  d.setDate(d.getDate() + n * 7);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// 2つの週開始日の差を週数で返す
+function weeksBetween(fromWeek, toWeek) {
+  const a = new Date(fromWeek + 'T00:00:00+09:00');
+  const b = new Date(toWeek + 'T00:00:00+09:00');
+  return Math.round((b - a) / (7 * 24 * 60 * 60 * 1000));
+}
+
+// "YYYY-MM-DD" → "M/D" 表示
+function fmtMD(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00+09:00');
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+// ========================================================
+// データ読み込み（＋週またぎの自動ローテーション）
+// ========================================================
+
+function defaultRoster() {
+  return { members: DEFAULT_MEMBERS.slice(), duties: [], week_start: null, rotation_offset: 0 };
+}
+
+async function loadRoster() {
+  const thisWeek = getWeekStart();
+  roster = defaultRoster();
+
+  // localStorage をフォールバックキャッシュとして利用
+  let dbAvailable = true;
+  try {
+    const { data, error } = await client.from('game_settings').select('duty_roster').eq('id', 1).maybeSingle();
+    if (error) {
+      // カラム未追加などの場合はフォールバック
+      dbAvailable = false;
+      console.warn('duty_roster 取得失敗（SQL未適用の可能性）:', error.message);
+    } else if (data && data.duty_roster) {
+      roster = Object.assign(defaultRoster(), data.duty_roster);
+    }
+  } catch (e) {
+    dbAvailable = false;
+  }
+
+  if (!dbAvailable) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('duty_roster_cache') || 'null');
+      if (cached) roster = Object.assign(defaultRoster(), cached);
+    } catch (e) {}
+  }
+
+  if (!Array.isArray(roster.members) || roster.members.length === 0) {
+    roster.members = DEFAULT_MEMBERS.slice();
+  }
+  if (!Array.isArray(roster.duties)) roster.duties = [];
+
+  // --- 週またぎの自動ローテーション ---
+  if (!roster.week_start) {
+    roster.week_start = thisWeek;
+  } else {
+    const elapsed = weeksBetween(roster.week_start, thisWeek);
+    if (elapsed > 0 && roster.duties.length > 0) {
+      roster.rotation_offset = (roster.rotation_offset + elapsed) % roster.duties.length;
+      roster.week_start = thisWeek;
+      // 自動進行した結果を保存（静かに）
+      await persistRoster({ silent: true });
+    } else if (elapsed > 0) {
+      roster.week_start = thisWeek;
+    }
+  }
+
+  editDuties = roster.duties.map(d => Object.assign({}, d));
+  render();
+}
+
+// ========================================================
+// 輪番ロジック
+// ========================================================
+
+// 指定オフセットで「メンバー→担当お当番」の割り当てを返す
+// members[i] の担当 = duties[(i + offset) % duties.length]
+function assignmentsFor(offset) {
+  const result = [];
+  const n = roster.duties.length;
+  roster.members.forEach((member, i) => {
+    let duty = null;
+    if (n > 0) duty = roster.duties[((i + offset) % n + n) % n];
+    result.push({ member, duty });
+  });
+  return result;
+}
+
+// ========================================================
+// 表示
+// ========================================================
+
+function render() {
+  // 週ラベル
+  const ws = roster.week_start || getWeekStart();
+  const we = addWeeks(ws, 1);
+  const weEnd = new Date(we + 'T00:00:00+09:00');
+  weEnd.setDate(weEnd.getDate() - 1);
+  const weEndStr = (weEnd.getMonth() + 1) + '/' + weEnd.getDate();
+  document.getElementById('weekLabel').textContent = '今週：' + fmtMD(ws) + '〜' + weEndStr;
+
+  // 今週の当番
+  const nowList = document.getElementById('nowList');
+  if (roster.duties.length === 0) {
+    nowList.innerHTML = '<div class="empty-msg">まだお当番が決まっていません' + (isAdmin ? '<br>下の「お当番を決める」から追加してね' : '') + '</div>';
+    document.getElementById('nextWeekSection').style.display = 'none';
+  } else {
+    const now = assignmentsFor(roster.rotation_offset);
+    nowList.innerHTML = now.map(a => {
+      const dutyHtml = a.duty
+        ? '<div class="duty"><span class="emoji">' + (a.duty.emoji || '🧹') + '</span><span>' + escHtml(a.duty.name) + '</span></div>'
+        : '<div class="duty empty">お休み</div>';
+      return '<div class="duty-now-card">'
+        + '<span class="member">' + escHtml(a.member) + '</span>'
+        + '<span class="arrow">▶</span>'
+        + dutyHtml
+        + '</div>';
+    }).join('');
+
+    // 来週プレビュー
+    const next = assignmentsFor(roster.rotation_offset + 1);
+    document.getElementById('nextList').innerHTML = next.map(a => {
+      const label = a.duty ? ((a.duty.emoji || '🧹') + ' ' + escHtml(a.duty.name)) : 'お休み';
+      return '<div class="next-row"><span class="member">' + escHtml(a.member) + '</span><span class="arrow">▶</span><span class="duty">' + label + '</span></div>';
+    }).join('');
+    document.getElementById('nextWeekSection').style.display = 'block';
+  }
+
+  if (isAdmin) renderEditList();
+}
+
+// ========================================================
+// Admin: お当番の編集
+// ========================================================
+
+function renderEditList() {
+  const el = document.getElementById('dutyEditList');
+  el.innerHTML = '';
+  editDuties.forEach((d, idx) => {
+    const row = document.createElement('div');
+    row.className = 'duty-edit-item';
+    row.innerHTML =
+        '<input type="text" class="emoji-input" value="' + escAttr(d.emoji || '') + '" placeholder="🧹" maxlength="4" onchange="editDuties[' + idx + '].emoji=this.value">'
+      + '<input type="text" class="name-input" value="' + escAttr(d.name || '') + '" placeholder="お当番の名前（例：しょっきあらい）" maxlength="40" onchange="editDuties[' + idx + '].name=this.value">'
+      + '<button type="button" class="del-btn" onclick="removeDutyRow(' + idx + ')">✕</button>';
+    el.appendChild(row);
+  });
+}
+
+function addDutyRow() {
+  editDuties.push({ id: genId(), name: '', emoji: '' });
+  renderEditList();
+}
+
+function removeDutyRow(idx) {
+  editDuties.splice(idx, 1);
+  renderEditList();
+}
+
+async function saveDuties() {
+  // 名前が空のものは除外
+  const cleaned = editDuties
+    .map(d => ({ id: d.id || genId(), name: (d.name || '').trim(), emoji: (d.emoji || '').trim() }))
+    .filter(d => d.name);
+
+  roster.duties = cleaned;
+  // お当番の数が変わったらオフセットを安全な範囲に収める
+  if (cleaned.length > 0) {
+    roster.rotation_offset = ((roster.rotation_offset % cleaned.length) + cleaned.length) % cleaned.length;
+  } else {
+    roster.rotation_offset = 0;
+  }
+  if (!roster.week_start) roster.week_start = getWeekStart();
+
+  await persistRoster();
+  editDuties = roster.duties.map(d => Object.assign({}, d));
+  render();
+
+  const msg = document.getElementById('saveMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+// 手動で輪番を1つ進める
+async function rotateNow() {
+  if (roster.duties.length === 0) { alert('先にお当番を追加してね'); return; }
+  if (!confirm('当番を次の人に入れ替えますか？')) return;
+  roster.rotation_offset = (roster.rotation_offset + 1) % roster.duties.length;
+  roster.week_start = getWeekStart();
+  await persistRoster();
+  render();
+}
+
+// ========================================================
+// 保存（Supabase ＋ localStorageキャッシュ）
+// ========================================================
+
+async function persistRoster(opts) {
+  opts = opts || {};
+  // ローカルキャッシュは常に更新（DB未適用環境でも動くように）
+  try { localStorage.setItem('duty_roster_cache', JSON.stringify(roster)); } catch (e) {}
+
+  try {
+    const { error } = await client.from('game_settings').update({ duty_roster: roster }).eq('id', 1);
+    if (error) {
+      if (!opts.silent) console.warn('duty_roster 保存失敗（localStorageのみ保持）:', error.message);
+    }
+  } catch (e) {
+    if (!opts.silent) console.warn('duty_roster 保存失敗:', e);
+  }
+}
+
+// ========================================================
+// ユーティリティ
+// ========================================================
+
+function genId() {
+  return (crypto.randomUUID ? crypto.randomUUID() : 'd' + Date.now() + Math.random().toString(16).slice(2));
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function escAttr(str) {
+  return escHtml(str).replace(/"/g, '&quot;');
+}
+
+loadRoster();
+</script>
+</body>
+</html>
