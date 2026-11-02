@@ -170,6 +170,7 @@ h1 { text-align: center; margin-bottom: 24px; color: #333; }
 const ALL_ICONS = [
   { id: 'arcade', emoji: '🕹️', label: 'ゲームセンター', href: 'pages/arcade.html', position: 'top', adminOnly: false },
   { id: 'chores', emoji: '📋', label: 'お手伝い', href: 'pages/chores.html', position: 'top', adminOnly: false },
+  { id: 'duty-roster', emoji: '🧹', label: 'お当番表', href: 'pages/duty-roster.html', position: 'top', adminOnly: false },
   { id: 'recipe', emoji: '🍳', label: 'レシピ', href: 'pages/recipe.html', position: 'top', adminOnly: false },
   { id: 'news', emoji: '📰', label: 'ニュース', href: 'pages/news.html', position: 'top', adminOnly: false },
   { id: 'garden', emoji: '🪴', label: 'ぷよ畑', href: '#', position: 'top', adminOnly: false, isGarden: true },
@@ -189,8 +190,8 @@ const ALL_ICONS = [
 ];
 
 // デフォルトで表示するアイコンID
-const DEFAULT_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','nurse','notes','poker-chips','settings'];
-const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','recipe','news','garden','laq-museum','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','broadcast','settings'];
+const DEFAULT_VISIBLE = ['arcade','chores','duty-roster','recipe','news','garden','laq-museum','nurse','notes','poker-chips','settings'];
+const DEFAULT_ADMIN_VISIBLE = ['arcade','chores','duty-roster','recipe','news','garden','laq-museum','kenka','nurse','pickleball','laundry','notes','settlement','poker-chips','hair-removal','broadcast','settings'];
 
 function getVisibleIcons() {
   const isAdmin = localStorage.getItem('deviceRole') === 'admin';
@@ -199,7 +200,7 @@ function getVisibleIcons() {
     try {
       const ids = JSON.parse(saved);
       // 新アイコン自動追加マイグレーション
-      const newIcons = ['laq-museum', 'broadcast'];
+      const newIcons = ['laq-museum', 'broadcast', 'duty-roster'];
       let updated = false;
       newIcons.forEach(id => {
         if (!ids.includes(id)) { ids.splice(ids.length - 1, 0, id); updated = true; }
@@ -620,6 +621,51 @@ function ringBell(e, el) {
   el.classList.add('ringing');
 }
 
+// --- お当番（当番/輪番制）: 今の当番を名前→お当番 でマッピング ---
+// duty-roster.html と同じ輪番ロジック（members[i] の担当 = duties[(i+offset)%N]）
+function dutyGetWeekStart() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function dutyWeeksBetween(fromWeek, toWeek) {
+  const a = new Date(fromWeek + 'T00:00:00+09:00');
+  const b = new Date(toWeek + 'T00:00:00+09:00');
+  return Math.round((b - a) / (7 * 24 * 60 * 60 * 1000));
+}
+
+// 戻り値: { メンバー名: { name, emoji } } の対応表（お当番が無い人は含めない）
+async function loadDutyMap() {
+  const map = {};
+  let roster = null;
+  try {
+    const { data, error } = await client.from('game_settings').select('duty_roster').eq('id', 1).maybeSingle();
+    if (!error && data && data.duty_roster) roster = data.duty_roster;
+  } catch (e) {}
+  if (!roster) {
+    try { roster = JSON.parse(localStorage.getItem('duty_roster_cache') || 'null'); } catch (e) {}
+  }
+  if (!roster || !Array.isArray(roster.members) || !Array.isArray(roster.duties) || roster.duties.length === 0) {
+    return map;
+  }
+
+  // 週またぎ分のオフセットを計算（TOP側は表示のみ・保存はしない）
+  let offset = roster.rotation_offset || 0;
+  if (roster.week_start) {
+    const elapsed = dutyWeeksBetween(roster.week_start, dutyGetWeekStart());
+    if (elapsed > 0) offset = (offset + elapsed) % roster.duties.length;
+  }
+
+  const n = roster.duties.length;
+  roster.members.forEach((member, i) => {
+    const duty = roster.duties[((i + offset) % n + n) % n];
+    if (duty && duty.name) map[member] = { name: duty.name, emoji: duty.emoji || '🧹' };
+  });
+  return map;
+}
+
 // --- アカウント一覧読み込み ---
 async function load() {
   const { data, error } = await client.from('children').select('*').order('sort_order', { ascending: true });
@@ -681,6 +727,9 @@ async function load() {
     ticketApprovedAll = tktApproved || [];
   } catch(e) {}
 
+  // 今の当番マップ（メンバー名 → お当番）
+  const dutyMap = await loadDutyMap();
+
   data.forEach(c => {
     const isNeg = c.balance < 0 ? ' negative' : '';
     const hasPassword = c.require_password && c.password;
@@ -699,6 +748,13 @@ async function load() {
     const displayNeg = displayBalance < 0 ? ' negative' : '';
     const balanceText = showBalance ? `${displayBalance.toLocaleString()}円` : '****円';
     const lock = (hasPassword && !bypassed) ? ' 🔒' : '';
+
+    // 今の当番（お当番表と連動）
+    let dutyHtml = '';
+    const myDuty = dutyMap[c.name];
+    if (myDuty) {
+      dutyHtml = '<div style="font-size:0.72em;color:#2e7d32;margin-top:3px;font-weight:600;">🧹 今週の当番：' + myDuty.emoji + ' ' + escHtml(myDuty.name) + '</div>';
+    }
     const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" onclick="event.stopPropagation();location.reload();" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
 
     // ポイント情報（返済用アカウントは除外）
@@ -760,6 +816,7 @@ async function load() {
             <span class="child-name">${c.name}${starsHtml}${lock}</span>
             ${ptsHtml}
             ${ticketHtml}
+            ${dutyHtml}
           </div>
           <span class="child-balance${displayNeg}">${balanceText}</span>
         </div>
