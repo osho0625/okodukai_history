@@ -636,7 +636,9 @@ function dutyWeeksBetween(fromWeek, toWeek) {
   return Math.round((b - a) / (7 * 24 * 60 * 60 * 1000));
 }
 
-// 戻り値: { メンバー名: { name, emoji } } の対応表（お当番が無い人は含めない）
+// 戻り値: { メンバー名: [{ name, emoji }, ...] } の対応表（お当番が無い人は含めない）
+// duty-roster.html と同じ slots ベースの輪番（members[i] の担当枠 = slots[(i+offset)%N]）。
+// 旧モデル（duties配列）も後方互換で読み取る。
 async function loadDutyMap() {
   const map = {};
   let roster = null;
@@ -647,21 +649,30 @@ async function loadDutyMap() {
   if (!roster) {
     try { roster = JSON.parse(localStorage.getItem('duty_roster_cache') || 'null'); } catch (e) {}
   }
-  if (!roster || !Array.isArray(roster.members) || !Array.isArray(roster.duties) || roster.duties.length === 0) {
-    return map;
+  if (!roster || !Array.isArray(roster.members) || roster.members.length === 0) return map;
+
+  // slots を決定（旧モデル duties からの変換も対応）
+  let slots = Array.isArray(roster.slots) ? roster.slots : null;
+  if ((!slots || slots.length === 0) && Array.isArray(roster.duties) && roster.duties.length > 0) {
+    slots = roster.duties.map(d => ({ duties: [{ name: d.name, emoji: d.emoji || '' }] }));
   }
+  if (!slots || slots.length === 0) return map;
+
+  const n = slots.length;
 
   // 週またぎ分のオフセットを計算（TOP側は表示のみ・保存はしない）
   let offset = roster.rotation_offset || 0;
   if (roster.week_start) {
     const elapsed = dutyWeeksBetween(roster.week_start, dutyGetWeekStart());
-    if (elapsed > 0) offset = (offset + elapsed) % roster.duties.length;
+    if (elapsed > 0) offset = (offset + elapsed) % n;
   }
 
-  const n = roster.duties.length;
   roster.members.forEach((member, i) => {
-    const duty = roster.duties[((i + offset) % n + n) % n];
-    if (duty && duty.name) map[member] = { name: duty.name, emoji: duty.emoji || '🧹' };
+    const slot = slots[((i + offset) % n + n) % n];
+    const duties = (slot && Array.isArray(slot.duties)) ? slot.duties.filter(d => d && d.name) : [];
+    if (duties.length > 0) {
+      map[member] = duties.map(d => ({ name: d.name, emoji: d.emoji || '🧹' }));
+    }
   });
   return map;
 }
@@ -749,11 +760,12 @@ async function load() {
     const balanceText = showBalance ? `${displayBalance.toLocaleString()}円` : '****円';
     const lock = (hasPassword && !bypassed) ? ' 🔒' : '';
 
-    // 今の当番（お当番表と連動）
+    // 今の当番（お当番表と連動。1人が複数当番を持てる）
     let dutyHtml = '';
-    const myDuty = dutyMap[c.name];
-    if (myDuty) {
-      dutyHtml = '<div style="font-size:0.72em;color:#2e7d32;margin-top:3px;font-weight:600;">🧹 今週の当番：' + myDuty.emoji + ' ' + escHtml(myDuty.name) + '</div>';
+    const myDuties = dutyMap[c.name];
+    if (myDuties && myDuties.length > 0) {
+      const dutyLabels = myDuties.map(d => d.emoji + ' ' + escHtml(d.name)).join('、');
+      dutyHtml = '<div style="font-size:0.72em;color:#2e7d32;margin-top:3px;font-weight:600;">🧹 今週の当番：' + dutyLabels + '</div>';
     }
     const pendingBadge = pendingByChild[c.id] ? '<span class="pending-badge" onclick="event.stopPropagation();location.reload();" title="承認待ち ' + pendingByChild[c.id] + 'pt">&#x2705;</span>' : '';
 
