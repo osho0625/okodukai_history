@@ -1,0 +1,7 @@
+[{"id":"5cc38db0-945a-492a-9304-21d606306fda","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"points","data":{"chores": ["洗濯物畳み"], "addedPoints": 3},"created_at":"2026-10-25T07:53:53.69239+00:00"}, 
+ {"id":"dd14d822-55f1-475a-8ab1-62e24896217c","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"deposit","data":{"newBalance": 20, "oldBalance": 0, "totalAmount": 20},"created_at":"2026-10-28T05:21:30.670271+00:00"}, 
+ {"id":"705e4458-c6d7-4a21-8111-8f5678427745","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","type":"points","data":{"chores": ["引越し手伝い"], "addedPoints": 20},"created_at":"2026-10-28T05:21:31.137126+00:00"}, 
+ {"id":"197991e3-a3bb-46c7-aa4b-4107a9399265","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"deposit","data":{"newBalance": 166, "oldBalance": 86, "totalAmount": 80},"created_at":"2026-10-28T05:21:48.490622+00:00"}, 
+ {"id":"e246607b-fbee-409f-91fb-439b3a93cf39","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"points","data":{"chores": ["引越し手伝い"], "addedPoints": 40},"created_at":"2026-10-28T05:21:48.698949+00:00"}, 
+ {"id":"a5d4f9e5-086f-4f83-b15a-07f903d818c6","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"points","data":{"chores": ["洗濯機回し", "洗濯物干し", "洗濯機回し"], "addedPoints": 10},"created_at":"2026-06-10T02:19:53.301078+00:00"}, 
+ {"id":"840dfb19-7104-4cac-aa9c-aaf08364a47a","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"deposit","data":{"newBalance": 80, "oldBalance": 40, "totalAmount": 93},"created_at":"2026-06-10T03:03:20.573123+00:00"}]

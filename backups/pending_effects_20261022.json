@@ -1,0 +1,4 @@
+[{"id":"a5d4f9e5-086f-4f83-b15a-07f903d818c6","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"points","data":{"chores": ["洗濯機回し", "洗濯物干し", "洗濯機回し"], "addedPoints": 10},"created_at":"2026-06-10T02:19:53.301078+00:00"}, 
+ {"id":"840dfb19-7104-4cac-aa9c-aaf08364a47a","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"deposit","data":{"newBalance": 80, "oldBalance": 40, "totalAmount": 93},"created_at":"2026-06-10T03:03:20.573123+00:00"}, 
+ {"id":"338c91f6-e492-44a1-a96f-9b32113d51ce","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"deposit","data":{"newBalance": 846, "oldBalance": 546, "totalAmount": 300},"created_at":"2026-10-21T11:29:45.440707+00:00"}, 
+ {"id":"dfe1e369-c605-4635-9a8a-3631a9d377e9","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"points","data":{"chores": ["家事当番代行", "洗濯機回し", "ゴミまとめ"], "addedPoints": 4},"created_at":"2026-10-21T11:22:26.547724+00:00"}]

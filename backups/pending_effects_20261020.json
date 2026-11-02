@@ -1,0 +1,4 @@
+[{"id":"59ca1014-8ee5-43d3-9e53-a019f8aeeb6a","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","type":"points","data":{"chores": ["引越し手伝い"], "addedPoints": 10},"created_at":"2026-10-20T12:05:10.852611+00:00"}, 
+ {"id":"8baed1d2-0e63-4a87-b192-d1ea0658ebe4","child_id":"75268156-44ff-4dbb-b6bc-b483652f7e5a","type":"deposit","data":{"newBalance": 506, "oldBalance": -194, "totalAmount": 700},"created_at":"2026-10-20T12:05:54.667686+00:00"}, 
+ {"id":"a5d4f9e5-086f-4f83-b15a-07f903d818c6","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"points","data":{"chores": ["洗濯機回し", "洗濯物干し", "洗濯機回し"], "addedPoints": 10},"created_at":"2026-06-10T02:19:53.301078+00:00"}, 
+ {"id":"840dfb19-7104-4cac-aa9c-aaf08364a47a","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"deposit","data":{"newBalance": 80, "oldBalance": 40, "totalAmount": 93},"created_at":"2026-06-10T03:03:20.573123+00:00"}]
