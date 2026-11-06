@@ -11,6 +11,7 @@
 <script src="../js/common.js"></script>
 <script src="../.kiro/specs/today-science/science-list.js"></script>
 <script src="../data/scp-list.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; padding: 20px; }
@@ -628,6 +629,52 @@ h2 .toggle.open { transform: rotate(90deg); }
     </div>
     <div id="scpOverrideStatus" style="font-size:0.85em; color:#555; margin-bottom:8px;"></div>
     <div id="scpOverrideResult" style="font-size:0.85em; text-align:center; color:#4caf50;"></div>
+  </div>
+</div>
+
+<!-- IoTボタン管理 -->
+<h2 onclick="toggleSection('buttonSection', this)"><span class="toggle">▶</span> 🔘 IoTボタン管理</h2>
+<div class="section-body" id="buttonSection">
+  <div class="card">
+    <p style="font-size:0.8em; color:#888; margin-bottom:12px;">
+      物理ボタン・NFCタグ・スマホのショートカットから、お手伝いポイントを申請できます。<br>
+      押すと承認待ち（pending）で申請されます（親が承認して確定）。
+    </p>
+    <div id="buttonList" style="margin-bottom:16px;">
+      <div style="color:#999; font-size:0.85em;">読み込み中...</div>
+    </div>
+    <div style="border-top:1px solid #eee; padding-top:14px;">
+      <div style="font-weight:600; margin-bottom:8px; font-size:0.95em;">➕ 新しいボタンを登録</div>
+      <input type="text" id="btnLabel" placeholder="ボタンの名前（例: いろはのゴミ捨て）" maxlength="40" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em; margin-bottom:8px;">
+      <select id="btnChild" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em; margin-bottom:8px;"></select>
+      <input type="text" id="btnChore" placeholder="家事の名前（例: ゴミ出し）" maxlength="40" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em; margin-bottom:8px;">
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="number" id="btnPoints" value="1" min="1" max="100" style="width:80px; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em;">
+        <span style="font-size:0.85em; color:#888;">ポイント</span>
+        <input type="number" id="btnCooldown" value="30" min="0" max="3600" style="width:80px; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95em;">
+        <span style="font-size:0.85em; color:#888;">秒クールダウン</span>
+      </div>
+      <button class="btn-add" onclick="addButton()" style="width:100%;">ボタンを登録</button>
+      <div class="msg" id="btnAddMsg">✓ 登録しました</div>
+    </div>
+  </div>
+</div>
+
+<!-- ボタン詳細モーダル（URL/QR/テスト発火） -->
+<div class="overlay" id="btnDetailOverlay">
+  <div class="modal" style="max-width:420px; max-height:85vh; overflow-y:auto;">
+    <h3 id="btnDetailTitle">ボタン詳細</h3>
+    <div style="font-size:0.85em; color:#555; margin-bottom:6px;">このURLをデバイス/NFC/ショートカットに設定してください（GETで押せます）</div>
+    <textarea id="btnDetailUrl" readonly style="width:100%; height:70px; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:0.75em; margin-bottom:8px; word-break:break-all;"></textarea>
+    <button class="btn-sm btn-primary" onclick="copyBtnUrl()" style="width:100%; margin-bottom:12px;">URLをコピー</button>
+    <div id="btnQrArea" style="text-align:center; margin-bottom:12px;"></div>
+    <div style="border-top:1px solid #eee; padding-top:12px;">
+      <button class="btn-add" onclick="testFireButton()" style="width:100%; background:#ff9800;">🧪 テスト発火（1回申請してみる）</button>
+      <div id="btnTestResult" style="font-size:0.85em; text-align:center; margin-top:8px; color:#555;"></div>
+    </div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn-cancel" onclick="closeBtnDetail()">閉じる</button>
+    </div>
   </div>
 </div>
 
@@ -2234,6 +2281,188 @@ function toggleChipAdmin(checked) {
     localStorage.removeItem('chipAdmin');
   }
 }
+
+// ============================================================
+// IoTボタン管理
+// ============================================================
+let buttonActions = [];
+let btnDetailCurrent = null;
+
+function buttonActionUrl(token) {
+  // GETで押せる形（NFC/ブックマーク向け）。apikeyはクエリにも載せる
+  return `${SUPABASE_URL}/functions/v1/button-action?token=${encodeURIComponent(token)}&apikey=${encodeURIComponent(SUPABASE_KEY)}`;
+}
+
+function genButtonToken() {
+  const rnd = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '' + Math.random())).replace(/-/g, '');
+  return 'tok_' + rnd;
+}
+
+async function loadButtonActions() {
+  const listEl = document.getElementById('buttonList');
+  // 子供セレクト（追加フォーム用）
+  const sel = document.getElementById('btnChild');
+  if (sel && allChildren.length > 0) {
+    sel.innerHTML = allChildren
+      .filter(c => !c.name.endsWith('が返すお金'))
+      .map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
+
+  let data = null;
+  try {
+    const res = await client.from('button_actions').select('*').order('created_at', { ascending: true });
+    if (res.error) throw res.error;
+    data = res.data;
+  } catch (e) {
+    listEl.innerHTML = '<div style="color:#e53935; font-size:0.85em;">ボタン一覧の取得に失敗しました。SQL(button_actions.sql)が未適用かもしれません。</div>';
+    return;
+  }
+  buttonActions = data || [];
+
+  if (buttonActions.length === 0) {
+    listEl.innerHTML = '<div style="color:#999; font-size:0.85em;">まだボタンがありません。下から登録してください。</div>';
+    return;
+  }
+
+  listEl.innerHTML = buttonActions.map(b => {
+    const lastStr = b.last_pressed_at
+      ? new Date(b.last_pressed_at).toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+      : '未使用';
+    return `<div style="border:1px solid #e0e0e0; border-radius:10px; padding:12px; margin-bottom:8px; ${b.enabled ? '' : 'opacity:0.55;'}">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600;">${escHtmlAdmin(b.label || '(名前なし)')}</div>
+          <div style="font-size:0.8em; color:#888;">${escHtmlAdmin(b.child_name)} / ${escHtmlAdmin(b.chore_name)} / ${b.points}pt</div>
+          <div style="font-size:0.72em; color:#aaa;">押下 ${b.press_count || 0}回 ・ 最終 ${lastStr}</div>
+        </div>
+        <label class="toggle-switch" title="有効/無効">
+          <input type="checkbox" ${b.enabled ? 'checked' : ''} onchange="toggleButtonEnabled('${b.id}', this.checked)">
+          <span class="toggle-track"></span><span class="toggle-knob"></span>
+        </label>
+      </div>
+      <div style="display:flex; gap:6px; margin-top:10px;">
+        <button class="btn-sm btn-primary" onclick="openBtnDetail('${b.id}')" style="flex:1;">URL / QR / テスト</button>
+        <button class="btn-sm btn-danger" onclick="deleteButton('${b.id}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtmlAdmin(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+async function addButton() {
+  const label = document.getElementById('btnLabel').value.trim();
+  const child_name = document.getElementById('btnChild').value;
+  const chore_name = document.getElementById('btnChore').value.trim();
+  const points = parseInt(document.getElementById('btnPoints').value, 10) || 1;
+  const cooldown = parseInt(document.getElementById('btnCooldown').value, 10);
+  if (!child_name) { alert('対象の子を選んでください'); return; }
+  if (!chore_name) { alert('家事の名前を入力してください'); return; }
+
+  const row = {
+    token: genButtonToken(),
+    label: label || (child_name + 'の' + chore_name),
+    child_name, chore_name, points,
+    cooldown_seconds: isNaN(cooldown) ? 30 : cooldown,
+    enabled: true,
+  };
+  const { error } = await client.from('button_actions').insert(row);
+  if (error) { alert('登録に失敗しました: ' + error.message); return; }
+
+  document.getElementById('btnLabel').value = '';
+  document.getElementById('btnChore').value = '';
+  document.getElementById('btnPoints').value = '1';
+  document.getElementById('btnCooldown').value = '30';
+  const msg = document.getElementById('btnAddMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  loadButtonActions();
+}
+
+async function toggleButtonEnabled(id, enabled) {
+  await client.from('button_actions').update({ enabled }).eq('id', id);
+  const b = buttonActions.find(x => x.id === id);
+  if (b) b.enabled = enabled;
+}
+
+async function deleteButton(id) {
+  const b = buttonActions.find(x => x.id === id);
+  if (!confirm('「' + (b ? b.label : 'このボタン') + '」を削除しますか？')) return;
+  await client.from('button_actions').delete().eq('id', id);
+  loadButtonActions();
+}
+
+function openBtnDetail(id) {
+  const b = buttonActions.find(x => x.id === id);
+  if (!b) return;
+  btnDetailCurrent = b;
+  document.getElementById('btnDetailTitle').textContent = '🔘 ' + (b.label || 'ボタン');
+  const url = buttonActionUrl(b.token);
+  document.getElementById('btnDetailUrl').value = url;
+
+  // QRコード生成
+  const qrArea = document.getElementById('btnQrArea');
+  qrArea.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    try { new QRCode(qrArea, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M }); }
+    catch (e) { qrArea.innerHTML = '<div style="font-size:0.8em;color:#999;">QR生成不可</div>'; }
+  } else {
+    qrArea.innerHTML = '<div style="font-size:0.8em;color:#999;">QRライブラリ未読込</div>';
+  }
+  document.getElementById('btnTestResult').textContent = '';
+  document.getElementById('btnDetailOverlay').classList.add('active');
+}
+
+function closeBtnDetail() {
+  document.getElementById('btnDetailOverlay').classList.remove('active');
+  btnDetailCurrent = null;
+}
+
+function copyBtnUrl() {
+  const ta = document.getElementById('btnDetailUrl');
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  if (navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(()=>{});
+  const res = document.getElementById('btnTestResult');
+  res.style.color = '#4caf50';
+  res.textContent = 'URLをコピーしました';
+}
+
+async function testFireButton() {
+  if (!btnDetailCurrent) return;
+  const res = document.getElementById('btnTestResult');
+  res.style.color = '#555';
+  res.textContent = '送信中...';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/button-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ token: btnDetailCurrent.token }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.status === 'applied') {
+      res.style.color = '#4caf50';
+      res.textContent = '✓ ' + (j.message || '申請しました');
+    } else if (j.status === 'cooldown') {
+      res.style.color = '#ff9800';
+      res.textContent = '⏳ ' + (j.message || 'クールダウン中です');
+    } else {
+      res.style.color = '#e53935';
+      res.textContent = '失敗: ' + (j.error || j.message || ('HTTP ' + r.status)) + '（Edge Function未デプロイの可能性）';
+    }
+  } catch (e) {
+    res.style.color = '#e53935';
+    res.textContent = '通信エラー: ' + e.message;
+  }
+  loadButtonActions();
+}
+
+// 初期化（allChildren読込後に実行されるよう少し遅延）
+setTimeout(loadButtonActions, 800);
 </script>
 </body>
 </html>
