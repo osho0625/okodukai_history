@@ -32,6 +32,7 @@
 | `travel-plans.md` | `*travel*,*trip*` ファイルを開いた時 | 旅行計画（新婚旅行・家族鉄道旅行） |
 | `alexa-chore-points.md` | `*alexa*` ファイルを開いた時 | Alexaスキル: お手伝いポイント申請 |
 | `family-broadcast.md` | `*broadcast*,*raspi*,*video-call*` ファイルを開いた時 | おうちブロードキャスト（ラズパイ読み上げ）+ おうちビデオ通話（WebRTC） |
+| `iot-button.md` | `*button*,*iot*` ファイルを開いた時 | IoTボタン（物理ボタン/NFC/ショートカット→お手伝いポイント申請、承認制、デバイスはtokenのみ保持） |
 
 ## 機能一覧
 
@@ -58,6 +59,7 @@
 | Alexa連携 | alexa/ | 音声でポイント申請・残高確認・ブロードキャスト返事（Alexa-hosted スキル） |
 | おうちブロードキャスト | pages/family-broadcast.html, raspi/ | アプリ→ラズパイ読み上げ（gTTS）、Alexa返事→admin通知 |
 | おうちビデオ通話 | pages/video-call.html, js/broadcast-video.js, raspi/video-call-kiosk.sh | 親スマホ→ラズパイ端末へWebRTCビデオ通話（?mode=raspi自動応答、TURN対応） |
+| IoTボタン | admin.html, supabase/functions/button-action/, button-listener.py | 物理ボタン/NFC/ショートカットからお手伝いポイント申請（承認制）。デバイスはtokenのみ保持、割り当てはbutton_actionsテーブルで管理。管理UIで登録・統計・URL/QR生成・テスト発火 |
 
 ## CSS構成
 
