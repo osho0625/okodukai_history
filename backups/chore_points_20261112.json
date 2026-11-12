@@ -822,4 +822,9 @@
  {"id":"30120b6d-3817-492e-a972-bd0853c6dd87","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"食洗器回し","points":3,"created_at":"2026-11-11T10:27:34.959259+00:00","status":"approved"}, 
  {"id":"a960cb7a-c43d-4438-b5b7-16e0fe7ce0e1","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"洗濯機","points":9,"created_at":"2026-11-11T10:27:35.70019+00:00","status":"approved"}, 
  {"id":"f0036ab4-2b6f-42ef-986c-e49e35574c10","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","chore_name":"料理","points":10,"created_at":"2026-11-11T10:27:36.604698+00:00","status":"approved"}, 
- {"id":"2075854b-3d61-4961-89c2-7301991a6666","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","chore_name":"米洗い","points":1,"created_at":"2026-11-11T10:27:37.532438+00:00","status":"approved"}]
+ {"id":"2075854b-3d61-4961-89c2-7301991a6666","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","chore_name":"米洗い","points":1,"created_at":"2026-11-11T10:27:37.532438+00:00","status":"approved"}, 
+ {"id":"efc0b38d-0776-4fae-866f-5b4c942884dd","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"食洗器回し","points":3,"created_at":"2026-11-12T09:25:22.797919+00:00","status":"approved"}, 
+ {"id":"6512d5fd-a3bb-4e94-a6c0-f167edafc565","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"洗濯機","points":9,"created_at":"2026-11-12T09:25:24.268131+00:00","status":"approved"}, 
+ {"id":"ce5acecc-acd1-44ad-80dc-2f8ff4c55ae9","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","chore_name":"食洗器","points":3,"created_at":"2026-11-12T09:25:25.601706+00:00","status":"approved"}, 
+ {"id":"bbf72bb2-fdb1-40b9-bad9-36a0da2093b2","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","chore_name":"料理","points":10,"created_at":"2026-11-12T09:25:26.888656+00:00","status":"approved"}, 
+ {"id":"b61a9bdf-af3e-47b4-91f5-f8f612649f45","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","chore_name":"米洗い","points":1,"created_at":"2026-11-12T09:25:28.237558+00:00","status":"approved"}]
