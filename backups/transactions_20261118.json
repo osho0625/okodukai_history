@@ -350,4 +350,5 @@
  {"id":"bf64a88c-5863-4e38-ab1b-93b7913aefbc","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":40,"memo":"ポイント表ご褒美","created_at":"2026-11-13T14:06:39.137816"}, 
  {"id":"1af41792-aab0-4cee-b9cc-9f14cf3cb651","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"add","amount":40,"memo":"ポイント表ご褒美","created_at":"2026-11-14T08:53:35.76832"}, 
  {"id":"2da4b273-97b7-4246-8abe-d04ba4034129","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","type":"add","amount":300,"memo":"ポイント表ご褒美","created_at":"2026-11-17T11:33:53.307622"}, 
- {"id":"4cebef45-5d06-417a-9804-ecf43698c376","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":300,"memo":"ポイント表ご褒美","created_at":"2026-11-17T11:33:54.980291"}]
+ {"id":"4cebef45-5d06-417a-9804-ecf43698c376","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":300,"memo":"ポイント表ご褒美","created_at":"2026-11-17T11:33:54.980291"}, 
+ {"id":"7f057871-16f4-4cc8-a8b9-7198875dd981","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","type":"add","amount":40,"memo":"ポイント表ご褒美","created_at":"2026-11-18T11:15:45.94318"}]
