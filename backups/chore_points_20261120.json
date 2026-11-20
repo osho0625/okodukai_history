@@ -864,4 +864,11 @@
  {"id":"71c11f32-204a-45d2-931a-1d27c7a6b974","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","chore_name":"米洗い","points":1,"created_at":"2026-11-19T11:15:48.085834+00:00","status":"approved"}, 
  {"id":"8d210478-b4df-443b-af12-f0932a00124c","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"ゴミ捨て","points":3,"created_at":"2026-11-19T11:51:12.365824+00:00","status":"approved"}, 
  {"id":"79062b50-2820-45f3-b10b-1eb72cfac793","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"ゴミまとめ","points":2,"created_at":"2026-11-19T11:51:16.791918+00:00","status":"approved"}, 
- {"id":"2f759e47-2c5c-4d2a-ac27-717bb2508f4b","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"生ごみ","points":1,"created_at":"2026-11-19T11:51:20.608288+00:00","status":"approved"}]
+ {"id":"2f759e47-2c5c-4d2a-ac27-717bb2508f4b","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"生ごみ","points":1,"created_at":"2026-11-19T11:51:20.608288+00:00","status":"approved"}, 
+ {"id":"cf9edaef-b65a-46e7-9a96-40826624ade9","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"ゴミまとめ","points":2,"created_at":"2026-11-20T09:36:18.760006+00:00","status":"approved"}, 
+ {"id":"05ac77d7-75df-4c81-aeda-c41ef7a39063","child_id":"012ad76b-7dfb-4a32-9e39-8cdf7c50972d","chore_name":"ゴミまとめ","points":2,"created_at":"2026-11-20T09:36:42.478166+00:00","status":"approved"}, 
+ {"id":"ca4cba39-d90e-4f74-a78e-0419af292597","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"食洗器回し","points":3,"created_at":"2026-11-20T10:59:58.752111+00:00","status":"approved"}, 
+ {"id":"f7965c3d-a71f-4d87-8109-6b43548b0bf0","child_id":"6ff3a8f1-e3eb-4168-a4c0-b97b5e0b573c","chore_name":"洗濯機","points":9,"created_at":"2026-11-20T10:59:59.806344+00:00","status":"approved"}, 
+ {"id":"9d59b90e-dd68-4c53-b29d-bc0b520de027","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","chore_name":"食洗器","points":3,"created_at":"2026-11-20T11:00:01.665684+00:00","status":"approved"}, 
+ {"id":"70f02c62-f841-4f39-b2c1-ed15a1423aa3","child_id":"c5d1a954-34aa-45f0-8194-d06a9e4e2175","chore_name":"料理","points":10,"created_at":"2026-11-20T11:00:02.272004+00:00","status":"approved"}, 
+ {"id":"69ab31c6-c6e7-4424-b430-e5e5699f7e9b","child_id":"e7c3efd0-5c01-4276-840c-3d506a7d16ec","chore_name":"米洗い","points":1,"created_at":"2026-11-20T11:00:02.910858+00:00","status":"approved"}]
