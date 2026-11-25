@@ -21,5 +21,6 @@
   { "title": "📚 国語・漢字 学習の進め方", "file": "japanese-study-guide.md" },
   { "title": "🍽️ 10/24 両家顔合わせ 店舗候補", "file": "ryoke-kaoawase-shinyokohama.md" },
   { "title": "🎮 買い手ゲーム一覧", "file": "story-game-list.md" },
-  { "title": "🔌 micro:bit 学習リンク集", "file": "microbit-learning-links.md" }
+  { "title": "🔌 micro:bit 学習リンク集", "file": "microbit-learning-links.md" },
+  { "title": "🔌 micro:bitでうごくものをつくろう！", "file": "microbit-guide.md" }
 ]
